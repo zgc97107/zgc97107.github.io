@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>线程基础、线程之间的共享和合作 ~ zgcheng&#39;s blog</title>
+
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+<link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+<link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng&#39;s blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">文章</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">类别</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/default.png')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  Tuesday, December 17th 2019, 9:27 pm
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    2.3k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      8 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <h1 id="线程基础、线程之间的共享和协作"><a href="#线程基础、线程之间的共享和协作" class="headerlink" title="线程基础、线程之间的共享和协作"></a>线程基础、线程之间的共享和协作</h1><p>[TOC]</p>
+<h2 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h2><ul>
+<li><strong>CPU核心和线程数的关系</strong>：核心数比线程数一般为1:1，超线程技术1:2</li>
+<li><strong>CPU时间片轮转机制(RR调度)</strong>：古老、简单、公平、应用最广泛的算法。在时间片用完，或线程阻塞，完成式会剥夺线程cpu占用，进行上下文切换，切换时需要保存装入寄存器的值，同时载入下一个线程的值，线程切换大约需要5000-20000个cpu时钟周期。当线程切换需要大量时间时，多线程的效率可能不如单线程。</li>
+<li><strong>进程和线程</strong>：进程是程序进行资源分配的最小单位，一个进程可能会有多个线程会共享这个进程的资源。线程是cpu资源调度的最小单位。</li>
+<li><strong>并行和并发</strong>：并行是指同一时刻的处理能力、并发和事件相关呢，在单位时间内处理事情的能力。</li>
+<li><strong>高并发编程的意义、好处和注意事项</strong>：提高资源利用效率，但由于共享资源，可能存在冲突、死锁，过多的线程还会造成服务器崩溃。</li>
+</ul>
+<h2 id="java中的线程"><a href="#java中的线程" class="headerlink" title="java中的线程"></a>java中的线程</h2><p>java中的程序天生就是多线程的，且线程之间的关系与windwos中不同，windows系统之线程之间是抢占式的，java中是协作式，可以通过虚拟机的线程管理接口查看当前进行的线程。</p>
+<pre><code>public static void main(String[] args) {
+    ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+    ThreadInfo[] threadInfos=threadMXBean.dumpAllThreads(false, false);
+    for(ThreadInfo threadInfo:threadInfos){
+        System.out.println(&quot;[&quot;+threadInfo.getThreadId()+&quot;]&quot;+&quot; &quot;+threadInfo.getThreadName());
+    }
+}</code></pre><h3 id="启动线程的方式"><a href="#启动线程的方式" class="headerlink" title="启动线程的方式"></a>启动线程的方式</h3><ol>
+<li>继承Thread类后通过start()方法启动。</li>
+<li>实现Runable接口后通过new Thread(runable).start()启动。</li>
+<li>实现Callable接口之后使用new FutureTask&lt;&gt;(callable)创建task后通过new Thread(runable).start()启动，可以通过futureTask的get方法获取线程返回值，获取返回值时当前线程会阻塞。</li>
+<li>start方法会判断线程时候被启动，如果已经被启动会抛出异常</li>
+<li>Thread是线程的抽象，Runnable是任务的抽象。</li>
+</ol>
+<h3 id="停止线程的方式"><a href="#停止线程的方式" class="headerlink" title="停止线程的方式"></a>停止线程的方式</h3><ol>
+<li>thread中的stop(),resume(),suspend()方法，这三个方法过于强势，stop停止方法无法保证线程资源释放可能导致不可知的错误，suspend挂起线程时不会释放资源可能导致死锁问题。</li>
+<li>interrupt()可以中断一个线程，并不是强行关闭这个线程，调用interrupt()方法后，讲线程的中断标识为置为true，线程是否停止由线程决定，以此确保每个线程有充足的时间做好后续工作。</li>
+<li>isInterrupted()、静态方法interrupted()都是判断当前线程是否处于中断状态，isInterrupted()为判断为判断中断标识为是否为true，interrupted()调用之后将中断标识为改为flase。</li>
+<li>使用自定义标志位在线程被挂起时不会去判断标志位的变化，但调用interrupt()方法会使中断方法抛出InterruptException，抛出异常后interrupt标志位重新设置为false，此时开发者可以释放线程资源，之后再决定线程是否需要终止线程。</li>
+</ol>
+<h3 id="协作式并发编程的实现"><a href="#协作式并发编程的实现" class="headerlink" title="协作式并发编程的实现"></a>协作式并发编程的实现</h3><pre><code>public class Main {
+    private static class UserThread extends Thread{
+        public UserThread(String name){
+            super(name);
+        }
+
+        @Override
+        public void run() {
+            String threadName=Thread.currentThread().getName();
+            while(!isInterrupted()){
+                System.out.println(threadName);
+            }
+            System.out.println(threadName+&quot; interrput flag is &quot;+isInterrupted());
+        }
+    }
+    // 实现Runnable中断的方法
+    private static class UserThread implements Runnable{
+        @Override
+        public void run() {
+            String threadName=Thread.currentThread().getName();
+            while(!Thread.currentThread().isInterrupted()){
+                System.out.println(threadName);
+            }
+            System.out.println(threadName+&quot; interrput flag is &quot;+Thread.currentThread().isInterrupted());
+        }
+    }
+    public static void main(String[] args) throws InterruptedException {
+        Thread endThread=new UserThread(&quot;endThread&quot;);
+        endThread.start();
+        Thread.sleep(20L);
+        endThread.interrupt();
+    }
+}</code></pre><p>当线程处于阻塞状态时调用interrupted方法时会抛出InterruptedExcetion异常时，抛出异常后，线程的中断标识为会被复位为false。</p>
+<pre><code>public class Main {
+    private static class UserThread extends Thread {
+        public UserThread(String name) {
+            super(name);
+        }
+
+        @Override
+        public void run() {
+            String threadName = Thread.currentThread().getName();
+            while (!isInterrupted()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    System.out.println(threadName+&quot; interrput flag is &quot;+isInterrupted());
+                    interrupt();
+                    e.printStackTrace();
+                }
+                System.out.println(threadName);
+            }
+            System.out.println(threadName+&quot; interrput flag is &quot;+isInterrupted());
+        }
+    }
+    public static void main(String[] args) throws InterruptedException {
+        Thread endThread=new UserThread(&quot;endThread&quot;);
+        endThread.start();
+        Thread.sleep(500);
+        endThread.interrupt();
+    }
+}</code></pre><h3 id="线程常用方法和线程的状态"><a href="#线程常用方法和线程的状态" class="headerlink" title="线程常用方法和线程的状态"></a>线程常用方法和线程的状态</h3><p>![image-20191113232733744](/Users/zhaoguocheng/Library/Application Support/typora-user-images/image-20191113232733744.png)</p>
+<ol>
+<li>线程处于阻塞态时，系统不会进行资源分配。</li>
+<li>当前线程变为守护线程后，所有非守护线程结束后，守护线程会死亡。</li>
+<li>阻塞态唤醒时，进入就绪态，等待cpu调度。</li>
+<li>interrupt()是改变线程标识位，如果线程不判断interrupt()线程不会死亡。</li>
+<li>yield()方法是让出cpu调度权进入就绪态，所占有的资源不会释放，cpu时间片分配可能会再次分配到yield()方法。 </li>
+<li>join()方法会让出当前线程资源及cpu执行权后进入挂起态，调用join的线程执行完之后继续执行当前线程。</li>
+<li>setPriority()可以设置线程的优先级但不一定会起作用，范围为1-10有些系统范围为1-3，优先级是否发挥作用完全由操作系统决定。 需要休眠或者io操作的优先级高，计算的优先级低，确保处理器时间不会被计算型的线程占据。</li>
+<li><strong>yield()方法和sleep()方法的区别</strong>：yield()方法是让出cpu调度权，重新进入就绪态，sleep()是阻塞线程，sleep()执行之后线程不会获取cpu调度权，yield()执行之后会再去抢夺cpu调度权。</li>
+<li><strong>run()方法和start()方法</strong>：run()方法归属于调用方法所在线程的运行栈，如在main()方法中调用run()方法，此时run()方法会被打包为栈帧在main()方法的运行栈中运行，此时若在run()方法中打印线程名则线程名为main。调用start()方法后，虚拟机会将run()方法与线程映射为run()方法开启单独线程。</li>
+<li>守护线程大多用来支持程序，可以用线程的setDaemon()方法设置，当用户线程停止后，所有的守护线程也将停止，守护线程中的finally不一定会执行。守护线程大多用于资源管理，当用户线程结束后，作为资源管理的守护线程也就没有必要释放资源。操作系统在判定当前线程被结束时就不会分配资源，但也有可能在终止进程关闭时有一段很短的时间使守护线程执行finally中的方法。 用户线程中的finally一定会执行。</li>
+</ol>
+<h2 id="线程间的共享"><a href="#线程间的共享" class="headerlink" title="线程间的共享"></a>线程间的共享</h2><h3 id="synchronized内置锁"><a href="#synchronized内置锁" class="headerlink" title="synchronized内置锁"></a>synchronized内置锁</h3><p>synchronized可以修饰方法或者以同步块的形式来进行使用，它主要确保多个线程在同一个时刻，只能有一个线程处于方法或者同步块中，它保证了线程对变量访问的可见性和排他性，又称为内置锁机制。</p>
+<h5 id="对象锁和类锁"><a href="#对象锁和类锁" class="headerlink" title="对象锁和类锁"></a>对象锁和类锁</h5><p>对象锁时用于对象实例，类锁用于类的静态方法或者一个类的class对象上，不同对象实例的对象锁互不干扰。每个类在虚拟机加载时会生成class对象，类锁是将锁加到class类上。类锁与对象锁互不干扰。</p>
+<h5 id="错误的加锁和原因分析"><a href="#错误的加锁和原因分析" class="headerlink" title="错误的加锁和原因分析"></a>错误的加锁和原因分析</h5><p>通常是在线程执行过程中改变了锁住的对象导致加锁的对象并不是同一个。</p>
+<h4 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h4><p>volatile是<strong>最轻量的同步机制</strong>，volatile保证了不同线程对这个变量进行操作时的可见性，但是volatile不能保证数据在多个线程下同时写时的线程安全，即一个线程修改了某个变量的值，这新值对其他线程来说是立即可见的，但多个线程同时写时volatile不能保证线程安全。所以volatile最适用的场景为一写多读。</p>
+<h2 id="ThreadLocal辨析"><a href="#ThreadLocal辨析" class="headerlink" title="ThreadLocal辨析"></a>ThreadLocal辨析</h2><h3 id="与Synchronized的比较"><a href="#与Synchronized的比较" class="headerlink" title="与Synchronized的比较"></a>与Synchronized的比较</h3><p>ThreadLocal和Synchonized都用于解决多线程并发访问。可是ThreadLocal与synchronized有本质的差别。synchronized是利用锁的机制，使变量或代码块在某一时该仅仅能被一个线程访问。ThreadLocal为每个线程都提供了变量的副本，使得每个线程在某一时间访问到的并非同一个对象，这样就隔离了多个线程对数据的数据共享。</p>
+<p>jdbc事务是以一个connection的操作为整体，Web容器中，每一个完整的请求周期都会由一个线程处理，spring事务则借助了ThreadLocal类，将connection与当前线程绑定，对数据库所有的操作在一个connection中进行，从而保证事务的边界。</p>
+<h3 id="ThreadLocal的使用"><a href="#ThreadLocal的使用" class="headerlink" title="ThreadLocal的使用"></a>ThreadLocal的使用</h3><h3 id="实现解析"><a href="#实现解析" class="headerlink" title="实现解析"></a>实现解析</h3><p>![image-20191217154349198](/Users/zhaoguocheng/Library/Application Support/typora-user-images/image-20191217154349198.png)</p>
+<p>Thread中有一个ThreadLocalMap对象，ThreadLocalMap是ThreadLocal的静态内部类，ThreadLocal的get方法会获取当前Thread，然后调用getMap获取当前Thread的ThreadLocalMap。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B">并发编程</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/java">java</a>
+                
+                  <a class="hover-with-bg" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B">并发编程</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;TOC</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "线程基础、线程之间的共享和合作&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="/lib/fancybox/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
