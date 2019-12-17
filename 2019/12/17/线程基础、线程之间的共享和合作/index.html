@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    2.3k 字
+                    3.3k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      8 分钟
+                      12 分钟
                   </span>&nbsp;
                 
 
@@ -270,8 +270,29 @@
 <h4 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h4><p>volatile是<strong>最轻量的同步机制</strong>，volatile保证了不同线程对这个变量进行操作时的可见性，但是volatile不能保证数据在多个线程下同时写时的线程安全，即一个线程修改了某个变量的值，这新值对其他线程来说是立即可见的，但多个线程同时写时volatile不能保证线程安全。所以volatile最适用的场景为一写多读。</p>
 <h2 id="ThreadLocal辨析"><a href="#ThreadLocal辨析" class="headerlink" title="ThreadLocal辨析"></a>ThreadLocal辨析</h2><h3 id="与Synchronized的比较"><a href="#与Synchronized的比较" class="headerlink" title="与Synchronized的比较"></a>与Synchronized的比较</h3><p>ThreadLocal和Synchonized都用于解决多线程并发访问。可是ThreadLocal与synchronized有本质的差别。synchronized是利用锁的机制，使变量或代码块在某一时该仅仅能被一个线程访问。ThreadLocal为每个线程都提供了变量的副本，使得每个线程在某一时间访问到的并非同一个对象，这样就隔离了多个线程对数据的数据共享。</p>
 <p>jdbc事务是以一个connection的操作为整体，Web容器中，每一个完整的请求周期都会由一个线程处理，spring事务则借助了ThreadLocal类，将connection与当前线程绑定，对数据库所有的操作在一个connection中进行，从而保证事务的边界。</p>
-<h3 id="ThreadLocal的使用"><a href="#ThreadLocal的使用" class="headerlink" title="ThreadLocal的使用"></a>ThreadLocal的使用</h3><h3 id="实现解析"><a href="#实现解析" class="headerlink" title="实现解析"></a>实现解析</h3><p>![image-20191217154349198](/Users/zhaoguocheng/Library/Application Support/typora-user-images/image-20191217154349198.png)</p>
-<p>Thread中有一个ThreadLocalMap对象，ThreadLocalMap是ThreadLocal的静态内部类，ThreadLocal的get方法会获取当前Thread，然后调用getMap获取当前Thread的ThreadLocalMap。</p>
+<h3 id="ThreadLocal的使用"><a href="#ThreadLocal的使用" class="headerlink" title="ThreadLocal的使用"></a>ThreadLocal的使用</h3><p>ThreadLocal类接口很简单，只有4个方法</p>
+<ul>
+<li><p><strong>void set(Object value)</strong> 设置当前线程的线程局部变量的值。</p>
+</li>
+<li><p><strong>public Object get()</strong> 该方法返回当前线程所对应的线程局部变量。</p>
+</li>
+<li><p><strong>public void remove()</strong> 将当前线程局部变量的值删除，目的是为了减少内存的占用，该方法是JDK 5.0新增的方法。需要指出的是，当线程结束后，对应该线程的局部变量将自动被垃圾回收，所以显式调用该方法清除线程的局部变量并不是必须的操作，但它可以加快内存回收的速度。</p>
+</li>
+<li><p><strong>protected Object initialValue()</strong> 返回该线程局部变量的初始值，该方法是一个protected的方法，显然是为了让子类覆盖而设计的。这个方法是一个延迟调用方法，在线程第1次调用get()或set(Object)时才执行，并且仅执行1次。ThreadLocal中的缺省实现直接返回一个null。</p>
+</li>
+<li><p><strong>public final static ThreadLocal<String> RESOURCE = new ThreadLocal<String>();</strong>RESOURCE代表一个能够存放String类型的ThreadLocal对象。此时不论什么一个线程能够并发访问这个变量，对它进行写入、读取操作，都是线程安全的。</p>
+</li>
+</ul>
+<h3 id="实现解析"><a href="#实现解析" class="headerlink" title="实现解析"></a>实现解析</h3><p>![image-20191218004251146](/Users/zhaoguocheng/Library/Application Support/typora-user-images/image-20191218004251146.png)</p>
+<p>Thread中有一个ThreadLocalMap对象，ThreadLocalMap是ThreadLocal的静态内部类，存储的对象为Model类型的数组，Model类型的键为ThreadLocal对象，值为ThreadLocal对象的值，ThreadLocal的get方法会获取当前Thread，然后调用getMap()获取当前Thread的ThreadLocalMap，再从ThreadLocalMap中通过ThreadLocal找到对应的值。</p>
+<h3 id="引发的内存泄露分析"><a href="#引发的内存泄露分析" class="headerlink" title="引发的内存泄露分析"></a>引发的内存泄露分析</h3><h4 id="jvm中的引用类型"><a href="#jvm中的引用类型" class="headerlink" title="jvm中的引用类型"></a>jvm中的引用类型</h4><p><strong>强引用：</strong>常用的Object o = new Object()就是强引用，在线程中执行方法时， 方法会被打包为栈帧在栈上运行，方法中创建的对象实例存储在在堆上，而方法中对象的命名指向堆上的实例，这就是引用（类似于c++的指针）。当强引用存在时即栈上有一个引用指向堆中的对象实例，gc就不会回收该对象实例。</p>
+<p><strong>软引用：</strong>用来描述一些还有用但并非必需的对象。将要发生内存溢出时，会把软引用对象实例列入回收范围，进入第二次回收。如果回收之后还是没有足够的内存才会抛出内存溢出异常。在JDK 1.2之后，提供了SoftReference类来实现软引用。</p>
+<p><strong>弱饮用</strong>：用来描述非必需对象的，强度低于软引用，只要发生垃圾回收，弱引用指向的对象实例就一定会被回收掉，不管是否将要发生内存溢出。在JDK 1.2之后，提供了WeakReference类来实现弱引用。</p>
+<p><strong>虚引用</strong>：也称为幽灵引用或者幻影引用，它是最弱的一种引用关系。一个对象实例是否有虚引用的存在，完全不会对其生存时间构成影响，也无法通过虚引用来取得一个对象实例。为一个对象设置虚引用关联的唯一目的就是能在这个对象实例被收集器回收时收到一个系统通知。在JDK 1.2之后，提供了PhantomReference类来实现虚引用。</p>
+<h4 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h4><p>![image-20191218004219439](/Users/zhaoguocheng/Library/Application Support/typora-user-images/image-20191218004219439.png)</p>
+<p>Thread维护的ThreadLocalMap中的Model的key使用的是ThreadLocal的的弱引用 ，方法执行完出栈后，threadLocal变量会被置为null，此时强引用消失，没有强引用指向ThreadLocal实例，ThreadLocal会被gc回收即model中的key被回收，但Thread对ThreadLocalMap的应用是强引用，所以model中的value会依然存在，这就有可能造成内存泄漏。只有当前thread结束以后，thread就不会存在栈中，强引用断开，thread、threadLocalMap将全部被GC回收。最好的做法是不在需要使用threadLocal变量后，都调用它的remove()方法，清除数据。</p>
+<p>jdk提供了相应的补偿机制，ThreadLocal的get()，set()有可能会去调用expungeStaleEntry()，replaceStaleEntry()方法去清除key为null即ThreadLocal为null的value值。</p>
+<p>如果对key的引用为强引用的话，set()，get()方法中对Model的释放就一定不会触发，必然会造成内存泄漏。</p>
 
             <hr>
           </div>
