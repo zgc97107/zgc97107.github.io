@@ -30,5 +30,32 @@
   
   
   
+  <entry>
+    <title>summernote文本编辑器的使用</title>
+    <link href="undefined2019/08/26/summernote%E6%96%87%E6%9C%AC%E7%BC%96%E8%BE%91%E5%99%A8%E7%9A%84%E4%BD%BF%E7%94%A8/"/>
+    <url>2019/08/26/summernote%E6%96%87%E6%9C%AC%E7%BC%96%E8%BE%91%E5%99%A8%E7%9A%84%E4%BD%BF%E7%94%A8/</url>
+    
+    <content type="html"><![CDATA[<h1 id="summernote文本编辑器的使用"><a href="#summernote文本编辑器的使用" class="headerlink" title="summernote文本编辑器的使用"></a>summernote文本编辑器的使用</h1><p>summernote是一款Jquery文本编辑器的插件，本文只是简单的实现文本编辑及图片上传下载功能，更多api请参考<a href="https://summernote.org/getting-started/" target="_blank" rel="noopener">summernote官方文档</a></p><h3 id="引入"><a href="#引入" class="headerlink" title="引入"></a>引入</h3><p>summernote依赖于bootstrap和jquery所以也需要引入bootstrap和jquery</p><pre><code>&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/assets/css/lib/bootstrap.min.css&quot; &gt;&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;/css/summernote.css&quot;&gt;&lt;script src=&quot;/assets/js/lib/jquery.min.js&quot;&gt;&lt;/script&gt;&lt;script src=&quot;/assets/js/lib/bootstrap.min.js&quot;&gt;&lt;/script&gt;&lt;script src=&quot;/js/summernote.js&quot;&gt;&lt;/script&gt;</code></pre><h3 id="html"><a href="#html" class="headerlink" title="html"></a>html</h3><pre><code>&lt;div id=&quot;summernote&quot;&gt;&lt;/div&gt;</code></pre><h3 id="js"><a href="#js" class="headerlink" title="js"></a>js</h3><pre><code>// summernote的初始化方法$(&quot;#summernote&quot;).summernote({    placeholder: &quot;输入内容&quot;,    tabsize: 2,    height: 300,    lang: &#39;zh-CN&#39;,    focus: true,    callbacks: {        onImageUpload: function (files) {                // 上传图片            uploadFile(files[0]);        },        onMediaDelete: function (target){                // 删除图片            deleteFile(target);        }    }});// 上传文件function uploadFile(file){    var imgPath = sendFile(file);    $(&#39;#summernote&#39;).summernote(&#39;insertImage&#39;, imgPath);}// 用于summernote内容回显function getContent(){    var content = $(&#39;#summernote&#39;).summernote(&#39;code&#39;);    if (content==&quot;&lt;p&gt;&lt;br&gt;&lt;/p&gt;&quot;){        return &#39;&#39;;    }    return content;}// 获取summernote的内容function addContent(content){    $(&#39;#summernote&#39;).summernote(&#39;code&#39;, content);}// 上传图片至服务器function sendFile(file) {    if (file == null||file==undefined) {        return null;    }    var formData = new FormData();    formData.append(&quot;file&quot;, file);    console.log(formData);    var filePath = &quot;&quot;;    $.ajax({        url: &quot;/file/upload&quot;,        type: &quot;POST&quot;,        data: formData,        async: false,        contentType: false,        processData: false,        success: function (result) {            filePath = result.data.filePath;        }    });    return filePath;}// 删除服务器图片function deleteFile(filePath) {    $.ajax({        url: &quot;/file/delete&quot;,        type: &quot;POST&quot;,        data: {            &quot;filePath&quot;: filePath        },        success: function (result) {            console.log(result);        }    })}</code></pre><h3 id="java接口"><a href="#java接口" class="headerlink" title="java接口"></a>java接口</h3><pre><code>    @RequestMapping(&quot;/addImg&quot;)    public Map addImg(@RequestParam(&quot;file&quot;) MultipartFile file, HttpServletRequest request) throws IOException {        String fileName = file.getOriginalFilename();        fileName.split(&quot;.&quot;);        System.out.println(&quot;接收到文件:&quot; + fileName);        String fileType = fileName.substring(fileName.lastIndexOf(&quot;.&quot;));        String filePath = new File(&quot;&quot;).getCanonicalFile().getPath() + &quot;/static/images/&quot;;        filePath = filePath + UUID.randomUUID().toString() + fileType;        File dest = new File(filePath);        if (dest.getParentFile() != null) {            dest.getParentFile().mkdirs();        }        try {            file.transferTo(dest);        } catch (IOException e) {            log.warning(&quot;文件上传失败:&quot; + e);            return ResultMap.failed(&quot;文件上传失败&quot;);        }        String path = request.getScheme() + &quot;://&quot; + request.getServerName() + &quot;:&quot;                + request.getServerPort() + request.getContextPath() + &quot;/images/&quot; + dest.getName();        return ResultMap.success(path);    }    @RequestMapping(&quot;deleteImg&quot;)    public Map deleteImg(String imgSrc) {        String fileName = imgSrc.substring(imgSrc.lastIndexOf(&quot;/&quot;) + 1);        System.out.println(fileName);        String filePath = Thread.currentThread().getContextClassLoader().getResource(&quot;&quot;).getPath() + &quot;static/images/&quot;;        filePath = filePath + fileName;        File dest = new File(filePath);        return dest.delete() ? ResultMap.success() : ResultMap.failed();    }</code></pre>]]></content>
+    
+    
+    <categories>
+      
+      <category>html插件</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>html</tag>
+      
+      <tag>富文本编辑器</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
   
 </search>
