@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    4.1k 字
+                    4.8k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      14 分钟
+                      18 分钟
                   </span>&nbsp;
                 
 
@@ -296,7 +296,7 @@
 <p>Thread维护的ThreadLocalMap中的Model的key使用的是ThreadLocal的的弱引用 ，方法执行完出栈后，threadLocal变量会被置为null，此时强引用消失，没有强引用指向ThreadLocal实例，ThreadLocal会被gc回收即model中的key被回收，但Thread对ThreadLocalMap的应用是强引用，所以model中的value会依然存在，这就有可能造成内存泄漏。只有当前thread结束以后，thread就不会存在栈中，强引用断开，thread、threadLocalMap将全部被GC回收。最好的做法是不在需要使用threadLocal变量后，都调用它的remove()方法，清除数据。</p>
 <p>jdk提供了相应的补偿机制，ThreadLocal的get()，set()有可能会去调用expungeStaleEntry()，replaceStaleEntry()方法去清除key为null即ThreadLocal为null的value值。</p>
 <p>如果对key的引用为强引用的话，set()，get()方法中对Model的释放就一定不会触发，必然会造成内存泄漏。</p>
-<h3 id="ThreadLocal线程不安全"><a href="#ThreadLocal线程不安全" class="headerlink" title="ThreadLocal线程不安全"></a>ThreadLocal线程不安全</h3><p> 当多个线程的ThreadLocalMap中保存的是同一个对象实例的引用时，线程通过这个引用对对象实例做修改，也同样会影响了其他线程中引用的这个对象实例。显然要避免ThreadLocal线程不安全就应该让每个线程中的ThreadLocal都应该持有一个新的对象。</p>
+<h3 id="ThreadLocal线程不安全"><a href="#ThreadLocal线程不安全" class="headerlink" title="ThreadLocal线程不安全"></a>ThreadLocal线程不安全</h3><p> 当多个线程的ThreadLocalMap的value保存的是同一个对象实例的引用时，线程通过这个引用对对象实例做修改，也同样会影响了其他线程中引用的这个对象实例。显然要避免ThreadLocal线程不安全就应该让每个线程中的ThreadLocal都应该持有一个新的对象。</p>
 <h2 id="线程间的协作"><a href="#线程间的协作" class="headerlink" title="线程间的协作"></a>线程间的协作</h2><p>线程之间相互配合，完成某项工作，如一个线程对对象做了初步处理，另一个线程感知到初步处理完成，然后进行之后的再处理，整个过程开始于一个线程，而继续执行又是另一个线程。相对而言，前者是生产者，后者就是消费者，简单的办法是让消费者线程轮训检查变量是否符合预期，如果条件满足则退出循环，从而完成消费者的工作。却存在以下问题：</p>
 <ol>
 <li>及时性。</li>
@@ -325,7 +325,147 @@
     对象.notify()/notifyAll();
 }</code></pre><p>在调用wait()、notify()系列方法之前，线程必须要获得该对象的对象级别锁，即只能在同步方法或同步块中调用wait()、notify()。进入wait()方法后，当前线程释放锁，在从wait()返回前，线程与其他线程竞争重新获得锁。执行notify()系列方法的线程退出后，释放对象锁，其他线程就回去竞争对象锁。如果其中一个线程获得了该对象锁，它就会继续往下执行，在它退出synchronized代码块，释放锁后，其他的已经被唤醒的线程将会继续竞争获取该锁，一直进行下去，直到所有被唤醒的线程都执行完毕。</p>
 <h4 id="notify和notifyAll应该用谁"><a href="#notify和notifyAll应该用谁" class="headerlink" title="notify和notifyAll应该用谁"></a>notify和notifyAll应该用谁</h4><p>尽可能用notifyall()，谨慎使用notify()，因为notify()只会唤醒一个线程，我们无法确保被唤醒的这个线程一定就是需要唤醒的线程</p>
-<h2 id="线程间的共享-1"><a href="#线程间的共享-1" class="headerlink" title="线程间的共享"></a>线程间的共享</h2>
+<h4 id="等待超时模式实现-一个连接池"><a href="#等待超时模式实现-一个连接池" class="headerlink" title="等待超时模式实现 一个连接池"></a>等待超时模式实现 一个连接池</h4><p>DBPool.java</p>
+<pre><code>package cn.enjoyedu.ch1.pool;
+
+import java.sql.Connection;
+import java.util.LinkedList;
+
+/**
+ *类说明：连接池的实现
+ */
+public class DBPool {
+
+    /*容器，存放连接*/
+    private static LinkedList&lt;Connection&gt; pool = new LinkedList&lt;Connection&gt;();
+
+    /*限制了池的大小=20*/
+    public DBPool(int initialSize) {
+        if (initialSize &gt; 0) {
+            for (int i = 0; i &lt; initialSize; i++) {
+                pool.addLast(SqlConnectImpl.fetchConnection());
+            }
+        }
+    }
+
+    /*释放连接,通知其他的等待连接的线程*/
+    public void releaseConnection(Connection connection) {
+        if (connection != null) {
+            synchronized (pool){
+                pool.addLast(connection);
+                //通知其他等待连接的线程
+                pool.notifyAll();
+            }
+        }
+    }
+
+    /*获取*/
+    // 在mills内无法获取到连接，将会返回null 1S
+    public Connection fetchConnection(long mills)
+            throws InterruptedException {
+        synchronized (pool){
+            //永不超时
+            if(mills&lt;=0){
+                while(pool.isEmpty()){
+                    pool.wait();
+                }
+                return pool.removeFirst();
+            }else{
+                /*超时时刻*/
+                long future = System.currentTimeMillis()+mills;
+                /*等待时长*/
+                long remaining = mills;
+                while(pool.isEmpty()&amp;&amp;remaining&gt;0){
+                    pool.wait(remaining);
+                    /*唤醒一次，重新计算等待时长*/
+                    remaining = future-System.currentTimeMillis();
+                }
+                Connection connection = null;
+                if(!pool.isEmpty()){
+                    connection = pool.removeFirst();
+                }
+                return connection;
+            }
+        }
+
+    }
+}</code></pre><p>DBPoolTest.java</p>
+<pre><code>package cn.enjoyedu.ch1.pool;
+
+import java.sql.Connection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ *类说明：
+ */
+public class DBPoolTest {
+    static DBPool pool  = new DBPool(10);
+    // 控制器:控制main线程将会等待所有Woker结束后才能继续执行
+    static CountDownLatch end;
+
+    public static void main(String[] args) throws Exception {
+        // 线程数量
+        int threadCount = 50;
+        end = new CountDownLatch(threadCount);
+        int count = 20;//每个线程的操作次数
+        AtomicInteger got = new AtomicInteger();//计数器：统计可以拿到连接的线程
+        AtomicInteger notGot = new AtomicInteger();//计数器：统计没有拿到连接的线程
+        for (int i = 0; i &lt; threadCount; i++) {
+            Thread thread = new Thread(new Worker(count, got, notGot), 
+                    &quot;worker_&quot;+i);
+            thread.start();
+        }
+        end.await();// main线程在此处等待
+        System.out.println(&quot;总共尝试了: &quot; + (threadCount * count));
+        System.out.println(&quot;拿到连接的次数：  &quot; + got);
+        System.out.println(&quot;没能连接的次数： &quot; + notGot);
+    }
+
+    static class Worker implements Runnable {
+        int           count;
+        AtomicInteger got;
+        AtomicInteger notGot;
+
+        public Worker(int count, AtomicInteger got,
+                               AtomicInteger notGot) {
+            this.count = count;
+            this.got = got;
+            this.notGot = notGot;
+        }
+
+        public void run() {
+            while (count &gt; 0) {
+                try {
+                    // 从线程池中获取连接，如果1000ms内无法获取到，将会返回null
+                    // 分别统计连接获取的数量got和未获取到的数量notGot
+                    Connection connection = pool.fetchConnection(1000);
+                    if (connection != null) {
+                        try {
+                            connection.createStatement();
+//                            PreparedStatement preparedStatement
+//                                    = connection.prepareStatement(&quot;&quot;);
+//                            preparedStatement.execute();
+                            connection.commit();
+                        } finally {
+                            pool.releaseConnection(connection);
+                            got.incrementAndGet();
+                        }
+                    } else {
+                        notGot.incrementAndGet();
+                        System.out.println(Thread.currentThread().getName()
+                                +&quot;等待超时!&quot;);
+                    }
+                } catch (Exception ex) {
+                } finally {
+                    count--;
+                }
+            }
+            end.countDown();
+        }
+    }
+}</code></pre><h4 id="调用yield-，sleep-，wait-，notify-notifyAll-方法对锁的影响"><a href="#调用yield-，sleep-，wait-，notify-notifyAll-方法对锁的影响" class="headerlink" title="调用yield()，sleep()，wait()，notify()/notifyAll()方法对锁的影响"></a>调用yield()，sleep()，wait()，notify()/notifyAll()方法对锁的影响</h4><p>yield()调用之后会让出cpu执行权参入下次RR调度，sleep()在休眠结束之后需要继续执行之后的代码，所以yield()跟notify()都不会释放资源即不会释放锁，wait()方法被调用之后会释放当前线程所持有的锁进入阻塞态，等待唤醒，当线程被唤醒之后会去竞争锁，竞争到锁之后才会去继续执行。notify()也不会释放锁，而是等notify()/notifyAll()所在的同步代码块执行完之后才会释放锁，所以notify()/notifyAll()通常在同步代码块的最后一行。</p>
+
             <hr>
           </div>
           <br>
