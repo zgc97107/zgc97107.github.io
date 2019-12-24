@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    4.1k 字
+                    4.9k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      17 分钟
+                      21 分钟
                   </span>&nbsp;
                 
 
@@ -377,7 +377,7 @@
 
 <h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>实现最大的并行性：有时我们想同时启动多个线程，实现最大程度的并行性。例如，我们想测试一个单例类。如果我们创建一个初始计数为1的CountDownLatch，并让所有线程都在这个锁上等待，那么我们可以很轻松地完成测试。我们只需调用 一次countDown()方法就可以让所有的等待线程同时恢复执行。</p>
 <p>开始执行前等待n个线程完成各自任务：例如应用程序启动类要确保在处理用户请求前，所有N个外部系统已经启动和运行了，例如处理excel中多个表单。</p>
-<h3 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h3><pre><code>/**
+<h3 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h3><pre><code>/**
  *类说明：演示CountDownLatch用法，
  * 共5个初始化子线程，6个闭锁扣除点，扣除完毕后，主线程和业务线程才能继续执行
  */
@@ -444,7 +444,7 @@ public class UseCountDownLatch {
 <img src="/2019/12/20/%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%B9%B6%E5%8F%91%E5%B7%A5%E5%85%B7%E7%B1%BB/pic12.png" srcset="/img/loading.gif" class="">
 
 <h3 id="应用场景-1"><a href="#应用场景-1" class="headerlink" title="应用场景"></a>应用场景</h3><p>CyclicBarrier可以用于多线程计算数据，最后合并计算结果的场景。</p>
-<h3 id="实战-1"><a href="#实战-1" class="headerlink" title="实战"></a>实战</h3><pre><code>/**
+<h3 id="用法-1"><a href="#用法-1" class="headerlink" title="用法"></a>用法</h3><pre><code>/**
  * 类说明：演示CyclicBarrier用法,共4个子线程，他们全部完成工作后，交出自己结果，
  * 再被统一释放去做自己的事情，而交出的结果被另外的线程拿来拼接字符串
  */
@@ -657,6 +657,88 @@ public class DBPoolNoUseless {
         for (int i = 0; i &lt; 50; i++) {
             Thread thread = new BusiThread();
             thread.start();
+        }
+    }
+}</code></pre><h1 id="Exchange"><a href="#Exchange" class="headerlink" title="Exchange"></a>Exchange</h1><p>Exchanger（交换者）是一个用于线程间协作的工具类。Exchanger用于进行线程间的数据交换。它提供一个同步点，在这个同步点，两个线程可以交换彼此的数据。这两个线程通过exchange方法交换数据，如果第一个线程先执行exchange()方法，它会一直等待第二个线程也执行exchange()方法，当两个线程都到达同步点时，这两个线程就可以交换数据，将本线程生产出来的数据传递给对方。交换过程由jdk保证线程安全。</p>
+<img src="/2019/12/20/%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%B9%B6%E5%8F%91%E5%B7%A5%E5%85%B7%E7%B1%BB/pic14.png" srcset="/img/loading.gif" class="">
+
+<h3 id="用法-2"><a href="#用法-2" class="headerlink" title="用法"></a>用法</h3><pre><code>/**
+ * 类说明：演示CyclicExchange用法
+ */
+public class UseExchange {
+    private static final Exchanger&lt;Set&lt;String&gt;&gt; exchange = new Exchanger&lt;Set&lt;String&gt;&gt;();
+
+    public static void main(String[] args) {
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Set&lt;String&gt; setA = new HashSet&lt;String&gt;();//存放数据的容器
+                try {
+                    setA.add(&quot;A&quot;);
+                    setA = exchange.exchange(setA);//交换set
+                    System.out.println(&quot;A:&quot; + setA);
+                    /*处理交换后的数据*/
+                } catch (InterruptedException e) {
+                }
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Set&lt;String&gt; setB = new HashSet&lt;String&gt;();//存放数据的容器
+                try {
+                    setB.add(&quot;B&quot;);
+                    setB = exchange.exchange(setB);//交换set
+                    System.out.println(&quot;B:&quot; + setB);
+                    /*处理交换后的数据*/
+                } catch (InterruptedException e) {
+                }
+            }
+        }).start();
+
+    }
+}</code></pre><h1 id="Callable、Future和FutureTask"><a href="#Callable、Future和FutureTask" class="headerlink" title="Callable、Future和FutureTask"></a>Callable、Future和FutureTask</h1><p>Runnable是一个接口，在它里面只声明了一个run()方法，由于run()方法返回值为void类型，所以在执行完任务之后无法返回任何结果。</p>
+<p>Callable位于java.util.concurrent包下，它也是一个接口，在它里面也只声明了一个call()方法，这是一个泛型接口，call()函数返回的类型就是传递进来的V类型。 但Callable无法直接交给Thread执行，这时就需要一个类来包装Callable使其能够被Thread类执行。</p>
+<p>RunnableFuture继承了Runnable接口和Future接口所以RunnableFuture接口可以被Thread执行，FutureTask类实现了RunnableFuture接口，所以它既可以作为Runnable被线程执行，又可以作为Future得到Callable的返回值。</p>
+<p>Future就是对于具体的Runnable或者Callable任务的执行结果进行取消、查询是否完成、获取结果。必要时可以通过get方法获取执行结果，该方法会阻塞直到任务返回结果。但Future只是一个接口，所以是无法直接用来创建对象使用的，就有了上面的FutureTask。</p>
+<img src="/2019/12/20/%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%B9%B6%E5%8F%91%E5%B7%A5%E5%85%B7%E7%B1%BB/pic14.png" srcset="/img/loading.gif" class="">
+
+<p>因此我们通过一个线程运行Callable，但是Thread不支持构造方法中传递Callable的实例，所以我们需要通过FutureTask把一个Callable包装成Runnable，然后再通过这个FutureTask拿到Callable运行后的返回值。</p>
+<h3 id="用法-3"><a href="#用法-3" class="headerlink" title="用法"></a>用法</h3><pre><code>/**
+ * 类说明：演示Future等的使用
+ */
+public class UseFuture {
+    /*实现Callable接口，允许有返回值*/
+    private static class UseCallable implements Callable&lt;Integer&gt; {
+        private int sum;
+
+        @Override
+        public Integer call() throws Exception {
+            System.out.println(&quot;Callable子线程开始计算！&quot;);
+            for (int i = 0; i &lt; 500; i++) {
+                if (Thread.currentThread().isInterrupted()) {
+                    System.out.println(&quot;Callable子线程计算任务中断！&quot;);
+                    return null;
+                }
+                sum = sum + i;
+            }
+            System.out.println(&quot;Callable子线程计算结束！结果为: &quot; + sum);
+            return sum;
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
+        UseCallable useCallable = new UseCallable();
+        FutureTask&lt;Integer&gt; futureTask = new FutureTask&lt;&gt;(useCallable);
+        new Thread(futureTask).start();
+        Random r = new Random();
+        if (r.nextInt(100) &gt; 50) {
+            System.out.println(&quot;result = &quot; + futureTask.get());
+        } else {
+            System.out.println(&quot;cancel&quot;);
+            futureTask.cancel(true);
         }
     }
 }</code></pre>
