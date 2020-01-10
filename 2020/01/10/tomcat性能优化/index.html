@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    1.5k 字
+                    2.3k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      6 分钟
+                      10 分钟
                   </span>&nbsp;
                 
 
@@ -185,13 +185,13 @@ connectionTimeout=&quot;20000&quot; redirectPort=&quot;8443&quot; /&gt;</code></
 connectionTimeout=&quot;20000&quot; redirectPort=&quot;8443&quot; /&gt;</code></pre><p>由于tomcat有多个connector，所以tomcat线程的配置可以支持多个connector共享一个线程池。</p>
 <pre><code>&lt;Executor name=&quot;tomcatThreadPool&quot; namePrefix=&quot;catalina-exec-&quot; maxThreads=&quot;500&quot; minSpareThreads=&quot;20&quot; maxIdleTime=&quot;60000&quot; /&gt;</code></pre><p>修改Connector节点，增加executor属性设置为线程池的名字</p>
 <pre><code>&lt;Connector executor=&quot;tomcatThreadPool&quot; port=&quot;80&quot; protocol=&quot;HTTP/1.1&quot;  connectionTimeout=&quot;60000&quot; keepAliveTimeout=&quot;15000&quot; maxKeepAliveRequests=&quot;1&quot;  redirectPort=&quot;443&quot; /&gt;</code></pre><p>可以多个connector公用1个线程池，所以ajp connector也同样可以设置使用tomcatThreadPool线程池。</p>
-<h2 id="Tomcat的连接器优化"><a href="#Tomcat的连接器优化" class="headerlink" title="Tomcat的连接器优化"></a>Tomcat的连接器优化</h2><p>Tomcat是一个小型的轻量级应用服务器，Tomcat Connector(Tomcat连接器)有bio、nio、apr三种运行模式</p>
+<h2 id="Tomcat的连接器优化"><a href="#Tomcat的连接器优化" class="headerlink" title="Tomcat的连接器优化"></a>Tomcat的连接器优化</h2><p>Tomcat Connector(Tomcat连接器)有bio、nio、apr三种运行模式</p>
 <h3 id="BIO"><a href="#BIO" class="headerlink" title="BIO"></a>BIO</h3><p>bio（blocking I/O，阻塞式I/O操作），表示Tomcat使用的是传统的Java I/O操作(即java.io包及其子包)。<br><strong>默认的模式，性能最差，没有经过任何优化处理和支持。</strong></p>
 <h3 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h3><p>nio(non-blocking I/O，非阻塞式I/O操作)，也被看成是<code>non-blocking I/O</code>的缩写，是Java SE 1.4及后续版本提供的一种新的I/O操作方式(即java.nio包及其子包)。Java nio是一个基于缓冲区、并能提供非阻塞I/O操作的Java API。拥有比传统I/O操作(bio)更好的并发运行性能。 tomcat在8.0之后已经将nio作为默认运行模式，在8.0之前要让tomcat以nio方式来运行也比较简单，只需要修改tomcat目录下的/conf/servcer.xml中的protocol设置为<code>org.apache.coyote.http11.Http11NioProtocol</code>即可</p>
 <pre><code>&lt;Connector port=&quot;8080&quot; protocol=&quot;org.apache.coyote.http11.Http11NioProtocol&quot;
 connectionTimeout=&quot;20000&quot;
 redirectPort=&quot;8443&quot; /&gt;</code></pre><p>点击tomcat管理页面的server status之后就可以看到当前的运行模式</p>
-<img src="/2020/01/10/tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/img/loading.gif" class="">
+<img src="/2020/01/10/Tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/img/loading.gif" class="">
 
 <h3 id="APR"><a href="#APR" class="headerlink" title="APR"></a>APR</h3><p>apr(Apache Portable Runtime/Apache可移植运行时库)，Tomcat将以JNI(Java Native Interface)的形式调用Apache HTTP服务器的核心动态链接库来处理文件读取或网络传输操作，从而大大地提高Tomcat对静态文件的处理性能。使用操作系统的部分本地操作，解决异步的IO问题，大幅度的提高性能。 Tomcat apr也是在Tomcat上运行高并发应用的首选模式。</p>
 <p>Tomcat apr运行模式的配置是三种运行模式之中相对比较麻烦的一种。据官方文档所述，Tomcat apr需要以下三个组件的支持：</p>
@@ -203,7 +203,7 @@ redirectPort=&quot;8443&quot; /&gt;</code></pre><p>点击tomcat管理页面的se
 <h3 id="centos7下tomcat8开启APR步骤"><a href="#centos7下tomcat8开启APR步骤" class="headerlink" title="centos7下tomcat8开启APR步骤"></a>centos7下tomcat8开启APR步骤</h3><ol>
 <li>下载APR组件依赖</li>
 </ol>
-<img src="/2020/01/10/tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/img/loading.gif" class="">
+<img src="/2020/01/10/Tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/img/loading.gif" class="">
 
 <ol start="2">
 <li>安装apr</li>
@@ -256,7 +256,134 @@ Aug 04, 2015 10:33:45 PM org.apache.coyote.AbstractProtocol init</code></pre><h2
 <h2 id="设置session过期时间"><a href="#设置session过期时间" class="headerlink" title="设置session过期时间"></a>设置session过期时间</h2><p>在tomcat目录下的conf\web.xml中通过参数指定，单位为分钟。</p>
 <pre><code>&lt;session-config&gt;   
     &lt;session-timeout&gt;180&lt;/session-timeout&gt;     
-&lt;/session-config&gt;</code></pre>
+&lt;/session-config&gt;</code></pre><h2 id="Maven项目远程部署到Tomcat"><a href="#Maven项目远程部署到Tomcat" class="headerlink" title="Maven项目远程部署到Tomcat"></a>Maven项目远程部署到Tomcat</h2><p>其实本节内容并不属于tomcat性能调优，但内容较少不足以再开一篇文章，凑合凑合塞到这吧。</p>
+<ol>
+<li>在tomcat根目录下的/conf/tomcat-users.xml添加用户</li>
+</ol>
+<pre><code>&lt;tomcat-users version=&quot;1.0&quot; xmlns=&quot;http://tomcat.apache.org/xml&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:schemaLocation=&quot;http://tomcat.apache.org/xml tomcat-users.xsd&quot;&gt;
+&lt;role rolename=&quot;manager-gui&quot; /&gt;
+&lt;role rolename=&quot;manager-script&quot; /&gt;
+&lt;role rolename=&quot;admin-gui&quot; /&gt;
+&lt;role rolename=&quot;admin-script&quot; /&gt;
+&lt;user username=&quot;admin&quot; password=&quot;tomcat&quot; roles=&quot;manager-gui,manager-script,admin-gui,admin-script&quot; /&gt;
+&lt;/tomcat-users&gt;</code></pre><ol start="2">
+<li>pom文件中加入maven插件</li>
+</ol>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.tomcat.maven&lt;/groupId&gt;
+    &lt;artifactId&gt;tomcat7-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.2&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;charset&gt;utf-8&lt;/charset&gt;
+        &lt;update&gt;true&lt;/update&gt;
+        &lt;url&gt;http://192.168.0.13:9080/manager/text&lt;/url&gt;
+        &lt;mode&gt;war&lt;/mode&gt;
+        &lt;username&gt;admin&lt;/username&gt;
+        &lt;password&gt;tomcat&lt;/password&gt;
+        &lt;path&gt;/MintelJunior&lt;/path&gt;
+    &lt;/configuration&gt;
+&lt;/plugin&gt;</code></pre><p>tomcat7-maven-plugin是很久以前的插件版本，默认支持到Tomcat7，但是对于目前最新的Tomcat9同样可以使用该插件</p>
+<p>官方介绍文档为：<code>http://tomcat.apache.org/maven-plugin-2.1/index.html</code></p>
+<p>参数说明：</p>
+<p>以下参数必选，但是可以在pom中空缺，空缺时将采用默认值</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>描述</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>charset</td>
+<td>在与Tomcat Manager通信是的URL编 码字符集</td>
+<td>ISO-8859-1</td>
+</tr>
+<tr>
+<td>mode</td>
+<td>部署的模式，值可为：war,context,both</td>
+<td>war</td>
+</tr>
+<tr>
+<td>path</td>
+<td>应用程序运行的上下文路径，必须以’/‘开始</td>
+<td>/${project.artifactId}</td>
+</tr>
+<tr>
+<td>update</td>
+<td>当部署已存在的应用时，是否自动 undeploy该应用</td>
+<td>false</td>
+</tr>
+<tr>
+<td>url</td>
+<td>Tomcat Manager实例使用的全路径</td>
+<td>tomcat的根路径/manager/text</td>
+</tr>
+<tr>
+<td>warFile</td>
+<td>部署warFile的路径</td>
+<td>${project.build.directory} ${project.build.finalName}.war</td>
+</tr>
+</tbody></table>
+<p>对于个性化的需求，tomcat7插件提供了可配置的参数</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>contextFile</td>
+<td>Tomcat的context的XML路径，对于mode=war不适用，默认为 ${project.build.directory}/${project.build.finalName}/ META-INF/context.xml</td>
+</tr>
+<tr>
+<td>ignorePackaging</td>
+<td>如果设置为true，忽略类型不是war的项目</td>
+</tr>
+<tr>
+<td>username</td>
+<td>部署到Tomcat的username</td>
+</tr>
+<tr>
+<td>password</td>
+<td>部署到Tomcat的password</td>
+</tr>
+<tr>
+<td>server</td>
+<td>指定Maven的setting.xml中配置的server id用于Tomcat认证</td>
+</tr>
+<tr>
+<td>tag</td>
+<td>应用程序在Tomcat中使用的标签的名字</td>
+</tr>
+</tbody></table>
+<p>还可以在maven目录中的conf/setting.xml中添加tomcat的用户名和密码</p>
+<pre><code>&lt;servers&gt;
+    &lt;server&gt;
+        &lt;id&gt;tomcatServer&lt;/id&gt;
+        &lt;username&gt;username&lt;/username&gt;
+        &lt;password&gt;password&lt;/password&gt;
+    &lt;/server&gt;
+&lt;/servers&gt;</code></pre><p>之后在pom文件中指定server的id即可，不在需要用户名密码</p>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.tomcat.maven&lt;/groupId&gt;
+    &lt;artifactId&gt;tomcat7-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.2&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;url&gt;http://{yourIP}:8080/manager/text&lt;/url&gt;
+        &lt;server&gt;tomcatServer&lt;/server&gt;
+        &lt;update&gt;true&lt;/update&gt;
+        &lt;path&gt;/${project.artifactId}&lt;/path&gt;
+    &lt;/configuration&gt;        
+&lt;/plugin&gt;</code></pre><ol start="3">
+<li>idea部署项目</li>
+</ol>
+<p>idea可以直接在右侧边栏中的plugins中找到tomcat7，第一次部署时选择deploy之后选择redeploy就可以了</p>
+<p>mvn命令</p>
+<pre><code>mvn tomcat7:deploy
+mvn tomcat7:redeploy
+mvn tomcat7:undeploy</code></pre>
             <hr>
           </div>
           <br>
