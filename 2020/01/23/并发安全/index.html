@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    5.6k 字
+                    6.1k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      21 分钟
+                      23 分钟
                   </span>&nbsp;
                 
 
@@ -594,7 +594,7 @@ public class SafeOperateToo implements ITransfer {
 <p>对服务器应用来说：多少（可伸缩性，吞吐量）这个方面比多快更受重视。</p>
 <p>我们做应用的时候：</p>
 <ol>
-<li><p>先保证程序正确，确实达不到要求的时候，再提高速度。（黄金原则）</p>
+<li><p>先保证程序正确，确实达不到要求的时候，再提高速度（黄金原则）。</p>
 </li>
 <li><p>一定要以测试为基准。</p>
 </li>
@@ -619,6 +619,51 @@ public class SafeOperateToo implements ITransfer {
 <li>用自旋CAS</li>
 <li>使用系统的并发容器</li>
 </ol>
+<h2 id="线程安全的单例模式"><a href="#线程安全的单例模式" class="headerlink" title="线程安全的单例模式"></a>线程安全的单例模式</h2><h3 id="双重检查锁定"><a href="#双重检查锁定" class="headerlink" title="双重检查锁定"></a>双重检查锁定</h3><pre><code>/**
+ * 懒汉式-双重检查
+ */
+public class SingleDcl {
+    private volatile static SingleDcl singleDcl;
+    //私有化
+    private SingleDcl(){
+    }
+
+    public static SingleDcl getInstance(){
+        if (singleDcl == null){ //第一次检查，不加锁
+            System.out.println(Thread.currentThread()+&quot; is null&quot;);
+            synchronized(SingleDcl.class){ //加锁
+                if (singleDcl == null){ //第二次检查，加锁情况下
+                    System.out.println(Thread.currentThread()+&quot; is null&quot;);
+                    singleDcl = new SingleDcl();
+                }
+            }
+        }
+        return singleDcl;
+    }
+}</code></pre><p>仅仅是双重检查无法保证多线程下使用的安全性，因为在创建对象时为内存中分配空间、对象在内存空间的初始化、把这个内存空间的地址赋值给引用这三个步骤是可能被重新排序的，只要引用指向了内存空间的地址判断条件singleDc1==null就会不成立，而此时对象很可能还没有完成初始化，所以还需要加入volatile关键字保证指令不会被重排序。</p>
+<h3 id="饿汉式"><a href="#饿汉式" class="headerlink" title="饿汉式"></a>饿汉式</h3><pre><code>/**
+ * 饿汉式
+ */
+public class SingleEHan {
+    private SingleEHan(){}
+    private static SingleEHan singleDcl = new SingleEHan();
+
+}</code></pre><p>JVM对类的加载和类初始化，由虚拟机保证线程安全。多个线程同时加载一个类时会为其加锁保证只有一个类加载成功，所以饿汉式单例模式是线程安全的。</p>
+<h3 id="延迟初始化占位类模式"><a href="#延迟初始化占位类模式" class="headerlink" title="延迟初始化占位类模式"></a>延迟初始化占位类模式</h3><pre><code>/**
+ * 懒汉式-延迟初始化占位类模式
+ */
+public class SingleInit {
+    private SingleInit(){}
+
+    private static class InstanceHolder{
+        private static SingleInit instance = new SingleInit();
+    }
+
+    public static SingleInit getInstance(){
+        return InstanceHolder.instance;
+    }
+
+}</code></pre><p>延迟初始化占位类模式其实也是利用JVM类加载的线程安全，在子类中完成实例的初始化，如果在其他地方没有对子类的引用，子类的初始化将只在首次获取实例时完成，以此来解决饿汉式单例模式资源占用的问题。延迟占位模式也可以用在多线程下实例域的延迟赋值。</p>
 
             <hr>
           </div>
