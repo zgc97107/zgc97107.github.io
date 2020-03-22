@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>JVM性能优化 ~ zgcheng&#39;s blog</title>
+
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+<link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+<link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng&#39;s blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/default.png')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期六, 三月 21日 2020, 12:16 中午
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    3.9k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      14 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <h2 id="内存溢出"><a href="#内存溢出" class="headerlink" title="内存溢出"></a>内存溢出</h2><p>程序在申请内存时，没有足够的内存空间就会发生内存溢出。</p>
+<p>内存溢出的几种方式：</p>
+<ul>
+<li><p><strong>栈溢出</strong>：方法死循环递归调用即线程内的栈空间不足：<strong>StackOverflowError</strong>，不断建立线程即JVM栈空间不足：<strong>StackOutOfMemoryError</strong></p>
+</li>
+<li><p><strong>堆溢出</strong>：不断创建对象导致垃圾回收线程占用了超过98%的资源，但是回收效率小于2%时：<strong>OutOfMemoryError</strong>:GC overhead limit exceeded，分配对象大于最大堆的大小：<strong>OutOfMemoryError</strong>:Java heap space</p>
+</li>
+<li><p><strong>方法区溢出</strong>：由于方法区GC效率低，动态语言、CGLB、JSP、OSGI会加载在方法区，如果方法区大小不足，会造成方法区溢出。</p>
+</li>
+<li><p><strong>直接内存溢出</strong>：分配的本机直接内存（NIO使用的就是本机直接内存）大小大于JVM对直接内存的限制：<strong>OutOfMemoryError</strong>:Direct buffer memory</p>
+</li>
+</ul>
+<h2 id="内存泄漏"><a href="#内存泄漏" class="headerlink" title="内存泄漏"></a>内存泄漏</h2><p>程序在申请内存后不再使用，但由于与GC Roots仍存在关联，在垃圾回收时无法释放已申请的内存空间，导致内存长期被占用。</p>
+<p>内存泄露的几种原因：</p>
+<ul>
+<li><p><strong>长生命周期的对象持有短生命周期对象的引用</strong>：例如将ArrayList设置为静态变量，则容器中的对象在程序结束之前将不能被释放，从而造成内存泄漏</p>
+</li>
+<li><p><strong>连接未关闭</strong>：如数据库连接、网络连接和IO连接等，只有连接被关闭后，垃圾回收器才会回收对应的对象。</p>
+</li>
+<li><p><strong>变量作用域不合理</strong>：例如：变量的定义的作用范围大于其使用范围、没有及时地把对象设置为null等</p>
+</li>
+<li><p><strong>内部类持有外部类</strong>：Java的非静态内部类的创建方式，会隐式地持有外部类的引用，而且默认情况下这个引用是强引用，如果内部类的生命周期长于外部类的生命周期，程序很容易就产生内存泄漏（主观上垃圾回收器会回收掉外部类的实例，但由于内部类持有外部类的引用，实际上外部类并没有被回收）</p>
+<p>解决方法：内部类尽量定义为静态，或者在内部类的内部显式持有一个外部类的软引用(或弱引用)，并通过构造方法的方式传递进来，在内部类的使用过程中，先判断一下外部类是否被回收；</p>
+</li>
+<li><p><strong>Hash值改变</strong>：在集合中，如果修改了对象中的参与计算哈希值的字段，会导致无法从集合中单独删除当前对象，造成内存泄露</p>
+</li>
+</ul>
+<h2 id="内存泄漏和内存溢出辨析"><a href="#内存泄漏和内存溢出辨析" class="headerlink" title="内存泄漏和内存溢出辨析"></a>内存泄漏和内存溢出辨析</h2><ul>
+<li><p><strong>产生原因</strong>：内存溢出是由于内存空间不足导致，而且内存泄漏是由于应该释放的对象没有释放，导致可使用内存的缩小。</p>
+</li>
+<li><p><strong>如何避免：</strong>内存溢出可以通过检查代码问题以及调整虚拟机参数设置足够的空间来解决，内存泄漏一定是代码的问题，所以只能通过检查代码问题来解决，很多情况下内存溢出是内存泄漏导致的。</p>
+</li>
+</ul>
+<h2 id="MAT"><a href="#MAT" class="headerlink" title="MAT"></a>MAT</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>MAT是Eclipse Memory Analyzer的简称，是一个快速且功能丰富的Java堆分析器，可以用于查找内存泄露以及查看内存消耗情况。使用Memory Analyzer分析具有数亿个对象的高效堆转储，快速计算对象的保留大小，查看谁阻止垃圾收集器收集对象，运行报告以自动提取泄漏嫌疑者。可以在<a href="http://www.eclipse.org/mat/下载并使用MAT。" target="_blank" rel="noopener">http://www.eclipse.org/mat/下载并使用MAT。</a></p>
+<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><p>模拟内存溢出错误并导出dump文件</p>
+<pre><code>public class OOMTest {
+    public static void main(String[] args) {
+        List&lt;Object&gt; list = new LinkedList&lt;&gt;();
+        int i = 0;
+        while (true) {
+            i++;
+            if (i % 10000 == 0) {
+                System.out.println(&quot;i=&quot; + i);
+            }
+            list.add(new Object());
+        }
+
+    }
+}</code></pre><p>加入vm参数-Xms30m -Xmx30m  -XX:+PrintGCDetails -XX:+HeapDumpOnOutOfMemoryError</p>
+<p>栈溢出时会在项目目录下生成*.hprof文件</p>
+<p>使用MAT打开文件 File-&gt;Open Heap Dump-&gt;Leak Suspects Report-&gt;Finash</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/img/loading.gif" class="">
+
+<p>在<strong>Problem Supect</strong>中显示主线程占用了97.88%的空间，点击Details后可以看到更加具体的分析。</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/img/loading.gif" class="">
+
+<p>其中</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic3.png" srcset="/img/loading.gif" class="">
+
+<p><strong>浅堆</strong>（Shallow Heap）：分配一个对象所消耗的内存</p>
+<p><strong>深堆</strong>（Retained Heap）：深堆大小是对象直接或间接引用到的所有对象的浅堆大小之，即GC回收时真实可回收的内存大小。</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic4.png" srcset="/img/loading.gif" class="">
+
+<p>例如：对象A引用了C和D，对象B引用了E。那么对象A的浅堆大小只是A本身，而如果A被回收，那么C和D都会被回收(可达性分析算法)，所以A的深堆大小为A+C+D之和，同时由于对象E还可以通过对象B访问到，因此不在对象A的深堆范围内。</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic5.png" srcset="/img/loading.gif" class="">
+
+<p><strong>incoming</strong>：当前对象引用的对象</p>
+<p><strong>outgoing</strong>：当前对象在哪些对象中被引用</p>
+<h2 id="JVM工具"><a href="#JVM工具" class="headerlink" title="JVM工具"></a>JVM工具</h2><h3 id="命令行工具"><a href="#命令行工具" class="headerlink" title="命令行工具"></a>命令行工具</h3><ul>
+<li><p><strong>jps</strong></p>
+<p>列出当前机器上正在运行的虚拟机进程，JPS从操作系统的临时目录上去找。</p>
+<p>-q:仅仅显示进程号</p>
+<p>-m:输出主函数传入的参数</p>
+<p>-l:输出应用程序主类完整package名称或jar完整名称</p>
+<p>-v:列出jvm参数</p>
+</li>
+<li><p><strong>jstat</strong></p>
+<p>是用于监视虚拟机各种运行状态信息的命令行工具。它可以显示本地或者远程虚拟机进程中的类装载、内存、垃圾收集、JIT编译等运行数据，在没有GUI图形界面，只提供了纯文本控制台环境的服务器上，它将是运行期定位虚拟机性能问题的首选工具。</p>
+<p>例如：jstat-gc 13616 250 10:每250毫秒查询一次进程13616垃圾收集状况，一共查询10次</p>
+<p>-class (类加载器) </p>
+<p>-compiler (JIT) </p>
+<p>-gc (GC堆状态) </p>
+<p>-gccapacity (各区大小) </p>
+<p>-gccause (最近一次GC统计和原因) </p>
+<p>-gcnew (新区统计)</p>
+<p>-gcnewcapacity (新区大小)</p>
+<p>-gcold (老区统计)</p>
+<p>-gcoldcapacity (老区大小)</p>
+<p>-gcpermcapacity (永久区大小)</p>
+<p>-gcutil (GC统计汇总)</p>
+<p>-printcompilation (HotSpot编译统计)</p>
+</li>
+<li><p><strong>jinfo</strong> </p>
+<p>查看和修改虚拟机的参数。</p>
+<p>jinfo –sysprops 可以查看由System.getProperties()取得的参数</p>
+<p>jinfo –flag 未被显式指定的参数的系统默认值</p>
+<p>jinfo –flags（注意s）显示虚拟机的参数</p>
+<p>jinfo –flag +[参数] 增加参数</p>
+<p>由于虚拟机的限制，只有输入java -XX:+PrintFlagsFinal –version命令后，查询结果最后一列为manageable的参数可以增加。</p>
+<p>jinfo –flag -[参数] 去除参数</p>
+</li>
+<li><p><strong>jmap</strong></p>
+<p>用于生成堆转储快照（一般称为heapdump或dump文件）。jmap的作用并不仅仅是为了获取dump文件，它还可以查询finalize执行队列、Java堆和永久代的详细信息，如空间使用率、当前用的是哪种收集器等。和jinfo命令一样，jmap有不少功能在Windows平台下都是受限的，除了生成dump文件的-dump选项和用于查看每个类的实例、空间占用统计的-histo选项在所有操作系统都提供之外，其余选项都只能在Linux/Solaris下使用。</p>
+<p>jmap -dump:live,format=b,file=heap.bin &lt;pid&gt;</p>
+<p>Sun JDK提供jhat（JVM Heap Analysis Tool）命令与jmap搭配使用，来分析jmap生成的堆转储快照。</p>
+</li>
+<li><p><strong>jhat</strong></p>
+<p>jhat dump文件名</p>
+<p>使用jhat可以在服务器上生成堆转储文件分析（一般不推荐，毕竟占用服务器的资源，比如一个文件就有1个G）</p>
+<p>后屏幕显示“Server is ready.”的提示后，用户在浏览器中键入<a href="http://localhost:7000/就可以访问详情。" target="_blank" rel="noopener">http://localhost:7000/就可以访问详情。</a></p>
+</li>
+<li><p><strong>jstack</strong></p>
+<p>（Stack Trace for Java）命令用于生成虚拟机当前时刻的线程快照。线程快照就是当前虚拟机内每一条线程正在执行的方法堆栈的集合，生成线程快照的主要目的是定位线程出现长时间停顿的原因，如线程间死锁、死循环、请求外部资源导致的长时间等待等都是导致线程长时间停顿的常见原因。</p>
+<p>在代码中可以用java.lang.Thread类的getAllStackTraces（）方法用于获取虚拟机中所有线程的StackTraceElement对象。使用这个方法可以通过简单的几行代码就完成jstack的大部分功能，在实际项目中不妨调用这个方法做个管理员页面，可以随时使用浏览器来查看线程堆栈。</p>
+</li>
+</ul>
+<h3 id="可视化工具"><a href="#可视化工具" class="headerlink" title="可视化工具"></a>可视化工具</h3><p>JMX（Java Management Extensions，即Java管理扩展）是一个为应用程序、设备、系统等<a href="https://baike.baidu.com/item/%E6%A4%8D%E5%85%A5/7958584" target="_blank" rel="noopener">植入</a>管理功能的框架。JMX可以跨越一系列异构操作系统平台、<a href="https://baike.baidu.com/item/%E7%B3%BB%E7%BB%9F%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/6842760" target="_blank" rel="noopener">系统体系结构</a>和<a href="https://baike.baidu.com/item/%E7%BD%91%E7%BB%9C%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE/332131" target="_blank" rel="noopener">网络传输协议</a>，灵活的开发无缝集成的系统、网络和服务管理应用。</p>
+<p><strong>远程连接生产环境需要在启动参数中增加：</strong></p>
+<p>-Djava.rmi.server.hostname=…..</p>
+<p>-Dcom.sun.management.jmxremote</p>
+<p>-Dcom.sun.management.jmxremote.port=8888</p>
+<p>-Dcom.sun.management.jmxremote.authenticate=false</p>
+<p>-Dcom.sun.management.jmxremote.ssl=false</p>
+<h4 id="Jconsole"><a href="#Jconsole" class="headerlink" title="Jconsole"></a>Jconsole</h4><p>java监视与管理控制台</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic7.png" srcset="/img/loading.gif" class="">
+
+<h4 id="Jvisualvm"><a href="#Jvisualvm" class="headerlink" title="Jvisualvm"></a>Jvisualvm</h4><p>多合一故障处理工具，一般来说用于本机调试用，如果需要用于生产环境必须启用远程连接</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic6.png" srcset="/img/loading.gif" class="">
+
+<p>插件中心地址</p>
+<p><a href="https://visualvm.github.io/archive/uc/8u40/updates.xml.gz" target="_blank" rel="noopener">https://visualvm.github.io</a></p>
+<p>但是注意版本问题，不同的JDK所带的visualvm是不一样的，下载插件时需要下对应的版本。</p>
+<h2 id="GC调优"><a href="#GC调优" class="headerlink" title="GC调优"></a>GC调优</h2><p>JVM调优并不能显著的提高系统性能，主要提升的是系统稳定性。如果系统出现了频繁的垃圾回收，这时候系统是不稳定的，所以需要进行JVM调优，调整垃圾回收的频次。</p>
+<h3 id="GC调优原则"><a href="#GC调优原则" class="headerlink" title="GC调优原则"></a>GC调优原则</h3><ol>
+<li>大多数的java应用不需要GC调优</li>
+<li>大多数需要GC调优的情况是由于代码问题引起的</li>
+<li>优化GC参数是最后的手段</li>
+</ol>
+<h3 id="GC调优指标"><a href="#GC调优指标" class="headerlink" title="GC调优指标"></a>GC调优指标</h3><ul>
+<li><p><strong>GC的时间</strong></p>
+<p>参考性指标：</p>
+<ul>
+<li>Minor GC执行时间在50ms内</li>
+<li>Full GC执行时间在1000ms内</li>
+</ul>
+</li>
+<li><p><strong>GC的频率</strong></p>
+<p>参考性指标：</p>
+<ul>
+<li>Minor GC执行大于10秒一次</li>
+<li>Full GC执行频率大于10分钟1次</li>
+</ul>
+</li>
+</ul>
+<p>即：如果满足下面的指标，则一般不需要进行GC调优</p>
+<ul>
+<li><p>Minor GC执行时间不到50ms；</p>
+</li>
+<li><p>Minor GC执行不频繁，约10秒一次；</p>
+</li>
+<li><p>Full GC执行时间不到1s</p>
+</li>
+<li><p>Full GC执行频率不算频繁，不低于10分钟1次；</p>
+</li>
+</ul>
+<h3 id="GC调优步骤"><a href="#GC调优步骤" class="headerlink" title="GC调优步骤"></a>GC调优步骤</h3><ol>
+<li><p><strong>监控GC的状态：使用各种JVM工具</strong>，查看当前日志，分析当前JVM参数设置，并且分析当前堆内存快照和GC日志，根据实际的各区域内存划分和GC执行时间，决定是否进行优化。</p>
+</li>
+<li><p><strong>分析结果，判断是否需要优化</strong>：如果各项参数设置合理，系统没有超时日志出现，GC频率不高，GC耗时不高，那么没有必要进行GC优化；如果GC时间超过1-3秒，或者频繁GC，则必须优化；</p>
+</li>
+<li><p><strong>调整GC类型和内存分配</strong>：如果内存分配过大或过小，或者采用的GC收集器比较慢，则应该优先调整这些参数，并且先找1台或几台机器进行beta，然后比较优化过的机器和没有优化的机器的性能对比，并有针对性的做出最后选择；</p>
+</li>
+<li><p><strong>不断的分析和调整</strong>：通过不断的试验和试错，分析并找到最合适的参数</p>
+</li>
+<li><p><strong>全面应用参数</strong>：如果找到了最合适的参数，则将这些参数应用到所有服务器，并进行后续跟踪。</p>
+</li>
+</ol>
+<h3 id="GC调优实战"><a href="#GC调优实战" class="headerlink" title="GC调优实战"></a>GC调优实战</h3><h4 id="如何阅读GC日志"><a href="#如何阅读GC日志" class="headerlink" title="如何阅读GC日志"></a>如何阅读GC日志</h4><p>主要关注MinorGC和FullGC 的回收效率（回收前大小和回收比较）、回收的时间。</p>
+<p>以参数<strong>-Xms5m -Xmx5m -XX:+PrintGCDetails -XX:+UseSerialGC</strong>为例：</p>
+<p>[DefNew: 1855K-&gt;1855K(1856K), 0.0000148 secs][Tenured: 2815K-&gt;4095K(4096K), 0.0134819 secs] 4671K</p>
+<p>DefNew指明了收集器类型，而且说明了收集发生在新生代。</p>
+<p>1855K-&gt;1855K(1856K)表示，回收前 新生代占用1855K，回收后占用1855K，新生代大小1856K。</p>
+<p>0.0000148 secs 表明新生代回收耗时。</p>
+<p>Tenured表明收集发生在老年代</p>
+<p>2815K-&gt;4095K(4096K), 0.0134819 secs：含义同新生代</p>
+<p>最后的4671K指明堆的大小。</p>
+<p>收集器参数变为<strong>-XX:+UseParNewGC</strong>，日志变为：</p>
+<p>[ParNew: 1856K-&gt;1856K(1856K), 0.0000107 secs][Tenured: 2890K-&gt;4095K(4096K), 0.0121148 secs]</p>
+<p>收集器参数变为-<strong>XX:+ UseParallelGC或UseParallelOldGC</strong>，日志变为：</p>
+<p>[PSYoungGen: 1024K-&gt;1022K(1536K)] [ParOldGen: 3783K-&gt;3782K(4096K)] 4807K-&gt;4804K(5632K),</p>
+<p>当收集器参数变为：<strong>-XX:+UseConcMarkSweepGC</strong>、<strong>-XX:+UseG1GC</strong>时，CMS收集器和G1收集器会有明显的相关字样</p>
+<h4 id="项目启动时的GC优化"><a href="#项目启动时的GC优化" class="headerlink" title="项目启动时的GC优化"></a>项目启动时的GC优化</h4><ol>
+<li>开启日志分析 -XX:+PrintGCDetails 发现有7次Minor GC，2次Full GC，执行FullGC的原因是Metaspace空间不足。</li>
+<li>调整Metadata空间-XX:MetaspaceSize=64m，调整后FullGC不再出现。</li>
+<li>调整堆空间-Xms500m，调整后Minor GC次数减少至4次</li>
+<li>继续调整堆空间-Xms1000m，调整后Minor GC减少至2次</li>
+<li>调整新生代空间-Xmn900m，调整后Minor GC减少至1次</li>
+<li>继续调整新生代空间-Xms2000m -Xmn1800m，调整后Minor GC次数没有变化，这次的调整时没有意义的，反而会造成资源浪费。</li>
+</ol>
+<h4 id="项目运行GC优化"><a href="#项目运行GC优化" class="headerlink" title="项目运行GC优化"></a>项目运行GC优化</h4><p>使用jmeter同时访问三个接口，index、time、noblemetal</p>
+<p>使用40个线程，循环2500次进行压力测试，观察并发的变化</p>
+<p>使用单线程GC -XX:+UseSerialGC</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic8.png" srcset="/img/loading.gif" class="">
+
+<p>使用多线程GC -XX:+UseParNewGC</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic9.png" srcset="/img/loading.gif" class="">
+
+<p>可以看到吞吐量有一定的上升</p>
+<p>使用CMS -XX:+UseConcMarkSweepGC</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic10.png" srcset="/img/loading.gif" class="">
+
+<p>CMS采用了并发收集，所以STW的时间较小，吞吐量较单线程GC有一定提高，最大请求时间有明显的下降。</p>
+<p>使用G1 -XX:+UseG1GC</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic11.png" srcset="/img/loading.gif" class="">
+
+<p>此时的吞吐量是最大的，最大请求时间有明显的下降。</p>
+<h4 id="推荐策略"><a href="#推荐策略" class="headerlink" title="推荐策略"></a>推荐策略</h4><h5 id="堆空间的设置"><a href="#堆空间的设置" class="headerlink" title="堆空间的设置"></a>堆空间的设置</h5><p>可以将新生代尽可能的设置的大一些，减少MinorGC的次数。如果新生代设置的过小会导致对象直接进入老年代，如果此时老年代满了，会触发FullGC.。</p>
+<h5 id="垃圾收集器的选择"><a href="#垃圾收集器的选择" class="headerlink" title="垃圾收集器的选择"></a>垃圾收集器的选择</h5><p>响应时间优先的应用：老年代尽量使用并发收集器，大小需要小心设置一般要考虑并发会话率和会话持续时间等一些参数。如果堆设置小了,可能会造成内存碎片，高回收频率以及应用暂停而使用传统的标记清除方式。如果堆大了，则需要较长的收集时间。最优化的方案,一般需要参考以下数据获得：</p>
+<ul>
+<li>并发垃圾收集信息</li>
+<li>持久代并发收集次数</li>
+<li>传统GC信息</li>
+<li>新生代和老年代回收上的时间比例。</li>
+</ul>
+<p>吞吐量优先的应用：一般吞吐量优先的应用都有一个很大的新生代和一个较小的老年代。这样可以尽可能回收掉大部分短期对象，减少中期的对象，而老年代可以尽量存放长期存活对象。</p>
+<p>GC调优是个很复杂、很细致的过程，要根据实际情况调整，不同的机器、不同的应用、不同的性能要求调优的手段都是不同的，king老师也无法告诉大家全部，即使是jvm参数也是如此，比如说性能有关的操作系统工具，和操作系统本身相关的所谓大页机制，都需要大家平时去积累，去观察，去实践，king老师在这个专题上告诉大家的除了各种java虚拟机基础知识和内部原理，也告诉大家一个性能优化的一个基本思路和着手的方向。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/JVM">JVM</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/java">java</a>
+                
+                  <a class="hover-with-bg" href="/tags/JVM">JVM</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "JVM性能优化&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="/lib/fancybox/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
