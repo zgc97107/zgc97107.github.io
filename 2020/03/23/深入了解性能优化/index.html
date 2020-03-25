@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>深入了解性能优化 ~ zgcheng&#39;s blog</title>
+
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+<link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+<link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng&#39;s blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/default.png')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期一, 三月 23日 2020, 12:14 中午
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    3.3k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      11 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <h2 id="虚拟机优化技术-逃逸分析"><a href="#虚拟机优化技术-逃逸分析" class="headerlink" title="虚拟机优化技术-逃逸分析"></a>虚拟机优化技术-逃逸分析</h2><p>逃逸分析（Escape Analysis）是目前JVM中比较前沿的优化技术，它不是直接的优化手段而是为其他优化手段提供依据的分析技术，逃逸分析的基本行为就是分析对象动态作用域。简单来讲就是，Java Hotspot 虚拟机可以分析新创建对象的使用范围，并决定是否在 Java 堆上分配内存的一项技术。</p>
+<p><strong>相关的JVM参数：</strong></p>
+<ul>
+<li><p>-XX:+DoEscapeAnalysis：启用逃逸分析(默认打开)</p>
+</li>
+<li><p>-XX:-DoEscapeAnalysis：关闭逃逸分析</p>
+</li>
+<li><p>-XX:+PrintEscapeAnalysis：显示分析结果</p>
+</li>
+<li><p>-XX:+EliminateAllocations：标量替换(默认打开) </p>
+</li>
+<li><p>-XX:+UseTLAB 本地线程分配缓冲(默认打开) </p>
+</li>
+</ul>
+<p>开启逃逸分析创建的对象可以在栈上分配，对象的生命周期就跟随线程，不需要进行垃圾回收，在频繁的调用方法的情况下可以得到很大的性能提高。但由于线程私有的分配缓冲比较小，约为Eden的百分之一，所以大对象的分配还是会在堆中进行。</p>
+<p>使用了逃逸分析时对象在栈上分配：</p>
+<img src="/2020/03/23/%E6%B7%B1%E5%85%A5%E4%BA%86%E8%A7%A3%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/img/loading.gif" class="">
+
+<p>没有使用逃逸分析时对象都在堆上分配（触发频次GC，加重负担）：</p>
+<img src="/2020/03/23/%E6%B7%B1%E5%85%A5%E4%BA%86%E8%A7%A3%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/img/loading.gif" class="">
+
+<h2 id="常用的性能评价-测试指标"><a href="#常用的性能评价-测试指标" class="headerlink" title="常用的性能评价/测试指标"></a>常用的性能评价/测试指标</h2><p>一个web应用不是一个孤立的个体，它是一个系统的部分，系统中的每一部分都会影响整个系统的性能</p>
+<p><strong>响应时间</strong></p>
+<p>提交请求和返回该请求的响应之间使用的时间，一般比较关注平均响应时间。</p>
+<p>常用操作的响应时间列表：</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>响应时间</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>打开一个站点</td>
+<td>几秒</td>
+</tr>
+<tr>
+<td>数据库查询一条记录（有索引）</td>
+<td>十几毫秒</td>
+</tr>
+<tr>
+<td>机械磁盘一次寻址定位</td>
+<td>4毫秒</td>
+</tr>
+<tr>
+<td>从机械磁盘顺序读取1M数据</td>
+<td>2毫秒</td>
+</tr>
+<tr>
+<td>从SSD磁盘顺序读取1M数据</td>
+<td>0.3毫秒</td>
+</tr>
+<tr>
+<td>从远程分布式换成Redis读取一个数据</td>
+<td>0.5毫秒</td>
+</tr>
+<tr>
+<td>从内存读取1M数据</td>
+<td>十几微妙</td>
+</tr>
+<tr>
+<td>Java程序本地方法调用</td>
+<td>几微妙</td>
+</tr>
+<tr>
+<td>网络传输2Kb数据</td>
+<td>1微妙</td>
+</tr>
+</tbody></table>
+<p><strong>并发数</strong></p>
+<p>同一时刻，对服务器有实际交互的请求数。</p>
+<p>和网站在线用户数的关联：1000个同时在线用户数，可以估计并发数在5%到15%之间，也就是同时并发数在50~150之间。</p>
+<p><strong>吞吐量</strong></p>
+<p>对单位时间内完成的工作量（请求）的量度</p>
+<p><strong>关系</strong></p>
+<p>系统吞吐量和系统并发数以及响应时间的关系：</p>
+<p>吞吐量可以理解为单位时间内响应请求的次数，并发数是同一时刻的请求数。</p>
+<p>响应时间是车速。</p>
+<p>当请求数很少时，响应速度比较快，但是单位时间的响应也比较少，所以吞吐量也比较少，。随着请求数的增多，响应速度会收到影响，但是吞吐量会增加的很快；请求数的继续增加，响应速度影响比较大，单位时间内完成的请求次数会受到影响，会进一步影响到吞吐量；</p>
+<p>如果请求数继续增加，导致系统资源耗尽，系统将会无法完成响应。</p>
+<h2 id="常用的性能优化手段"><a href="#常用的性能优化手段" class="headerlink" title="常用的性能优化手段"></a>常用的性能优化手段</h2><p><strong>避免过早优化</strong></p>
+<p>项目初期，我们应该着重于编写清晰，直接，易读和易理解高效优雅的代码，真正的优化应该留到以后，等到性能分析表明优化措施有巨大的收益时再进行。</p>
+<p><strong>不应该把大量的时间耗费在小的性能改进上，过早考虑优化是所有噩梦的根源。</strong></p>
+<p><strong>进行系统性能测试</strong></p>
+<p>所有的性能调优，都有应该建立在性能测试的基础上，直觉很重要，但是要用数据说话，可以推测，但是要通过测试求证。</p>
+<p><strong>寻找系统瓶颈，分而治之，逐步优化</strong></p>
+<p>性能测试后，对整个请求经历的各个环节进行分析，排查出现性能瓶颈的地方，定位问题，分析影响性能的的主要因素，如内存、磁盘IO、网络、CPU、代码问题、架构设计、系统资源等。</p>
+<h3 id="前端优化常用手段（了解即可）"><a href="#前端优化常用手段（了解即可）" class="headerlink" title="前端优化常用手段（了解即可）"></a>前端优化常用手段（了解即可）</h3><ul>
+<li><p><strong>合并请求</strong></p>
+<p>合并CSS，Js，图片请求，使用http中的keep-alive减少连接消耗（http1.1中默认开启，包括nginx）</p>
+</li>
+<li><p><strong>使用客户端缓冲</strong></p>
+<p>将静态资源文件（css、图标等）缓存在浏览器中，可以通过Cache-Control（相对时间）和Expires设置相关的属性，如果文件发生了变化，需要更新，则通过改变文件名来解决。</p>
+</li>
+<li><p><strong>启用压缩</strong></p>
+<p>使用压缩可以减少网络传输量，但也会给浏览器和服务器带来性能的压力，需要权衡使用。</p>
+</li>
+<li><p><strong>资源文件加载顺序</strong></p>
+<p>css放在页面前，js放在页面后，JS只要加载后就会立刻执行，有些JS可能执行时间比较长影响css加载速度，浏览器在加载完CSS才会对页面进行渲染。</p>
+</li>
+<li><p><strong>减少Cookie传输</strong></p>
+<p>cookie包含在每次的请求和响应中，因此哪些数据写入cookie需要慎重考虑（静态资源不需要放入cookie）</p>
+</li>
+<li><p><strong>友好的提示（非技术手段）</strong></p>
+<p>有时候在给用户一个提示，就能收到良好的效果。</p>
+</li>
+<li><p><strong>CDN加速</strong></p>
+<p>CDN，又称内容分发网络，本质是一个缓存，而且是将数据缓存在用户最近的地方。无法自行实现CDN的时候，可以根据经济实力考虑商用CDN服务。</p>
+</li>
+<li><p><strong>反向代理缓存（动静分离）</strong></p>
+<p>将静态资源文件缓存在反向代理服务器上，一般是Nginx。</p>
+</li>
+<li><p><strong>WEB组件分离</strong></p>
+<p>将js，css和图片文件放在不同的域名下。可以提高浏览器在下载web组件的并发数。因为浏览器在下载同一个域名的的数据存在并发数限制。</p>
+</li>
+</ul>
+<h3 id="应用服务性能优化"><a href="#应用服务性能优化" class="headerlink" title="应用服务性能优化"></a>应用服务性能优化</h3><h4 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h4><p>网站性能优化第一定律：优先考虑使用缓存优化性能</p>
+<h5 id="缓存的基本原理和本质"><a href="#缓存的基本原理和本质" class="headerlink" title="缓存的基本原理和本质"></a>缓存的基本原理和本质</h5><p>缓存是将数据存在访问速度较高的介质中，减少数据访问的时间，同时避免重复计算。</p>
+<h5 id="合理使用缓存的准则"><a href="#合理使用缓存的准则" class="headerlink" title="合理使用缓存的准则"></a>合理使用缓存的准则</h5><ul>
+<li><p>频繁修改的数据，尽量不要缓存，读写比2:1以上才有缓存的价值。</p>
+</li>
+<li><p>缓存一定是热点数据。</p>
+</li>
+<li><p>应用能够容忍一定时间的数据不一致。</p>
+</li>
+<li><p>缓存可用性问题，一般通过热备或者集群来解决。 </p>
+</li>
+</ul>
+<h5 id="分布式缓存"><a href="#分布式缓存" class="headerlink" title="分布式缓存"></a>分布式缓存</h5><p>以集群的方式提供缓存服务，有两种实现；</p>
+<ol>
+<li><p>需要更新同步的分布式缓存，所有的服务器保存相同的缓存数据，带来的问题就是，缓存的数据量受限制，其次，数据要在所有的机器上同步，代价很大。</p>
+</li>
+<li><p>每台机器只缓存一部分数据，然后通过一定的算法选择缓存服务器。常见的余数hash算法存在当有服务器上下线的时候，大量缓存数据重建的问题。所以提出了一致性哈希算法。</p>
+</li>
+</ol>
+<h5 id="哈希一致性"><a href="#哈希一致性" class="headerlink" title="哈希一致性"></a>哈希一致性</h5><ol>
+<li><p>首先求出服务器（节点）的哈希值，并将其配置到0～2的32次方的圆（continuum）上。</p>
+</li>
+<li><p>然后采用同样的方法求出存储数据的键的哈希值，并映射到相同的圆上。</p>
+</li>
+<li><p>然后从数据映射到的位置开始顺时针查找，将数据保存到找到的第一个服务器上。如果超过232仍然找不到服务器，就会保存到第一台服务器上。</p>
+</li>
+</ol>
+<p>哈希一致性算法对于节点的增减都只需重定位环空间中的一小部分数据，具有较好的容错性和可扩展性。</p>
+<h5 id="数据倾斜"><a href="#数据倾斜" class="headerlink" title="数据倾斜"></a>数据倾斜</h5><p>一致性哈希算法在服务节点太少时，容易因为节点分部不均匀而造成数据倾斜问题，此时必然造成大量数据集中到Node A上，而只有极少量会定位到Node B上。为了解决这种数据倾斜问题，一致性哈希算法引入了虚拟节点机制，即对每一个服务节点计算多个哈希，每个计算结果位置都放置一个此服务节点，称为虚拟节点。具体做法可以在服务器ip或主机名的后面增加编号来实现。例如，可以为每台服务器计算三个虚拟节点，于是可以分别计算 “Node A#1”、“Node A#2”、“Node A#3”、“Node B#1”、“Node B#2”、“Node B#3”的哈希值，于是形成六个虚拟节点：同时数据定位算法不变，只是多了一步虚拟节点到实际节点的映射，例如定位到“Node A#1”、“Node A#2”、“Node A#3”三个虚拟节点的数据均定位到Node A上。这样就解决了服务节点少时数据倾斜的问题。在实际应用中，通常将虚拟节点数设置为32甚至更大，因此即使很少的服务节点也能做到相对均匀的数据分布。</p>
+<h5 id="集群"><a href="#集群" class="headerlink" title="集群"></a>集群</h5><p>可以很好的将用户的请求分配到多个机器处理，对总体性能有很大的提升</p>
+<h4 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h4><h5 id="同步和异步、阻塞和非阻塞"><a href="#同步和异步、阻塞和非阻塞" class="headerlink" title="同步和异步、阻塞和非阻塞"></a>同步和异步、阻塞和非阻塞</h5><p><strong>同步和异步关注的是结果消息的通信机制</strong></p>
+<p><strong>同步</strong>：同步的意思就是调用方需要主动等待结果的返回</p>
+<p><strong>异步</strong>：异步的意思就是不需要主动等待结果的返回，而是通过其他手段比如，状态通知，回调函数等。</p>
+<p><strong>阻塞和非阻塞主要关注的是等待结果返回的调用方的状态</strong></p>
+<p><strong>阻塞</strong>：是指结果返回之前，当前线程被挂起，不做任何事</p>
+<p><strong>非阻塞</strong>：是指结果在返回之前，线程可以做一些其他事，不会被挂起。</p>
+<p><strong>同步阻塞</strong>：同步阻塞基本也是编程中最常见的模型，比如说同步队列的take()方法，如果队列中没有元素，当前线程会一直阻塞直到获取到元素，BIO也属于同步阻塞。</p>
+<p><strong>同步非阻塞</strong>：同步非阻塞在编程中可以抽象为一个轮询模式，比如说同步队列的poll()方法，如果队列中没有元素会返回null，此时我们可以执行其他的逻辑，在此期间会不断调用poll()方法直到不为null，jdk里的NIO就属于 同步非阻塞。</p>
+<p><strong>异步阻塞</strong>：异步阻塞这个编程里面用的较少，如果在线程池中提交有返回值的任务之后，马上调用future.get()，此时线程会马上被阻塞，直到任务之行结束。所以这个模式有点憨，与同步阻塞的效果相同，但还需要调用资源开辟线程。</p>
+<p><strong>异步非阻塞</strong>：例如jdk提供的CompletableFuture，它采用了观察者设计模式，可以完成异步非阻塞的计算，弥补了future阻塞式获取结果的不足，jdk里的AIO就属于异步。</p>
+<h5 id="常见异步的手段"><a href="#常见异步的手段" class="headerlink" title="常见异步的手段"></a>常见异步的手段</h5><ul>
+<li><p>Servlet异步</p>
+</li>
+<li><p>多线程</p>
+</li>
+<li><p>消息队列</p>
+</li>
+</ul>
+<h4 id="代码优化"><a href="#代码优化" class="headerlink" title="代码优化"></a>代码优化</h4><p>一个应用的性能归根结底取决于代码是如何编写的。</p>
+<ul>
+<li><p><strong>选择合适的数据结构</strong></p>
+<p>比如ArrayList和LinkedList的选择，LinkedList在进行add()操作时不需要进行扩容，而ArrayList内部是数组实现，数据量较大时会进行扩容，扩容时的数据复制会比较耗费时间。</p>
+</li>
+<li><p><strong>选择更优的算法</strong></p>
+</li>
+<li><p><strong>编写更少的代码</strong></p>
+</li>
+<li><p><strong>并发编程</strong></p>
+</li>
+<li><p><strong>资源的复用</strong></p>
+<p>目的是减少开销很大的系统资源的创建和销毁，比如数据库连接，网络通信连接，线程资源等等。</p>
+</li>
+<li><p><strong>单例模式</strong></p>
+<p>Spring中的bean</p>
+</li>
+<li><p><strong>池化技术</strong></p>
+</li>
+</ul>
+<h4 id="存储性能优化"><a href="#存储性能优化" class="headerlink" title="存储性能优化"></a>存储性能优化</h4><ul>
+<li><p><strong>尽量使用SSD</strong></p>
+</li>
+<li><p><strong>定时清理数据或者按数据的性质分开存放</strong></p>
+</li>
+<li><p><strong>结果集处理</strong></p>
+<p>用setFetchSize控制jdbc每次从数据库中返回多少数据。</p>
+</li>
+</ul>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>调优是个很复杂、很细致的过程，要根据实际情况调整，不同的机器、不同的应用、不同的性能要求调优的手段都是不同的。也没有一个放之四海而皆准的配置或者公式。King老师也无法告诉大家全部与性能相关的知识，即使是jvm参数也是如此，再比如说性能有关的操作系统工具，和操作系统本身相关的所谓大页机制，都需要大家平时去积累，去观察，去实践。</p>
+<p>king老师在这个专题上告诉大家的除了各种java虚拟机基础知识、内部原理，也告诉大家一个性能优化的一个基本思路和着手的方向。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/JVM">JVM</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/JVM">JVM</a>
+                
+                  <a class="hover-with-bg" href="/tags/Java">Java</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "深入了解性能优化&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="/lib/fancybox/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
