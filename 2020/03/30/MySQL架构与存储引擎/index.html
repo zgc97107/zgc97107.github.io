@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>MySQL架构与存储引擎 ~ zgcheng&#39;s blog</title>
+
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+<link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+<link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng&#39;s blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/default.png')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期一, 三月 30日 2020, 1:21 下午
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    2.4k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      8 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <h2 id="MySQL逻辑架构"><a href="#MySQL逻辑架构" class="headerlink" title="MySQL逻辑架构"></a>MySQL逻辑架构</h2><img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic1.png" srcset="/img/loading.gif" class="">
+
+<h3 id="连接层"><a href="#连接层" class="headerlink" title="连接层"></a>连接层</h3><img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic2.png" srcset="/img/loading.gif" class="">
+
+<p>当MySQL启动（MySQL服务器就是一个进程），等待客户端连接，每一个客户端连接请求，服务器都会新建一个线程处理（如果是线程池的话，则是分配一个空的线程），每个线程独立，拥有各自的内存处理空间。</p>
+<p>show VARIABLES like ‘%max_connections%’</p>
+<img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic3.png" srcset="/img/loading.gif" class="">
+
+<p>连接到服务器，服务器需要对其进行验证，也就是用户名、IP、密码验证，一旦连接成功，还需要验证是否具有执行某个特定的查询权限。</p>
+<h3 id="处理层"><a href="#处理层" class="headerlink" title="处理层"></a>处理层</h3><img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic4.png" srcset="/img/loading.gif" class="">
+
+<p>这一层主要功能有：SQL语句的解析、优化，缓存的查询，MySQL内置函数的实现，跨存储引擎功能（所谓跨存储引擎就是说每个引擎都需提供的功能（引擎需对外提供接口）），例如：存储过程、触发器、视图等。</p>
+<pre><code>show variables like &#39;%query_cache_type%&#39;</code></pre><p>大概步骤为：</p>
+<ol>
+<li><p>如果是查询语句（select语句），首先会查询缓存是否已有相应结果，有则返回结果，无则进行下一步（如果不是查询语句，同样调到下一步）</p>
+</li>
+<li><p>解析查询，创建一个内部数据结构（解析树），这个解析树主要用来SQL语句的语义与语法解析；</p>
+</li>
+<li><p>优化：优化SQL语句，例如重写查询，决定表的读取顺序，以及选择需要的索引等。这一阶段用户是可以查询的，查询服务器优化器是如何进行优化的，便于用户重构查询和修改相关配置，达到最优化。这一阶段还涉及到存储引擎，优化器会询问存储引擎，比如某个操作的开销信息、是否对特定索引有查询优化等。</p>
+</li>
+</ol>
+<h4 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h4><pre><code>show variables like  &#39;%query_cache_type%&#39;  -- 查看缓存类型，默认不开启
+show variables like  &#39;%query_cache_size%&#39;  -- 查看缓存空间大小，默认值1M</code></pre><p>query_cache_type只能在my.cnf文件中修改，使用set修改会报错，缓存只有在两次SQL连接的数据库、协议版本、字符集等因素完全一致时才会起作用。</p>
+<p>具体配置方法：</p>
+<ol>
+<li><p>将query_cache_size设置为具体的大小，具体大小是多少取决于查询的实际情况，但最好设置为1024的倍数，参考值32M。</p>
+</li>
+<li><p>增加一行：query_cache_type=1</p>
+</li>
+<li><p>保存文件后重启MySQL服务。</p>
+</li>
+</ol>
+<p>如：</p>
+<pre><code>query_cache_size=128M 
+query_cache_type=1</code></pre><h4 id="解析查询顺序"><a href="#解析查询顺序" class="headerlink" title="解析查询顺序"></a>解析查询顺序</h4><img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic5.png" srcset="/img/loading.gif" class="">
+
+<h4 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h4><p>SQL编辑器会对SQL语句进行优化，例如重写查询，决定表的读取顺序，以及选择需要的索引等。这一阶段还涉及到存储引擎，优化器会询问存储引擎，比如某个操作的开销信息、是否对特定索引有查询优化等。</p>
+<h4 id="逻辑架构"><a href="#逻辑架构" class="headerlink" title="逻辑架构"></a>逻辑架构</h4><img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic6.png" srcset="/img/loading.gif" class="">
+
+<p>在mysql中schema与oracle schemas其实是不一样的，oracle中schemas的概念可理解为 “多个表（数据库对象）的集合，但在mysql中schema与database等价，只是为了兼容其他数据库，所以也提出了这个。如果通过sql语句删除schema，database也会被删除。</p>
+<h4 id="物理存储结构"><a href="#物理存储结构" class="headerlink" title="物理存储结构"></a>物理存储结构</h4><p>mysql的数据文件都存放在dtadir中，其查看方式为<code>show VARIABLES like &#39;datadir&#39;</code>。当创建一个数据库时，datadir中也会新增一个同名目录，用户建立的表都会在这个目录中，表文件跟具体的存储引擎相关，但都有个后缀为frm的文件用来存放表结构。</p>
+<p>frm文件可以通过安装mysql utilities工具来查看</p>
+<pre><code>tar -zxvf mysql-utilities-1.6.5.tar.gz 
+cd mysql-utilities-1.6.5
+python ./setup.py build
+python ./setup.py install</code></pre><p>通过以上步骤安装mysql utilities之后，运行以下命令就可以看到表结构</p>
+<pre><code>mysqlfrm --diagnostic /usr/local/mysql/data/mall/account.frm </code></pre><h2 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h2><p>存储引擎是数据库的核心，对于mysql来说，存储引擎是以插件的形式运行的。MySQL允许在一个数据库中使用不同的存储引擎，综合实际需求选择存储引擎可以提升数据库的性能。可以通过<code>show engines;</code>查看数据库的支持的引擎，<code>show variables like &#39;%storage_engine%&#39;;</code>可以查看当前默认的存储引擎。</p>
+<h3 id="MyISAM"><a href="#MyISAM" class="headerlink" title="MyISAM"></a>MyISAM</h3><p>使用这个存储引擎，每个MyISAM在磁盘上存储成三个文件。</p>
+<ol>
+<li><p>frm文件：存储表的定义数据</p>
+</li>
+<li><p>MYD文件：存放表具体记录的数据</p>
+</li>
+<li><p>MYI文件：存储索引</p>
+</li>
+</ol>
+<p>frm和MYI可以存放在不同的目录下。MYI文件用来存储索引，但仅保存记录所在页的指针，索引的结构是B+树结构。这种索引跟数据分开存储的表也被称为堆表。</p>
+<p>MyISAM支持表压缩，但是压缩之后的表就无法进行新增操作，需要再进行解压缩。</p>
+<pre><code>myisampack -b -f /usr/local/mysql/data/mall/testmysam.MYI  -- 压缩
+myisamchk -r -f /usr/local/mysql/data/mall/testmysam.MYI  -- 解压缩</code></pre><p>MyISAM是不支持事务的，所以他的存储速度相比InnorDB也更快，如果读写操作允许有错误数据，只追求速度的话，可以选择这个存储引擎。不过由于现在innodb越来越强大，MyISAM已经停止维护，绝大多数场景下已经不适合MyISAM。</p>
+<h3 id="InnoDB"><a href="#InnoDB" class="headerlink" title="InnoDB"></a>InnoDB</h3><p>InnoDB是默认的数据库存储引擎，他的主要特点有：</p>
+<ul>
+<li><p>可以通过自动增长列，方法是auto_increment。</p>
+</li>
+<li><p>支持事务。默认的事务隔离级别为可重复度，通过MVCC（并发版本控制）来实现的。</p>
+</li>
+<li><p>使用的锁粒度为行级锁，可以支持更高的并发；</p>
+</li>
+<li><p>支持外键约束；外键约束其实降低了表的查询速度，但是增加了表之间的耦合度。</p>
+</li>
+<li><p>配合一些热备工具可以支持在线热备份；</p>
+</li>
+<li><p>在InnoDB中存在着缓冲管理，通过缓冲池，将索引和数据全部缓存起来，加快查询的速度；</p>
+</li>
+<li><p>对于InnoDB类型的表，其数据的物理组织形式是聚簇表。所有的数据按照主键来组织。数据和索引放在一块，都位于B+数的叶子节点上；</p>
+</li>
+</ul>
+<p>InnoDB的存储表和索引也有下面两种形式：</p>
+<ul>
+<li><p>使用共享表空间存储：所有的表和索引存放在同一个表空间中。</p>
+</li>
+<li><p>使用多表空间存储：表结构放在frm文件，数据和索引放在IBD文件中。分区表的话，每个分区对应单独的IBD文件，分区表的定义可以查看我的其他文章。使用分区表的好处在于提升查询效率。</p>
+</li>
+</ul>
+<p>对于InnoDB来说，最大的特点在于支持事务。但是这是以损失效率来换取的。</p>
+<h3 id="Memory"><a href="#Memory" class="headerlink" title="Memory"></a>Memory</h3><p>将数据存在内存，为了提高数据的访问速度，每一个表实际上和一个磁盘文件关联。文件是frm。</p>
+<ul>
+<li><p>支持的数据类型有限制，比如：不支持TEXT和BLOB类型，对于字符串类型的数据，只支持固定长度的行，VARCHAR会被自动存储为CHAR类型；</p>
+</li>
+<li><p>支持的锁粒度为表级锁。所以，在访问量比较大时，表级锁会成为MEMORY存储引擎的瓶颈；</p>
+</li>
+<li><p>由于数据是存放在内存中，一旦服务器出现故障，数据都会丢失；</p>
+</li>
+<li><p>查询的时候，如果有用到临时表，而且临时表中有BLOB，TEXT类型的字段，那么这个临时表就会转化为MyISAM类型的表，性能会急剧降低；</p>
+</li>
+<li><p>默认使用hash索引。</p>
+</li>
+<li><p>果一个内部表很大，会转化为磁盘表。</p>
+</li>
+</ul>
+<img src="/2020/03/30/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/pic7.png" srcset="/img/loading.gif" class="">
+
+<h3 id="CSV"><a href="#CSV" class="headerlink" title="CSV"></a>CSV</h3><p> CSV引擎类似Oracle的外部表。它将数据存储在“逗号分隔值（CSV）文件”中，但不支持在这种文件上建立相关索引，所有列也不允许为NULL。这种引擎支持从数据库中拷入/拷出CSV文件，比如从电子表格软件输出一个CSV文件，将其存放在MySQL服务器的数据目录中，服务器执行刷新表操作后（<code>flush table</code>），就能够马上读取相关的CSV文件。同样，如果写数据库到一个CSV表，外部程序也可以立刻读取它。在实现某种类型的日志记录时，CSV表作为一种数据交换格式，特别有用。</p>
+<h3 id="Archive"><a href="#Archive" class="headerlink" title="Archive"></a>Archive</h3><p> 从archive单词的解释我们大概可以明白这个存储引擎的用途，这个存储引擎基本上用于数据归档；它的压缩比非常的高，存储空间大概是innodb的10-15分之一所以它用来存储历史数据非常的适合，由于它不支持索引同时也不能缓存索引和数据，所以它不适合作为并发访问表的存储引擎。Archivec存储引擎使用行锁来实现高并发插入操作，但是它不支持事务，而且只允许在自增id列上加索引，其设计目标只是提供高速的插入和压缩功能。</p>
+<h3 id="Ferderated"><a href="#Ferderated" class="headerlink" title="Ferderated"></a>Ferderated</h3><p>Ferderated引擎将数据存储在远程MySQL上，本地只存储表结构和连接信息，相当于提供了一个远程访问MySQL服务器上表的方法。通常使用在统计分析和数据查询中，在游戏行业使用的比较多。</p>
+<p>在MySQL中默认是禁止的，需要在my.ini配置文件中增加federated参数来启用。可以通过<code>show ENGINES</code>查看已经开启的引擎。具体使用如下</p>
+<pre><code>CREATE TABLE `local_fed` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `c1` varchar(10) NOT NULL DEFAULT &#39;&#39;,
+ `c2` char(10) NOT NULL DEFAULT &#39;&#39;,
+ PRIMARY KEY (`id`)
+) ENGINE=federated CONNECTION =&#39;mysql://root:root1234%@127.0.0.1:3306/remote/remote_fed&#39;</code></pre>
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/MySQL%E8%BF%9B%E9%98%B6">MySQL进阶</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/MySQL">MySQL</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "MySQL架构与存储引擎&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="/lib/fancybox/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>
