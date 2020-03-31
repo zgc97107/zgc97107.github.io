@@ -15,7 +15,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>MySQL中的锁 ~ zgcheng&#39;s blog</title>
+  <title>MySQL中的锁和事务 ~ zgcheng&#39;s blog</title>
 
   <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
 <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    983 字
+                    1.8k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      3 分钟
+                      6 分钟
                   </span>&nbsp;
                 
 
@@ -204,6 +204,60 @@ INNER JOIN
 INNER JOIN
   information_schema.innodb_trx r ON r.trx_id = w.requesting_trx_id;</code></pre><p>得到线程号后就可以通过<code>kill [线程号]</code>这样来退出阻塞的线程。</p>
 <p>不过如果你的同事在进行比较重要的调试，强行kill掉他的SQL可能会影响同事间的关系，如果不是迫不得已这种做法还是少用比较好。</p>
+<h2 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h2><p>现在的很多软件都是多用户，多程序，多线程的，对同一个表可能同时有很多人在用，为保持数据的一致性，所以提出了事务的概念，目前只有InnoDB引擎支持事务。</p>
+<h3 id="ACID特性"><a href="#ACID特性" class="headerlink" title="ACID特性"></a>ACID特性</h3><p>事务应该具有4个属性：原子性、一致性、隔离性、持久性。这四个属性通常称为ACID特性。</p>
+<ul>
+<li>原子性（atomicity）：一个事务必须被视为一个不可分割的最小单元，整个事务中的所有操作要么全部提交成功，要么全部失败，对于一个事务来说，不可能只执行其中的一部分操作</li>
+<li>一致性（consistency）：一致性是指事务将数据库从一种一致性转换到另外一种一致性状态，在事务开始之前和事务结束之后数据库中数据的完整性没有被破坏。</li>
+<li>持久性（durability）：一旦事务提交，则其所做的修改就会永久保存到数据库中。此时即使系统崩溃，已经提交的修改数据也不会丢失，如果单纯依靠是数据库，持久性并不能完全解决。</li>
+<li>隔离性（isolation）：一个事务的执行不能被其他事务干扰。即一个事务内部的操作及使用的数据对并发的其他事务是隔离的，并发执行的各个事务之间不能互相干扰。</li>
+</ul>
+<h3 id="并发问题"><a href="#并发问题" class="headerlink" title="并发问题"></a>并发问题</h3><p>数据库中共有四种隔离级别：未提交读（READ UNCOMMITED）、已提交读 （READ COMMITED）、可重复读（REPEATABLE READ）、可串行化（SERIALIZABLE）。MySQL默认的事务隔离级别为repeatable-read可以通过<code>show variables like &#39;%tx_isolation%&#39;;</code>查看数据库目前的隔离级别。</p>
+<p>事务并发引发的问题总共有三种：</p>
+<ul>
+<li><p>脏读：如果在事务B更新数据时，被事务A读取了更新的数据，然后B回滚操作，那么A读取到的数据是脏数据。</p>
+</li>
+<li><p>不可重复读：事务A多次读取同一数据，事务B在事务A多次读取的过程中，对数据作了更新并提交，导致事务A多次读取同一数据时，结果不一致。</p>
+</li>
+<li><p>幻读：系统管理员A将数据库中所有学生的成绩从具体分数改为ABCDE等级，但是系统管理员B就在这个时候插入了一条具体分数的记录，当系统管理员A改结束后发现还有一条记录没有改过来，就好像发生了幻觉一样，这就叫幻读。</p>
+</li>
+</ul>
+<p>不可重复读的和幻读很容易混淆，不可重复读侧重于修改，幻读侧重于新增或删除。解决不可重复读的问题只需锁住满足条件的行，解决幻读需要锁表</p>
+<p>与隔离级别的对应关系</p>
+<table>
+<thead>
+<tr>
+<th>事务隔离级别</th>
+<th>脏读</th>
+<th>不可重复读</th>
+<th>幻读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>未提交读（READ UNCOMMITED）</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>已提交读 （READ COMMITED）</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>可重复读（REPEATABLE READ）</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr>
+<td>可串行化（SERIALIZABLE）</td>
+<td>否</td>
+<td>否</td>
+<td>否</td>
+</tr>
+</tbody></table>
 
             <hr>
           </div>
@@ -375,7 +429,7 @@ INNER JOIN
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "MySQL中的锁&nbsp;",
+        "MySQL中的锁和事务&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
