@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    3k 字
+                    3.6k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      10 分钟
+                      13 分钟
                   </span>&nbsp;
                 
 
@@ -343,6 +343,78 @@ ALTER TABLE 表名 ADD [UNIQUE ] INDEX [indexName] ON (columnname(length));</cod
 <p>Using where：表示使用了where或者on过滤。</p>
 <p>Using join buffer：表示使用了连接缓存，连接缓存的大小可以使用<code>show VARIABLES like &#39;%join_buffer_size%&#39;</code></p>
 <p>Impossible where：where子句的值总是false，不能用来获取任何元组。</p>
+<h2 id="SQL优化策略"><a href="#SQL优化策略" class="headerlink" title="SQL优化策略"></a>SQL优化策略</h2><p><strong>尽量全值匹配</strong>：如果使用复合索引，应使where条件中尽量包含复合索引的全部列。</p>
+<p><strong>最佳左前缀法则</strong>：复合索引在使用时要遵守最左前缀法则，即查询条件应从从索引最左侧的列开始并且不跳过索引中间的列。</p>
+<p><strong>不在索引列上做任何操作</strong>：索引列上做任何操作（计数、函数、类型转换）会导致索引失效而转向全表扫描。</p>
+<p><strong>进行范围条件查询的列放最后</strong>：如果对复合索引中的列进行范围查询，而且该列处于复合索引的中间位置，会导致符合索引后面的索引列全部失效。</p>
+<p><strong>尽量使用覆盖索引</strong>：尽量使用覆盖索引(只访问索引的查询(索引列和查询列一致))，减少select *</p>
+<p><strong>不等于要慎用</strong>：mysql 在使用不等于（!= 或者&lt;&gt;）的时候会导致索引失效会导致全表扫描，解决方式为使用覆盖索引</p>
+<p><strong>NULL、NOT NULL会影响索引</strong>：在列不允许为空的情况下，使用IS NULL或IS NOT NULL会导致索引失效，在列允许为空的情况下IS NOT NULL会导致索引失效，使用覆盖索引也可以解决这个问题。</p>
+<p><strong>慎用LIKE查询</strong>：如果LIKE以通配符开头（’%abc…’）会导致索引失效变成全表扫描的操作，同样使用覆盖索引也可以解决这个问题。</p>
+<p><strong>字符类型加引号</strong>：字符串不加单引号索引失效。</p>
+<p><strong>OR改为UNION效率高</strong>：OR会导致索引失效，解决方式为使用UNION改写SQL。</p>
+<h3 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h3><table>
+<thead>
+<tr>
+<th>where语句</th>
+<th>使用到的索引</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>where a = 3</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b = 5</td>
+<td>a,b</td>
+</tr>
+<tr>
+<td>where a = 3 and b = 5 and c = 4</td>
+<td>a,b,c</td>
+</tr>
+<tr>
+<td>where b = 3 或者 where b = 3 and c = 4 或者 where c = 5</td>
+<td>空</td>
+</tr>
+<tr>
+<td>where a = 3 and c = 5</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b &gt;4 and c = 5</td>
+<td>a,b</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘kk%’ and c = 4</td>
+<td>a,b,c</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘%kk’ and c = 4</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘%kk%’ and c = 4</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘k%kk%’ and c = 4</td>
+<td>a,b,c</td>
+</tr>
+</tbody></table>
+<h3 id="记忆总结"><a href="#记忆总结" class="headerlink" title="记忆总结"></a>记忆总结</h3><ul>
+<li><p>全值匹配我最爱，最左前缀要遵守；</p>
+</li>
+<li><p>带头大哥不能死，中间兄弟不能断；</p>
+</li>
+<li><p>索引列上少计算，范围之后全失效；</p>
+</li>
+<li><p>LIKE百分写最右，覆盖索引不写*；</p>
+</li>
+<li><p>不等空值还有OR，索引影响要注意；</p>
+</li>
+<li><p>VARCHAR引号不可丢， SQL优化有诀窍。</p>
+</li>
+</ul>
 
             <hr>
           </div>
