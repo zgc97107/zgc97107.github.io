@@ -122,7 +122,7 @@
                   
                   &nbsp;<i class="far fa-chart-bar"></i>
                   <span class="post-count">
-                    1.9k 字
+                    2.3k 字
                   </span>&nbsp;
                 
 
@@ -130,7 +130,7 @@
                   
                   &nbsp;<i class="far fa-clock"></i>
                   <span class="post-count">
-                      6 分钟
+                      8 分钟
                   </span>&nbsp;
                 
 
@@ -173,14 +173,20 @@
 <p>读锁的语法为：<code>lock table 表名 read</code>，写锁的语法为：<code>lock table 表名write</code>，解锁语法为：<code>unlock tables;</code></p>
 <p>当使用读锁锁住MyISAM表时，当前会话对这张表的写操作以及对其他表（如果给这张表起别名MySQL会认为这张表不是被锁住的表）的读写操作都会报错，其他会话对这张表的写操作会被阻塞，对这张表的读操作以及其他表的操作不会被影响，也可以使用读锁锁住这张表，但写锁会被阻塞。</p>
 <p>当使用写锁锁住MyISAM表时，对其他表的读写操作都会报错，其他会话对这张表的读写操作以及对这张表的锁操作会被阻塞，对其他表的操作不会被影响。</p>
-<h2 id="InnnoDB锁"><a href="#InnnoDB锁" class="headerlink" title="InnnoDB锁"></a>InnnoDB锁</h2><p>InnoDB引擎支持行共享读锁，行锁也有共享锁和排它锁两种。</p>
-<p>共享锁又称读锁，当一个事务对某几行上读锁时，允许其他事务对这几行进行读操作，但不允许其进行写操作，也不允许其他事务给这几行上排它锁，但允许上读锁。</p>
-<p>排它锁又称写锁，当一个事务对某几个上写锁时，不允许其他事务写，但允许读。更不允许其他事务给这几行上任何锁。包括写锁。 </p>
+<h2 id="InnnoDB锁"><a href="#InnnoDB锁" class="headerlink" title="InnnoDB锁"></a>InnnoDB锁</h2><p>InnoDB支持多种锁粒度，默认使用行锁，锁粒度最小，锁冲突发生的概率最低，支持的并发度也最高，但系统消耗成本也相对较高。共享锁与排他锁是InnoDB实现的两种标准的行锁。</p>
+<p>InnoDB有三种锁算法——记录锁、gap间隙锁、还有结合了记录锁与间隙锁的next-key锁，InnoDB对于行的查询加锁是使用的是next-key locking这种算法，一定程度上解决了幻读问题。</p>
+<p>共享锁和拍他锁的关系为：</p>
+<ul>
+<li><p>当一个事务对某几行上共享锁时，允许其他事务对这几行进行读操作，但不允许其进行写操作，也不允许其他事务给这几行上排它锁，但允许上读锁。</p>
+</li>
+<li><p>当一个事务对某几个上排它锁时，不允许其他事务写，但允许读。更不允许其他事务给这几行上任何锁。包括写锁。 </p>
+</li>
+</ul>
 <p>共享锁的语法：<code>lock in share mode</code>，例如： <code>select * from 表 where 条件 lock in share mode;</code></p>
 <p>排它锁的写法：<code>for update</code>，例如：<code>select * from 表 where 条件 for update;</code></p>
 <p>注意：</p>
 <ol>
-<li><p>两个事务不能锁同一个索引。</p>
+<li><p>两个事务不能锁同一条数据。</p>
 </li>
 <li><p>insert、delete、update在事务中都会自动默认加上排它锁。</p>
 </li>
@@ -212,7 +218,7 @@ INNER JOIN
 <li>持久性（durability）：一旦事务提交，则其所做的修改就会永久保存到数据库中。此时即使系统崩溃，已经提交的修改数据也不会丢失，如果单纯依靠是数据库，持久性并不能完全解决。</li>
 <li>隔离性（isolation）：一个事务的执行不能被其他事务干扰。即一个事务内部的操作及使用的数据对并发的其他事务是隔离的，并发执行的各个事务之间不能互相干扰。</li>
 </ul>
-<h3 id="并发问题"><a href="#并发问题" class="headerlink" title="并发问题"></a>并发问题</h3><p>数据库中共有四种隔离级别：未提交读（READ UNCOMMITED）、已提交读 （READ COMMITED）、可重复读（REPEATABLE READ）、可串行化（SERIALIZABLE）。MySQL默认的事务隔离级别为repeatable-read可以通过<code>show variables like &#39;%tx_isolation%&#39;;</code>查看数据库目前的隔离级别。</p>
+<h3 id="并发问题"><a href="#并发问题" class="headerlink" title="并发问题"></a>并发问题</h3><p>数据库中共有四种隔离级别：未提交读（READ UNCOMMITED）、已提交读 （READ COMMITED）、可重复读（REPEATABLE READ）、可串行化（SERIALIZABLE）。MySQL默认的事务隔离级别为repeatable-read可以通过<code>show VARIABLES LIKE &#39;%tx_isolation%&#39;;</code>查看数据库目前的隔离级别。</p>
 <p>事务并发引发的问题总共有三种：</p>
 <ul>
 <li><p>脏读：如果在事务B更新数据时，被事务A读取了更新的数据，然后B回滚操作，那么A读取到的数据是脏数据。</p>
@@ -258,7 +264,11 @@ INNER JOIN
 <td>否</td>
 </tr>
 </tbody></table>
-<h3 id="间隙锁（Gap-Lock）"><a href="#间隙锁（Gap-Lock）" class="headerlink" title="间隙锁（Gap Lock）"></a>间隙锁（Gap Lock）</h3><p>间隙锁（Gap Lock）是InnoDB在可重复读提交下为了解决幻读问题时引入的锁机制，在可重复读条件下，如果事务进行增加或者删除操作，而另一个有范围查询事务会出现不一致的问题，这时行锁已经无法解决问题，需要对范围内的数据进行加锁才可以，MySQL通过行锁和间隙锁共同组成的（next-key lock），来实现对范围内的数据进行加锁。</p>
+<h3 id="间隙锁（Gap-Lock）"><a href="#间隙锁（Gap-Lock）" class="headerlink" title="间隙锁（Gap Lock）"></a>间隙锁（Gap Lock）</h3><p>间隙锁（Gap Lock）是InnoDB在可重复读提交下为了解决幻读问题时引入的锁机制，间隙锁是一个在索引记录之间的间隙上的锁。</p>
+<p>当使用唯一索引来搜索唯一行的语句时，不需要间隙锁定。如下面语句的id列有唯一索引，此时只会对id值为10的行使用记录锁。</p>
+<pre><code>select * from t where id = 10 for update;// 注意：普通查询是快照读，不需要加锁</code></pre><p>如果上面语句中id列没有建立索引或者是非唯一索引时，则语句会产生间隙锁。</p>
+<p>如果搜索条件里有多个查询条件(即使每个列都有唯一索引)，也是会有间隙锁的。</p>
+<p>需要注意的是，当id列上没有索引时，SQL会走聚簇索引的全表扫描进行过滤，由于过滤是在MySQL Server层面进行的。因此每条记录（无论是否满足条件）都会被加上锁。但是，为了效率考量，MySQL做了优化，对于不满足条件的记录，会在判断后<strong>放锁</strong>，最终持有的，是满足条件的记录上的锁。但是不满足条件的记录上的加锁/放锁动作是不会省略的。所以在没有索引时，不满足条件的数据行会有加锁又放锁的耗时过程。</p>
 <h3 id="事务的使用"><a href="#事务的使用" class="headerlink" title="事务的使用"></a>事务的使用</h3><ul>
 <li><p>开启事务：begin、START TRANSACTION（推荐）、begin work </p>
 </li>
@@ -266,7 +276,9 @@ INNER JOIN
 </li>
 <li><p>事务提交：commit</p>
 </li>
-<li><p>还原点：savepoint [变量名]，rollback to savepoint [变量名]</p>
+<li><p>设置还原点：savepoint [变量名]</p>
+</li>
+<li><p>回退到还原点：rollback to savepoint [变量名]</p>
 </li>
 </ul>
 
