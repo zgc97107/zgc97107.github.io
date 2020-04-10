@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期五, 四月 10日 2020, 4:49 下午</p>
+                class="note note-warning">本文最后更新于：星期五, 四月 10日 2020, 4:56 下午</p>
             
             <div class="markdown-body">
               <h2 id="使用线程池的优势"><a href="#使用线程池的优势" class="headerlink" title="使用线程池的优势"></a>使用线程池的优势</h2><ol>
@@ -496,9 +496,9 @@ public class ThreadPoolExt {
 
 <h3 id="了解CompletionService"><a href="#了解CompletionService" class="headerlink" title="了解CompletionService"></a>了解CompletionService</h3><p>CompletionService实际上可以看做是Executor和BlockingQueue的结合体。CompletionService在接收到要执行的任务时，把任务交给Executor来完成，再通过类似BlockingQueue的put()和take()来存入和获得任务执行的结果。</p>
 <p>CompletionService的一个实现是ExecutorCompletionService，ExecutorCompletionService的构造函数可以接收一个Executor类型的executor和一个BlockingQueue&lt;Future&lt;V&gt;&gt;类型的completionQueue，completionQueue的作用是保存Executor执行的结果。当只传入executor时，构造函数中会创建一个LinkedBlockingQueue作为completionQueue。</p>
-<p>当提交一个任务到ExecutorCompletionService时，首先将任务包装成QueueingFuture，它是FutureTask的一个子类，然后改写FutureTask的done方法，使QueueingFuture结束时把Executor执行的计算结果放入BlockingQueue中。所以只有当这个QueueingFuture对象结束时，才会加入到BlockingQueue中，BlockingQueue的take()方法其实就是Producer-Consumer模式中的Consumer。当从Queue中取出Future对象时，如果Queue是空的就会阻塞，直到有完成的Future对象加入到Queue中。所以先完成的必定先被取出，这样就减少了不必要的等待时间。</p>
+<p>当提交一个任务到ExecutorCompletionService时，首先将任务包装成QueueingFuture，它是FutureTask的一个子类，改写了FutureTask中的done方法，使QueueingFuture在结束时把Executor执行的计算结果放入completionQueue中。所以只有当QueueingFuture对象结束时，才会加入到completionQueue中，completionQueue的类型是BlockingQueue，其中的take()方法类似于Producer-Consumer模式中的Consumer。当从Queue中取出Future对象时，如果Queue是空的就会阻塞，直到有完成的Future对象加入到Queue中。所以先完成的必定先被取出，这样就减少了不必要的等待时间。</p>
 <p>测试一：不使用CompletionService，自己创建一个集合来保存Future，并循环通过get()方法获取其返回结果。这时获取的结果与加入线程池时的顺序相同。因为get()方法是阻塞方法，如果后面的任务已经完成，前面的任务没有完成，获取结果的线程就会被阻塞直到前面的任务完成，才能得到后面任务的返回结果。</p>
-<p>测试二：使用CompletionService来维护处理线程的返回结果，这时获取的结果与任务完成顺序相同，因为只有在Future完成是才会被加入BlockingQueue，所以BlockingQueue的Future的顺序与任务完成的顺序相同。</p>
+<p>测试二：使用CompletionService来维护处理线程的返回结果，这时获取的结果与任务完成顺序相同，因为只有在Future完成是才会被加入completionQueue，所以completionQueue的Future的顺序与任务完成的顺序相同。</p>
 <pre><code>/**
  *类说明：
  */
