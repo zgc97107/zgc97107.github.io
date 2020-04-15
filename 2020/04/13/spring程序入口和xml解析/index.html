@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    4.2k 字
+                    5.5k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      17 分钟
+                      23 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期三, 四月 15日 2020, 8:55 晚上</p>
+                class="note note-warning">本文最后更新于：星期三, 四月 15日 2020, 11:22 晚上</p>
             
             <div class="markdown-body">
               <h2 id="Spring的历史"><a href="#Spring的历史" class="headerlink" title="Spring的历史"></a>Spring的历史</h2><ul>
@@ -401,6 +401,7 @@
         if (namespaceUri == null) {
             return null;
         }
+    // 这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类
         NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
         if (handler == null) {
             error(&quot;Unable to locate Spring NamespaceHandler for XML schema namespace [&quot; + namespaceUri + &quot;]&quot;, ele);
@@ -408,8 +409,6 @@
         }
         return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
     }</code></pre>
-</li>
-<li><p>通过命名空间获取NamespaceHandler对象，NamespaceUri和NamepsaceHandler之间会建立一个映射，映射关系存储在对应jar包中的META-INF/spring.hadlers文件中，spring扫描这个文件建立映射关系。</p>
 </li>
 <li><p>spring会通过反射获取NamespaceHandler实例，并完成元素解析类的注册。</p>
 <pre><code class="java">    public NamespaceHandler resolve(String namespaceUri) {
@@ -450,10 +449,268 @@
         }
     }</code></pre>
 </li>
-<li><p>返回到1的代码中，使用hanler的parse方法完成自定义标签的解析。</p>
+<li><p>spring在jar包的META-INF/spring.hadlers文件中，已经保存了NamespaceUri和NamepsaceHandler之间的映射。2中的getHandlerMappings会加载spring.handlers中的所有内容并保存在map中。</p>
+<pre><code class="java">    private Map&lt;String, Object&gt; getHandlerMappings() {
+        Map&lt;String, Object&gt; handlerMappings = this.handlerMappings;
+        if (handlerMappings == null) {
+            synchronized (this) {
+                handlerMappings = this.handlerMappings;
+                if (handlerMappings == null) {
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(&quot;Loading NamespaceHandler mappings from [&quot; + this.handlerMappingsLocation + &quot;]&quot;);
+                    }
+                    try {
+                        //加载&quot;META-INF/spring.handlers&quot;文件过程
+                        Properties mappings =
+                                PropertiesLoaderUtils.loadAllProperties(this.handlerMappingsLocation, this.classLoader);
+                        if (logger.isTraceEnabled()) {
+                            logger.trace(&quot;Loaded NamespaceHandler mappings: &quot; + mappings);
+                        }
+
+                        //所有&quot;META-INF/spring.handlers&quot;文件里面的内容建立映射关系
+                        handlerMappings = new ConcurrentHashMap&lt;&gt;(mappings.size());
+                        CollectionUtils.mergePropertiesIntoMap(mappings, handlerMappings);
+                        this.handlerMappings = handlerMappings;
+                    }
+                    catch (IOException ex) {
+                        throw new IllegalStateException(
+                                &quot;Unable to load NamespaceHandler mappings from location [&quot; + this.handlerMappingsLocation + &quot;]&quot;, ex);
+                    }
+                }
+            }
+        }
+        return handlerMappings;
+    }</code></pre>
+</li>
+<li><p>2完成后会将NamespaceHandler返回到1的代码中，1使用hanler的parse方法完成自定义标签的解析，并返回BeanDefinition对象。</p>
 </li>
 </ol>
-<h2 id="设计模式2-委托模式"><a href="#设计模式2-委托模式" class="headerlink" title="设计模式2-委托模式"></a>设计模式2-委托模式</h2><p>不属于23种设计模式，是面向对象设计模式中常用的一种模式，可以理解为静态代理和策略模式的一种特殊的组合。简单来说就是接受请求的对象将请求委托给另一个对象来处理，在spring中比较常见。</p>
+<h2 id="默认标签的解析"><a href="#默认标签的解析" class="headerlink" title="默认标签的解析"></a>默认标签的解析</h2><ol>
+<li><p>默认标签分为四种，import、alias、bean、beans，这里主要看bean标签的解析。</p>
+<pre><code class="java">    private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
+        //import标签解析  重要程度 1 ，可看可不看
+        if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
+            importBeanDefinitionResource(ele);
+        }
+        //alias标签解析 别名标签  重要程度 1 ，可看可不看
+        else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
+            processAliasRegistration(ele);
+        }
+        //bean标签，重要程度  5，必须看
+        else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+            processBeanDefinition(ele, delegate);
+        }
+        else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
+            // recurse
+            doRegisterBeanDefinitions(ele);
+        }
+    }</code></pre>
+</li>
+<li><p>先调用parseBeanDefinitionElement(ele)方法对bean标签中的属性进行解析</p>
+<pre><code class="java">    protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
+        //重点看这个方法，重要程度 5 ，解析ele，封装成BeanDefinition
+        BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
+        if (bdHolder != null) {
+
+            //该方法功能不重要，设计模式重点看一下，装饰者设计模式，加上SPI设计思想
+            bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
+            try {
+
+                //完成document到BeanDefinition对象转换后，对BeanDefinition对象进行缓存注册
+                // Register the final decorated instance.
+                //注册过程，重要程度5
+                BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
+            }
+            catch (BeanDefinitionStoreException ex) {
+                getReaderContext().error(&quot;Failed to register bean definition with name &#39;&quot; +
+                        bdHolder.getBeanName() + &quot;&#39;&quot;, ele, ex);
+            }
+            // Send registration event.
+            getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
+        }
+    }</code></pre>
+</li>
+<li><p>具体解析的标签，解析完成后会返回到上层方法，上层方法会将BeanDefinition、beanname、aliases（别名）封装为BeanDefinitionHolder返回到2中</p>
+<pre><code class="java">    public AbstractBeanDefinition parseBeanDefinitionElement(
+            Element ele, String beanName, @Nullable BeanDefinition containingBean) {
+
+        this.parseState.push(new BeanEntry(beanName));
+
+        String className = null;
+        if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
+            className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
+        }
+        String parent = null;
+        if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
+            parent = ele.getAttribute(PARENT_ATTRIBUTE);
+        }
+
+        try {
+            //创建GenericBeanDefinition对象
+            AbstractBeanDefinition bd = createBeanDefinition(className, parent);
+
+            //解析bean标签的属性，并把解析出来的属性设置到BeanDefinition对象中
+            parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+            bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
+
+            //解析bean中的meta标签
+            parseMetaElements(ele, bd);
+
+            //解析bean中的lookup-method标签  重要程度：2，可看可不看
+            parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+
+            //解析bean中的replaced-method标签  重要程度：2，可看可不看
+            parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
+
+            //解析bean中的constructor-arg标签  重要程度：2，可看可不看
+            parseConstructorArgElements(ele, bd);
+
+            //解析bean中的property标签  重要程度：2，可看可不看
+            parsePropertyElements(ele, bd);
+
+            //可以不看，用不到
+            parseQualifierElements(ele, bd);
+
+            bd.setResource(this.readerContext.getResource());
+            bd.setSource(extractSource(ele));
+
+            return bd;
+        }</code></pre>
+</li>
+<li><p>2中获取到BeanDefinitionHolder后会对BeanDefinitionHolder中的别名再次进行解析，此处用到的SPI思想跟装饰者模式，SPI思想获取处理类的方式与自定义标签中的获取方式相同不再赘述。</p>
+<pre><code class="java">    public BeanDefinitionHolder decorateIfRequired(
+            Node node, BeanDefinitionHolder originalDef, @Nullable BeanDefinition containingBd) {
+
+        //根据node获取到node的命名空间，形如：http://www.springframework.org/schema/p
+        String namespaceUri = getNamespaceURI(node);
+        if (namespaceUri != null &amp;&amp; !isDefaultNamespace(namespaceUri)) {
+
+            //这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类
+            NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
+            if (handler != null) {
+
+                //调用NamespaceHandler处理类的decorate方法，开始具体装饰过程，并返回装饰完的对象
+                BeanDefinitionHolder decorated =
+                        handler.decorate(node, originalDef, new ParserContext(this.readerContext, this, containingBd));
+                if (decorated != null) {
+                    return decorated;
+                }
+            }
+            else if (namespaceUri.startsWith(&quot;http://www.springframework.org/&quot;)) {
+                error(&quot;Unable to locate Spring NamespaceHandler for XML schema namespace [&quot; + namespaceUri + &quot;]&quot;, node);
+            }
+            else {
+                // A custom namespace, not to be handled by Spring - maybe &quot;xml:...&quot;.
+                if (logger.isDebugEnabled()) {
+                    logger.debug(&quot;No Spring NamespaceHandler found for XML schema namespace [&quot; + namespaceUri + &quot;]&quot;);
+                }
+            }
+        }
+        return originalDef;
+    }</code></pre>
+</li>
+<li><p>2的注册过程中将beanname与aliases建立联系</p>
+<pre><code>    public static void registerBeanDefinition(
+            BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)
+            throws BeanDefinitionStoreException {
+
+        // Register bean definition under primary name.
+        String beanName = definitionHolder.getBeanName();
+
+        //完成BeanDefinition的注册，重点看，重要程度 5
+        registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
+
+        //建立别名和 id的映射，这样就可以根据别名获取到id
+        // Register aliases for bean name, if any.
+        String[] aliases = definitionHolder.getAliases();
+        if (aliases != null) {
+            for (String alias : aliases) {
+                registry.registerAlias(beanName, alias);
+            }
+        }
+    }</code></pre></li>
+<li><p>将beanname与beanDefinition缓存到map中、beanName放到beanDefinitionNames中，之后将通过beanDefinitionNames实例化bean</p>
+<pre><code class="java">    public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+            throws BeanDefinitionStoreException {
+
+        Assert.hasText(beanName, &quot;Bean name must not be empty&quot;);
+        Assert.notNull(beanDefinition, &quot;BeanDefinition must not be null&quot;);
+
+        if (beanDefinition instanceof AbstractBeanDefinition) {
+            try {
+                ((AbstractBeanDefinition) beanDefinition).validate();
+            }
+            catch (BeanDefinitionValidationException ex) {
+                throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+                        &quot;Validation of bean definition failed&quot;, ex);
+            }
+        }
+
+        //先判断BeanDefinition是否已经注册
+        BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
+        if (existingDefinition != null) {
+            if (!isAllowBeanDefinitionOverriding()) {
+                throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
+            }
+            else if (existingDefinition.getRole() &lt; beanDefinition.getRole()) {
+                // e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
+                if (logger.isInfoEnabled()) {
+                    logger.info(&quot;Overriding user-defined bean definition for bean &#39;&quot; + beanName +
+                            &quot;&#39; with a framework-generated bean definition: replacing [&quot; +
+                            existingDefinition + &quot;] with [&quot; + beanDefinition + &quot;]&quot;);
+                }
+            }
+            else if (!beanDefinition.equals(existingDefinition)) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(&quot;Overriding bean definition for bean &#39;&quot; + beanName +
+                            &quot;&#39; with a different definition: replacing [&quot; + existingDefinition +
+                            &quot;] with [&quot; + beanDefinition + &quot;]&quot;);
+                }
+            }
+            else {
+                if (logger.isTraceEnabled()) {
+                    logger.trace(&quot;Overriding bean definition for bean &#39;&quot; + beanName +
+                            &quot;&#39; with an equivalent definition: replacing [&quot; + existingDefinition +
+                            &quot;] with [&quot; + beanDefinition + &quot;]&quot;);
+                }
+            }
+            this.beanDefinitionMap.put(beanName, beanDefinition);
+        }
+        else {
+            if (hasBeanCreationStarted()) {
+                // Cannot modify startup-time collection elements anymore (for stable iteration)
+                synchronized (this.beanDefinitionMap) {
+                    this.beanDefinitionMap.put(beanName, beanDefinition);
+                    List&lt;String&gt; updatedDefinitions = new ArrayList&lt;&gt;(this.beanDefinitionNames.size() + 1);
+                    updatedDefinitions.addAll(this.beanDefinitionNames);
+                    updatedDefinitions.add(beanName);
+                    this.beanDefinitionNames = updatedDefinitions;
+                    if (this.manualSingletonNames.contains(beanName)) {
+                        Set&lt;String&gt; updatedSingletons = new LinkedHashSet&lt;&gt;(this.manualSingletonNames);
+                        updatedSingletons.remove(beanName);
+                        this.manualSingletonNames = updatedSingletons;
+                    }
+                }
+            }
+            else {
+                //把beanDefinition缓存到map中
+                // Still in startup registration phase
+                this.beanDefinitionMap.put(beanName, beanDefinition);
+
+                //把beanName放到beanDefinitionNames list中
+                this.beanDefinitionNames.add(beanName);
+                this.manualSingletonNames.remove(beanName);
+            }
+            this.frozenBeanDefinitionNames = null;
+        }
+
+        if (existingDefinition != null || containsSingleton(beanName)) {
+            resetBeanDefinition(beanName);
+        }
+    }</code></pre>
+</li>
+</ol>
+<h2 id="设计模式2-委托模式"><a href="#设计模式2-委托模式" class="headerlink" title="设计模式2-委托模式"></a>设计模式2-委托模式</h2><p>不属于23种设计模式之一，是面向对象设计模式中常用的一种模式，可以理解为静态代理和策略模式的一种特殊的组合。简单来说就是接受请求的对象将请求委托给另一个对象来处理，在spring中比较常见。</p>
 <pre><code class="java">public interface Company{
     void product();
 }</code></pre>
@@ -526,43 +783,49 @@
 <li>GenericBeanDefinition：从spring 2.5以后了提供的更好的注册bean definition类，用来替代ChildBeanDefinition跟RootBeanDefinition。标准BeanDefinition，除了具有指定类、可选的构造参数值和属性参数这些其它BeanDefinition一样的特性外，它还具有通过parenetName属性来动态设置parent bean definition，而非硬编码作为root bean definition。 </li>
 </ul>
 <h3 id="BeanDefinition中的属性"><a href="#BeanDefinition中的属性" class="headerlink" title="BeanDefinition中的属性"></a>BeanDefinition中的属性</h3><ul>
-<li><p>id:Bean 的唯一标识名。它必须是合法的 XMLID，在整个 XML 文档中唯一。</p>
+<li><p>id：Bean 的唯一标识名。它必须是合法的 XMLID，在整个 XML 文档中唯一。</p>
 </li>
-<li><p>name:用来为 id 创建一个或多个别名。它可以是任意的字母符合。多个别名之间用逗号或空格分 开。</p>
+<li><p>name：用来为id创建一个或多个别名。它可以是任意的字母符合。多个别名之间用逗号或空格分开。</p>
 </li>
-<li><p>class:用来定义类的全限定名(包名+类名)。只有子类 Bean 不用定义该属性。</p>
+<li><p>class：用来定义类的全限定名(包名+类名)。只有子类 Bean 不用定义该属性。</p>
 </li>
-<li><p>parent:子类 Bean 定义它所引用它的父类 Bean。这时前面的 class 属性失效。子类 Bean 会继承 父类 Bean 的所有属性，子类 Bean 也可以覆盖父类 Bean 的属性。注意:子类 Bean 和父类 Bean 是同一 个 Java 类。</p>
+<li><p>parent：子类Bean 定义它所引用它的父类Bean。这时前面的class 属性失效。子类Bean会继承父类Bean的所有属性，子类Bean也可以覆盖父类 Bean 的属性。注意:子类 Bean 和父类 Bean 是同一 个 Java 类。</p>
 </li>
-<li><p>abstract(默认为”false”):用来定义 Bean 是否为抽象 Bean。它表示这个 Bean 将不会被实 例化，一般用于父类 Bean，因为父类 Bean 主要是供子类 Bean 继承使用。</p>
+<li><p>abstract(默认为”false”)：用来定义Bean是否为抽象Bean。它表示这个Bean将不会被实例化，一般用于父类 Bean，因为父类Bean主要是供子类Bean继承使用。</p>
 </li>
-<li><p>lazy-init(默认为“default”):用来定义这个 Bean 是否实现懒初始化。如果为“true”，它将 在 BeanFactory 启动时初始化所有的 SingletonBean。反之，如果为“false”,它只在 Bean 请求时才开 始创建 SingletonBean。</p>
+<li><p>lazy-init(默认为“default”)：用来定义这个Bean是否实现懒初始化。如果为“true”，它将在BeanFactory 启动时初始化所有的SingletonBean。反之，如果为“false”，它只在Bean请求时才开始创建SingletonBean。</p>
 </li>
-<li><p>autowire(自动装配，默认为“default”):它定义了 Bean 的自动装载方式。 1、“no”:不使用自动装配功能。</p>
+<li><p>autowire：(自动装配，默认为“default”：它定义了Bean的自动装载方式。 </p>
 <ul>
-<li>“byName”:通过 Bean 的属性名实现自动装配。</li>
-<li>“byType”:通过 Bean 的类型实现自动装配。</li>
-<li>“constructor”:类似于 byType，但它是用于构造函数的参数的自动组装。</li>
-<li>“autodetect”:通过 Bean 类的反省机制(introspection)决定是使用“constructor”还是使用“byType”。</li>
+<li><p>“no”：不使用自动装配功能。</p>
+</li>
+<li><p>“byName”：通过 Bean 的属性名实现自动装配。</p>
+</li>
+<li><p>“byType”：通过 Bean 的类型实现自动装配。</p>
+</li>
+<li><p>“constructor”：类似于 byType，但它是用于构造函数的参数的自动组装。</p>
+</li>
+<li><p>“autodetect”：通过 Bean 类的反省机制(introspection)决定是使用“constructor”还是使用“byType”。</p>
+</li>
 </ul>
 </li>
-<li><p>depends-on(依赖对象):这个 Bean 在初始化时依赖的对象，这个对象会在这个 Bean 初始 化之前创建。</p>
+<li><p>depends-on(依赖对象)：这个Bean在初始化时依赖的对象，这个对象会在这个Bean初始化之前创建。</p>
 </li>
-<li><p>init-method:用来定义 Bean 的初始化方法，它会在 Bean 组装之后调用。它必须是一个无参数 的方法。</p>
+<li><p>init-method：用来定义Bean的初始化方法，它会在Bean组装之后调用。它必须是一个无参数的方法。</p>
 </li>
-<li><p>destroy-method:用来定义 Bean 的销毁方法，它在 BeanFactory 关闭时调用。同样，它也必 须是一个无参数的方法。它只能应用于 singletonBean。</p>
+<li><p>destroy-method：用来定义Bean的销毁方法，它在BeanFactory关闭时调用。同样，它也必须是一个无参数的方法。它只能应用于 singletonBean。</p>
 </li>
-<li><p>factory-method:定义创建该 Bean 对象的工厂方法。它用于下面的“factory-bean”，表示 这个 Bean 是通过工厂方法创建。此时，“class”属性失效。</p>
+<li><p>factory-method：定义创建该Bean对象的工厂方法。它用于下面的“factory-bean”，表示 这个Bean是通过工厂方法创建。此时，“class”属性失效。</p>
 </li>
-<li><p>factory-bean:定义创建该 Bean 对象的工厂类。如果使用了“factory-bean”则“class”属性 失效。</p>
+<li><p>factory-bean：定义创建该Bean对象的工厂类。如果使用了“factory-bean”则“class”属性失效。</p>
 </li>
-<li><p>autowire-candidate:采用 xml 格式配置 bean 时，将&lt;bean/&gt;元素的 autowire-candidate 属性设置为 false，这样容器在查找自动装配对象时，将不考虑该 bean，即它不会被考虑作为其它 bean 自动装配的候选者，但是该 bean 本身还是可以使用自动装配来注入其它 bean 的。</p>
+<li><p>autowire-candidate：采用xml格式配置bean时，将&lt;bean/&gt;元素的autowire-candidate属性设置为 false，这样容器在查找自动装配对象时，将不考虑该bean，即它不会被考虑作为其它bean自动装配的候选者，但是该bean本身还是可以使用自动装配来注入其它bean的。</p>
 </li>
-<li><p>MutablePropertyValues:用于封装&lt;property&gt;标签的信息，其实类里面就是有一个 list，list 里面是 PropertyValue 对象，PropertyValue 就是一个 name 和 value 属性，用于封装&lt;property&gt;标签 的名称和值信息</p>
+<li><p>MutablePropertyValues：用于封装&lt;property&gt;标签的信息，其实类里面就是有一个list，list里面是PropertyValue对象，PropertyValue就是一个name和value属性，用于封装&lt;property&gt;标签的名称和值信息</p>
 </li>
-<li><p>ConstructorArgumentValues:用于封装&lt;constructor-arg&gt;\标签的信息，其实类里面就是有 一个 map，map 中用构造函数的参数顺序作为 key，值作为 value 存储到 map 中</p>
+<li><p>ConstructorArgumentValues：用于封装&lt;constructor-arg&gt;\标签的信息，其实类里面就是有一个map，map中用构造函数的参数顺序作为key，值作为value存储到map中</p>
 </li>
-<li><p>MethodOverrides:用于封装 lookup-method 和 replaced-method 标签的信息，同样的类里 面有一个 Set 对象添加 LookupOverride 对象和 ReplaceOverride 对象</p>
+<li><p>MethodOverrides：用于封装lookup-method和replaced-method标签的信息，同样的类里面有一个Set对象添加LookupOverride对象和ReplaceOverride对象</p>
 </li>
 </ul>
 
@@ -597,6 +860,12 @@
                 <div class="post-prevnext row">
                   <div class="post-prev col-6">
                     
+                    
+                      <a href="/2020/04/15/spring%E5%AE%9E%E4%BE%8B%E5%8C%96bean%E7%9A%84%E8%BF%87%E7%A8%8B/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">spring实例化bean的过程</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </div>
                   <div class="post-next col-6">
