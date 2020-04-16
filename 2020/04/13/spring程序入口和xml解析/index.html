@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    6.4k 字
+                    6.9k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      30 分钟
+                      32 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期四, 四月 16日 2020, 6:01 晚上</p>
+                class="note note-warning">本文最后更新于：星期四, 四月 16日 2020, 6:19 晚上</p>
             
             <div class="markdown-body">
               <h2 id="Spring的历史"><a href="#Spring的历史" class="headerlink" title="Spring的历史"></a>Spring的历史</h2><ul>
@@ -269,6 +269,116 @@
 </ul>
 <h2 id="Spring容器加载的核心方法"><a href="#Spring容器加载的核心方法" class="headerlink" title="Spring容器加载的核心方法"></a>Spring容器加载的核心方法</h2><p>AbstractApplicationContext.refresh()方法</p>
 <p>refresh()方法是spring容器启动过程中的核心方法，spring容器要加载必须执行该方法。</p>
+<pre><code class="java">    @Override
+    public void refresh() throws BeansException, IllegalStateException {
+        synchronized (this.startupShutdownMonitor) {
+            //为容器初始化做准备，重要程度：0
+            //Prepare this context for refreshing.
+            prepareRefresh();
+
+            /**
+            * 重要程度：5
+            * 1、创建BeanFactory对象
+            * 2、xml解析
+            *     传统标签解析：bean、import等
+            *     自定义标签解析 如：&lt;context:component-scan base-package=&quot;com.xiangxue.jack&quot;/&gt;
+            *     自定义标签解析流程：
+            *         a、根据当前解析标签的头信息找到对应的namespaceUri
+            *         b、加载spring所以jar中的spring.handlers文件。并建立映射关系
+            *         c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类
+            *         d、调用类的init方法，init方法是注册了各种自定义标签的解析类
+            *         e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析
+            *
+            * 3、把解析出来的xml标签封装成BeanDefinition对象
+            * */
+            // Tell the subclass to refresh the internal bean factory.
+            ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+            /*
+            * 给beanFactory设置一些属性值，可以不看
+            * */
+            // Prepare the bean factory for use in this context.
+            prepareBeanFactory(beanFactory);
+
+            try {
+                //TODO
+                // Allows post-processing of the bean factory in context subclasses.
+                postProcessBeanFactory(beanFactory);
+
+                /*
+                * BeanDefinitionRegistryPostProcessor
+                * BeanFactoryPostProcessor
+                * 完成对这两个接口的调用
+                * */
+                // Invoke factory processors registered as beans in the context.
+                invokeBeanFactoryPostProcessors(beanFactory);
+
+                /*
+                * 把实现了BeanPostProcessor接口的类实例化，并且加入到BeanFactory中
+                * */
+                // Register bean processors that intercept bean creation.
+                registerBeanPostProcessors(beanFactory);
+
+                /*
+                * 国际化,重要程度2
+                * */
+                // Initialize message source for this context.
+                initMessageSource();
+
+                //初始化事件管理类
+                // Initialize event multicaster for this context.
+                initApplicationEventMulticaster();
+
+                //这个方法着重理解模板设计模式，因为在springboot中，这个方法是用来做内嵌tomcat启动的
+                // Initialize other special beans in specific context subclasses.
+                onRefresh();
+
+                /*
+                * 往事件管理类中注册事件类
+                * */
+                // Check for listener beans and register them.
+                registerListeners();
+
+                /*
+                * 这个方法是spring中最重要的方法，没有之一
+                * 所以这个方法一定要理解要具体看
+                * 1、bean实例化过程
+                * 2、ioc
+                * 3、注解支持
+                * 4、BeanPostProcessor的执行
+                * 5、Aop的入口
+                *
+                * */
+                // Instantiate all remaining (non-lazy-init) singletons.
+                finishBeanFactoryInitialization(beanFactory);
+
+                // Last step: publish corresponding event.
+                finishRefresh();
+            }
+
+            catch (BeansException ex) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn(&quot;Exception encountered during context initialization - &quot; +
+                            &quot;cancelling refresh attempt: &quot; + ex);
+                }
+
+                // Destroy already created singletons to avoid dangling resources.
+                destroyBeans();
+
+                // Reset &#39;active&#39; flag.
+                cancelRefresh(ex);
+
+                // Propagate exception to caller.
+                throw ex;
+            }
+
+            finally {
+                // Reset common introspection caches in Spring&#39;s core, since we
+                // might not ever need metadata for singleton beans anymore...
+                resetCommonCaches();
+            }
+        }
+    }</code></pre>
 <h2 id="设计模式1-模版设计模式"><a href="#设计模式1-模版设计模式" class="headerlink" title="设计模式1-模版设计模式"></a>设计模式1-模版设计模式</h2><p>spring源码中大量使用了模版设计模式，是使用的最多的设计模式。</p>
 <p>模版设计模式一般有两种类，抽象的父类，以及具体实现的子类。父类中实现逻辑中不变的部分，将可变的行为定义为抽象方法交给子类实现，但方法的执行顺序由父类决定。</p>
 <p>创建一个抽象模版结构</p>
