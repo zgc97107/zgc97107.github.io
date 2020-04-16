@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期四, 四月 16日 2020, 5:47 下午</p>
+                class="note note-warning">本文最后更新于：星期四, 四月 16日 2020, 6:01 晚上</p>
             
             <div class="markdown-body">
               <h2 id="Spring的历史"><a href="#Spring的历史" class="headerlink" title="Spring的历史"></a>Spring的历史</h2><ul>
@@ -394,7 +394,7 @@
 <img src="/2020/04/13/spring%E7%A8%8B%E5%BA%8F%E5%85%A5%E5%8F%A3%E5%92%8Cxml%E8%A7%A3%E6%9E%90/pic1.png" srcset="/img/loading.gif" class="">
 
 <h2 id="自定义标签解析"><a href="#自定义标签解析" class="headerlink" title="自定义标签解析"></a>自定义标签解析</h2><ol>
-<li><p>首先获取自定义标签的namespace命名空间，例如：<code>http://www.springframework.org/schema/context</code>，然后通过namespace获取到NamespaceHandler，之后再使用NamespaceHandler解析标签获得BeanDefinition对象。</p>
+<li><p>首先获取自定义标签头的namespace命名空间，例如：<code>http://www.springframework.org/schema/context</code>，然后通过namespace获取到NamespaceHandler处理类，之后再使用NamespaceHandler中的解析类解析标签获得BeanDefinition对象。</p>
 <pre><code class="java">    public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
       // 获取自定义标签的命名空间
         String namespaceUri = getNamespaceURI(ele);
@@ -410,7 +410,7 @@
         return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
     }</code></pre>
 </li>
-<li><p>获取namespace与NamespaceHandler实例的映射关系，然后通过反射创建实例，并调用NamespaceHandler的init()方法完成元素解析类的注册。</p>
+<li><p>获取namespace与NamespaceHandler实例的映射关系，然后通过反射创建实例，并调用NamespaceHandler的init()方法完成解析类的注册。</p>
 <pre><code class="java">    public NamespaceHandler resolve(String namespaceUri) {
         //获取spring中所有jar包里面的 &quot;META-INF/spring.handlers&quot;文件，并且建立映射关系
         Map&lt;String, Object&gt; handlerMappings = getHandlerMappings();
@@ -776,13 +776,13 @@
     }
 }</code></pre>
 <h2 id="component-scan标签的解析"><a href="#component-scan标签的解析" class="headerlink" title="component-scan标签的解析"></a>component-scan标签的解析</h2><ol>
-<li><p>context属于自定义标签，所以需要先通过namespace命名空间在spring.handlers文件中获取到对应的NamepsaceHandler之后再调用init()方法注册BeanDefinitionParser解析类，然后再获取到scan对应的BeanDefinitionParser解析类进行解析。</p>
+<li><p>context属于自定义标签，所以需要先通过namespace命名空间在spring.handlers文件中获取到对应的NamepsaceHandler处理类之后再调用init()方法注册BeanDefinitionParser解析类，然后再获取scan对应的BeanDefinitionParser解析类进行解析。</p>
 <pre><code>http\://www.springframework.org/schema/context=org.springframework.context.config.ContextNamespaceHandler
 http\://www.springframework.org/schema/jee=org.springframework.ejb.config.JeeNamespaceHandler
 http\://www.springframework.org/schema/lang=org.springframework.scripting.config.LangNamespaceHandler
 http\://www.springframework.org/schema/task=org.springframework.scheduling.config.TaskNamespaceHandler
 http\://www.springframework.org/schema/cache=org.springframework.cache.config.CacheNamespaceHandler</code></pre></li>
-<li><p>调用ContextNamespaceHandler的init()方法注册BeanDefinitionParser标签解析类。</p>
+<li><p>调用ContextNamespaceHandler的init()方法注册BeanDefinitionParser解析类。</p>
 <pre><code class="java">    @Override
     public void init() {
         registerBeanDefinitionParser(&quot;property-placeholder&quot;, new PropertyPlaceholderBeanDefinitionParser());
@@ -795,7 +795,7 @@ http\://www.springframework.org/schema/cache=org.springframework.cache.config.Ca
         registerBeanDefinitionParser(&quot;mbean-server&quot;, new MBeanServerBeanDefinitionParser());
     }</code></pre>
 </li>
-<li><p>BeanDefinitionParser的parser()方法中标签解析的逻辑。在这里将创建扫描器对基础包路径下的类进行扫描，并创建为BeanDefiniton对象，然后通过registerComponents()方法注册BeanPostProcessor。BeanPostProcessor主要是支撑类中其他注解的功能，如@Autowired、@PostConstruct、@PreDestory等。</p>
+<li><p>BeanDefinitionParser的parser()方法中的逻辑。在这里将创建扫描器对基础包路径下的类进行扫描，并创建为BeanDefiniton对象，然后通过registerComponents()方法注册BeanPostProcessor。BeanPostProcessor主要是支撑类中其他注解的功能，如@Autowired、@PostConstruct、@PreDestory等。</p>
 <pre><code class="java">    public BeanDefinition parse(Element element, ParserContext parserContext) {
         //获取basePackage属性
         String basePackage = element.getAttribute(BASE_PACKAGE_ATTRIBUTE);
