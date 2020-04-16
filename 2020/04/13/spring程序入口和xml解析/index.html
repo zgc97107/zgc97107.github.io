@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    4.5k 字
+                    6.4k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      19 分钟
+                      30 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期三, 四月 15日 2020, 11:24 晚上</p>
+                class="note note-warning">本文最后更新于：星期四, 四月 16日 2020, 5:34 下午</p>
             
             <div class="markdown-body">
               <h2 id="Spring的历史"><a href="#Spring的历史" class="headerlink" title="Spring的历史"></a>Spring的历史</h2><ul>
@@ -394,7 +394,7 @@
 <img src="/2020/04/13/spring%E7%A8%8B%E5%BA%8F%E5%85%A5%E5%8F%A3%E5%92%8Cxml%E8%A7%A3%E6%9E%90/pic1.png" srcset="/img/loading.gif" class="">
 
 <h2 id="自定义标签解析"><a href="#自定义标签解析" class="headerlink" title="自定义标签解析"></a>自定义标签解析</h2><ol>
-<li><p>获取自定义标签的namespace命名空间，例如：<code>http://www.springframework.org/schema/context</code></p>
+<li><p>首先获取自定义标签的namespace命名空间，例如：<code>http://www.springframework.org/schema/context</code>，然后通过namespace获取到NamespaceHandler，之后再使用NamespaceHandler解析标签获得BeanDefinition对象。</p>
 <pre><code class="java">    public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
       // 获取自定义标签的命名空间
         String namespaceUri = getNamespaceURI(ele);
@@ -410,7 +410,7 @@
         return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
     }</code></pre>
 </li>
-<li><p>spring会通过反射获取NamespaceHandler实例，并完成元素解析类的注册。</p>
+<li><p>获取namespace与NamespaceHandler实例的映射关系，然后通过反射创建实例，并调用NamespaceHandler的init()方法完成元素解析类的注册。</p>
 <pre><code class="java">    public NamespaceHandler resolve(String namespaceUri) {
         //获取spring中所有jar包里面的 &quot;META-INF/spring.handlers&quot;文件，并且建立映射关系
         Map&lt;String, Object&gt; handlerMappings = getHandlerMappings();
@@ -449,7 +449,7 @@
         }
     }</code></pre>
 </li>
-<li><p>spring在jar包的META-INF/spring.hadlers文件中，已经保存了NamespaceUri和NamepsaceHandler之间的映射。2中的getHandlerMappings会加载spring.handlers中的所有内容并保存在map中。</p>
+<li><p>获取namespace跟NamespaceHandler映射关系的详细过程。spring在jar包的META-INF/spring.handlers文件中，已经保存了NamespaceUri和NamepsaceHandler之间的映射。此处会加载spring.handlers中的所有内容并保存在map中。</p>
 <pre><code class="java">    private Map&lt;String, Object&gt; getHandlerMappings() {
         Map&lt;String, Object&gt; handlerMappings = this.handlerMappings;
         if (handlerMappings == null) {
@@ -482,8 +482,6 @@
         return handlerMappings;
     }</code></pre>
 </li>
-<li><p>2完成后会将NamespaceHandler返回到1的代码中，1使用hanler的parse方法完成自定义标签的解析，并返回BeanDefinition对象。</p>
-</li>
 </ol>
 <h2 id="默认标签的解析"><a href="#默认标签的解析" class="headerlink" title="默认标签的解析"></a>默认标签的解析</h2><ol>
 <li><p>默认标签分为四种，import、alias、bean、beans，这里主要看bean标签的解析。</p>
@@ -506,7 +504,7 @@
         }
     }</code></pre>
 </li>
-<li><p>先调用parseBeanDefinitionElement(ele)方法对bean标签中的属性进行解析</p>
+<li><p>先调用parseBeanDefinitionElement(ele)方法首先解析节点属性封装为BeanDefinitionHolder对象，之后再解析BeanDefinitionHolder对象中的自定义属性，并使用装饰者模式将解析后的属性设置到BeanDefinitionHolder中，然后对BeanDefinitionHolder进行注册。</p>
 <pre><code class="java">    protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
         //重点看这个方法，重要程度 5 ，解析ele，封装成BeanDefinition
         BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
@@ -530,7 +528,7 @@
         }
     }</code></pre>
 </li>
-<li><p>具体解析的标签，解析完成后会返回到上层方法，上层方法会将BeanDefinition、beanname、aliases（别名）封装为BeanDefinitionHolder返回到2中</p>
+<li><p>初次解析标签的过程。这里解析完成后会返回到上层方法，上层方法会将BeanDefinition、beanname、aliases（别名）封装为BeanDefinitionHolder并返回。</p>
 <pre><code class="java">    public AbstractBeanDefinition parseBeanDefinitionElement(
             Element ele, String beanName, @Nullable BeanDefinition containingBean) {
 
@@ -577,7 +575,7 @@
             return bd;
         }</code></pre>
 </li>
-<li><p>2中获取到BeanDefinitionHolder后会对BeanDefinitionHolder中的别名再次进行解析，此处用到的SPI思想跟装饰者模式，SPI思想获取处理类的方式与自定义标签中的获取方式相同不再赘述。</p>
+<li><p>对标签中的自定义属性再次进行解析，此处用到的SPI思想跟装饰者模式，通过SPI思想获取处理类的方式与自定义标签解析中的方式相同，此处不再赘述。</p>
 <pre><code class="java">    public BeanDefinitionHolder decorateIfRequired(
             Node node, BeanDefinitionHolder originalDef, @Nullable BeanDefinition containingBd) {
 
@@ -609,8 +607,8 @@
         return originalDef;
     }</code></pre>
 </li>
-<li><p>2的注册过程中将beanname与aliases建立联系</p>
-<pre><code>    public static void registerBeanDefinition(
+<li><p>注册过程，此处完成完成BeanDefinition的注册后会将beanname与aliases建立联系。</p>
+<pre><code class="java">    public static void registerBeanDefinition(
             BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)
             throws BeanDefinitionStoreException {
 
@@ -628,8 +626,9 @@
                 registry.registerAlias(beanName, alias);
             }
         }
-    }</code></pre></li>
-<li><p>将beanname与beanDefinition缓存到map中、beanName放到beanDefinitionNames中，之后将通过beanDefinitionNames实例化bean</p>
+    }</code></pre>
+</li>
+<li><p>BeanDefinition的注册详细过程。将beanname与beanDefinition缓存到map中、beanName放到beanDefinitionNames中，之后将通过beanDefinitionNames实例化bean</p>
 <pre><code class="java">    public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
             throws BeanDefinitionStoreException {
 
@@ -774,6 +773,386 @@
         System.out.println(&quot;使用装饰器，装饰肥宅&quot;);
         person = new DecoratorDnfPlayer(persion);
         person.desc();
+    }
+}</code></pre>
+<h2 id="component-scan标签的解析"><a href="#component-scan标签的解析" class="headerlink" title="component-scan标签的解析"></a>component-scan标签的解析</h2><ol>
+<li><p>context属于自定义标签，所以需要先通过namespace命名空间在spring.handlers文件中获取到对应的NamepsaceHandler之后再调用init()方法注册BeanDefinitionParser解析类，然后再获取到scan对应的BeanDefinitionParser解析类进行解析。</p>
+<pre><code>http\://www.springframework.org/schema/context=org.springframework.context.config.ContextNamespaceHandler
+http\://www.springframework.org/schema/jee=org.springframework.ejb.config.JeeNamespaceHandler
+http\://www.springframework.org/schema/lang=org.springframework.scripting.config.LangNamespaceHandler
+http\://www.springframework.org/schema/task=org.springframework.scheduling.config.TaskNamespaceHandler
+http\://www.springframework.org/schema/cache=org.springframework.cache.config.CacheNamespaceHandler</code></pre></li>
+<li><p>调用ContextNamespaceHandler的init()方法注册BeanDefinitionParser标签解析类。</p>
+<pre><code class="java">    @Override
+    public void init() {
+        registerBeanDefinitionParser(&quot;property-placeholder&quot;, new PropertyPlaceholderBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;property-override&quot;, new PropertyOverrideBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;annotation-config&quot;, new AnnotationConfigBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;component-scan&quot;, new ComponentScanBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;load-time-weaver&quot;, new LoadTimeWeaverBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;spring-configured&quot;, new SpringConfiguredBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;mbean-export&quot;, new MBeanExportBeanDefinitionParser());
+        registerBeanDefinitionParser(&quot;mbean-server&quot;, new MBeanServerBeanDefinitionParser());
+    }</code></pre>
+</li>
+<li><p>BeanDefinitionParser的parser()方法中标签解析的逻辑。在这里将创建扫描器对基础包路径下的类进行扫描，并创建为BeanDefiniton对象，然后通过registerComponents()方法注册BeanPostProcessor。BeanPostProcessor主要是支撑类中其他注解的功能，如@Autowired、@PostConstruct、@PreDestory等。</p>
+<pre><code class="java">    public BeanDefinition parse(Element element, ParserContext parserContext) {
+        //获取basePackage属性
+        String basePackage = element.getAttribute(BASE_PACKAGE_ATTRIBUTE);
+        basePackage = parserContext.getReaderContext().getEnvironment().resolvePlaceholders(basePackage);
+        //可以用逗号分开
+        String[] basePackages = StringUtils.tokenizeToStringArray(basePackage,
+                ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+
+        //创建注解扫描器
+        // Actually scan for bean definitions and register them.
+        ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
+        //扫描并把扫描的类封装成beanDefinition对象  核心方法，重要程度 5
+        Set&lt;BeanDefinitionHolder&gt; beanDefinitions = scanner.doScan(basePackages);
+    //注册BeanPostProcessor
+        registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
+
+        return null;
+    }</code></pre>
+</li>
+<li><p>doScan()方法中会扫描到有注解的类并封装成BeanDefinitionHolder对象。在通过findCandidateComponents()获取到BeanDefinition之后，会根据ScopeMetadata对BeanDefinitionHolder的属性再次进行设置，并创建BeanDefinitionHolder对象，最后注册BeanDefinitonHolder。注册过程与默认实例化中相同，此处不再赘述。</p>
+<pre><code class="java">    protected Set&lt;BeanDefinitionHolder&gt; doScan(String... basePackages) {
+        Assert.notEmpty(basePackages, &quot;At least one base package must be specified&quot;);
+        Set&lt;BeanDefinitionHolder&gt; beanDefinitions = new LinkedHashSet&lt;&gt;();
+        for (String basePackage : basePackages) {
+            //扫描到有注解的类并封装成BeanDefinition对象
+            Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);
+            for (BeanDefinition candidate : candidates) {
+                ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+                candidate.setScope(scopeMetadata.getScopeName());
+                String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+                if (candidate instanceof AbstractBeanDefinition) {
+                    postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
+                }
+                if (candidate instanceof AnnotatedBeanDefinition) {
+                    //支持了@Lazy @DependOn注解
+                    AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
+                }
+                if (checkCandidate(beanName, candidate)) {
+                    BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+                    //这里不看
+                    definitionHolder =
+                            AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+                    beanDefinitions.add(definitionHolder);
+
+                    //BeanDefinition注册
+                    registerBeanDefinition(definitionHolder, this.registry);
+                }
+            }
+        }
+        return beanDefinitions;
+    }</code></pre>
+</li>
+<li><p>findCandidateComponents()会递寻找包路径下文件，然后将文件封装为MetadataReader对象，之后再根据MetadataReader中的类注解判断是否进行实例化。进行处理并封装为BeanDefinition。MetadataReader中持有一个ClassMetadata，ClassMetadata对象中几乎包括类的所有信息。</p>
+<pre><code class="java">    private Set&lt;BeanDefinition&gt; scanCandidateComponents(String basePackage) {
+        Set&lt;BeanDefinition&gt; candidates = new LinkedHashSet&lt;&gt;();
+        try {
+            String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
+                    resolveBasePackage(basePackage) + &#39;/&#39; + this.resourcePattern;
+
+            //这里递归寻找文件
+            Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
+            boolean traceEnabled = logger.isTraceEnabled();
+            boolean debugEnabled = logger.isDebugEnabled();
+            for (Resource resource : resources) {
+                if (traceEnabled) {
+                    logger.trace(&quot;Scanning &quot; + resource);
+                }
+                if (resource.isReadable()) {
+                    try {
+                        //将文件信息包装为类基本信息的对象
+                        MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+                        //如果类上面有includeFilters中的注解
+                        if (isCandidateComponent(metadataReader)) {
+                            ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
+                            sbd.setResource(resource);
+                            sbd.setSource(resource);
+                            if (isCandidateComponent(sbd)) {
+                                if (debugEnabled) {
+                                    logger.debug(&quot;Identified candidate component class: &quot; + resource);
+                                }
+                                candidates.add(sbd);
+                            }
+                            else {
+                                if (debugEnabled) {
+                                    logger.debug(&quot;Ignored because not a concrete top-level class: &quot; + resource);
+                                }
+                            }
+                        }
+                        else {
+                            if (traceEnabled) {
+                                logger.trace(&quot;Ignored because not matching any filter: &quot; + resource);
+                            }
+                        }
+                    }
+                    catch (Throwable ex) {
+                        throw new BeanDefinitionStoreException(
+                                &quot;Failed to read candidate component class: &quot; + resource, ex);
+                    }
+                }
+                else {
+                    if (traceEnabled) {
+                        logger.trace(&quot;Ignored because not readable: &quot; + resource);
+                    }
+                }
+            }
+        }
+        catch (IOException ex) {
+            throw new BeanDefinitionStoreException(&quot;I/O failure during classpath scanning&quot;, ex);
+        }
+        return candidates;
+    }</code></pre>
+</li>
+<li><p>递归寻找文件的主要方法</p>
+<pre><code class="java">    protected void doRetrieveMatchingFiles(String fullPattern, File dir, Set&lt;File&gt; result) throws IOException {
+        if (logger.isTraceEnabled()) {
+            logger.trace(&quot;Searching directory [&quot; + dir.getAbsolutePath() +
+                    &quot;] for files matching pattern [&quot; + fullPattern + &quot;]&quot;);
+        }
+        for (File content : listDirectory(dir)) {
+            String currPath = StringUtils.replace(content.getAbsolutePath(), File.separator, &quot;/&quot;);
+            //如果是一个文件夹，则递归
+            if (content.isDirectory() &amp;&amp; getPathMatcher().matchStart(fullPattern, currPath + &quot;/&quot;)) {
+                if (!content.canRead()) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(&quot;Skipping subdirectory [&quot; + dir.getAbsolutePath() +
+                                &quot;] because the application is not allowed to read the directory&quot;);
+                    }
+                }
+                else {
+                    doRetrieveMatchingFiles(fullPattern, content, result);
+                }
+            }
+
+            //如果是一个文件，则加入到容器
+            if (getPathMatcher().match(fullPattern, currPath)) {
+                result.add(content);
+            }
+        }
+    }</code></pre>
+</li>
+<li><p>注册BeanPostProcessor过程</p>
+<pre><code class="java">    public static Set&lt;BeanDefinitionHolder&gt; registerAnnotationConfigProcessors(
+            BeanDefinitionRegistry registry, @Nullable Object source) {
+
+        DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
+        if (beanFactory != null) {
+            if (!(beanFactory.getDependencyComparator() instanceof AnnotationAwareOrderComparator)) {
+                beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
+            }
+            if (!(beanFactory.getAutowireCandidateResolver() instanceof ContextAnnotationAutowireCandidateResolver)) {
+                beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
+            }
+        }
+
+        Set&lt;BeanDefinitionHolder&gt; beanDefs = new LinkedHashSet&lt;&gt;(8);
+
+        if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        // Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.
+        if (jsr250Present &amp;&amp; !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, COMMON_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        // Check for JPA support, and if present add the PersistenceAnnotationBeanPostProcessor.
+        if (jpaPresent &amp;&amp; !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition();
+            try {
+                def.setBeanClass(ClassUtils.forName(PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME,
+                        AnnotationConfigUtils.class.getClassLoader()));
+            }
+            catch (ClassNotFoundException ex) {
+                throw new IllegalStateException(
+                        &quot;Cannot load optional framework class: &quot; + PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, ex);
+            }
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
+        }
+
+        if (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(DefaultEventListenerFactory.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_FACTORY_BEAN_NAME));
+        }
+
+        return beanDefs;
+    }</code></pre>
+</li>
+</ol>
+<h2 id="实战"><a href="#实战" class="headerlink" title="实战"></a>实战</h2><h3 id="使用自定义标签连接redis"><a href="#使用自定义标签连接redis" class="headerlink" title="使用自定义标签连接redis"></a>使用自定义标签连接redis</h3><ol>
+<li>创建自定义标签约束文件myMags.xsd，位置为在resources/META-INF/</li>
+</ol>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;xsd:schema xmlns=&quot;http://www.test.com/schema/mytags&quot;
+            xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; targetNamespace=&quot;http://www.test.com/schema/mytags&quot;
+            elementFormDefault=&quot;qualified&quot; attributeFormDefault=&quot;unqualified&quot;&gt;
+    &lt;xsd:element name=&quot;redis&quot;&gt;
+        &lt;xsd:complexType&gt;
+            &lt;xsd:attribute name=&quot;id&quot; type=&quot;xsd:string&quot;&gt;&lt;/xsd:attribute&gt;
+            &lt;xsd:attribute name=&quot;ip&quot; type=&quot;xsd:string&quot;&gt;&lt;/xsd:attribute&gt;
+            &lt;xsd:attribute name=&quot;port&quot; type=&quot;xsd:string&quot;&gt;&lt;/xsd:attribute&gt;
+        &lt;/xsd:complexType&gt;
+    &lt;/xsd:element&gt;
+&lt;/xsd:schema&gt;</code></pre>
+<ol start="2">
+<li>在相同位置为xsd文件创建映射文件spring.schemas</li>
+</ol>
+<pre><code class="scheme">http\://www.test.com/schema/mytags.xsd=META-INF/myTags.xsd</code></pre>
+<ol start="3">
+<li>在相同位置下创建spring.handlers文件</li>
+</ol>
+<pre><code>http\://www.test.com/schema/mytags=org.example.tag.TagsNamespaceHandler</code></pre><ol start="4">
+<li>创建RedisBeanDefinitionParser类</li>
+</ol>
+<pre><code class="java">public class RedisBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+    @Override
+    protected Class&lt;?&gt; getBeanClass(Element element) {
+        return Jedis.class;
+    }
+
+    @Override
+    protected void doParse(Element element, BeanDefinitionBuilder builder) {
+        String ip = element.getAttribute(&quot;ip&quot;);
+        String port = element.getAttribute(&quot;port&quot;);
+
+        builder.addConstructorArgValue(ip);
+        builder.addConstructorArgValue(Integer.parseInt(port));
+    }
+}</code></pre>
+<ol start="5">
+<li>创建TagsNamespaceHandler类</li>
+</ol>
+<pre><code class="java">public class TagsNamespaceHandler extends NamespaceHandlerSupport {
+    @Override
+    public void init() {
+        this.registerBeanDefinitionParser(&quot;redis&quot;,new RedisBeanDefinitionParser());
+    }
+
+    @Override
+    public BeanDefinitionHolder decorate(Node node, BeanDefinitionHolder definition, ParserContext parserContext) {
+        return super.decorate(node, definition, parserContext);
+    }
+}</code></pre>
+<ol start="6">
+<li>在spring.xml中使用自定义标签</li>
+</ol>
+<pre><code class="xml">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:my=&quot;http://www.test.com/schema/mytags&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.test.com/schema/mytags
+       http://www.test.com/schema/mytags.xsd&quot;
+       default-lazy-init=&quot;false&quot;&gt;
+    &lt;!--自定义标签--&gt;
+    &lt;my:redis id=&quot;redis&quot; ip=&quot;localhost&quot; port=&quot;6379&quot;/&gt;
+&lt;/beans&gt;</code></pre>
+<ol start="7">
+<li>测试类</li>
+</ol>
+<pre><code class="java">@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {&quot;classpath:spring.xml&quot;})
+public class MyTest {
+    @Autowired
+    private Jedis jedis;
+
+    @Test
+    public void myTag() {
+        jedis.set(&quot;tag&quot;,&quot;test&quot;);
+        System.out.println(jedis.get(&quot;tag&quot;));
+    }
+}</code></pre>
+<h3 id="使用自定义注解创建Bean对象"><a href="#使用自定义注解创建Bean对象" class="headerlink" title="使用自定义注解创建Bean对象"></a>使用自定义注解创建Bean对象</h3><ol>
+<li>创建MyBeanDefinitionRegistryPostProcessor</li>
+</ol>
+<pre><code class="java">public class MyBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
+
+    @Override
+    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+        GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
+        genericBeanDefinition.setBeanClass(BeanClass.class);
+
+        MutablePropertyValues propertyValues = genericBeanDefinition.getPropertyValues();
+        propertyValues.addPropertyValue(&quot;username&quot;,&quot;test&quot;);
+
+        registry.registerBeanDefinition(&quot;beanClass&quot;,genericBeanDefinition);
+
+        ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(registry);
+        scanner.addIncludeFilter(new AnnotationTypeFilter(MyService.class));
+        scanner.scan(&quot;org.example.beanDefinition&quot;);
+    }
+
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+
+    }
+}</code></pre>
+<ol start="2">
+<li>创建BeanClass</li>
+</ol>
+<pre><code class="java">public class BeanClass {
+    private String username;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+}</code></pre>
+<ol start="3">
+<li>创建</li>
+</ol>
+<pre><code class="java">@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface MyService {ßß
+    String value() default &quot;&quot;;
+}</code></pre>
+<ol start="4">
+<li>测试类</li>
+</ol>
+<pre><code class="java">@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {&quot;classpath:spring.xml&quot;})
+public class MyTest {
+    @Autowired
+    private Jedis jedis;
+
+    @Test
+    public void myTag() {
+        jedis.set(&quot;tag&quot;,&quot;test&quot;);
+        System.out.println(jedis.get(&quot;tag&quot;));
+    }
+
+    @Autowired
+    private BeanClass beanClass;
+
+    @Test
+    public void beanDefinition(){
+        System.out.println(beanClass.getUsername());
     }
 }</code></pre>
 
