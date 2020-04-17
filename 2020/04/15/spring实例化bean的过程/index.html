@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    6.3k 字
+                    8.9k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      32 分钟
+                      46 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期四, 四月 16日 2020, 10:53 晚上</p>
+                class="note note-warning">本文最后更新于：星期五, 四月 17日 2020, 6:52 晚上</p>
             
             <div class="markdown-body">
               <h2 id="DeanDefinition简介"><a href="#DeanDefinition简介" class="headerlink" title="DeanDefinition简介"></a>DeanDefinition简介</h2><p>BeanDefinition在spring中贯穿始终，spring要根据BeanDefiniton对象来实例化bean。在实例化之前，需要解析bean标签并封装成BeanDefiniton对象。</p>
@@ -235,6 +235,8 @@
 </ul>
 <h2 id="invokeBeanFactoryPostProcessors-方法"><a href="#invokeBeanFactoryPostProcessors-方法" class="headerlink" title="invokeBeanFactoryPostProcessors()方法"></a>invokeBeanFactoryPostProcessors()方法</h2><p>invokeBeanFactoryPostProcessors()方法在spring的核心方法refresh()中调用，主要用于处理BeanFactoryPostProcessor接口，是针对BeanFactory的扩展，主要用在bean实例化之前，读取bean的定义，完成对BeanDefinition的修改。</p>
 <p>该方法会实例化和调用所有的BeanFactoryPostProcessor（包括子类BeanDefinitionRegistryPostProcessor），并调用postProcessBeanDefinitionRegistry()方法。</p>
+<p>postProcessBeanDefinitionRegistry()方法的入参为BeanDefinitionRegistry对象，通过这个对象可以完成对所有BeanDefinition对象的增删改查。</p>
+<p>在执行过程中会对实现排序接口的BeanFactoryPostProcessor进行排序，然后按照顺序进行调用。</p>
 <p>调用顺序为: </p>
 <ol>
 <li>实现PriorityOrdered排序接口</li>
@@ -392,7 +394,7 @@
         // modified the original metadata, e.g. replacing placeholders in values...
         beanFactory.clearMetadataCache();
     }</code></pre>
-<h2 id="registerBeanPostProcessors-方法"><a href="#registerBeanPostProcessors-方法" class="headerlink" title="registerBeanPostProcessors()方法"></a>registerBeanPostProcessors()方法</h2><p>registerBeanPostProcessors方法主要用于处理BeanPostProcessor接口，会实例化所有的BeanPostProcessor，将所有实现了BeanPostProcessor接口的类加载到BeanFactory中。</p>
+<h2 id="registerBeanPostProcessors-方法"><a href="#registerBeanPostProcessors-方法" class="headerlink" title="registerBeanPostProcessors()方法"></a>registerBeanPostProcessors()方法</h2><p>registerBeanPostProcessors方法主要用于处理BeanPostProcessor接口，会实例化所有的BeanPostProcessor，将所有实现了BeanPostProcessor接口的类加载到BeanFactory中。BeanPostProcessor接口用于在BeanDefination初始化过程中对Bean进行一些操作。</p>
 <p>调用顺序与invokeBeanFactoryPostProcessors()方法相同。</p>
 <pre><code class="java">    public static void registerBeanPostProcessors(
             ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
@@ -473,7 +475,7 @@
     }</code></pre>
 <h2 id="finishBeanFactoryInitialization-方法"><a href="#finishBeanFactoryInitialization-方法" class="headerlink" title="finishBeanFactoryInitialization()方法"></a>finishBeanFactoryInitialization()方法</h2><p>这个方法是spring中最重要的方法，包括bean实例化过程、ioc、注解支持、BeanPostProcessor的执行、Aop的入口。</p>
 <ol>
-<li><p>preInstantiateSingletons()是他的主要方法，完成对bean的实例化。该方法会遍历beanDefinitionNames，首先会将父子BeanDefinition合并，然后将BeanDefinition实例化。</p>
+<li><p>preInstantiateSingletons()是他的主要方法，完成对bean的实例化。该方法会遍历beanDefinitionNames，首先会将父子BeanDefinition合并，然后将具有某些特征的BeanDefinition通过getBean()方法实例化。</p>
 <pre><code class="java">    public void preInstantiateSingletons() throws BeansException {
         if (logger.isTraceEnabled()) {
             logger.trace(&quot;Pre-instantiating singletons in &quot; + this);
@@ -538,7 +540,7 @@
         }
     }</code></pre>
 </li>
-<li><p>doGetBean()方法是getBean()方法的主要方法。</p>
+<li><p>getBean()是实例化的核心方法，doGetBean()方法是getBean()方法的主要方法。该方法首先会尝试从缓存中获取实例，如果没有再进行类的实例化，此时缓存中一般是没有实例的。在类实例化之前会判断类上是否有@Dependon注解，如果有就先实例化@Dependon注解中的类。类的实例化是通过getSingleton()方法实现的。</p>
 <pre><code class="java">protected &lt;T&gt; T doGetBean(final String name, @Nullable final Class&lt;T&gt; requiredType,
             @Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
 
@@ -712,7 +714,7 @@
         return (T) bean;
     }</code></pre>
 </li>
-<li><p>getSingleton方法在创建前会将beanName添加到singletonsCurrentlyInCreation容器中，该容器中存储着正在实例化的beanName，然后调用传入的singletonFactory的getObject()方法创建实例，创建完成后再从容器中删除，并放入一级缓存中。</p>
+<li><p>getSingleton()方法在创建前会将beanName添加到singletonsCurrentlyInCreation容器中，该容器中存储着正在实例化的beanName，然后调用传入的singletonFactory的getObject()方法创建实例，创建完成后再从容器中删除，并放入一级缓存中。getObject()方法会调用上层传入的方法createBean()。</p>
 <pre><code class="java">    public Object getSingleton(String beanName, ObjectFactory&lt;?&gt; singletonFactory) {
         Assert.notNull(beanName, &quot;Bean name must not be null&quot;);
         synchronized (this.singletonObjects) {
@@ -772,7 +774,7 @@
         }
 </code></pre>
 </li>
-<li><p>在getObject()方法中会调用上层的createBean()方法，doCreateBean()是createBean()的主要方法。此方法中首先会通过创建实例，然后完成IOC跟DI。</p>
+<li><p>doCreateBean()是createBean()的主要方法。此方法中首先会通过createBeanInstance()方法创建实例，然后调用applyMergedBeanDefinitionPostProcessors()方法完成依赖注入的装配，收集。</p>
 <pre><code class="java">    protected Object doCreateBean(final String beanName, final RootBeanDefinition mbd, final @Nullable Object[] args)
             throws BeanCreationException {
 
@@ -883,7 +885,9 @@
         return exposedObject;
     }</code></pre>
 </li>
-<li><p>createBeanInstance()方法，首先会通过反射拿到Class对象，然后会检查是否有FactoryMethodName属性，如果有则调用instantiateUsingFactoryMethod()方法创建后返回，如果没有会使用determineConstructorsFromBeanPostProcessors()方法扫描有Autowired注解的构造函数，如果有则使用autowireConstructor()方法创建对象并返回，无参构造直接使用反射调用构造函数后包装为BeanWrapper返回。</p>
+</ol>
+<h3 id="createBeanInstance-方法"><a href="#createBeanInstance-方法" class="headerlink" title="createBeanInstance()方法"></a>createBeanInstance()方法</h3><ol>
+<li><p>createBeanInstance()方法，首先会通过反射拿到Class对象，然后会检查是否有FactoryMethodName属性，如果有则调用instantiateUsingFactoryMethod()方法创建后返回，如果没有会使用determineConstructorsFromBeanPostProcessors()方法扫描有Autowired注解的构造函数，如果有则使用autowireConstructor()方法创建对象并返回，无参构造直接使用反射调用构造函数创建实例并包装为BeanWrapperImpl返回。</p>
 <pre><code class="java">    protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
         // Make sure bean class is actually resolved at this point.
         //反射拿到Class对象
@@ -944,7 +948,7 @@
         return instantiateBean(beanName, mbd);
     }</code></pre>
 </li>
-<li><p>方法是反射调用类中的 factoryMethod方法。这要知道@Bean方法的原理，实际上 spring会扫描有@bean注解的方法，然后把方法名称设置到BeanDefinition的factoryMethod属性中，接下来就会调到下面代码中的方法实现@Bean方法的调用。该方法里面的参数解析过程不需要了解。</p>
+<li><p>instantiateUsingFactoryMethod()方法是通过反射调用类中的factoryMethod方法创建对象，然后将对象包装为BeanWrapperImpl对象。BeanWrapperImpl对象中包含对实例的引用，以及一些编辑器和类型转换器，这个对象不需要深究，了解即可。@Bean注解其实就是把方法名称设置到BeanDefinition的factoryMethod属性中。该方法里面的参数解析过程不需要了解。</p>
 <pre><code class="java">    public BeanWrapper instantiateUsingFactoryMethod(
             String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
 
@@ -1180,9 +1184,162 @@
         return bw;
     }</code></pre>
 </li>
-<li><p>determineConstructorsFromBeanPostProcessors()是BeanPostProcessor接口类的首次应用，最终会掉到AutowiredAnnotationBeanPostProcessor类的方法，在方法中会扫描有注解的构造函数然后完成装配过程。然后把有@Autowired注解的构造函数返回。</p>
+<li><p>determineConstructorsFromBeanPostProcessors()首先会获取所有的BeanPostProcessor，然后调用determineCandidateConstructors()方法获取带@Autowired注解的构造函数。该方法是BeanPostProcessor接口类的首次应用，最终会掉到AutowiredAnnotationBeanPostProcessor类的方法，在方法中会扫描有注解的构造函数并返回。</p>
+<pre><code class="java">    protected Constructor&lt;?&gt;[] determineConstructorsFromBeanPostProcessors(@Nullable Class&lt;?&gt; beanClass, String beanName)
+            throws BeansException {
+
+        if (beanClass != null &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+            //获取所有的BeanPostProcessors
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+                    SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+                    //找到合适的构造函数
+                    Constructor&lt;?&gt;[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
+                    if (ctors != null) {
+                        return ctors;
+                    }
+                }
+            }
+        }
+        return null;
+    }</code></pre>
 </li>
-<li><p>autowireConstructor()方法中会对autowired装配的参数进行整理，然后使用反射创建实例后包装为BeanWrapper返回。</p>
+<li><p>AutowiredAnnotationBeanPostProcessor中的determineCandidateConstructors()方法，该方法会返回有@Autowired注解的构造函数。该方法首先会扫描所有方法，处理有@Lookup注解的方法，然后拿到所有的构造函数并使用findAutowiredAnnotation()方法对@Autowired跟@Value注解进行扫描，返回有@Autowired的构造函数。</p>
+<pre><code class="java">    public Constructor&lt;?&gt;[] determineCandidateConstructors(Class&lt;?&gt; beanClass, final String beanName)
+            throws BeanCreationException {
+
+        // Let&#39;s check for lookup methods here..
+        if (!this.lookupMethodsChecked.contains(beanName)) {
+            try {
+                //拿到所有方法，循环回调lambda中的内容
+                ReflectionUtils.doWithMethods(beanClass, method -&gt; {
+                    //对注解@Lookup的支持，该注解用于替代方法返回值
+                    Lookup lookup = method.getAnnotation(Lookup.class);
+                    if (lookup != null) {
+                        Assert.state(this.beanFactory != null, &quot;No BeanFactory available&quot;);
+                        LookupOverride override = new LookupOverride(method, lookup.value());
+                        try {
+                            RootBeanDefinition mbd = (RootBeanDefinition) this.beanFactory.getMergedBeanDefinition(beanName);
+                            mbd.getMethodOverrides().addOverride(override);
+                        }
+                        catch (NoSuchBeanDefinitionException ex) {
+                            throw new BeanCreationException(beanName,
+                                    &quot;Cannot apply @Lookup to beans without corresponding bean definition&quot;);
+                        }
+                    }
+                });
+            }
+            catch (IllegalStateException ex) {
+                throw new BeanCreationException(beanName, &quot;Lookup method resolution failed&quot;, ex);
+            }
+            this.lookupMethodsChecked.add(beanName);
+        }
+
+        // Quick check on the concurrent map first, with minimal locking.
+        Constructor&lt;?&gt;[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+        if (candidateConstructors == null) {
+            // Fully synchronized resolution now...
+            synchronized (this.candidateConstructorsCache) {
+                candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+                if (candidateConstructors == null) {
+                    Constructor&lt;?&gt;[] rawCandidates;
+                    try {
+                        //获取bean对应的所有构造器
+                        rawCandidates = beanClass.getDeclaredConstructors();
+                    }
+                    catch (Throwable ex) {
+                        throw new BeanCreationException(beanName,
+                                &quot;Resolution of declared constructors on bean Class [&quot; + beanClass.getName() +
+                                &quot;] from ClassLoader [&quot; + beanClass.getClassLoader() + &quot;] failed&quot;, ex);
+                    }
+                    List&lt;Constructor&lt;?&gt;&gt; candidates = new ArrayList&lt;&gt;(rawCandidates.length);
+                    Constructor&lt;?&gt; requiredConstructor = null;
+                    Constructor&lt;?&gt; defaultConstructor = null;
+                    Constructor&lt;?&gt; primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
+                    int nonSyntheticConstructors = 0;
+                    for (Constructor&lt;?&gt; candidate : rawCandidates) {
+                        if (!candidate.isSynthetic()) {
+                            nonSyntheticConstructors++;
+                        }
+                        else if (primaryConstructor != null) {
+                            continue;
+                        }
+                        //获取到构造函数上的@Autowired注解信息,这个方法可以不看
+                        AnnotationAttributes ann = findAutowiredAnnotation(candidate);
+                        if (ann == null) {
+                            Class&lt;?&gt; userClass = ClassUtils.getUserClass(beanClass);
+                            if (userClass != beanClass) {
+                                try {
+                                    Constructor&lt;?&gt; superCtor =
+                                            userClass.getDeclaredConstructor(candidate.getParameterTypes());
+
+                                    ann = findAutowiredAnnotation(superCtor);
+                                }
+                                catch (NoSuchMethodException ex) {
+                                    // Simply proceed, no equivalent superclass constructor found...
+                                }
+                            }
+                        }
+                        if (ann != null) {
+                            if (requiredConstructor != null) {
+                                throw new BeanCreationException(beanName,
+                                        &quot;Invalid autowire-marked constructor: &quot; + candidate +
+                                        &quot;. Found constructor with &#39;required&#39; Autowired annotation already: &quot; +
+                                        requiredConstructor);
+                            }
+                            //获取到@Autowired里面的required方法的值
+                            boolean required = determineRequiredStatus(ann);
+                            if (required) {
+                                if (!candidates.isEmpty()) {
+                                    throw new BeanCreationException(beanName,
+                                            &quot;Invalid autowire-marked constructors: &quot; + candidates +
+                                            &quot;. Found constructor with &#39;required&#39; Autowired annotation: &quot; +
+                                            candidate);
+                                }
+                                requiredConstructor = candidate;
+                            }
+                            candidates.add(candidate);
+                        }
+                        else if (candidate.getParameterCount() == 0) {
+                            defaultConstructor = candidate;
+                        }
+                    }
+                    if (!candidates.isEmpty()) {
+                        // Add default constructor to list of optional constructors, as fallback.
+                        if (requiredConstructor == null) {
+                            if (defaultConstructor != null) {
+                                candidates.add(defaultConstructor);
+                            }
+                            else if (candidates.size() == 1 &amp;&amp; logger.isInfoEnabled()) {
+                                logger.info(&quot;Inconsistent constructor declaration on bean with name &#39;&quot; + beanName +
+                                        &quot;&#39;: single autowire-marked constructor flagged as optional - &quot; +
+                                        &quot;this constructor is effectively required since there is no &quot; +
+                                        &quot;default constructor to fall back to: &quot; + candidates.get(0));
+                            }
+                        }
+                        candidateConstructors = candidates.toArray(new Constructor&lt;?&gt;[0]);
+                    }
+                    else if (rawCandidates.length == 1 &amp;&amp; rawCandidates[0].getParameterCount() &gt; 0) {
+                        candidateConstructors = new Constructor&lt;?&gt;[] {rawCandidates[0]};
+                    }
+                    else if (nonSyntheticConstructors == 2 &amp;&amp; primaryConstructor != null &amp;&amp;
+                            defaultConstructor != null &amp;&amp; !primaryConstructor.equals(defaultConstructor)) {
+                        candidateConstructors = new Constructor&lt;?&gt;[] {primaryConstructor, defaultConstructor};
+                    }
+                    else if (nonSyntheticConstructors == 1 &amp;&amp; primaryConstructor != null) {
+                        candidateConstructors = new Constructor&lt;?&gt;[] {primaryConstructor};
+                    }
+                    else {
+                        candidateConstructors = new Constructor&lt;?&gt;[0];
+                    }
+                    this.candidateConstructorsCache.put(beanClass, candidateConstructors);
+                }
+            }
+        }
+        return (candidateConstructors.length &gt; 0 ? candidateConstructors : null);
+    }</code></pre>
+</li>
+<li><p>autowireConstructor()方法中会获取@Autowired的参数，过程中会触发getBean()方法，此时的getBean()方法可能是从缓存中获取。获取到参数后使用反射创建实例并包装为BeanWrapperImpl后返回。</p>
 <pre><code class="java">public BeanWrapper autowireConstructor(String beanName, RootBeanDefinition mbd,
             @Nullable Constructor&lt;?&gt;[] chosenCtors, @Nullable Object[] explicitArgs) {
 
@@ -1364,6 +1521,327 @@
     }</code></pre>
 </li>
 </ol>
+<h3 id="applyMergedBeanDefinitionPostProcessors-方法"><a href="#applyMergedBeanDefinitionPostProcessors-方法" class="headerlink" title="applyMergedBeanDefinitionPostProcessors()方法"></a>applyMergedBeanDefinitionPostProcessors()方法</h3><ol>
+<li><p>applyMergedBeanDefinitionPostProcessors()方法会拿到所有的BeanPostProcessor接口，然后调用MergedBeanDefinitionPostProcessor接口的postProcessMergedBeanDefinition()方法完成注解的收集。</p>
+<pre><code class="java">    protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class&lt;?&gt; beanType, String beanName) {
+        for (BeanPostProcessor bp : getBeanPostProcessors()) {
+            if (bp instanceof MergedBeanDefinitionPostProcessor) {
+                MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
+                bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
+            }
+        }
+    }</code></pre>
+</li>
+<li><p>CommonAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法会调用InitDestroyAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法完成@postConstruct跟@PreDestory()注解的扫描，然后调用findResourceMetadata()扫描@Resource注解。</p>
+<pre><code>    public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName) {
+        //扫描@PostConstruct @PreDestroy
+        super.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
+        //扫描@Resource,扫描属性和方法上面是否有@Resource注解，如果有则收集起来封装成对象
+        InjectionMetadata metadata = findResourceMetadata(beanName, beanType, null);
+        metadata.checkConfigMembers(beanDefinition);
+    }</code></pre></li>
+<li><p>InitDestroyAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法会调用findLifecycleMetadata()方法，然后再次封装其返回的LifecycleMetadata对象。buildLifecycleMetadata()是findLifecycleMetadata()的核心方法，会循环判断类中的所有方法是否有@postConstruct跟@PreDestory()注解，如果有就将这个方法放到容器中，最后包装为LifecycleMetadata并返回。</p>
+<pre><code class="java">    private LifecycleMetadata buildLifecycleMetadata(final Class&lt;?&gt; clazz) {
+        List&lt;LifecycleElement&gt; initMethods = new ArrayList&lt;&gt;();
+        List&lt;LifecycleElement&gt; destroyMethods = new ArrayList&lt;&gt;();
+        Class&lt;?&gt; targetClass = clazz;
+
+        do {
+            final List&lt;LifecycleElement&gt; currInitMethods = new ArrayList&lt;&gt;();
+            final List&lt;LifecycleElement&gt; currDestroyMethods = new ArrayList&lt;&gt;();
+
+            ReflectionUtils.doWithLocalMethods(targetClass, method -&gt; {
+                if (this.initAnnotationType != null &amp;&amp; method.isAnnotationPresent(this.initAnnotationType)) {
+                    LifecycleElement element = new LifecycleElement(method);
+                    currInitMethods.add(element);
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(&quot;Found init method on class [&quot; + clazz.getName() + &quot;]: &quot; + method);
+                    }
+                }
+                if (this.destroyAnnotationType != null &amp;&amp; method.isAnnotationPresent(this.destroyAnnotationType)) {
+                    currDestroyMethods.add(new LifecycleElement(method));
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(&quot;Found destroy method on class [&quot; + clazz.getName() + &quot;]: &quot; + method);
+                    }
+                }
+            });
+
+            initMethods.addAll(0, currInitMethods);
+            destroyMethods.addAll(currDestroyMethods);
+            targetClass = targetClass.getSuperclass();
+        }
+        while (targetClass != null &amp;&amp; targetClass != Object.class);
+
+        return new LifecycleMetadata(clazz, initMethods, destroyMethods);
+    }</code></pre>
+</li>
+<li><p>findResourceMetadata()方法会调用buildResourceMetadata()方法获取包装后的InjectionMetadata，放入缓存后返回。</p>
+<pre><code class="java">    private InjectionMetadata findResourceMetadata(String beanName, final Class&lt;?&gt; clazz, @Nullable PropertyValues pvs) {
+        // Fall back to class name as cache key, for backwards compatibility with custom callers.
+        String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
+        // Quick check on the concurrent map first, with minimal locking.
+        InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+        if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+            synchronized (this.injectionMetadataCache) {
+                metadata = this.injectionMetadataCache.get(cacheKey);
+                if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+                    if (metadata != null) {
+                        metadata.clear(pvs);
+                    }
+                    //主要看这个方法
+                    metadata = buildResourceMetadata(clazz);
+                    this.injectionMetadataCache.put(cacheKey, metadata);
+                }
+            }
+        }
+        return metadata;
+    }</code></pre>
+</li>
+<li><p>buildResourceMetadata()方法会去获取类上的所有属性，然后循环调用lambda中的内容放到容器中，最后封装为InjectionMetadata对象后返回。</p>
+<pre><code class="java">    private InjectionMetadata buildResourceMetadata(final Class&lt;?&gt; clazz) {
+        List&lt;InjectionMetadata.InjectedElement&gt; elements = new ArrayList&lt;&gt;();
+        Class&lt;?&gt; targetClass = clazz;
+
+        do {
+            final List&lt;InjectionMetadata.InjectedElement&gt; currElements = new ArrayList&lt;&gt;();
+
+            ReflectionUtils.doWithLocalFields(targetClass, field -&gt; {
+                if (webServiceRefClass != null &amp;&amp; field.isAnnotationPresent(webServiceRefClass)) {
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        throw new IllegalStateException(&quot;@WebServiceRef annotation is not supported on static fields&quot;);
+                    }
+                    currElements.add(new WebServiceRefElement(field, field, null));
+                }
+                else if (ejbRefClass != null &amp;&amp; field.isAnnotationPresent(ejbRefClass)) {
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        throw new IllegalStateException(&quot;@EJB annotation is not supported on static fields&quot;);
+                    }
+                    currElements.add(new EjbRefElement(field, field, null));
+                }
+                else if (field.isAnnotationPresent(Resource.class)) {
+                    if (Modifier.isStatic(field.getModifiers())) {
+                        throw new IllegalStateException(&quot;@Resource annotation is not supported on static fields&quot;);
+                    }
+                    if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+                        currElements.add(new ResourceElement(field, field, null));
+                    }
+                }
+            });
+
+            ReflectionUtils.doWithLocalMethods(targetClass, method -&gt; {
+                Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+                if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+                    return;
+                }
+                if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+                    if (webServiceRefClass != null &amp;&amp; bridgedMethod.isAnnotationPresent(webServiceRefClass)) {
+                        if (Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalStateException(&quot;@WebServiceRef annotation is not supported on static methods&quot;);
+                        }
+                        if (method.getParameterCount() != 1) {
+                            throw new IllegalStateException(&quot;@WebServiceRef annotation requires a single-arg method: &quot; + method);
+                        }
+                        PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                        currElements.add(new WebServiceRefElement(method, bridgedMethod, pd));
+                    }
+                    else if (ejbRefClass != null &amp;&amp; bridgedMethod.isAnnotationPresent(ejbRefClass)) {
+                        if (Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalStateException(&quot;@EJB annotation is not supported on static methods&quot;);
+                        }
+                        if (method.getParameterCount() != 1) {
+                            throw new IllegalStateException(&quot;@EJB annotation requires a single-arg method: &quot; + method);
+                        }
+                        PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                        currElements.add(new EjbRefElement(method, bridgedMethod, pd));
+                    }
+                    else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
+                        if (Modifier.isStatic(method.getModifiers())) {
+                            throw new IllegalStateException(&quot;@Resource annotation is not supported on static methods&quot;);
+                        }
+                        Class&lt;?&gt;[] paramTypes = method.getParameterTypes();
+                        if (paramTypes.length != 1) {
+                            throw new IllegalStateException(&quot;@Resource annotation requires a single-arg method: &quot; + method);
+                        }
+                        if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
+                            PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+                            currElements.add(new ResourceElement(method, bridgedMethod, pd));
+                        }
+                    }
+                }
+            });
+
+            elements.addAll(0, currElements);
+            targetClass = targetClass.getSuperclass();
+        }
+        while (targetClass != null &amp;&amp; targetClass != Object.class);
+
+        return new InjectionMetadata(clazz, elements);
+    }</code></pre>
+</li>
+</ol>
+<p>注：其他类型的BeanPostProcessor收集过程与InitDestroyAnnotationBeanPostProcessor基本相同，只是扫描的注解不同，此处不在赘述。</p>
+<h3 id="populateBean-方法"><a href="#populateBean-方法" class="headerlink" title="populateBean()方法"></a>populateBean()方法</h3><ol>
+<li><p>依赖注入的核心方法，主要方法为postProcessProperties()</p>
+<pre><code class="java">    protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable BeanWrapper bw) {
+        if (bw == null) {
+            if (mbd.hasPropertyValues()) {
+                throw new BeanCreationException(
+                        mbd.getResourceDescription(), beanName, &quot;Cannot apply property values to null instance&quot;);
+            }
+            else {
+                // Skip property population phase for null instance.
+                return;
+            }
+        }
+
+        // Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
+        // state of the bean before properties are set. This can be used, for example,
+        // to support styles of field injection.
+        boolean continueWithPropertyPopulation = true;
+
+        //这里很有意思，写接口可以让所有类都不能依赖注入
+        if (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof InstantiationAwareBeanPostProcessor) {
+                    InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+                    if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
+
+                        //是否需要DI，依赖注入
+                        continueWithPropertyPopulation = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!continueWithPropertyPopulation) {
+            return;
+        }
+
+        PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : null);
+
+        if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_NAME || mbd.getResolvedAutowireMode() == AUTOWIRE_BY_TYPE) {
+            MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
+            // Add property values based on autowire by name if applicable.
+            if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_NAME) {
+                autowireByName(beanName, mbd, bw, newPvs);
+            }
+            // Add property values based on autowire by type if applicable.
+            if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_TYPE) {
+                autowireByType(beanName, mbd, bw, newPvs);
+            }
+            pvs = newPvs;
+        }
+
+        boolean hasInstAwareBpps = hasInstantiationAwareBeanPostProcessors();
+        boolean needsDepCheck = (mbd.getDependencyCheck() != AbstractBeanDefinition.DEPENDENCY_CHECK_NONE);
+
+        PropertyDescriptor[] filteredPds = null;
+
+        //重点看这个if代码块，重要程度 5
+        if (hasInstAwareBpps) {
+            if (pvs == null) {
+                pvs = mbd.getPropertyValues();
+            }
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof InstantiationAwareBeanPostProcessor) {
+                    InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+                    //依赖注入过程，@Autowired的支持
+                    PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
+                    if (pvsToUse == null) {
+                        if (filteredPds == null) {
+                            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
+                        }
+
+                        //老版本用这个完成依赖注入过程，@Autowired的支持
+                        pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
+                        if (pvsToUse == null) {
+                            return;
+                        }
+                    }
+                    pvs = pvsToUse;
+                }
+            }
+        }
+        if (needsDepCheck) {
+            if (filteredPds == null) {
+                filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
+            }
+            checkDependencies(beanName, mbd, filteredPds, pvs);
+        }
+
+        //这个方法很鸡肋了，建议不看，是老版本用&lt;property name=&quot;username&quot; value=&quot;Jack&quot;/&gt;
+        //标签做依赖注入的代码实现，复杂且无用
+        if (pvs != null) {
+            applyPropertyValues(beanName, mbd, bw, pvs);
+        }
+    }</code></pre>
+</li>
+<li><p>AutowiredAnnotationBeanPostProcessor的postProcessProperties()方法。该方法首先从缓存中获取之前收集好的所有InjectionMetadata对象，然后调用循环调用inject()方法进行注入。</p>
+<pre><code class="java">    public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+    // 从缓存中获取InjectionMetadata对象
+        InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+        try {
+            metadata.inject(bean, beanName, pvs);
+        }
+        catch (BeanCreationException ex) {
+            throw ex;
+        }
+        catch (Throwable ex) {
+            throw new BeanCreationException(beanName, &quot;Injection of autowired dependencies failed&quot;, ex);
+        }
+        return pvs;
+    }</code></pre>
+</li>
+<li><p>此处为inject()方法，先从spring容器中拿到参数对应的值，这时可能会触发实例化，然后通过反射完成对象的注入。</p>
+<pre><code class="java">        protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+            Field field = (Field) this.member;
+            Object value;
+            if (this.cached) {
+                value = resolvedCachedArgument(beanName, this.cachedFieldValue);
+            }
+            else {
+                DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
+                desc.setContainingClass(bean.getClass());
+                Set&lt;String&gt; autowiredBeanNames = new LinkedHashSet&lt;&gt;(1);
+                Assert.state(beanFactory != null, &quot;No BeanFactory available&quot;);
+                TypeConverter typeConverter = beanFactory.getTypeConverter();
+                try {
+                    value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
+                }
+                catch (BeansException ex) {
+                    throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
+                }
+                synchronized (this) {
+                    if (!this.cached) {
+                        if (value != null || this.required) {
+                            this.cachedFieldValue = desc;
+                            registerDependentBeans(beanName, autowiredBeanNames);
+                            if (autowiredBeanNames.size() == 1) {
+                                String autowiredBeanName = autowiredBeanNames.iterator().next();
+                                if (beanFactory.containsBean(autowiredBeanName) &amp;&amp;
+                                        beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
+                                    this.cachedFieldValue = new ShortcutDependencyDescriptor(
+                                            desc, autowiredBeanName, field.getType());
+                                }
+                            }
+                        }
+                        else {
+                            this.cachedFieldValue = null;
+                        }
+                        this.cached = true;
+                    }
+                }
+            }
+            if (value != null) {
+                ReflectionUtils.makeAccessible(field);
+                field.set(bean, value);
+            }
+        }
+    }</code></pre>
+</li>
+</ol>
+<p>注：其他类的postProcessProperties与此处基本相同。</p>
 
             </div>
             <hr>
