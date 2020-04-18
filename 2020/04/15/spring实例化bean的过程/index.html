@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    12.8k 字
+                    13.7k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      65 分钟
+                      69 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期六, 四月 18日 2020, 11:08 上午</p>
+                class="note note-warning">本文最后更新于：星期六, 四月 18日 2020, 11:43 中午</p>
             
             <div class="markdown-body">
               <h2 id="DeanDefinition简介"><a href="#DeanDefinition简介" class="headerlink" title="DeanDefinition简介"></a>DeanDefinition简介</h2><p>BeanDefinition在spring中贯穿始终，spring要根据BeanDefiniton对象来实例化bean。在实例化之前，需要解析bean标签并封装成BeanDefiniton对象。</p>
@@ -2457,6 +2457,129 @@
             }
             return object;
         }
+    }</code></pre>
+<h2 id="BeanPostProcessor接口"><a href="#BeanPostProcessor接口" class="headerlink" title="BeanPostProcessor接口"></a>BeanPostProcessor接口</h2><p>BeanPostProcessor接口类型实例是针对某种特定功能的埋点，在这个点会根据接口类型来过滤掉不关注这个点的其他类，只有真正关注的类才会在这个点进行相应的功能实现。在使用时通常会拿到所有的BeanPostProcessor接口，然后循环根据BeanPostProcessor接口的类型进行过滤，或者直接调用对应的方法，如果该BeanPostProcessor接口不关注这个点，对应的方法中就没有相应的实现。</p>
+<h3 id="获取有-Autowired注解的构造函数埋点"><a href="#获取有-Autowired注解的构造函数埋点" class="headerlink" title="获取有@Autowired注解的构造函数埋点"></a>获取有@Autowired注解的构造函数埋点</h3><p>doCreateBean()初始化Bean实例时，用于创建Bean实例的createBeanInstance()方法中，会调用determineConstructorsFromBeanPostProcessors()方法获得有@Autowired注解的构造方法。</p>
+<pre><code>        // Candidate constructors for autowiring?
+        //寻找当前正在实例化的bean中有@Autowired注解的构造函数
+        Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+        if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
+                mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+            //如果ctors不为空，就说明构造函数上有@Autowired注解
+            return autowireConstructor(beanName, mbd, ctors, args);
+        }</code></pre><p>这里过滤的接口类型是SmartInstantiationAwareBeanPostProcessor，调用的方法是determineCandidateConstructors()。</p>
+<pre><code class="java">    protected Constructor&lt;?&gt;[] determineConstructorsFromBeanPostProcessors(@Nullable Class&lt;?&gt; beanClass, String beanName)
+            throws BeansException {
+
+        if (beanClass != null &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+            //获取所有的BeanPostProcessors
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+                    SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+                    //找到合适的构造函数
+                    Constructor&lt;?&gt;[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
+                    if (ctors != null) {
+                        return ctors;
+                    }
+                }
+            }
+        }
+        return null;
+    }</code></pre>
+<h3 id="收集-Resource、-Autowired、-Value-PostConstruct、-PreDestroy注解的方法和属性埋点"><a href="#收集-Resource、-Autowired、-Value-PostConstruct、-PreDestroy注解的方法和属性埋点" class="headerlink" title="收集@Resource、@Autowired、@Value@PostConstruct、@PreDestroy注解的方法和属性埋点"></a>收集@Resource、@Autowired、@Value@PostConstruct、@PreDestroy注解的方法和属性埋点</h3><p>doCreateBean()进行注解的装配时，会使用applyMergedBeanDefinitionPostProcessors()方法。</p>
+<pre><code class="java">        synchronized (mbd.postProcessingLock) {
+            if (!mbd.postProcessed) {
+                try {
+                    //CommonAnnotationBeanPostProcessor  支持了@PostConstruct，@PreDestroy,@Resource注解
+                    //AutowiredAnnotationBeanPostProcessor 支持 @Autowired,@Value注解
+                    //BeanPostProcessor接口的典型运用，这里要理解这个接口
+                    //对类中注解的装配过程
+                    //重要程度5，必须看
+                    applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
+                }
+                catch (Throwable ex) {
+                    throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                            &quot;Post-processing of merged bean definition failed&quot;, ex);
+                }
+                mbd.postProcessed = true;
+            }
+        }</code></pre>
+<p>过滤的接口类型是MergedBeanDefinitionPostProcessor，调用的方法是postProcessMergedBeanDefinition()。</p>
+<pre><code class="java">    protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class&lt;?&gt; beanType, String beanName) {
+        for (BeanPostProcessor bp : getBeanPostProcessors()) {
+            if (bp instanceof MergedBeanDefinitionPostProcessor) {
+                MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
+                bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
+            }
+        }
+    }</code></pre>
+<h3 id="循环依赖解决中bean的提前暴露埋点"><a href="#循环依赖解决中bean的提前暴露埋点" class="headerlink" title="循环依赖解决中bean的提前暴露埋点"></a>循环依赖解决中bean的提前暴露埋点</h3><p>doCreateBean()对Bean进行提前暴露时，会调用getEarlyBeanReference()方法获取到Bean实例。</p>
+<pre><code class="java">        //是否    单例bean提前暴露
+        boolean earlySingletonExposure = (mbd.isSingleton() &amp;&amp; this.allowCircularReferences &amp;&amp;
+                isSingletonCurrentlyInCreation(beanName));
+        if (earlySingletonExposure) {
+            if (logger.isTraceEnabled()) {
+                logger.trace(&quot;Eagerly caching bean &#39;&quot; + beanName +
+                        &quot;&#39; to allow for resolving potential circular references&quot;);
+            }
+            //这里着重理解，对理解循环依赖帮助非常大，重要程度 5   添加三级缓存
+            addSingletonFactory(beanName, () -&gt; getEarlyBeanReference(beanName, mbd, bean));
+        }</code></pre>
+<p>过滤的接口类型是SmartInstantiationAwareBeanPostProcessor，调用的方法是determineCandidateConstructors()。</p>
+<pre><code class="java">    protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
+        Object exposedObject = bean;
+        if (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+                    SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+                    exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
+                }
+            }
+        }
+        return exposedObject;
+    }</code></pre>
+<h3 id="阻止依赖注入埋点"><a href="#阻止依赖注入埋点" class="headerlink" title="阻止依赖注入埋点"></a>阻止依赖注入埋点</h3><p>位于doCreateBean()进行依赖注入时，populateBean()方法中。</p>
+<p>过滤的接口类型是InstantiationAwareBeanPostProcessor，调用的方法是postProcessAfterInstantiation。</p>
+<pre><code class="java">        //这里写接口可以让所有类都不能依赖注入
+        if (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof InstantiationAwareBeanPostProcessor) {
+                    InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+                    if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
+
+                        //是否需要DI，依赖注入
+                        continueWithPropertyPopulation = false;
+                        break;
+                    }
+                }
+            }
+        }</code></pre>
+<h3 id="IOC-DI-依赖注入埋点"><a href="#IOC-DI-依赖注入埋点" class="headerlink" title="IOC/DI 依赖注入埋点"></a>IOC/DI 依赖注入埋点</h3><p>位于doCreateBean()进行依赖注入时，populateBean()方法中。</p>
+<p>过滤的接口类型是InstantiationAwareBeanPostProcessor，调用的方法是postProcessProperties。</p>
+<pre><code class="java">        //重点看这个if代码块，重要程度 5
+        if (hasInstAwareBpps) {
+            if (pvs == null) {
+                pvs = mbd.getPropertyValues();
+            }
+            for (BeanPostProcessor bp : getBeanPostProcessors()) {
+                if (bp instanceof InstantiationAwareBeanPostProcessor) {
+                    InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+                    //依赖注入过程，@Autowired的支持
+                    PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
+                    if (pvsToUse == null) {
+                        if (filteredPds == null) {
+                            filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
+                        }
+
+                        //老版本用这个完成依赖注入过程，@Autowired的支持
+                        pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
+                        if (pvsToUse == null) {
+                            return;
+                        }
+                    }
+                    pvs = pvsToUse;
+                }
+            }
     }</code></pre>
 
             </div>
