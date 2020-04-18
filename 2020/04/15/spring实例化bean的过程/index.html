@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    13.7k 字
+                    14.3k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      69 分钟
+                      72 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期六, 四月 18日 2020, 11:43 中午</p>
+                class="note note-warning">本文最后更新于：星期六, 四月 18日 2020, 10:33 晚上</p>
             
             <div class="markdown-body">
               <h2 id="DeanDefinition简介"><a href="#DeanDefinition简介" class="headerlink" title="DeanDefinition简介"></a>DeanDefinition简介</h2><p>BeanDefinition在spring中贯穿始终，spring要根据BeanDefiniton对象来实例化bean。在实例化之前，需要解析bean标签并封装成BeanDefiniton对象。</p>
@@ -1954,6 +1954,108 @@
     }</code></pre>
 </li>
 </ol>
+<h3 id="registerDisposableBeanIfNecessary-方法"><a href="#registerDisposableBeanIfNecessary-方法" class="headerlink" title="registerDisposableBeanIfNecessary()方法"></a>registerDisposableBeanIfNecessary()方法</h3><p>注册bean销毁时的类DisposableBeanAdapter，该方法首先会将需要销毁的Bean包装为DisposableBeanAdapter对象，然后通过registerDisposableBean()方法放入disposableBeans容器中。</p>
+<pre><code class="java">    protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
+        AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
+        if (!mbd.isPrototype() &amp;&amp; requiresDestruction(bean, mbd)) {
+            if (mbd.isSingleton()) {
+                // Register a DisposableBean implementation that performs all destruction
+                // work for the given bean: DestructionAwareBeanPostProcessors,
+                // DisposableBean interface, custom destroy method.
+                registerDisposableBean(beanName,
+                        new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));
+            }
+            else {
+                // A bean with a custom scope...
+                Scope scope = this.scopes.get(mbd.getScope());
+                if (scope == null) {
+                    throw new IllegalStateException(&quot;No Scope registered for scope name &#39;&quot; + mbd.getScope() + &quot;&#39;&quot;);
+                }
+                scope.registerDestructionCallback(beanName,
+                        new DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));
+            }
+        }
+    }</code></pre>
+<p>DisposableBeanAdapter的构造方法。该方法首先会拿到类的destory-method属性，然后通过filterPostProcessors()方法获取到DestructionAwareBeanPostProcessor类型的BeanPostProcessor。</p>
+<pre><code class="java">    public DisposableBeanAdapter(Object bean, String beanName, RootBeanDefinition beanDefinition,
+            List&lt;BeanPostProcessor&gt; postProcessors, @Nullable AccessControlContext acc) {
+
+        Assert.notNull(bean, &quot;Disposable bean must not be null&quot;);
+        this.bean = bean;
+        this.beanName = beanName;
+        this.invokeDisposableBean =
+                (this.bean instanceof DisposableBean &amp;&amp; !beanDefinition.isExternallyManagedDestroyMethod(&quot;destroy&quot;));
+        this.nonPublicAccessAllowed = beanDefinition.isNonPublicAccessAllowed();
+        this.acc = acc;
+        String destroyMethodName = inferDestroyMethodIfNecessary(bean, beanDefinition);
+        if (destroyMethodName != null &amp;&amp; !(this.invokeDisposableBean &amp;&amp; &quot;destroy&quot;.equals(destroyMethodName)) &amp;&amp;
+                !beanDefinition.isExternallyManagedDestroyMethod(destroyMethodName)) {
+            this.destroyMethodName = destroyMethodName;
+            this.destroyMethod = determineDestroyMethod(destroyMethodName);
+            if (this.destroyMethod == null) {
+                if (beanDefinition.isEnforceDestroyMethod()) {
+                    throw new BeanDefinitionValidationException(&quot;Could not find a destroy method named &#39;&quot; +
+                            destroyMethodName + &quot;&#39; on bean with name &#39;&quot; + beanName + &quot;&#39;&quot;);
+                }
+            }
+            else {
+                Class&lt;?&gt;[] paramTypes = this.destroyMethod.getParameterTypes();
+                if (paramTypes.length &gt; 1) {
+                    throw new BeanDefinitionValidationException(&quot;Method &#39;&quot; + destroyMethodName + &quot;&#39; of bean &#39;&quot; +
+                            beanName + &quot;&#39; has more than one parameter - not supported as destroy method&quot;);
+                }
+                else if (paramTypes.length == 1 &amp;&amp; boolean.class != paramTypes[0]) {
+                    throw new BeanDefinitionValidationException(&quot;Method &#39;&quot; + destroyMethodName + &quot;&#39; of bean &#39;&quot; +
+                            beanName + &quot;&#39; has a non-boolean parameter - not supported as destroy method&quot;);
+                }
+            }
+        }
+        this.beanPostProcessors = filterPostProcessors(postProcessors, bean);
+    }</code></pre>
+<p>destory()方法首先会调用BeanPostProcessor接口的postProcessBeforeDestruction()方法，然后调用DisposableBean接口的distory()方法，再通过反射调用destory-method属性设置的方法。这个方法一般由tomcat中servlet规范中的ContextLoaderListener.contextDestroyed()方法触发。</p>
+<pre><code class="java">    public void destroy() {
+        if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
+            for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
+                processor.postProcessBeforeDestruction(this.bean, this.beanName);
+            }
+        }
+
+        if (this.invokeDisposableBean) {
+            if (logger.isTraceEnabled()) {
+                logger.trace(&quot;Invoking destroy() on bean with name &#39;&quot; + this.beanName + &quot;&#39;&quot;);
+            }
+            try {
+                if (System.getSecurityManager() != null) {
+                    AccessController.doPrivileged((PrivilegedExceptionAction&lt;Object&gt;) () -&gt; {
+                        ((DisposableBean) this.bean).destroy();
+                        return null;
+                    }, this.acc);
+                }
+                else {
+                    ((DisposableBean) this.bean).destroy();
+                }
+            }
+            catch (Throwable ex) {
+                String msg = &quot;Invocation of destroy method failed on bean with name &#39;&quot; + this.beanName + &quot;&#39;&quot;;
+                if (logger.isDebugEnabled()) {
+                    logger.info(msg, ex);
+                }
+                else {
+                    logger.info(msg + &quot;: &quot; + ex);
+                }
+            }
+        }
+
+        if (this.destroyMethod != null) {
+            invokeCustomDestroyMethod(this.destroyMethod);
+        }
+        else if (this.destroyMethodName != null) {
+            Method methodToCall = determineDestroyMethod(this.destroyMethodName);
+            if (methodToCall != null) {
+                invokeCustomDestroyMethod(methodToCall);
+            }
+        }
+    }</code></pre>
 <h2 id="单实例循环依赖"><a href="#单实例循环依赖" class="headerlink" title="单实例循环依赖"></a>单实例循环依赖</h2><p><a href="https://www.processon.com/view/link/5df9ce52e4b0c4255ea1a84f" target="_blank" rel="noopener">循环依赖流程图</a></p>
 <p>单例实例无参构造函数的循环依赖是可以解决的，但如果是参构造函数@Autowired 的方式造成的循环依赖会直接报错，多例的循环依赖也是直接报错。</p>
 <p>doGetBean()方法的再分析。在调用doGetBean()方法获取实例时，在该方法中会尝试通过getSingleton(beanName)方法从缓存中获取实例，如果没有会通过getSingleton()的重载方法创建实例。</p>
@@ -2581,6 +2683,22 @@
                 }
             }
     }</code></pre>
+<h3 id="Bean销毁的埋点"><a href="#Bean销毁的埋点" class="headerlink" title="Bean销毁的埋点"></a>Bean销毁的埋点</h3><p>位于doGreateBean().registerDisposableBeanIfNecessary()方法中调用DisposableBeanAdapter的构造函数时。用于寻找DestructionAwareBeanPostProcessor类型的BeanPostProcessor。</p>
+<pre><code class="java">    private List&lt;DestructionAwareBeanPostProcessor&gt; filterPostProcessors(List&lt;BeanPostProcessor&gt; processors, Object bean) {
+        List&lt;DestructionAwareBeanPostProcessor&gt; filteredPostProcessors = null;
+        if (!CollectionUtils.isEmpty(processors)) {
+            filteredPostProcessors = new ArrayList&lt;&gt;(processors.size());
+            for (BeanPostProcessor processor : processors) {
+                if (processor instanceof DestructionAwareBeanPostProcessor) {
+                    DestructionAwareBeanPostProcessor dabpp = (DestructionAwareBeanPostProcessor) processor;
+                    if (dabpp.requiresDestruction(bean)) {
+                        filteredPostProcessors.add(dabpp);
+                    }
+                }
+            }
+        }
+        return filteredPostProcessors;
+    }</code></pre>
 
             </div>
             <hr>
@@ -2613,6 +2731,12 @@
                 <div class="post-prevnext row">
                   <div class="post-prev col-6">
                     
+                    
+                      <a href="/2020/04/18/spring%E5%9F%BA%E4%BA%8E%E6%B3%A8%E8%A7%A3%E7%9A%84%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F%E5%92%8CBean%E7%9A%84%E5%A4%9A%E4%BE%8B%E4%BD%9C%E7%94%A8%E5%9F%9F/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">spring中@CompoentScan@Bean@import和Bean的多例作用域</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </div>
                   <div class="post-next col-6">

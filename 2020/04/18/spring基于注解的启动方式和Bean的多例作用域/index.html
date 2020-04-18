@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>spring中@CompoentScan@Bean@import和Bean的多例作用域 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期六, 四月 18日 2020, 11:47 中午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    2.5k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      13 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期六, 四月 18日 2020, 10:33 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="Bean的作用域"><a href="#Bean的作用域" class="headerlink" title="Bean的作用域"></a>Bean的作用域</h2><p>可以通过@Scope注解设置bean的作用域，不同的作用域对bean对象的管理不同。也可以通过AbstractBeanFactory的regtsterScope()方法添加自定义作用域。</p>
+<pre><code class="java">    public void registerScope(String scopeName, Scope scope) {
+        Assert.notNull(scopeName, &quot;Scope identifier must not be null&quot;);
+        Assert.notNull(scope, &quot;Scope must not be null&quot;);
+        if (SCOPE_SINGLETON.equals(scopeName) || SCOPE_PROTOTYPE.equals(scopeName)) {
+            throw new IllegalArgumentException(&quot;Cannot replace existing scopes &#39;singleton&#39; and &#39;prototype&#39;&quot;);
+        }
+        Scope previous = this.scopes.put(scopeName, scope);
+        if (previous != null &amp;&amp; previous != scope) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(&quot;Replacing scope &#39;&quot; + scopeName + &quot;&#39; from [&quot; + previous + &quot;] to [&quot; + scope + &quot;]&quot;);
+            }
+        }
+        else {
+            if (logger.isTraceEnabled()) {
+                logger.trace(&quot;Registering scope &#39;&quot; + scopeName + &quot;&#39; with implementation [&quot; + scope + &quot;]&quot;);
+            }
+        }
+    }</code></pre>
+<p>spring在初始化时会将beanFactory传给BeanFactoryPostProcessor接口中的postProcessBeanFactory()方法，可以通过这个方法添加scope对象。</p>
+<p>在创建实例时会调用到Scope对象的get方法， 并向get()方法中传递beanName跟创建方法factory.getObject()。所以我们可以在Scope中精准的控制bean对象的作用域。比如创建一个线程间共享的作用域。</p>
+<pre><code class="java">public class ThreadScope implements Scope {
+    private ThreadLocal local = new ThreadLocal();
+
+    @Override
+    public Object get(String name, ObjectFactory&lt;?&gt; objectFactory) {
+        if (local.get()!=null) {
+            return local.get();
+        }
+        Object bean = objectFactory.getObject();
+        local.set(bean);
+        return bean;
+    }
+}</code></pre>
+<h3 id="spring的作用域"><a href="#spring的作用域" class="headerlink" title="spring的作用域"></a>spring的作用域</h3><p>singleton：spring的默认作用域，在spring容器中仅存在一个Bean实例，在启动时会实例化并放入一级缓存中，之后都是从一级缓存中获取。</p>
+<p>prototype：多实例每次getBean()操作时都会重新创建。启动时不会初始化，只有在getBean()时才会实例化，而且在实例话时不会放入一级缓存，但会放入singletonsCurrentlyInCreation容器，阻断循环依赖。</p>
+<p>request：每次http请求都创建一个实例，仅在web容器中存在。如果以xml文件的方式启动会直接报错。原理就是将创建后的Bean实例放在request中。</p>
+<p>session：与request基本相同，不同的是Bean实例会放在Session中。</p>
+<h2 id="基于注解的启动方式解析"><a href="#基于注解的启动方式解析" class="headerlink" title="基于注解的启动方式解析"></a>基于注解的启动方式解析</h2><h3 id="AnnotationConfigApplicaitonContext类解析"><a href="#AnnotationConfigApplicaitonContext类解析" class="headerlink" title="AnnotationConfigApplicaitonContext类解析"></a>AnnotationConfigApplicaitonContext类解析</h3><p>其构造函数中会创建一个AnnotatedBeanDefinitionReader对象，然后将annotatedClasses对象交给register()方法完成解析</p>
+<pre><code class="java">    public AnnotationConfigApplicationContext(Class&lt;?&gt;... annotatedClasses) {
+        this();
+        register(annotatedClasses);
+        refresh();
+    }</code></pre>
+<h4 id="register-方法"><a href="#register-方法" class="headerlink" title="register()方法"></a>register()方法</h4><p>register()方法会调用到AnnotatedBeanDefinitionReader的register()方法循环annotatedClasses并调用registerBean()方法进行BeanDefinition的注册。</p>
+<p>doRegisterBean()是registerBean()的主要方法。doRegisterBean()方法首会创建一个BeanDefinition对象，然后将收集annotatedClass的信息并包装为Metadata对象，之后使用AnnotationConfigUtils.processCommonDefinitionAnnotations()对Metadata对象的注解和处理并设置到BeanDefinition对象中，之后将BeanDefinition对象封装为BeanDefinitionHolder并注册。</p>
+<pre><code class="java">    &lt;T&gt; void doRegisterBean(Class&lt;T&gt; annotatedClass, @Nullable Supplier&lt;T&gt; instanceSupplier, @Nullable String name,
+            @Nullable Class&lt;? extends Annotation&gt;[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers) {
+
+        AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(annotatedClass);
+        if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
+            return;
+        }
+
+        abd.setInstanceSupplier(instanceSupplier);
+        ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+        abd.setScope(scopeMetadata.getScopeName());
+        String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
+    //对注解进行收集
+        AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+        if (qualifiers != null) {
+            for (Class&lt;? extends Annotation&gt; qualifier : qualifiers) {
+                if (Primary.class == qualifier) {
+                    abd.setPrimary(true);
+                }
+                else if (Lazy.class == qualifier) {
+                    abd.setLazyInit(true);
+                }
+                else {
+                    abd.addQualifier(new AutowireCandidateQualifier(qualifier));
+                }
+            }
+        }
+        for (BeanDefinitionCustomizer customizer : definitionCustomizers) {
+            customizer.customize(abd);
+        }
+    //封装并创建BeanDefinitionHolder对象
+        BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+        definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+        BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+    }</code></pre>
+<h5 id="processCommonDefinitionAnnotations-方法"><a href="#processCommonDefinitionAnnotations-方法" class="headerlink" title="processCommonDefinitionAnnotations()方法"></a>processCommonDefinitionAnnotations()方法</h5><p>该方法会对注解进行收集并放到BeanDefinition中。</p>
+<pre><code class="java">static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata) {
+   //对@Lazy注解支持
+   AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
+   if (lazy != null) {
+      abd.setLazyInit(lazy.getBoolean(&quot;value&quot;));
+   }
+   else if (abd.getMetadata() != metadata) {
+      lazy = attributesFor(abd.getMetadata(), Lazy.class);
+      if (lazy != null) {
+         abd.setLazyInit(lazy.getBoolean(&quot;value&quot;));
+      }
+   }
+
+   if (metadata.isAnnotated(Primary.class.getName())) {
+      abd.setPrimary(true);
+   }
+   //对@DependsOn注解支持
+   AnnotationAttributes dependsOn = attributesFor(metadata, DependsOn.class);
+   if (dependsOn != null) {
+      abd.setDependsOn(dependsOn.getStringArray(&quot;value&quot;));
+   }
+
+   AnnotationAttributes role = attributesFor(metadata, Role.class);
+   if (role != null) {
+      abd.setRole(role.getNumber(&quot;value&quot;).intValue());
+   }
+   AnnotationAttributes description = attributesFor(metadata, Description.class);
+   if (description != null) {
+      abd.setDescription(description.getString(&quot;value&quot;));
+   }
+}</code></pre>
+<h3 id="AnnotatedBeanDefinitionReader解析"><a href="#AnnotatedBeanDefinitionReader解析" class="headerlink" title="AnnotatedBeanDefinitionReader解析"></a>AnnotatedBeanDefinitionReader解析</h3><p>其构造函数中会调用AnnotationConfigUtils.registerAnnotationConfigProcessors()完成BeanPostProcessor的注册。</p>
+<pre><code class="java">    public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment) {
+        Assert.notNull(registry, &quot;BeanDefinitionRegistry must not be null&quot;);
+        Assert.notNull(environment, &quot;Environment must not be null&quot;);
+        this.registry = registry;
+        this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
+        AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
+    }</code></pre>
+<h4 id="registerAnnotationConfigProcessors-方法"><a href="#registerAnnotationConfigProcessors-方法" class="headerlink" title="registerAnnotationConfigProcessors()方法"></a>registerAnnotationConfigProcessors()方法</h4><pre><code class="java">    public static Set&lt;BeanDefinitionHolder&gt; registerAnnotationConfigProcessors(
+            BeanDefinitionRegistry registry, @Nullable Object source) {
+
+        DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
+        if (beanFactory != null) {
+            if (!(beanFactory.getDependencyComparator() instanceof AnnotationAwareOrderComparator)) {
+                beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
+            }
+            if (!(beanFactory.getAutowireCandidateResolver() instanceof ContextAnnotationAutowireCandidateResolver)) {
+                beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
+            }
+        }
+
+        Set&lt;BeanDefinitionHolder&gt; beanDefs = new LinkedHashSet&lt;&gt;(8);
+
+        if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+      // 重点关注这行代码中的ConfigurationClassPostProcessor类
+            RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        // Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.
+        if (jsr250Present &amp;&amp; !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, COMMON_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        // Check for JPA support, and if present add the PersistenceAnnotationBeanPostProcessor.
+        if (jpaPresent &amp;&amp; !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition();
+            try {
+                def.setBeanClass(ClassUtils.forName(PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME,
+                        AnnotationConfigUtils.class.getClassLoader()));
+            }
+            catch (ClassNotFoundException ex) {
+                throw new IllegalStateException(
+                        &quot;Cannot load optional framework class: &quot; + PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, ex);
+            }
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
+        }
+
+        if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
+        }
+
+        if (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) {
+            RootBeanDefinition def = new RootBeanDefinition(DefaultEventListenerFactory.class);
+            def.setSource(source);
+            beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_FACTORY_BEAN_NAME));
+        }
+
+        return beanDefs;
+  }</code></pre>
+<h3 id="ConfigurationClassPostProcessor类解析"><a href="#ConfigurationClassPostProcessor类解析" class="headerlink" title="ConfigurationClassPostProcessor类解析"></a>ConfigurationClassPostProcessor类解析</h3><p>registerAnnotationConfigProcessors()方法会创建一个ConfigurationClassPostProcessor类。该类实现了BeanDefinitionRegistryPostProcessor接口，该接口会在xml解析完成后调用processConfigBeanDefinitions()方法。</p>
+<h4 id="processConfigBeanDefinitions-方法"><a href="#processConfigBeanDefinitions-方法" class="headerlink" title="processConfigBeanDefinitions()方法"></a>processConfigBeanDefinitions()方法</h4><p>该方法首先会调用ConfigurationClassUtils.checkConfigurationClassCandidate()方法将有某些注解的BeanDefination对象放入configCandidates容器中，然后对configCandidates容器进行排序，再使用parse()方法对注解进行处理，最后使用loadBeanDefinitions()注册BeanDefinition类。</p>
+<pre><code class="java">    public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+        List&lt;BeanDefinitionHolder&gt; configCandidates = new ArrayList&lt;&gt;();
+        String[] candidateNames = registry.getBeanDefinitionNames();
+
+        for (String beanName : candidateNames) {
+            BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+            if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
+                    ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(&quot;Bean definition has already been processed as a configuration class: &quot; + beanDef);
+                }
+            }
+            //判断是类上或方法上的注解，
+            else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+                configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
+            }
+        }
+
+        // Return immediately if no @Configuration classes were found
+        if (configCandidates.isEmpty()) {
+            return;
+        }
+
+    //排序
+        // Sort by previously determined @Order value, if applicable
+        configCandidates.sort((bd1, bd2) -&gt; {
+            int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
+            int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
+            return Integer.compare(i1, i2);
+        });
+
+        // Detect any custom bean name generation strategy supplied through the enclosing application context
+        SingletonBeanRegistry sbr = null;
+        if (registry instanceof SingletonBeanRegistry) {
+            sbr = (SingletonBeanRegistry) registry;
+            if (!this.localBeanNameGeneratorSet) {
+                BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(CONFIGURATION_BEAN_NAME_GENERATOR);
+                if (generator != null) {
+                    this.componentScanBeanNameGenerator = generator;
+                    this.importBeanNameGenerator = generator;
+                }
+            }
+        }
+
+        if (this.environment == null) {
+            this.environment = new StandardEnvironment();
+        }
+
+        //这个类很重要，@ComponentScan @Configuration支持
+        // Parse each @Configuration class
+        ConfigurationClassParser parser = new ConfigurationClassParser(
+                this.metadataReaderFactory, this.problemReporter, this.environment,
+                this.resourceLoader, this.componentScanBeanNameGenerator, registry);
+
+        Set&lt;BeanDefinitionHolder&gt; candidates = new LinkedHashSet&lt;&gt;(configCandidates);
+        Set&lt;ConfigurationClass&gt; alreadyParsed = new HashSet&lt;&gt;(configCandidates.size());
+        do {
+            parser.parse(candidates);
+            parser.validate();
+
+            Set&lt;ConfigurationClass&gt; configClasses = new LinkedHashSet&lt;&gt;(parser.getConfigurationClasses());
+            configClasses.removeAll(alreadyParsed);
+
+            // Read the model and create bean definitions based on its content
+            if (this.reader == null) {
+                this.reader = new ConfigurationClassBeanDefinitionReader(
+                        registry, this.sourceExtractor, this.resourceLoader, this.environment,
+                        this.importBeanNameGenerator, parser.getImportRegistry());
+            }
+            //设置beanDefinition的属性值,重点看，具体执行 import importSource @Bean的逻辑
+            this.reader.loadBeanDefinitions(configClasses);
+            alreadyParsed.addAll(configClasses);
+
+            candidates.clear();
+            if (registry.getBeanDefinitionCount() &gt; candidateNames.length) {
+                String[] newCandidateNames = registry.getBeanDefinitionNames();
+                Set&lt;String&gt; oldCandidateNames = new HashSet&lt;&gt;(Arrays.asList(candidateNames));
+                Set&lt;String&gt; alreadyParsedClasses = new HashSet&lt;&gt;();
+                for (ConfigurationClass configurationClass : alreadyParsed) {
+                    alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
+                }
+                for (String candidateName : newCandidateNames) {
+                    if (!oldCandidateNames.contains(candidateName)) {
+                        BeanDefinition bd = registry.getBeanDefinition(candidateName);
+                        if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &amp;&amp;
+                                !alreadyParsedClasses.contains(bd.getBeanClassName())) {
+                            candidates.add(new BeanDefinitionHolder(bd, candidateName));
+                        }
+                    }
+                }
+                candidateNames = newCandidateNames;
+            }
+        }
+        while (!candidates.isEmpty());
+
+        // Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+        if (sbr != null &amp;&amp; !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
+            sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
+        }
+
+        if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
+            // Clear cache in externally provided MetadataReaderFactory; this is a no-op
+            // for a shared cache since it&#39;ll be cleared by the ApplicationContext.
+            ((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
+        }
+    }</code></pre>
+<h5 id="checkConfigurationClassCandidate-方法"><a href="#checkConfigurationClassCandidate-方法" class="headerlink" title="checkConfigurationClassCandidate()方法"></a>checkConfigurationClassCandidate()方法</h5><p>该方法会检查类上是否有@Component、@ComponentScan、@Import、@ImportResource、@Configuration注解或者方法上是否有@Bean注解，如果有会设置其order属性。</p>
+<pre><code class="java">    public static boolean checkConfigurationClassCandidate(
+            BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
+
+        String className = beanDef.getBeanClassName();
+        if (className == null || beanDef.getFactoryMethodName() != null) {
+            return false;
+        }
+
+        AnnotationMetadata metadata;
+        if (beanDef instanceof AnnotatedBeanDefinition &amp;&amp;
+                className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
+            // Can reuse the pre-parsed metadata from the given BeanDefinition...
+            metadata = ((AnnotatedBeanDefinition) beanDef).getMetadata();
+        }
+        else if (beanDef instanceof AbstractBeanDefinition &amp;&amp; ((AbstractBeanDefinition) beanDef).hasBeanClass()) {
+            // Check already loaded Class if present...
+            // since we possibly can&#39;t even load the class file for this Class.
+            Class&lt;?&gt; beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
+            metadata = new StandardAnnotationMetadata(beanClass, true);
+        }
+        else {
+            try {
+                MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(className);
+                metadata = metadataReader.getAnnotationMetadata();
+            }
+            catch (IOException ex) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(&quot;Could not find class file for introspecting configuration annotations: &quot; +
+                            className, ex);
+                }
+                return false;
+            }
+        }
+
+        //判断是否有@Component、@ComponentScan、@Import、@ImportResource、@Configuration注解
+        if (isFullConfigurationCandidate(metadata)) {
+            beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
+        }
+        //判断是否有@Component注解，或者类上面没注解（xml配置实例化）方法上面有@Bean注解
+        else if (isLiteConfigurationCandidate(metadata)) {
+            beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
+        }
+        else {
+            return false;
+        }
+
+        // It&#39;s a full or lite configuration candidate... Let&#39;s determine the order value, if any.
+    //设置order属性
+        Integer order = getOrder(metadata);
+        if (order != null) {
+            beanDef.setAttribute(ORDER_ATTRIBUTE, order);
+        }
+
+        return true;
+    }</code></pre>
+<h5 id="parse-方法"><a href="#parse-方法" class="headerlink" title="parse()方法"></a>parse()方法</h5><p>ConfigurationClassParser.parse()方法最终会调用doProcessConfigurationClass()方法对注解进行处理。如在componentScanParser.parse()方法中完成属性的处理后会调用scanner.doScan()方法完成包扫描。@Import用于引入一个类，并对类上的注解进行处理，常用于引入扫描路径外的类。</p>
+<pre><code class="java">    protected final SourceClass doProcessConfigurationClass(ConfigurationClass configClass, SourceClass sourceClass)
+            throws IOException {
+
+        if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
+            // Recursively process any member (nested) classes first
+            processMemberClasses(configClass, sourceClass);
+        }
+
+        // Process any @PropertySource annotations
+        for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
+                sourceClass.getMetadata(), PropertySources.class,
+                org.springframework.context.annotation.PropertySource.class)) {
+            if (this.environment instanceof ConfigurableEnvironment) {
+                processPropertySource(propertySource);
+            }
+            else {
+                logger.info(&quot;Ignoring @PropertySource annotation on [&quot; + sourceClass.getMetadata().getClassName() +
+                        &quot;]. Reason: Environment must implement ConfigurableEnvironment&quot;);
+            }
+        }
+
+        // Process any @ComponentScan annotations
+        Set&lt;AnnotationAttributes&gt; componentScans = AnnotationConfigUtils.attributesForRepeatable(
+                sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
+        if (!componentScans.isEmpty() &amp;&amp;
+                !this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
+            for (AnnotationAttributes componentScan : componentScans) {
+                // The config class is annotated with @ComponentScan -&gt; perform the scan immediately
+        //重点看这个方法
+                Set&lt;BeanDefinitionHolder&gt; scannedBeanDefinitions =
+                        this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
+                // Check the set of scanned definitions for any further config classes and parse recursively if needed
+                for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
+                    BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
+                    if (bdCand == null) {
+                        bdCand = holder.getBeanDefinition();
+                    }
+                    if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+                        parse(bdCand.getBeanClassName(), holder.getBeanName());
+                    }
+                }
+            }
+        }
+
+    //用于处理@import注解
+        // Process any @Import annotations
+        processImports(configClass, sourceClass, getImports(sourceClass), true);
+
+        // Process any @ImportResource annotations
+        AnnotationAttributes importResource =
+                AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
+        if (importResource != null) {
+            String[] resources = importResource.getStringArray(&quot;locations&quot;);
+            Class&lt;? extends BeanDefinitionReader&gt; readerClass = importResource.getClass(&quot;reader&quot;);
+            for (String resource : resources) {
+                String resolvedResource = this.environment.resolveRequiredPlaceholders(resource);
+                configClass.addImportedResource(resolvedResource, readerClass);
+            }
+        }
+
+        // Process individual @Bean methods
+        Set&lt;MethodMetadata&gt; beanMethods = retrieveBeanMethodMetadata(sourceClass);
+        for (MethodMetadata methodMetadata : beanMethods) {
+            configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
+        }
+
+        // Process default methods on interfaces
+        processInterfaces(configClass, sourceClass);
+
+        // Process superclass, if any
+        if (sourceClass.getMetadata().hasSuperClass()) {
+            String superclass = sourceClass.getMetadata().getSuperClassName();
+            if (superclass != null &amp;&amp; !superclass.startsWith(&quot;java&quot;) &amp;&amp;
+                    !this.knownSuperclasses.containsKey(superclass)) {
+                this.knownSuperclasses.put(superclass, configClass);
+                // Superclass found, return its annotation metadata and recurse
+                return sourceClass.getSuperClass();
+            }
+        }
+
+        // No superclass -&gt; processing is complete
+        return null;
+  }</code></pre>
+<h5 id="loadBeanDefinitions"><a href="#loadBeanDefinitions" class="headerlink" title="loadBeanDefinitions()"></a>loadBeanDefinitions()</h5><p>loadBeanDefinitions最终会调用loadBeanDefinitionsForConfigurationClass()方法完成对注解的处理。@ImportSources注解会引入一个xml文件，loadBeanDefinitionsFromImportedResources()方法会调用loadBeanDefinitions()方法解析xml文件，这个方法在spring以xml文件的方式启动时调用的相同。</p>
+<pre><code class="java">    private void loadBeanDefinitionsForConfigurationClass(
+            ConfigurationClass configClass, TrackedConditionEvaluator trackedConditionEvaluator) {
+
+        if (trackedConditionEvaluator.shouldSkip(configClass)) {
+            String beanName = configClass.getBeanName();
+            if (StringUtils.hasLength(beanName) &amp;&amp; this.registry.containsBeanDefinition(beanName)) {
+                this.registry.removeBeanDefinition(beanName);
+            }
+            this.importRegistry.removeImportingClass(configClass.getMetadata().getClassName());
+            return;
+        }
+
+        if (configClass.isImported()) {
+            registerBeanDefinitionForImportedConfigurationClass(configClass);
+        }
+        for (BeanMethod beanMethod : configClass.getBeanMethods()) {
+            //@Bean标签的处理
+            loadBeanDefinitionsForBeanMethod(beanMethod);
+        }
+        //@ImportSources注解处理
+        loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+        //@Import注解处理
+        loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
+    }</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Spring%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">Spring源码解析</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+                    
+                      <a class="hover-with-bg" href="/tags/spring/">spring</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/15/spring%E5%AE%9E%E4%BE%8B%E5%8C%96bean%E7%9A%84%E8%BF%87%E7%A8%8B/">
+                        <span class="hidden-mobile">spring实例化bean的过程</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "spring中@CompoentScan@Bean@import和Bean的多例作用域&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
