@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>springmvc的请求响应核心 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期二, 四月 21日 2020, 2:50 下午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    3.2k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      15 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期二, 四月 21日 2020, 9:31 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="核心方法的入口"><a href="#核心方法的入口" class="headerlink" title="核心方法的入口"></a>核心方法的入口</h2><p>在servlet规范中，当请求到达servlet时首先会调用service()方法，此方法会根据请求的请求头调用不同的方法。</p>
+<p>DispatcherServlet父类FrameworkServlet中的service()方法最终都会调用到processRequest()方法。通过super.service()方式会调用doPost()或者doGet()方法。本类中的doGet()、doPost()方法也会调用到processRequest()方法。</p>
+<pre><code class="java">   protected void service(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+
+   HttpMethod httpMethod = HttpMethod.resolve(request.getMethod());
+   if (httpMethod == HttpMethod.PATCH || httpMethod == null) {
+      processRequest(request, response);
+   }
+   else {
+      super.service(request, response);
+   }
+}
+
+    @Override
+    protected final void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        processRequest(request, response);
+    }
+
+    @Override
+    protected final void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        processRequest(request, response);
+    }</code></pre>
+<p>processRequest()方法</p>
+<p>主要作用为调用doService()方法</p>
+<pre><code class="java">protected final void processRequest(HttpServletRequest request, HttpServletResponse response)
+      throws ServletException, IOException {
+
+   long startTime = System.currentTimeMillis();
+   Throwable failureCause = null;
+
+   LocaleContext previousLocaleContext = LocaleContextHolder.getLocaleContext();
+   LocaleContext localeContext = buildLocaleContext(request);
+
+   RequestAttributes previousAttributes = RequestContextHolder.getRequestAttributes();
+   ServletRequestAttributes requestAttributes = buildRequestAttributes(request, response, previousAttributes);
+
+   WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+   asyncManager.registerCallableInterceptor(FrameworkServlet.class.getName(), new RequestBindingInterceptor());
+
+   initContextHolders(request, localeContext, requestAttributes);
+
+   try {
+      doService(request, response);
+   }
+   catch (ServletException | IOException ex) {
+      failureCause = ex;
+      throw ex;
+   }
+   catch (Throwable ex) {
+      failureCause = ex;
+      throw new NestedServletException(&quot;Request processing failed&quot;, ex);
+   }
+
+   finally {
+      resetContextHolders(request, previousLocaleContext, previousAttributes);
+      if (requestAttributes != null) {
+         requestAttributes.requestCompleted();
+      }
+      logResult(request, response, failureCause, asyncManager);
+      publishRequestHandledEvent(request, response, startTime, failureCause);
+   }
+}</code></pre>
+<p>doService()方法</p>
+<p>该方法在DispatcherServlet中实现，在进行一些属性的设置后回到用到核心方法doDispatch()</p>
+<pre><code class="java">@Override
+protected void doService(HttpServletRequest request, HttpServletResponse response) throws Exception {
+   logRequest(request);
+
+   // Keep a snapshot of the request attributes in case of an include,
+   // to be able to restore the original attributes after the include.
+   Map&lt;String, Object&gt; attributesSnapshot = null;
+   if (WebUtils.isIncludeRequest(request)) {
+      attributesSnapshot = new HashMap&lt;&gt;();
+      Enumeration&lt;?&gt; attrNames = request.getAttributeNames();
+      while (attrNames.hasMoreElements()) {
+         String attrName = (String) attrNames.nextElement();
+         if (this.cleanupAfterInclude || attrName.startsWith(DEFAULT_STRATEGIES_PREFIX)) {
+            attributesSnapshot.put(attrName, request.getAttribute(attrName));
+         }
+      }
+   }
+
+   // Make framework objects available to handlers and view objects.
+   request.setAttribute(WEB_APPLICATION_CONTEXT_ATTRIBUTE, getWebApplicationContext());
+   request.setAttribute(LOCALE_RESOLVER_ATTRIBUTE, this.localeResolver);
+   request.setAttribute(THEME_RESOLVER_ATTRIBUTE, this.themeResolver);
+   request.setAttribute(THEME_SOURCE_ATTRIBUTE, getThemeSource());
+
+   if (this.flashMapManager != null) {
+      FlashMap inputFlashMap = this.flashMapManager.retrieveAndUpdate(request, response);
+      if (inputFlashMap != null) {
+         request.setAttribute(INPUT_FLASH_MAP_ATTRIBUTE, Collections.unmodifiableMap(inputFlashMap));
+      }
+      request.setAttribute(OUTPUT_FLASH_MAP_ATTRIBUTE, new FlashMap());
+      request.setAttribute(FLASH_MAP_MANAGER_ATTRIBUTE, this.flashMapManager);
+   }
+
+   try {
+      //调用到核心流程
+      doDispatch(request, response);
+   }
+   finally {
+      if (!WebAsyncUtils.getAsyncManager(request).isConcurrentHandlingStarted()) {
+         // Restore the original attribute snapshot, in case of an include.
+         if (attributesSnapshot != null) {
+            restoreAttributesAfterInclude(request, attributesSnapshot);
+         }
+      }
+   }
+}</code></pre>
+<h2 id="核心方法doDispatch"><a href="#核心方法doDispatch" class="headerlink" title="核心方法doDispatch()"></a>核心方法doDispatch()</h2><p>springmvc的调用共分七个步骤</p>
+<ol>
+<li>通过getHandler()方法获取到HandlerExecutionChain对象。</li>
+<li>调用getHanlderAdapter()方法根据HandlerExecutionChain获取到HandlerAdapter对象。</li>
+<li>调用applyPreHandle()方法进行前置过滤器校验，如果为false直接返回。</li>
+<li>handle()方法进行具体的业务逻辑调用。</li>
+<li>调用applyPostHandle()方法执行中置过滤器方法。</li>
+<li>调用processDispatchResult()进行视图渲染。</li>
+<li>调用后置拦截器进行最后的收尾工作，一般是资源释放。</li>
+</ol>
+<pre><code class="java">protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
+   HttpServletRequest processedRequest = request;
+   HandlerExecutionChain mappedHandler = null;
+   boolean multipartRequestParsed = false;
+
+   //异步管理
+   WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+
+   try {
+      ModelAndView mv = null;
+      Exception dispatchException = null;
+
+      try {
+         //文件上传
+         processedRequest = checkMultipart(request);
+         multipartRequestParsed = (processedRequest != request);
+
+         //这个方法很重要，重点看
+         // Determine handler for the current request.
+         mappedHandler = getHandler(processedRequest);
+         if (mappedHandler == null) {
+            noHandlerFound(processedRequest, response);
+            return;
+         }
+
+         //获取跟HandlerMethod匹配的HandlerAdapter对象
+         // Determine handler adapter for the current request.
+         HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
+
+         // Process last-modified header, if supported by the handler.
+         String method = request.getMethod();
+         boolean isGet = &quot;GET&quot;.equals(method);
+         if (isGet || &quot;HEAD&quot;.equals(method)) {
+            long lastModified = ha.getLastModified(request, mappedHandler.getHandler());
+            if (new ServletWebRequest(request, response).checkNotModified(lastModified) &amp;&amp; isGet) {
+               return;
+            }
+         }
+
+         //前置过滤器，如果为false则直接返回
+         if (!mappedHandler.applyPreHandle(processedRequest, response)) {
+            return;
+         }
+
+         //调用到Controller具体方法，核心方法调用，重点看看
+         // Actually invoke the handler.
+         mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
+
+         if (asyncManager.isConcurrentHandlingStarted()) {
+            return;
+         }
+
+         applyDefaultViewName(processedRequest, mv);
+        //中置过滤器
+         mappedHandler.applyPostHandle(processedRequest, response, mv);
+      }
+      catch (Exception ex) {
+         dispatchException = ex;
+      }
+      catch (Throwable err) {
+         // As of 4.3, we&#39;re processing Errors thrown from handler methods as well,
+         // making them available for @ExceptionHandler methods and other scenarios.
+         dispatchException = new NestedServletException(&quot;Handler dispatch failed&quot;, err);
+      }
+     //视图渲染
+      processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
+   }
+   catch (Exception ex) {
+      triggerAfterCompletion(processedRequest, response, mappedHandler, ex);
+   }
+   catch (Throwable err) {
+      triggerAfterCompletion(processedRequest, response, mappedHandler,
+            new NestedServletException(&quot;Handler processing failed&quot;, err));
+   }
+   finally {
+      if (asyncManager.isConcurrentHandlingStarted()) {
+         // Instead of postHandle and afterCompletion
+         if (mappedHandler != null) {
+            mappedHandler.applyAfterConcurrentHandlingStarted(processedRequest, response);
+         }
+      }
+      else {
+         // Clean up any resources used by a multipart request.
+         if (multipartRequestParsed) {
+            cleanupMultipart(processedRequest);
+         }
+      }
+   }
+}</code></pre>
+<h3 id="getHandler-方法"><a href="#getHandler-方法" class="headerlink" title="getHandler()方法"></a>getHandler()方法</h3><p>该方法首先会通过getHandlerInternal()方法获取到HandlerMethod对象，然后调用getHandlerExecutionChain()方法匹配拦截器并将匹配到的拦截器跟HandlerMethod对象封装为HandlerExecutionChain对象并返回。</p>
+<pre><code class="java">public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+   //根据请求的uri拿到对应的HandlerMethod对象
+   Object handler = getHandlerInternal(request);
+   if (handler == null) {
+      handler = getDefaultHandler();
+   }
+   if (handler == null) {
+      return null;
+   }
+   // Bean name or resolved handler?
+   if (handler instanceof String) {
+      String handlerName = (String) handler;
+      handler = obtainApplicationContext().getBean(handlerName);
+   }
+
+   //获取HandlerMethod和过滤器链的包装类
+   HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
+
+   if (logger.isTraceEnabled()) {
+      logger.trace(&quot;Mapped to &quot; + handler);
+   }
+   else if (logger.isDebugEnabled() &amp;&amp; !request.getDispatcherType().equals(DispatcherType.ASYNC)) {
+      logger.debug(&quot;Mapped to &quot; + executionChain.getHandler());
+   }
+
+   //是否是跨域请求,就是查看request请求头中是否有Origin属性
+   if (CorsUtils.isCorsRequest(request)) {
+      CorsConfiguration globalConfig = this.corsConfigurationSource.getCorsConfiguration(request);
+      CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
+      CorsConfiguration config = (globalConfig != null ? globalConfig.combine(handlerConfig) : handlerConfig);
+      executionChain = getCorsHandlerExecutionChain(request, executionChain, config);
+   }
+
+   return executionChain;
+}</code></pre>
+<h4 id="getHandlerInternal-方法"><a href="#getHandlerInternal-方法" class="headerlink" title="getHandlerInternal()方法"></a>getHandlerInternal()方法</h4><p>getHandlerInternal()方法首先会从请求中获取uri，然后调用lookupHandlerMethod()方法获取到HandlerMethod对象。</p>
+<pre><code class="java">protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
+   //从request对象中获取uri，/common/query2
+   String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
+   this.mappingRegistry.acquireReadLock();
+   try {
+      //根据uri从映射关系中找到对应的HandlerMethod对象
+      HandlerMethod handlerMethod = lookupHandlerMethod(lookupPath, request);
+      //把Controller类实例化
+      return (handlerMethod != null ? handlerMethod.createWithResolvedBean() : null);
+   }
+   finally {
+      this.mappingRegistry.releaseReadLock();
+   }
+}</code></pre>
+<p>lookupHandlerMethod()方法</p>
+<p>该方法会根据uri从urlLookup中获取到RequestMappingInfo的List，然后调用addMatchingMappings()方法根据request的信息跟@ReqeustMaping中的信息对HandlerMethod进行匹配，最后将匹配后的RequestMappingInfo对象和匹配到的HandlerMethod对象封装到Match对象中。最后返回HandlerMethod对象。</p>
+<pre><code class="java">protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request) throws Exception {
+   List&lt;Match&gt; matches = new ArrayList&lt;&gt;();
+   List&lt;T&gt; directPathMatches = this.mappingRegistry.getMappingsByUrl(lookupPath);
+   if (directPathMatches != null) {
+      addMatchingMappings(directPathMatches, matches, request);
+   }
+   if (matches.isEmpty()) {
+      // No choice but to go through all mappings...
+      addMatchingMappings(this.mappingRegistry.getMappings().keySet(), matches, request);
+   }
+
+   if (!matches.isEmpty()) {
+      Comparator&lt;Match&gt; comparator = new MatchComparator(getMappingComparator(request));
+      matches.sort(comparator);
+      Match bestMatch = matches.get(0);
+      if (matches.size() &gt; 1) {
+         if (logger.isTraceEnabled()) {
+            logger.trace(matches.size() + &quot; matching mappings: &quot; + matches);
+         }
+         if (CorsUtils.isPreFlightRequest(request)) {
+            return PREFLIGHT_AMBIGUOUS_MATCH;
+         }
+         Match secondBestMatch = matches.get(1);
+         //如果两个RequestMappinginfo什么都相同，报错
+         if (comparator.compare(bestMatch, secondBestMatch) == 0) {
+            Method m1 = bestMatch.handlerMethod.getMethod();
+            Method m2 = secondBestMatch.handlerMethod.getMethod();
+            String uri = request.getRequestURI();
+            throw new IllegalStateException(
+                  &quot;Ambiguous handler methods mapped for &#39;&quot; + uri + &quot;&#39;: {&quot; + m1 + &quot;, &quot; + m2 + &quot;}&quot;);
+         }
+      }
+      request.setAttribute(BEST_MATCHING_HANDLER_ATTRIBUTE, bestMatch.handlerMethod);
+      handleMatch(bestMatch.mapping, lookupPath, request);
+      return bestMatch.handlerMethod;
+   }
+   else {
+      return handleNoMatch(this.mappingRegistry.getMappings().keySet(), lookupPath, request);
+   }
+}</code></pre>
+<h4 id="getHandlerExecutionChain-方法"><a href="#getHandlerExecutionChain-方法" class="headerlink" title="getHandlerExecutionChain()方法"></a>getHandlerExecutionChain()方法</h4><p>该方法首先会将HandlerMethod对象包装到HandlerExecutionChain对象中，然后根据uri获取到匹配的拦截器加入到HandlerExecutionChain对象中。</p>
+<pre><code class="java">protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
+   //把HandlerMethod对象包装到HandlerExecutionChain对象中，这个对象中有过滤器对象
+   HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
+         (HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
+
+   //获取uri
+   String lookupPath = this.urlPathHelper.getLookupPathForRequest(request);
+
+   //是否有过滤器
+   for (HandlerInterceptor interceptor : this.adaptedInterceptors) {
+      if (interceptor instanceof MappedInterceptor) {
+         MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
+         if (mappedInterceptor.matches(lookupPath, this.pathMatcher)) {
+            chain.addInterceptor(mappedInterceptor.getInterceptor());
+         }
+      }
+      else {
+         chain.addInterceptor(interceptor);
+      }
+   }
+   return chain;
+}</code></pre>
+<p>根据request对象获取handlerMapping对象，然后根据handlerMapping对象获取匹配的HandlerAdapter对象，preHandle过滤器，然后handler方法会调用到controller中的具体方法，然后中置postHandler过滤器，试图渲染，rendler，afterCompletion后置过滤器。</p>
+<h3 id="getHandlerAdapter-方法"><a href="#getHandlerAdapter-方法" class="headerlink" title="getHandlerAdapter()方法"></a>getHandlerAdapter()方法</h3><p>会循环HandlerExecutionChain对象，找到合适的HandlerAdapter对象，这里用到了策略模式。</p>
+<pre><code class="java">protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
+   //根据handlerMethod对象，找到合适的HandlerAdapter对象，这里用到了策略模式
+   if (this.handlerAdapters != null) {
+      for (HandlerAdapter adapter : this.handlerAdapters) {
+         if (adapter.supports(handler)) {
+            return adapter;
+         }
+      }
+   }
+   throw new ServletException(&quot;No adapter for handler [&quot; + handler +
+         &quot;]: The DispatcherServlet configuration needs to include a HandlerAdapter that supports this handler&quot;);
+}</code></pre>
+<h3 id="applyPreHandle-方法"><a href="#applyPreHandle-方法" class="headerlink" title="applyPreHandle()方法"></a>applyPreHandle()方法</h3><p>该方法会调用HandlerExecutionChain中所有拦截器的preHandle()方法，如果为false直接返回，调用过程中会使用interceptorIndex记录拦截器的下标。常用来进行一些权限校验操作。</p>
+<pre><code>boolean applyPreHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
+   HandlerInterceptor[] interceptors = getInterceptors();
+   if (!ObjectUtils.isEmpty(interceptors)) {
+      for (int i = 0; i &lt; interceptors.length; i++) {
+         HandlerInterceptor interceptor = interceptors[i];
+         if (!interceptor.preHandle(request, response, this.handler)) {
+            triggerAfterCompletion(request, response, null);
+            return false;
+         }
+         this.interceptorIndex = i;
+      }
+   }
+   return true;
+}</code></pre><h3 id="handle-方法"><a href="#handle-方法" class="headerlink" title="handle()方法"></a>handle()方法</h3><p>最终会调用到invokeHandlerMethod()方法，这里我们重点关注invokeAndHandle()方法。但要注意，本方法中每次创建一个ModelAndViewContainer对象，这个对象用于对@ModelAttribute注解方法的处理，并把方法返回值传入到ModelAndViewContainer的Map中，用于接来下进行的参数列表解析。最后会调用到getModelAndView()方法获取到ModelAndView对象并返回。</p>
+<pre><code class="java">protected ModelAndView invokeHandlerMethod(HttpServletRequest request,
+      HttpServletResponse response, HandlerMethod handlerMethod) throws Exception {
+
+   ServletWebRequest webRequest = new ServletWebRequest(request, response);
+   try {
+      //获取数据绑定工厂
+      WebDataBinderFactory binderFactory = getDataBinderFactory(handlerMethod);
+      //Model工厂
+      ModelFactory modelFactory = getModelFactory(handlerMethod, binderFactory);
+
+      //可调用的方法对象
+      ServletInvocableHandlerMethod invocableMethod = createInvocableHandlerMethod(handlerMethod);
+      if (this.argumentResolvers != null) {
+         //设置参数解析器
+         invocableMethod.setHandlerMethodArgumentResolvers(this.argumentResolvers);
+      }
+      if (this.returnValueHandlers != null) {
+         //设置返回值解析器
+         invocableMethod.setHandlerMethodReturnValueHandlers(this.returnValueHandlers);
+      }
+      //设置参数绑定工厂
+      invocableMethod.setDataBinderFactory(binderFactory);
+      //设置参数名称解析类
+      invocableMethod.setParameterNameDiscoverer(this.parameterNameDiscoverer);
+
+      ModelAndViewContainer mavContainer = new ModelAndViewContainer();
+      mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
+      //调用有@ModelAttribute注解的方法
+      modelFactory.initModel(webRequest, mavContainer, invocableMethod);
+      mavContainer.setIgnoreDefaultModelOnRedirect(this.ignoreDefaultModelOnRedirect);
+
+      AsyncWebRequest asyncWebRequest = WebAsyncUtils.createAsyncWebRequest(request, response);
+      asyncWebRequest.setTimeout(this.asyncRequestTimeout);
+
+      //异步处理
+      WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+      asyncManager.setTaskExecutor(this.taskExecutor);
+      asyncManager.setAsyncWebRequest(asyncWebRequest);
+      asyncManager.registerCallableInterceptors(this.callableInterceptors);
+      asyncManager.registerDeferredResultInterceptors(this.deferredResultInterceptors);
+
+      if (asyncManager.hasConcurrentResult()) {
+         Object result = asyncManager.getConcurrentResult();
+         mavContainer = (ModelAndViewContainer) asyncManager.getConcurrentResultContext()[0];
+         asyncManager.clearConcurrentResult();
+         LogFormatUtils.traceDebug(logger, traceOn -&gt; {
+            String formatted = LogFormatUtils.formatValue(result, !traceOn);
+            return &quot;Resume with async result [&quot; + formatted + &quot;]&quot;;
+         });
+         invocableMethod = invocableMethod.wrapConcurrentResult(result);
+      }
+
+      //Controller方法调用，重点看看
+      invocableMethod.invokeAndHandle(webRequest, mavContainer);
+      if (asyncManager.isConcurrentHandlingStarted()) {
+         return null;
+      }
+
+      return getModelAndView(mavContainer, modelFactory, webRequest);
+   }
+   finally {
+      webRequest.requestCompleted();
+   }
+}</code></pre>
+<p>invokeAndHandle()方法</p>
+<p>该方法会调用invokeForRequest()方法获取到返回值，然后使用handleReturnValue()方法对返回值进行处理。处理方式与入参的处理基本相同。如果为视图就会将viewName设置到mavContainer容器中，并将requestHandled属性设置为true。如果返回参数被@ResponseBody注解修饰，就不会设置requestHandled值，requestHandled默认值为false。</p>
+<pre><code class="java">public void invokeAndHandle(ServletWebRequest webRequest, ModelAndViewContainer mavContainer,
+      Object... providedArgs) throws Exception {
+
+   //具体调用逻辑，重点看
+   Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
+   setResponseStatus(webRequest);
+
+   if (returnValue == null) {
+      if (isRequestNotModified(webRequest) || getResponseStatus() != null || mavContainer.isRequestHandled()) {
+         mavContainer.setRequestHandled(true);
+         return;
+      }
+   }
+   else if (StringUtils.hasText(getResponseStatusReason())) {
+      mavContainer.setRequestHandled(true);
+      return;
+   }
+
+   mavContainer.setRequestHandled(false);
+   Assert.state(this.returnValueHandlers != null, &quot;No return value handlers&quot;);
+   try {
+      this.returnValueHandlers.handleReturnValue(
+            returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+   }
+   catch (Exception ex) {
+      if (logger.isTraceEnabled()) {
+         logger.trace(formatErrorForReturnValue(returnValue), ex);
+      }
+      throw ex;
+   }
+}</code></pre>
+<p>invokeForRequest()方法</p>
+<p>该方法首先通过getMethodArgumentValues()方法获取参数数组，然后使用反射调用并将返回值返回。</p>
+<pre><code class="java">public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
+      Object... providedArgs) throws Exception {
+
+   //获取参数数组,重点看
+   Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
+   if (logger.isTraceEnabled()) {
+      logger.trace(&quot;Arguments: &quot; + Arrays.toString(args));
+   }
+   return doInvoke(args);
+}</code></pre>
+<p>getMethodArgumentValues()方法</p>
+<p>该方法会循环处理参数，首先会法判断参数是否有对应的处理类，判断方法为循环调用所有的HandlerMethodArgumentResolver处理类并调用supportsParameter()判断是否支持处理该参数。然后调用resolveArgument()方法获取到对应的处理类，并调用resolveArgument()方法对参数进行处理并包装为MethodParameter对象。</p>
+<pre><code class="java">protected Object[] getMethodArgumentValues(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
+      Object... providedArgs) throws Exception {
+
+   if (ObjectUtils.isEmpty(getMethodParameters())) {
+      return EMPTY_ARGS;
+   }
+   //入参的包装类，里面包装了参数类型，参数名称，参数注解等等信息
+   MethodParameter[] parameters = getMethodParameters();
+   Object[] args = new Object[parameters.length];
+   for (int i = 0; i &lt; parameters.length; i++) {
+      MethodParameter parameter = parameters[i];
+      //设置参数名称解析器
+      parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
+      args[i] = findProvidedArgument(parameter, providedArgs);
+      if (args[i] != null) {
+         continue;
+      }
+      //典型的策略模式，根据parameter能否找到对应参数的处理类，能找到就返回true
+      if (!this.resolvers.supportsParameter(parameter)) {
+         throw new IllegalStateException(formatArgumentError(parameter, &quot;No suitable resolver&quot;));
+      }
+      try {
+         //具体参数值解析过程,重点看看
+         args[i] = this.resolvers.resolveArgument(parameter, mavContainer, request, this.dataBinderFactory);
+      }
+      catch (Exception ex) {
+         // Leave stack trace for later, exception may actually be resolved and handled..
+         if (logger.isDebugEnabled()) {
+            String error = ex.getMessage();
+            if (error != null &amp;&amp; !error.contains(parameter.getExecutable().toGenericString())) {
+               logger.debug(formatArgumentError(parameter, error));
+            }
+         }
+         throw ex;
+      }
+   }
+   return args;
+}</code></pre>
+<p>getModelAndView()方法</p>
+<p>该方法首先会判断requestHandled属性，如果属性为false就直接返回。</p>
+<pre><code class="java">private ModelAndView getModelAndView(ModelAndViewContainer mavContainer,
+      ModelFactory modelFactory, NativeWebRequest webRequest) throws Exception {
+
+   modelFactory.updateModel(webRequest, mavContainer);
+   if (mavContainer.isRequestHandled()) {
+      return null;
+   }
+   ModelMap model = mavContainer.getModel();
+   ModelAndView mav = new ModelAndView(mavContainer.getViewName(), model, mavContainer.getStatus());
+   if (!mavContainer.isViewReference()) {
+      mav.setView((View) mavContainer.getView());
+   }
+   if (model instanceof RedirectAttributes) {
+      Map&lt;String, ?&gt; flashAttributes = ((RedirectAttributes) model).getFlashAttributes();
+      HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
+      if (request != null) {
+         RequestContextUtils.getOutputFlashMap(request).putAll(flashAttributes);
+      }
+   }
+   return mav;
+}</code></pre>
+<h3 id="applyPostHandle-方法"><a href="#applyPostHandle-方法" class="headerlink" title="applyPostHandle()方法"></a>applyPostHandle()方法</h3><p>与前置过滤器的调用方法基本相同，不同的是他不需要进行判断，且与前置过滤器不同的是，它的遍历时倒序遍历。注意：中置过滤器中有ModelAndView入参可以对其进行处理。</p>
+<pre><code class="java">void applyPostHandle(HttpServletRequest request, HttpServletResponse response, @Nullable ModelAndView mv)
+      throws Exception {
+
+   HandlerInterceptor[] interceptors = getInterceptors();
+   if (!ObjectUtils.isEmpty(interceptors)) {
+      for (int i = interceptors.length - 1; i &gt;= 0; i--) {
+         HandlerInterceptor interceptor = interceptors[i];
+         interceptor.postHandle(request, response, this.handler, mv);
+      }
+   }
+}</code></pre>
+<h3 id="processDispatchResult-方法"><a href="#processDispatchResult-方法" class="headerlink" title="processDispatchResult()方法"></a>processDispatchResult()方法</h3><p>该方法最终会落入renderMergedOutputModel()方法中，这里只着重分析这个方法。</p>
+<p>注意，如果ModelAndView为空就会以流的方式响应json数据，不会进入这个方法。首先会调用exposeModelAsRequestAttributes()方法，将model中的对象设置到request中。然后获取到跳转地址，将地址转为RequestDispatcher对象，最后调用RequestDispatcher.forward()进行转发。</p>
+<pre><code class="java">    protected void renderMergedOutputModel(
+            Map&lt;String, Object&gt; model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    // 把响应数据设置到reqeust对象中
+        // Expose the model object as request attributes.
+        exposeModelAsRequestAttributes(model, request);
+
+        // Expose helpers as request attributes, if any.
+        exposeHelpers(request);
+
+    //获取到跳转地址
+        // Determine the path for the request dispatcher.
+        String dispatcherPath = prepareForRendering(request, response);
+
+        // Obtain a RequestDispatcher for the target resource (typically a JSP).
+        RequestDispatcher rd = getRequestDispatcher(request, dispatcherPath);
+        if (rd == null) {
+            throw new ServletException(&quot;Could not get RequestDispatcher for [&quot; + getUrl() +
+                    &quot;]: Check that the corresponding file exists within your web application archive!&quot;);
+        }
+
+        // If already included or response already committed, perform include, else forward.
+        if (useInclude(request, response)) {
+            response.setContentType(getContentType());
+            if (logger.isDebugEnabled()) {
+                logger.debug(&quot;Including [&quot; + getUrl() + &quot;]&quot;);
+            }
+            rd.include(request, response);
+        }
+
+        else {
+            // Note: The forwarded resource is supposed to determine the content type itself.
+            if (logger.isDebugEnabled()) {
+                logger.debug(&quot;Forwarding to [&quot; + getUrl() + &quot;]&quot;);
+            }
+            rd.forward(request, response);
+        }
+    }</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Spring%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">Spring源码解析</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+                    
+                      <a class="hover-with-bg" href="/tags/spring/">spring</a>
+                    
+                      <a class="hover-with-bg" href="/tags/springmvc/">springmvc</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/20/springmvc%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96/">
+                        <span class="hidden-mobile">springmvc的初始化</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "springmvc的请求响应核心&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    4.6k 字
+                    4.8k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      22 分钟
+                      23 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期日, 四月 19日 2020, 11:34 晚上</p>
+                class="note note-warning">本文最后更新于：星期一, 四月 20日 2020, 11:00 上午</p>
             
             <div class="markdown-body">
               <h2 id="AOP的入口解析"><a href="#AOP的入口解析" class="headerlink" title="AOP的入口解析"></a>AOP的入口解析</h2><p>在<a href="[http://zgcheng.top/2020/04/15/spring%E5%AE%9E%E4%BE%8B%E5%8C%96bean%E7%9A%84%E8%BF%87%E7%A8%8B/#initializeBean-%E6%96%B9%E6%B3%95](http://zgcheng.top/2020/04/15/spring实例化bean的过程/#initializeBean-方法)">spring实例化bean的过程</a>中我们提到过，applyBeanPostProcessorsAfterInitialization()方法是aop的入口。首先会将原始实例传入该方法，该方法会将原始实例替换为代理实例。该方法也是BeanPostProcessor的运用，最终会落入AbstractAutoProxyCreator类的wrapIfNecessary()方法。</p>
@@ -687,7 +687,7 @@
       throw new AopConfigException(&quot;Unexpected AOP exception&quot;, ex);
    }
 }</code></pre>
-<h2 id="AOP方法的调用"><a href="#AOP方法的调用" class="headerlink" title="AOP方法的调用"></a>AOP方法的调用</h2><h3 id="JdkDynamicAopProxy-1"><a href="#JdkDynamicAopProxy-1" class="headerlink" title="JdkDynamicAopProxy"></a>JdkDynamicAopProxy</h3><p>对JdkDynamicAopProxy代理对象的调用会直接进入到invoke()方法中，JdkDynamicAopProxy中含有一个advised代理工厂对象，代理工厂含有所有的切面对象。然后根据advised.exposeProxy进行暴露判断，如果允许暴露可以通过AopContext.currentProxy()获取到被代理的实例。然后调用getInterceptorsAndDynamicInterceptionAdvice()获取执行链。如果没有就直接反射调用，但也会走代理，如果有就会通过proceed()方法调用执行链。TargetSource中封装被代理对象。</p>
+<h2 id="AOP方法的调用"><a href="#AOP方法的调用" class="headerlink" title="AOP方法的调用"></a>AOP方法的调用</h2><h3 id="JdkDynamicAopProxy-1"><a href="#JdkDynamicAopProxy-1" class="headerlink" title="JdkDynamicAopProxy"></a>JdkDynamicAopProxy</h3><p>JdkDynamicAopProxy跟被代理对象是一一对应的，对JdkDynamicAopProxy被代理对象的调用会直接进入到invoke()方法中，JdkDynamicAopProxy中含有一个advised代理工厂对象，代理工厂含有所有的切面对象。然后根据advised.exposeProxy进行暴露判断，如果允许暴露可以通过AopContext.currentProxy()获取到被代理的实例。然后调用getInterceptorsAndDynamicInterceptionAdvice()获取执行链。如果没有就直接反射调用，但也会走代理，如果有就会通过proceed()方法调用执行链。TargetSource中封装被代理对象。</p>
 <pre><code class="java">public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
    MethodInvocation invocation;
    Object oldProxy = null;
@@ -848,7 +848,7 @@
    return interceptorList;
 }</code></pre>
 <p>proceed()方法</p>
-<p>该方法首先会判断执行链是否执行完毕，如果执行完毕会直接使用invokeJoinpoint()调用被代理方法。判断方式为当前执行位置是否与执行链长度相等。如果没有执行完毕会调用执行链中Advice的invoke()方法，invoke()方法执行完增强的逻辑后会再回调回proceed()方法。AspectJAroundAdvice类型的invoke()方法会直接通过反射调用aroud()方法，在aroud()方法中执行joinPoint.proceed()方法时会回调proceed()方法，MethodBeforeAdviceInterceptor在调用完before()方法后最后会执行proceed()方法，AspectJAfterAdvice类型的invoke()方法会先执行proceed()然后在finally块中调用after()方法。</p>
+<p>该方法首先会判断执行链是否执行完毕，如果执行完毕会直接使用invokeJoinpoint()调用被代理方法。判断方式为当前执行位置是否与执行链长度相等。如果没有执行完毕会调用执行链中Advice的invoke()方法，此时的调用链的顺序与aspect中advice的出现顺序相同，invoke()方法执行完增强的逻辑后会再回调回proceed()方法。AspectJAroundAdvice类型的invoke()方法会直接通过反射调用aroud()方法，在aroud()方法中执行joinPoint.proceed()方法时会回调proceed()方法，MethodBeforeAdviceInterceptor在调用完before()方法后最后会执行proceed()方法，AspectJAfterAdvice类型的invoke()方法会先执行proceed()然后在finally块中调用after()方法。</p>
 <pre><code class="java">public Object proceed() throws Throwable {
    // We start with an index of -1 and increment early.
    //如果执行链中的advice全部执行完，则直接调用joinPoint方法，就是被代理方法
@@ -881,6 +881,27 @@
       return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
    }
 }</code></pre>
+<h3 id="cglib-1"><a href="#cglib-1" class="headerlink" title="cglib"></a>cglib</h3><h2 id="自定义实现的MethodInterceptor"><a href="#自定义实现的MethodInterceptor" class="headerlink" title="自定义实现的MethodInterceptor"></a>自定义实现的MethodInterceptor</h2><p>通过使用Spring提供的MethodInterceptor可以实现拦截所有切面方法</p>
+<pre><code class="java">public class MyMethodInterceptor implements MethodInterceptor {
+
+    @Override
+    public Object invoke(MethodInvocation invocation) throws Throwable {
+        String method = invocation.getMethod().getName();
+        Object[] arguments = invocation.getArguments();
+        System.out.println(&quot;全局拦截器触发，method：&quot; + method + &quot;，args：&quot; + arguments);
+        Object proceed = invocation.proceed();
+        System.out.println(&quot;执行结果：&quot; + proceed);
+        return proceed;
+    }
+}</code></pre>
+<p>test()方法</p>
+<pre><code class="java">    public void aopTest(){
+        AnnotationAwareAspectJAutoProxyCreator bean = applicationContext.getBean(AnnotationAwareAspectJAutoProxyCreator.class);
+        bean.setInterceptorNames(&quot;myMethodInterceptor&quot;);
+        AopService aopService = applicationContext.getBean(AopService.class);
+        aopService.testInterceptor();
+    }</code></pre>
+<p>注意：在之前的aop分析中，spring会根据该类是否有切面来决定是否进入aop入口，aop的入口是在getBean()实例化完成后的initializeBean()方法中，完成aop处理之后会直接将创建的代理类放入缓存，之后的getBean()会直接从缓存中取不会触发实例化方法，也就不会再进入aop。所以，要保证自定义实现的MethodInterceptor能够正常触发，必须要保证setInterceptorNames()方法在getBean()之前完成，而且该类已经有对应的切面。</p>
 
             </div>
             <hr>
@@ -913,6 +934,12 @@
                 <div class="post-prevnext row">
                   <div class="post-prev col-6">
                     
+                    
+                      <a href="/2020/04/20/spring%E7%9A%84%E4%BA%8B%E5%8A%A1%E8%A7%A3%E6%9E%90/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">spring的事务解析</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </div>
                   <div class="post-next col-6">

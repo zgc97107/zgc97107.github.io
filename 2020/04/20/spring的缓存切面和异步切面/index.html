@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>spring的缓存切面和异步切面 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期一, 四月 20日 2020, 5:18 下午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    1.3k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      6 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期一, 四月 20日 2020, 7:21 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="缓存切面"><a href="#缓存切面" class="headerlink" title="缓存切面"></a>缓存切面</h2><p>开启缓存注解@EnableCaching</p>
+<p>缓存切面的使用可以通过以下注解：</p>
+<p>@Cacheable：先从缓存中取，如果有则直接返回，如果没有则调用被代理方法拿到返回值然后存到缓存中。<br>@CachePut：只要调用到被代理方法后把返回值存到缓存中。</p>
+<p>@CacheEvict：删除key对应的注解。</p>
+<p>在使用注解是需要通过cacheNames属性指定使用哪一个缓存，因为缓存管理器中可能会有多个缓存要使用的缓存对象。</p>
+<h3 id="切面的注册"><a href="#切面的注册" class="headerlink" title="切面的注册"></a>切面的注册</h3><p>同样的，@EnableCaching注解也会引入CachingConfigurationSelector类</p>
+<pre><code class="java">@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Import(CachingConfigurationSelector.class)
+public @interface EnableCaching {</code></pre>
+<p>CachingConfigurationSelector类</p>
+<p>这个类也会引入ProxyCachingConfiguration类来注册切面。</p>
+<pre><code class="java">public class CachingConfigurationSelector extends AdviceModeImportSelector&lt;EnableCaching&gt; {
+
+   private static final String PROXY_JCACHE_CONFIGURATION_CLASS =
+         &quot;org.springframework.cache.jcache.config.ProxyJCacheConfiguration&quot;;
+
+   private static final String CACHE_ASPECT_CONFIGURATION_CLASS_NAME =
+         &quot;org.springframework.cache.aspectj.AspectJCachingConfiguration&quot;;
+
+   private static final String JCACHE_ASPECT_CONFIGURATION_CLASS_NAME =
+         &quot;org.springframework.cache.aspectj.AspectJJCacheConfiguration&quot;;
+
+
+   private static final boolean jsr107Present;
+
+   private static final boolean jcacheImplPresent;
+
+   static {
+      ClassLoader classLoader = CachingConfigurationSelector.class.getClassLoader();
+      jsr107Present = ClassUtils.isPresent(&quot;javax.cache.Cache&quot;, classLoader);
+      jcacheImplPresent = ClassUtils.isPresent(PROXY_JCACHE_CONFIGURATION_CLASS, classLoader);
+   }
+
+
+   /**
+    * Returns {@link ProxyCachingConfiguration} or {@code AspectJCachingConfiguration}
+    * for {@code PROXY} and {@code ASPECTJ} values of {@link EnableCaching#mode()},
+    * respectively. Potentially includes corresponding JCache configuration as well.
+    */
+   @Override
+   public String[] selectImports(AdviceMode adviceMode) {
+      switch (adviceMode) {
+         case PROXY:
+            return getProxyImports();
+         case ASPECTJ:
+            return getAspectJImports();
+         default:
+            return null;
+      }
+   }
+
+   /**
+    * Return the imports to use if the {@link AdviceMode} is set to {@link AdviceMode#PROXY}.
+    * &lt;p&gt;Take care of adding the necessary JSR-107 import if it is available.
+    */
+   private String[] getProxyImports() {
+      List&lt;String&gt; result = new ArrayList&lt;&gt;(3);
+      result.add(AutoProxyRegistrar.class.getName());
+      result.add(ProxyCachingConfiguration.class.getName());
+      if (jsr107Present &amp;&amp; jcacheImplPresent) {
+         result.add(PROXY_JCACHE_CONFIGURATION_CLASS);
+      }
+      return StringUtils.toStringArray(result);
+   }
+
+   /**
+    * Return the imports to use if the {@link AdviceMode} is set to {@link AdviceMode#ASPECTJ}.
+    * &lt;p&gt;Take care of adding the necessary JSR-107 import if it is available.
+    */
+   private String[] getAspectJImports() {
+      List&lt;String&gt; result = new ArrayList&lt;&gt;(2);
+      result.add(CACHE_ASPECT_CONFIGURATION_CLASS_NAME);
+      if (jsr107Present &amp;&amp; jcacheImplPresent) {
+         result.add(JCACHE_ASPECT_CONFIGURATION_CLASS_NAME);
+      }
+      return StringUtils.toStringArray(result);
+   }
+
+}</code></pre>
+<p>ProxyCachingConfiguration类</p>
+<p>这个类会创建一个缓存的advisor，此时的pointCut为检查类上是否有缓存相关的注解，Inteceptor为CacheInterceptor。同样的缓存切面也需要创建一个cacheManager缓存管理器。</p>
+<pre><code class="java">public class ProxyCachingConfiguration extends AbstractCachingConfiguration {
+
+   @Bean(name = CacheManagementConfigUtils.CACHE_ADVISOR_BEAN_NAME)
+   @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+   public BeanFactoryCacheOperationSourceAdvisor cacheAdvisor() {
+      BeanFactoryCacheOperationSourceAdvisor advisor = new BeanFactoryCacheOperationSourceAdvisor();
+      advisor.setCacheOperationSource(cacheOperationSource());
+      advisor.setAdvice(cacheInterceptor());
+      if (this.enableCaching != null) {
+         advisor.setOrder(this.enableCaching.&lt;Integer&gt;getNumber(&quot;order&quot;));
+      }
+      return advisor;
+   }
+
+   @Bean
+   @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+   public CacheOperationSource cacheOperationSource() {
+      return new AnnotationCacheOperationSource();
+   }
+
+   @Bean
+   @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+   public CacheInterceptor cacheInterceptor() {
+      CacheInterceptor interceptor = new CacheInterceptor();
+      interceptor.configure(this.errorHandler, this.keyGenerator, this.cacheResolver, this.cacheManager);
+      interceptor.setCacheOperationSource(cacheOperationSource());
+      return interceptor;
+   }
+
+}</code></pre>
+<h3 id="缓存管理器的创建"><a href="#缓存管理器的创建" class="headerlink" title="缓存管理器的创建"></a>缓存管理器的创建</h3><p>同样的缓存切面也需要一个缓存管理器。缓存管理器中管理了缓存对象，比如redis缓存，map缓存，mongodb缓存，这些缓存对象都实现了Cache接口。</p>
+<p>xml的创建方式</p>
+<pre><code class="xml">&lt;bean id=&quot;cacheManager&quot; class=&quot;org.springframework.cache.support.SimpleCacheManager&quot;&gt;
+    &lt;property name=&quot;caches&quot;&gt;
+        &lt;set&gt;
+            &lt;!-- 这里可以配置多个redis --&gt;
+            &lt;bean class=&quot;com.xiangxue.jack.cache.RedisCache&quot;&gt;
+                &lt;property name=&quot;redisTemplate&quot; ref=&quot;redisTemplate&quot; /&gt;
+                &lt;property name=&quot;name&quot; value=&quot;redisCache&quot;/&gt;
+                &lt;!-- name对应的名称要在类或方法的注解中使用 --&gt;
+            &lt;/bean&gt;
+            &lt;bean class=&quot;org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean&quot;&gt;
+                &lt;property name=&quot;name&quot; value=&quot;mapCache&quot;/&gt;
+            &lt;/bean&gt;
+            &lt;bean class=&quot;com.xiangxue.jack.cache.MongodbCache&quot;&gt;
+                &lt;property name=&quot;collection&quot; value=&quot;mongo_cache&quot;/&gt;
+                &lt;property name=&quot;name&quot; value=&quot;mongoCache&quot;/&gt;
+                &lt;property name=&quot;mongoTemplate&quot; ref=&quot;mongoTemplate&quot;/&gt;
+            &lt;/bean&gt;
+        &lt;/set&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;</code></pre>
+<p>注解的创建方式</p>
+<pre><code class="java">@PropertySource(&quot;classpath:redis/redis.properties&quot;)
+@Component
+public class RedisConfig {
+    @Value(&quot;${redis.maxIdle}&quot;)
+    private Integer maxIdle;
+    @Value(&quot;${redis.maxWait}&quot;)
+    private Long maxWaitMillis;
+    @Value(&quot;${redis.testOnBorrow}&quot;)
+    private Boolean testOnBorrow;
+    @Value(&quot;${redis.host}&quot;)
+    private String hostName;
+    @Value(&quot;${redis.port}&quot;)
+    private Integer port;
+
+    @Bean
+    public JedisPoolConfig jedisPoolConfig(){
+        JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
+        jedisPoolConfig.setMaxIdle(maxIdle);
+        jedisPoolConfig.setMaxWaitMillis(maxWaitMillis);
+        jedisPoolConfig.setTestOnBorrow(testOnBorrow);
+        return jedisPoolConfig;
+    }
+
+    @Bean
+    public RedisTemplate&lt;String, String&gt; redisTemplate(JedisConnectionFactory jedisConnectionFactory){
+        RedisTemplate template = new RedisTemplate();
+        template.setConnectionFactory(jedisConnectionFactory);
+        return template;
+    }
+
+    private void setSerializer(StringRedisTemplate template){
+        @SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+        ObjectMapper om = new ObjectMapper();
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+        jackson2JsonRedisSerializer.setObjectMapper(om);
+        template.setValueSerializer(jackson2JsonRedisSerializer);
+    }
+
+    @Bean
+    public JedisConnectionFactory jedisConnectionFactory(JedisPoolConfig jedisPoolConfig){
+        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();
+        jedisConnectionFactory.setHostName(hostName);
+        jedisConnectionFactory.setPort(port);
+        jedisConnectionFactory.setPoolConfig(jedisPoolConfig);
+        return jedisConnectionFactory;
+    }
+}</code></pre>
+<p>CacheInterceptor与TransactionInterceptor中的流程基本相同只是实现功能不同，不再进行分析</p>
+<h2 id="异步切面"><a href="#异步切面" class="headerlink" title="异步切面"></a>异步切面</h2><p>开启异步注解@EnableAsync，异步的使用也比较简单，直接在方法上加上Async即可，这里需要注意一下，如果采用异步，那么事务传播传播属性就会收到影响，异步是通过创建线程来实现的，这时是拿不到上个事务绑定的连接对象的，只能创建一个新的事务。</p>
+<p>注册切面的过程基本一致，这里我们简单看下他的MethodInterceptor实现类AsyncExecutionInterceptor的invoke()方法</p>
+<p>invoke()方法中会创建一个Callable类，然后将类交给executor去执行，如果返回值是一个Future类型，就会阻塞直到拿到返回值。</p>
+<pre><code class="java">public Object invoke(final MethodInvocation invocation) throws Throwable {
+   Class&lt;?&gt; targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
+   Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);
+   final Method userDeclaredMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
+
+   AsyncTaskExecutor executor = determineAsyncExecutor(userDeclaredMethod);
+   if (executor == null) {
+      throw new IllegalStateException(
+            &quot;No executor specified and no default executor set on AsyncExecutionInterceptor either&quot;);
+   }
+
+   Callable&lt;Object&gt; task = () -&gt; {
+      try {
+         Object result = invocation.proceed();
+         if (result instanceof Future) {
+            return ((Future&lt;?&gt;) result).get();
+         }
+      }
+      catch (ExecutionException ex) {
+         handleError(ex.getCause(), userDeclaredMethod, invocation.getArguments());
+      }
+      catch (Throwable ex) {
+         handleError(ex, userDeclaredMethod, invocation.getArguments());
+      }
+      return null;
+   };
+
+   return doSubmit(task, executor, invocation.getMethod().getReturnType());
+}</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Spring%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">Spring源码解析</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">源码解析</a>
+                    
+                      <a class="hover-with-bg" href="/tags/spring/">spring</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/20/springmvc%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">springmvc的初始化</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/20/spring%E7%9A%84%E4%BA%8B%E5%8A%A1%E8%A7%A3%E6%9E%90/">
+                        <span class="hidden-mobile">spring的事务解析</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "spring的缓存切面和异步切面&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
