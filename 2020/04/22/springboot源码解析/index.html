@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>springboot源码解析 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期三, 四月 22日 2020, 8:22 晚上
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    2.7k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      13 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期四, 四月 23日 2020, 2:35 下午</p>
+            
+            <div class="markdown-body">
+              <h2 id="springboot的启动分析"><a href="#springboot的启动分析" class="headerlink" title="springboot的启动分析"></a>springboot的启动分析</h2><p>main()方法中会调用springboot的run()方法，该方法是spring启动的入口，这里只分析几个重点的方法。</p>
+<ol>
+<li>调用getRunListeners()方法通过SPI机制加载META-INF/spring.factories文件中的类。</li>
+<li>调用createApplicationContext()方法完成上下文对象的创建。</li>
+<li>调用refreshContext()方法，最终会调用到上下文对象的refresh()，与之前不同的是这里在refresh()的onrefresh()方法中会完成tomcat的启动。</li>
+</ol>
+<p>SPI在spring、springboot、tomcat中都有使用，SPI全称为service provider interface，核心思想是服务提供接口的发现。spring主要是从外部文件中发现服务，这么做是由于加载的类文件是由开发者指定的包名下的，是不包括第三方的jar包的，所以spring提供了这种方式来加载jar包中的类文件。</p>
+<pre><code class="java">public ConfigurableApplicationContext run(String... args) {
+   // 统计时间用的工具类
+   StopWatch stopWatch = new StopWatch();
+   stopWatch.start();
+   ConfigurableApplicationContext context = null;
+   Collection&lt;SpringBootExceptionReporter&gt; exceptionReporters = new ArrayList&lt;&gt;();
+   configureHeadlessProperty();
+   // 获取实现了SpringApplicationRunListener接口的实现类，通过SPI机制加载
+   // META-INF/spring.factories文件下的类
+   SpringApplicationRunListeners listeners = getRunListeners(args);
+
+   // 首先调用SpringApplicationRunListener的starting方法
+   listeners.starting();
+   try {
+      ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+
+      // 处理配置数据
+      ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
+      configureIgnoreBeanInfo(environment);
+
+      // 启动时打印banner
+      Banner printedBanner = printBanner(environment);
+
+      // 创建上下文对象
+      context = createApplicationContext();
+
+      // 获取SpringBootExceptionReporter接口的类，异常报告
+      exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
+            new Class[] { ConfigurableApplicationContext.class }, context);
+
+      prepareContext(context, environment, listeners, applicationArguments, printedBanner);
+
+      // 核心方法，启动spring容器
+      refreshContext(context);
+      afterRefresh(context, applicationArguments);
+
+      // 统计结束
+      stopWatch.stop();
+      if (this.logStartupInfo) {
+         new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);
+      }
+      // 调用started
+      listeners.started(context);
+
+      // ApplicationRunner
+      // CommandLineRunner
+      // 获取这两个接口的实现类，并调用其run方法
+      callRunners(context, applicationArguments);
+   }
+   catch (Throwable ex) {
+      handleRunFailure(context, ex, exceptionReporters, listeners);
+      throw new IllegalStateException(ex);
+   }
+
+   try {
+      // 最后调用running方法
+      listeners.running(context);
+   }
+   catch (Throwable ex) {
+      handleRunFailure(context, ex, exceptionReporters, null);
+      throw new IllegalStateException(ex);
+   }
+   return context;
+}</code></pre>
+<h3 id="getRunListeners-方法"><a href="#getRunListeners-方法" class="headerlink" title="getRunListeners()方法"></a>getRunListeners()方法</h3><p>getSpringFactoriesInstances()是它的主要方法，该方法首先会通过loadFactoryNames()方法加载spring.factories中的内容，然后通过反射实例化。</p>
+<pre><code class="java">private &lt;T&gt; Collection&lt;T&gt; getSpringFactoriesInstances(Class&lt;T&gt; type, Class&lt;?&gt;[] parameterTypes, Object... args) {
+   ClassLoader classLoader = getClassLoader();
+   // Use names and ensure unique to protect against duplicates
+   Set&lt;String&gt; names = new LinkedHashSet&lt;&gt;(SpringFactoriesLoader.loadFactoryNames(type, classLoader));
+   // 加载后反射实例化
+   List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);
+   AnnotationAwareOrderComparator.sort(instances);
+   return instances;
+}</code></pre>
+<h3 id="createApplicationContext-方法"><a href="#createApplicationContext-方法" class="headerlink" title="createApplicationContext()方法"></a>createApplicationContext()方法</h3><p>该方法会加载AnnotationConfigServletWebServerApplicationContext对象。该对象与之前分析的spring基于注解的启动方式中的AnnotationConfigApplicaitonContext对象基本相同，初始化逻辑也基本相同。</p>
+<p>其构造函数中也会创建一个AnnotatedBeanDefinitionReader对象，AnnotatedBeanDefinitionReader的构造函数中会直接调用AnnotationConfigUtils.registerAnnotationConfigProcessors()将一些对象的转为BeanDefinition对象，这里有一个比较重要的对象：ConfigurationClassPostProcessor。</p>
+<pre><code class="java">protected ConfigurableApplicationContext createApplicationContext() {
+   Class&lt;?&gt; contextClass = this.applicationContextClass;
+   if (contextClass == null) {
+      try {
+         switch (this.webApplicationType) {
+         case SERVLET:
+            contextClass = Class.forName(DEFAULT_SERVLET_WEB_CONTEXT_CLASS);
+            break;
+         case REACTIVE:
+            contextClass = Class.forName(DEFAULT_REACTIVE_WEB_CONTEXT_CLASS);
+            break;
+         default:
+            contextClass = Class.forName(DEFAULT_CONTEXT_CLASS);
+         }
+      }
+      catch (ClassNotFoundException ex) {
+         throw new IllegalStateException(
+               &quot;Unable create a default ApplicationContext, please specify an ApplicationContextClass&quot;, ex);
+      }
+   }
+   return (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);
+}</code></pre>
+<h3 id="onRefresh-方法"><a href="#onRefresh-方法" class="headerlink" title="onRefresh()方法"></a>onRefresh()方法</h3><p>该方法会调用到ServletWebServerApplicationContext类的onRefresh()方法，该方法完成父类容器的onRefresh()方法后会调用createWebServer()方法创建web容器。</p>
+<pre><code class="java">protected void onRefresh() {
+   super.onRefresh();
+   try {
+      createWebServer();
+   }
+   catch (Throwable ex) {
+      throw new ApplicationContextException(&quot;Unable to start web server&quot;, ex);
+   }
+}</code></pre>
+<p>createWebServer()方法</p>
+<p>该方法会调用到Jetty、Undertow、Tomcat的getWebServer()创建方法，这里我们只分析Tomcat的创建方法。</p>
+<pre><code class="java">/*
+ * 创建servlet容器
+ */
+private void createWebServer() {
+   WebServer webServer = this.webServer;
+   ServletContext servletContext = getServletContext();
+   if (webServer == null &amp;&amp; servletContext == null) {
+      ServletWebServerFactory factory = getWebServerFactory();
+      // 主要看这个方法
+      this.webServer = factory.getWebServer(getSelfInitializer());
+   }
+   else if (servletContext != null) {
+      try {
+         getSelfInitializer().onStartup(servletContext);
+      }
+      catch (ServletException ex) {
+         throw new ApplicationContextException(&quot;Cannot initialize servlet context&quot;, ex);
+      }
+   }
+   initPropertySources();
+}</code></pre>
+<p>getWebServer()方法</p>
+<p>该方法会创建一个Tomcat容器，并完成其工作路径、connection属性的设置。</p>
+<pre><code class="java">public WebServer getWebServer(ServletContextInitializer... initializers) {
+   if (this.disableMBeanRegistry) {
+      Registry.disableRegistry();
+   }
+   Tomcat tomcat = new Tomcat();
+   File baseDir = (this.baseDirectory != null) ? this.baseDirectory : createTempDir(&quot;tomcat&quot;);
+   tomcat.setBaseDir(baseDir.getAbsolutePath());
+   Connector connector = new Connector(this.protocol);
+   connector.setThrowOnFailure(true);
+   tomcat.getService().addConnector(connector);
+   customizeConnector(connector);
+   tomcat.setConnector(connector);
+   tomcat.getHost().setAutoDeploy(false);
+   configureEngine(tomcat.getEngine());
+   for (Connector additionalConnector : this.additionalTomcatConnectors) {
+      tomcat.getService().addConnector(additionalConnector);
+   }
+   prepareContext(tomcat.getHost(), initializers);
+   return getTomcatWebServer(tomcat);
+}</code></pre>
+<h2 id="springboot的自动化配置分析"><a href="#springboot的自动化配置分析" class="headerlink" title="springboot的自动化配置分析"></a>springboot的自动化配置分析</h2><p>@SpringBootApplication中包含的注解：</p>
+<ul>
+<li>@ComponentScan注解：扫描包路径下的注解</li>
+<li>@EnableAutoConfiguration注解：开启自动配置</li>
+</ul>
+<pre><code class="java">@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+      @Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+public @interface SpringBootApplication {</code></pre>
+<h3 id="EnableAutoConfiguration自动配置的实现"><a href="#EnableAutoConfiguration自动配置的实现" class="headerlink" title="@EnableAutoConfiguration自动配置的实现"></a>@EnableAutoConfiguration自动配置的实现</h3><p>该注解会引入AutoConfigurationImportSelector类，这个类将通过spi来引入自动配置类。</p>
+<pre><code class="java">@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@AutoConfigurationPackage
+@Import(AutoConfigurationImportSelector.class)
+public @interface EnableAutoConfiguration {</code></pre>
+<h4 id="AutoConfigurationImportSelector类"><a href="#AutoConfigurationImportSelector类" class="headerlink" title="AutoConfigurationImportSelector类"></a>AutoConfigurationImportSelector类</h4><p>process()方法</p>
+<p>该方法会由上面注册的ConfigurationClassPostProcessor调用，首先调用getAutoConfigurationEntry()方法获取到自动配置的实体类，然后加入到spring容器，交由spring来管理。</p>
+<pre><code class="java">public void process(AnnotationMetadata annotationMetadata, DeferredImportSelector deferredImportSelector) {
+   Assert.state(deferredImportSelector instanceof AutoConfigurationImportSelector,
+         () -&gt; String.format(&quot;Only %s implementations are supported, got %s&quot;,
+               AutoConfigurationImportSelector.class.getSimpleName(),
+               deferredImportSelector.getClass().getName()));
+   AutoConfigurationEntry autoConfigurationEntry = ((AutoConfigurationImportSelector) deferredImportSelector)
+         .getAutoConfigurationEntry(getAutoConfigurationMetadata(), annotationMetadata);
+   this.autoConfigurationEntries.add(autoConfigurationEntry);
+   for (String importClassName : autoConfigurationEntry.getConfigurations()) {
+      this.entries.putIfAbsent(importClassName, annotationMetadata);
+   }
+}</code></pre>
+<p>getAutoConfigurationEntry()方法</p>
+<p>该方法首先会通过getCandidateConfigurations()方法获取到META-INF/spring.factories中所有键为EnableAutoConfiguration.class的类，这里也是SPI的运用。然后对类进行过滤后封装为AutoConfigurationEntry对象。</p>
+<p>springboot主要是通过SPI加载配置文件的方式，把类加载到spring容器完成实例化。</p>
+<pre><code class="java">protected AutoConfigurationEntry getAutoConfigurationEntry(AutoConfigurationMetadata autoConfigurationMetadata,
+      AnnotationMetadata annotationMetadata) {
+   if (!isEnabled(annotationMetadata)) {
+      return EMPTY_ENTRY;
+   }
+   AnnotationAttributes attributes = getAttributes(annotationMetadata);
+   // SPI获取EnableAutoConfiguration为key的所有实现类
+   List&lt;String&gt; configurations = getCandidateConfigurations(annotationMetadata, attributes);
+   configurations = removeDuplicates(configurations);
+   Set&lt;String&gt; exclusions = getExclusions(annotationMetadata, attributes);
+   checkExcludedClasses(configurations, exclusions);
+   configurations.removeAll(exclusions);
+   // 把某些自动配置类过滤掉
+   configurations = filter(configurations, autoConfigurationMetadata);
+   fireAutoConfigurationImportEvents(configurations, exclusions);
+   // 包装成自动配置实体类
+   return new AutoConfigurationEntry(configurations, exclusions);
+}</code></pre>
+<h3 id="AOP的自动配置"><a href="#AOP的自动配置" class="headerlink" title="AOP的自动配置"></a>AOP的自动配置</h3><p>aop自动配置类会引入aop相关的配置类，然后注册到spring容器中让spring可以提前创建出BeanDefinition（个人理解），在BeanDefinition生成实例时，再去配置文件中读取相关配置，并完成相应功能创建实例。注意的matchIfMissing在cglib的配置类中为true，这说明aop默认使用的是cglib的动态代理，如果要使用jdk的需要在配置文件中加入<code>spring.aop.proxy-target-class=false</code>。</p>
+<pre><code class="java">@Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;auto&quot;, havingValue = &quot;true&quot;, matchIfMissing = true)
+public class AopAutoConfiguration {
+
+   @Configuration(proxyBeanMethods = false)
+   @ConditionalOnClass(Advice.class)
+   static class AspectJAutoProxyingConfiguration {
+
+      @Configuration(proxyBeanMethods = false)
+      @EnableAspectJAutoProxy(proxyTargetClass = false)
+      @ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;false&quot;,
+            matchIfMissing = false)
+      static class JdkDynamicAutoProxyConfiguration {
+      }
+
+      @Configuration(proxyBeanMethods = false)
+      @EnableAspectJAutoProxy(proxyTargetClass = true)
+      @ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;true&quot;,
+            matchIfMissing = true)
+      static class CglibAutoProxyConfiguration {
+      }
+   }
+
+   @Configuration(proxyBeanMethods = false)
+   @ConditionalOnMissingClass(&quot;org.aspectj.weaver.Advice&quot;)
+   @ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;true&quot;,
+         matchIfMissing = true)
+   static class ClassProxyingConfiguration {
+
+      ClassProxyingConfiguration(BeanFactory beanFactory) {
+         if (beanFactory instanceof BeanDefinitionRegistry) {
+            BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+            AopConfigUtils.registerAutoProxyCreatorIfNecessary(registry);
+            AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
+         }
+      }
+   }
+}</code></pre>
+<h3 id="Conditional"><a href="#Conditional" class="headerlink" title="@Conditional"></a>@Conditional</h3><p>上面的代码中出现了@ConditionalOnProperty注解，这个是用来判断条件是否满足，通常与@Bean配合使用，完成有条件的初始化类的需求。spring的自动配置类中的组件初始化时，也会通过这个注解来决定是否初始化类。</p>
+<p>常用的有：</p>
+<ul>
+<li><code>@ConditionalOnBean(name=&quot;test&quot;)</code>：当spring容器中有name为test的bean时再进行加载</li>
+<li><code>@ConditionalOnClass(name=&quot;com.demo.TestController&quot;)</code>：当上下文中有com.demo.TestController时再进行加载</li>
+<li><code>@ConditionalOnMissingClass(name=&quot;com.demo.TestController&quot;)</code>：与上面的相反，当上下文中没有com.demo.TestController时再进行加载</li>
+<li><code>@ConditionalOnExpression(&quot;${spring.datasource.max-idle}=10&quot;)</code>：当spring.datasource.max-idle属性的值为10在进行加载</li>
+</ul>
+<p>还可以通过实现Condition接口来自定义Condition</p>
+<pre><code class="java">public class CustomCondition implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        System.out.println(&quot;=====CustomCondition.matches======&quot;);
+        String property = context.getEnvironment().getProperty(&quot;spring.redis.jedis.pool.max-active&quot;);
+
+        if(&quot;8&quot;.equals(property)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}</code></pre>
+<p>然后使用@Conditional注解将值设置为自定义的Condition。</p>
+<pre><code class="java">@Bean
+@Conditional(value = CustomCondition.class)
+public User conditionalTest() {
+    System.out.println(&quot;======ConfigFamliy.conditionalTest&quot;);
+    return new User();
+}</code></pre>
+<h4 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h4><p>实现原理也比较简单，spring完成BeanDefinition收集之后，会使用ConfigurationClassPostProcessor进行处理，所以只要在ConfigurationClassPostProcessor完成Condition的功能即可。</p>
+<p>ConfigurationClassPostProcessor会调用到ConfigurationClassParser类的processConfigurationClass()方法，该方法会调用shouldSkip()方法对类进行过滤。</p>
+<pre><code class="java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+    // 根据Condition接口来过滤类
+    if (!this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+        ConfigurationClass existingClass = (ConfigurationClass)this.configurationClasses.get(configClass);
+        if (existingClass != null) {
+            if (configClass.isImported()) {
+                if (existingClass.isImported()) {
+                    existingClass.mergeImportedBy(configClass);
+                }
+
+                return;
+            }
+
+            this.configurationClasses.remove(configClass);
+            this.knownSuperclasses.values().removeIf(configClass::equals);
+        }
+
+        ConfigurationClassParser.SourceClass sourceClass = this.asSourceClass(configClass);
+
+        do {
+            sourceClass = this.doProcessConfigurationClass(configClass, sourceClass);
+        } while(sourceClass != null);
+
+        this.configurationClasses.put(configClass, configClass);
+    }
+}</code></pre>
+<p>shouldSkip()方法会获取到该类对应的所有Condition，然后调用matches()方法进行判断。</p>
+<h5 id="matches-方法"><a href="#matches-方法" class="headerlink" title="matches()方法"></a>matches()方法</h5><p>AnnotatedTypeMetadata中包含类的所有信息、ConditionOutcome用来封装匹配之后的结果。getMatchOutcome()会到用到子类</p>
+<pre><code class="java">public final boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+   String classOrMethodName = getClassOrMethodName(metadata);
+   try {
+      // 典型的钩子方法，调到用具体子类中方法。ConditionOutcome 这个类里面包装了是否需
+      // 跳过和打印的日志
+      ConditionOutcome outcome = getMatchOutcome(context, metadata);
+      logOutcome(classOrMethodName, outcome);
+      recordEvaluation(context, classOrMethodName, outcome);
+      return outcome.isMatch();
+   }
+   catch (NoClassDefFoundError ex) {
+      throw new IllegalStateException(&quot;Could not evaluate condition on &quot; + classOrMethodName + &quot; due to &quot;
+            + ex.getMessage() + &quot; not found. Make sure your own configuration does not rely on &quot;
+            + &quot;that class. This can also happen if you are &quot;
+            + &quot;@ComponentScanning a springframework package (e.g. if you &quot;
+            + &quot;put a @ComponentScan in the default package by mistake)&quot;, ex);
+   }
+   catch (RuntimeException ex) {
+      throw new IllegalStateException(&quot;Error processing condition on &quot; + getName(metadata), ex);
+   }
+}</code></pre>
+<h6 id="OnClassCondition类的getMatchOutcome-方法"><a href="#OnClassCondition类的getMatchOutcome-方法" class="headerlink" title="OnClassCondition类的getMatchOutcome()方法"></a>OnClassCondition类的getMatchOutcome()方法</h6><p>该方法会使用Class.forname()寻找ConditionalOnClass注解中的类，如果有异常就说明上下文中没有这个类，就过滤掉。</p>
+<pre><code class="java">public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+   ClassLoader classLoader = context.getClassLoader();
+   ConditionMessage matchMessage = ConditionMessage.empty();
+   List&lt;String&gt; onClasses = getCandidates(metadata, ConditionalOnClass.class);
+   if (onClasses != null) {
+      // 核心方法，过滤一下，其实就是Class.forname一下ConditionalOnClass注解中的类，如果有异常就说明
+      // 上下文中没这个类，没有就过滤掉
+      List&lt;String&gt; missing = filter(onClasses, ClassNameFilter.MISSING, classLoader);
+      if (!missing.isEmpty()) {
+         return ConditionOutcome.noMatch(ConditionMessage.forCondition(ConditionalOnClass.class)
+               .didNotFind(&quot;required class&quot;, &quot;required classes&quot;).items(Style.QUOTE, missing));
+      }
+      matchMessage = matchMessage.andCondition(ConditionalOnClass.class)
+            .found(&quot;required class&quot;, &quot;required classes&quot;)
+            .items(Style.QUOTE, filter(onClasses, ClassNameFilter.PRESENT, classLoader));
+   }
+   List&lt;String&gt; onMissingClasses = getCandidates(metadata, ConditionalOnMissingClass.class);
+   if (onMissingClasses != null) {
+      List&lt;String&gt; present = filter(onMissingClasses, ClassNameFilter.PRESENT, classLoader);
+      if (!present.isEmpty()) {
+         return ConditionOutcome.noMatch(ConditionMessage.forCondition(ConditionalOnMissingClass.class)
+               .found(&quot;unwanted class&quot;, &quot;unwanted classes&quot;).items(Style.QUOTE, present));
+      }
+      matchMessage = matchMessage.andCondition(ConditionalOnMissingClass.class)
+            .didNotFind(&quot;unwanted class&quot;, &quot;unwanted classes&quot;)
+            .items(Style.QUOTE, filter(onMissingClasses, ClassNameFilter.MISSING, classLoader));
+   }
+   return ConditionOutcome.match(matchMessage);
+}</code></pre>
+<h6 id="OnClassCondition类的getMatchOutcome-方法-1"><a href="#OnClassCondition类的getMatchOutcome-方法-1" class="headerlink" title="OnClassCondition类的getMatchOutcome()方法"></a>OnClassCondition类的getMatchOutcome()方法</h6><p>核心方法是判断spring容器中是否有ConditionalOnBean注解中的Bean。</p>
+<pre><code class="java">public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+   ConditionMessage matchMessage = ConditionMessage.empty();
+   // 获取类上面的注解
+   MergedAnnotations annotations = metadata.getAnnotations();
+   if (annotations.isPresent(ConditionalOnBean.class)) {
+      // 包装一下
+      Spec&lt;ConditionalOnBean&gt; spec = new Spec&lt;&gt;(context, metadata, annotations, ConditionalOnBean.class);
+      // 核心方法，其实就是判断spring容器中是否有ConditionalOnBean注解中的bean
+      MatchResult matchResult = getMatchingBeans(context, spec);
+      if (!matchResult.isAllMatched()) {
+         String reason = createOnBeanNoMatchReason(matchResult);
+         return ConditionOutcome.noMatch(spec.message().because(reason));
+      }
+      matchMessage = spec.message(matchMessage).found(&quot;bean&quot;, &quot;beans&quot;).items(Style.QUOTE,
+            matchResult.getNamesOfAllMatches());
+   }
+   if (metadata.isAnnotated(ConditionalOnSingleCandidate.class.getName())) {
+      Spec&lt;ConditionalOnSingleCandidate&gt; spec = new SingleCandidateSpec(context, metadata, annotations);
+      MatchResult matchResult = getMatchingBeans(context, spec);
+      if (!matchResult.isAllMatched()) {
+         return ConditionOutcome.noMatch(spec.message().didNotFind(&quot;any beans&quot;).atAll());
+      }
+      else if (!hasSingleAutowireCandidate(context.getBeanFactory(), matchResult.getNamesOfAllMatches(),
+            spec.getStrategy() == SearchStrategy.ALL)) {
+         return ConditionOutcome.noMatch(spec.message().didNotFind(&quot;a primary bean from beans&quot;)
+               .items(Style.QUOTE, matchResult.getNamesOfAllMatches()));
+      }
+      matchMessage = spec.message(matchMessage).found(&quot;a primary bean from beans&quot;).items(Style.QUOTE,
+            matchResult.getNamesOfAllMatches());
+   }
+   if (metadata.isAnnotated(ConditionalOnMissingBean.class.getName())) {
+      Spec&lt;ConditionalOnMissingBean&gt; spec = new Spec&lt;&gt;(context, metadata, annotations,
+            ConditionalOnMissingBean.class);
+      MatchResult matchResult = getMatchingBeans(context, spec);
+      if (matchResult.isAnyMatched()) {
+         String reason = createOnMissingBeanNoMatchReason(matchResult);
+         return ConditionOutcome.noMatch(spec.message().because(reason));
+      }
+      matchMessage = spec.message(matchMessage).didNotFind(&quot;any beans&quot;).atAll();
+   }
+   return ConditionOutcome.match(matchMessage);
+}</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/springboot/">springboot</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/springboot/">springboot</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/23/springboot%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E5%90%AF%E5%8A%A8%E5%99%A8/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">springboot自定义的启动器</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/22/springboot%E5%90%84%E7%A7%8D%E7%BB%84%E4%BB%B6%E7%9A%84%E6%95%B4%E5%90%88/">
+                        <span class="hidden-mobile">springboot各种组件的整合</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "springboot源码解析&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
