@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>springcloud熔断降级组件hystrix详解 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期五, 四月 24日 2020, 10:46 上午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    2.4k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      11 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期五, 四月 24日 2020, 5:42 下午</p>
+            
+            <div class="markdown-body">
+              <h2 id="服务雪崩"><a href="#服务雪崩" class="headerlink" title="服务雪崩"></a>服务雪崩</h2><p>当整个微服务系统中有一个节点出现异常情况，就会导致调用它的上游系统出现响应延迟，高并发情况下的响应延迟会迅速消耗掉tomcat的连接数，使得上游节点不能正常的接收请求，这就是服务雪崩。</p>
+<p>节点异常的发生原因多种多样，比如不合理的容量设计、高并发下某一个方法响应变慢、服务器的资源耗尽等，所以很难从源头上完全杜绝雪崩的发生，但是服务之间的强依赖也是雪崩的根本原因之一，解决服务之间强依赖关系也可以解决雪崩问题。</p>
+<h2 id="服务隔离"><a href="#服务隔离" class="headerlink" title="服务隔离"></a>服务隔离</h2><p>如果整个系统雪崩是由于某个接口响应不及时导致的，那么就可以对这个接口进行隔离，比如限制这个接口占用连接的上限，这样就不会消耗掉所有的tomcat连接，其他接口依然能够正常响应。</p>
+<p>Hystrix位于服务调用方和服务提供方之间，来控制对提供方的调用。</p>
+<p>pom文件中引入</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-netflix-hystrix&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>启动类开启hystrix熔断功能</p>
+<pre><code class="java">@SpringBootApplication
+@EnableCircuitBreaker
+@EnableEurekaClient
+public class MicroWebApplication {</code></pre>
+<p>代码使用</p>
+<pre><code class="java">@HystrixCommand
+@Override
+public String queryOrder() {
+    String SERVICE_NAME = &quot;micro-order&quot;;
+    return restTemplate.getForObject(&quot;http://&quot; + SERVICE_NAME + &quot;/queryOrder&quot;, String.class);
+}</code></pre>
+<h2 id="Hystrix服务隔离策略"><a href="#Hystrix服务隔离策略" class="headerlink" title="Hystrix服务隔离策略"></a>Hystrix服务隔离策略</h2><p>Hystrix的服务隔离策略可以在@HystrixCommand注解中设置</p>
+<pre><code class="java">@HystrixCommand(commandProperties = {
+        @HystrixProperty(name = &quot;execution.isolation.strategy&quot;,value = &quot;THREAD&quot;)
+})</code></pre>
+<p><code>execution.isolation.strategy</code>属性代表使用的隔离策略，共有两种：</p>
+<ul>
+<li>THREAD：线程池隔离策略，接收到请求时交由线程池执行，是Hystrix的默认隔离策略。注意，这时的用户线程和请求线程是两个线程。</li>
+<li>SEMAPHORE：信号量隔离策略是采用一个全局变量来控制并发量，用CAS锁机制来保证安全，接收到请求后全局变量加1，当加到与跟配置中的大小相等时不再接受用户请求了。</li>
+</ul>
+<p>THREAD的响应速度会比SEMAPHORE快，但资源占用也比较高，如果追求响应速度可以使用THREAD，如果追求资源消耗可以使用SEMAPHORE。</p>
+<p>注意，Hystix的全局并发量默认为10，如果超过就会报异常。两种策略的设置全局并发量方式也不相同，线程池策略的设置方式如下</p>
+<pre><code class="java">@HystrixCommand(
+        commandProperties = {
+                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;)
+        },
+        threadPoolProperties = {
+                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;100&quot;)
+        }
+)</code></pre>
+<p>信号量策略的设置如下</p>
+<pre><code class="java">@HystrixCommand(
+        commandProperties = {
+                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;SEMAPHORE&quot;),
+                @HystrixProperty(name = &quot;execution.isolation.semaphore.maxConcurrentRequests&quot;,value = &quot;100&quot;)
+        }
+)</code></pre>
+<p>@HystrixCommand注解中的其他几个属性</p>
+<ul>
+<li><p>groupKey：groupKey相同时将使用同一个线程池</p>
+</li>
+<li><p>threadPoolKey：用来指定使用的线程池，优先级要高于groupKey</p>
+</li>
+<li><p>commandKey：可以配合配置文件使用来指定某一个HystrixCommand的配置，如</p>
+</li>
+</ul>
+<pre><code class="java">@HystrixCommand(
+        commandKey = &quot;queryOrder&quot;,
+        fallbackMethod = &quot;queryOrderFallback&quot;,
+        commandProperties = {
+                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;),
+                @HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;)
+        },
+        threadPoolProperties = {
+                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;9&quot;)
+        }
+)</code></pre>
+<p>配置文件中</p>
+<pre><code class="properties">#全局的超时时间
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+#hystrix.command.&lt;commandKey&gt;作为前缀表示针对commandKey的Hystrix配置，commandKey默认是采用Feign的客户端的方法名字作为标识
+#queryOrder的超时时间
+hystrix.command.queryOrder.execution.isolation.thread.timeoutInMilliseconds=6000</code></pre>
+<h2 id="并发测试"><a href="#并发测试" class="headerlink" title="并发测试"></a>并发测试</h2><p>并发测试可以模拟多个线程同时请求的情况。</p>
+<p>对应的jar包</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.databene&lt;/groupId&gt;
+    &lt;artifactId&gt;contiperf&lt;/artifactId&gt;
+    &lt;version&gt;2.3.4&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<h3 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h3><p>使用方法</p>
+<pre><code class="java">@RunWith(SpringJUnit4ClassRunner.class)
+@SpringBootTest(classes = MicroWebApplication.class)
+@WebAppConfiguration
+public class Test {
+    @Autowired
+    OrderService orderService;
+
+    @Rule
+    public ContiPerfRule contiPerfRule = new ContiPerfRule();
+
+    @org.junit.Test
+     /**
+     * invocations：调用次数
+     * threads：线程数 
+     */
+    @PerfTest(invocations = 5,threads = 5)
+    public void hystrixTest2() {
+        log.info(Thread.currentThread().getName() + &quot;==&gt;&quot; + orderService.queryOrder());
+    }
+}</code></pre>
+<p>注意Hystrix默认的时间非常短，可以通过<code>@HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;</code>重新设置超时时间来避免超时报错</p>
+<pre><code class="java">@HystrixCommand(
+        commandProperties = {
+                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;),
+                @HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;)
+        },
+        threadPoolProperties = {
+                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;9&quot;)
+        }
+)</code></pre>
+<h2 id="Hystrix服务降级"><a href="#Hystrix服务降级" class="headerlink" title="Hystrix服务降级"></a>Hystrix服务降级</h2><p>服务降级相当于对服务调用过程的出现的异常进行友好封装抛一个友好的信息给前端。可以通过<code>@HystrixCommand</code>的<code>fallbackMethod</code>属性来指定。指定的降级方法可以使用<code>@HystrixCommand</code>注解再修饰，完成服务的再降级。</p>
+<pre><code class="java">@HystrixCommand(
+        fallbackMethod = &quot;queryOrderFallback&quot;,
+        commandProperties = {
+                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;),
+                @HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;)
+        },
+        threadPoolProperties = {
+                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;9&quot;)
+        }
+)</code></pre>
+<h2 id="Hystrix数据监控"><a href="#Hystrix数据监控" class="headerlink" title="Hystrix数据监控"></a>Hystrix数据监控</h2><p>Hystrix进行服务熔断时会对调用结果进行统计，比如超时数、bad请求数、降级数、异常数等等都会有统计，hystrix-dashboard就是展示hystrix统计结果的服务。</p>
+<h3 id="被监控工程的配置"><a href="#被监控工程的配置" class="headerlink" title="被监控工程的配置"></a>被监控工程的配置</h3><p>pom文件中需要引入</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>并在配置文件中加入</p>
+<pre><code class="properties">management.endpoint.health.show-details=always
+management.endpoint.shutdown.enabled=true
+management.endpoints.web.exposure.include=*</code></pre>
+<p>数据统计地址；<a href="http://localhost:8091/actuator/hystrix.stream" target="_blank" rel="noopener">http://localhost:8091/actuator/hystrix.stream</a></p>
+<h3 id="Dashboard工程搭建"><a href="#Dashboard工程搭建" class="headerlink" title="Dashboard工程搭建"></a>Dashboard工程搭建</h3><p>pom</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+         xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;parent&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+        &lt;version&gt;2.2.6.RELEASE&lt;/version&gt;
+    &lt;/parent&gt;
+    &lt;groupId&gt;pers.zgc&lt;/groupId&gt;
+    &lt;artifactId&gt;springcloud-dashboard&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;name&gt;springcloud-dashboard&lt;/name&gt;
+
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+        &lt;maven.compiler.source&gt;1.7&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;1.7&lt;/maven.compiler.target&gt;
+        &lt;spring-cloud.version&gt;Hoxton.SR3&lt;/spring-cloud.version&gt;
+    &lt;/properties&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-netflix-hystrix-dashboard&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;dependencyManagement&gt;
+        &lt;dependencies&gt;
+            &lt;dependency&gt;
+                &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-cloud-dependencies&lt;/artifactId&gt;
+                &lt;version&gt;${spring-cloud.version}&lt;/version&gt;
+                &lt;type&gt;pom&lt;/type&gt;
+                &lt;scope&gt;import&lt;/scope&gt;
+            &lt;/dependency&gt;
+        &lt;/dependencies&gt;
+    &lt;/dependencyManagement&gt;
+
+    &lt;build&gt;
+        &lt;pluginManagement&gt;&lt;!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) --&gt;
+            &lt;plugins&gt;
+                &lt;!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle --&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-clean-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.1.0&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging --&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.0.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.8.0&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-surefire-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;2.22.1&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.0.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-install-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;2.5.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-deploy-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;2.8.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle --&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.7.1&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-project-info-reports-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.0.0&lt;/version&gt;
+                &lt;/plugin&gt;
+            &lt;/plugins&gt;
+        &lt;/pluginManagement&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+&lt;/project&gt;</code></pre>
+<p>application.properties</p>
+<pre><code class="properties">server.port=9990
+management.endpoint.health.show-details=always
+management.endpoint.shutdown.enabled=true
+management.endpoints.web.exposure.include=*</code></pre>
+<p>启动类</p>
+<pre><code class="java">@SpringBootApplication
+@EnableHystrixDashboard
+public class DashboardApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DashboardApplication.class, args);
+    }
+}</code></pre>
+<p>启动之后进入监控地址：<a href="http://localhost:9990/hystrix，然后title中输入监控名称，点击Monitor" target="_blank" rel="noopener">http://localhost:9990/hystrix，然后title中输入监控名称，点击Monitor</a> Stream即可。</p>
+<h2 id="Hystrix熔断"><a href="#Hystrix熔断" class="headerlink" title="Hystrix熔断"></a>Hystrix熔断</h2><p>Hystrix熔断常用于并发比较高的接口，避免在网络抖动时接口响应超时导致大量连接占用的情况，熔断器开启后会直接访问降级方法，不再请求接口加快响应时间。注意，熔断器适合的场景是高并发的场景，在并发量不高的场景下使用Ribbon的重试功能更加合适。</p>
+<p>熔断器默认是开启的，触发的条件：在滚动窗口时间内，请求数达到断路器最小请求数，失败率达到断路器设置的百分比。滚动窗口的默认时间为10000ms，最小请求数默认为20次，失败率默认为50%</p>
+<p>熔断器的三个状态：</p>
+<ul>
+<li>关闭状态：关闭状态时用户请求是可以到达服务提供方的</li>
+<li>开启状态：开启状态时用户请求是不能到达服务提供方的，直接会走降级方法</li>
+<li>半开状态：当hystrix熔断器开启时，过一段时间后（默认为5秒），熔断器就会由开启状态变成半开状态。半开状态的熔断器是可以将用户请求传递给服务提供方的，这时候如果远程调用返回成功，那么熔断器就会有半开状态变成关闭状态，反之，如果调用失败，熔断器就会有半开状态变成开启状态。</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/springcloud/">springcloud</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/springcloud/">springcloud</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/24/springcloud%E4%B8%ADfeign%E7%9A%84%E4%BD%BF%E7%94%A8/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">springcloud中feign的使用</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/23/springcloud%E4%B8%ADeureka%E5%92%8Cribbon%E7%9A%84%E4%BD%BF%E7%94%A8/">
+                        <span class="hidden-mobile">springcloud中eureka和ribbon的使用</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "springcloud熔断降级组件hystrix详解&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

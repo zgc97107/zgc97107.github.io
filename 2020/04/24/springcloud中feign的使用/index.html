@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>springcloud中eureka和ribbon的使用 - zgcheng&#39;s blog</title>
+  <title>springcloud中feign的使用 - zgcheng&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期四, 四月 23日 2020, 6:29 晚上
+                  星期五, 四月 24日 2020, 5:51 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    2.3k 字
+                    1k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      9 分钟
+                      5 分钟
                   </span>
                 
 
@@ -176,245 +176,246 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期五, 四月 24日 2020, 10:52 上午</p>
+                class="note note-warning">本文最后更新于：星期五, 四月 24日 2020, 10:26 晚上</p>
             
             <div class="markdown-body">
-              <h2 id="Eureka用户认证"><a href="#Eureka用户认证" class="headerlink" title="Eureka用户认证"></a>Eureka用户认证</h2><p>eureka加入认证功能，在连接时会验证用户名密码。</p>
-<h3 id="服务端配置"><a href="#服务端配置" class="headerlink" title="服务端配置"></a>服务端配置</h3><p>pom中添加</p>
-<pre><code class="xml">&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
-&lt;/dependency&gt;</code></pre>
-<p>application.properties</p>
-<pre><code class="properties">security.basic.enabled=true
-spring.security.user.name=admin
-spring.security.user.password=admin</code></pre>
-<p>添加配置类</p>
-<pre><code class="java">@EnableWebSecurity
-public class WebSecurityConfigurer extends WebSecurityConfigurerAdapter {
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        //关闭csrf
-        http.csrf().disable();
-        //开启认证：URL格式登录必须是httpBasic
-        http.authorizeRequests().anyRequest().authenticated().and().httpBasic();
+              <h2 id="简单使用"><a href="#简单使用" class="headerlink" title="简单使用"></a>简单使用</h2><h3 id="提供方"><a href="#提供方" class="headerlink" title="提供方"></a>提供方</h3><p>controller</p>
+<pre><code class="java">@Slf4j
+@RestController
+public class OrderController {
+    @Autowired
+    private OrderService orderService;
+
+    @RequestMapping(&quot;/feign/order/listAll&quot;)
+    public String listAll(){
+        return orderService.listAll();
     }
 }</code></pre>
-<h3 id="客户端配置"><a href="#客户端配置" class="headerlink" title="客户端配置"></a>客户端配置</h3><p>properties中的连接改为</p>
-<pre><code>eureka.client.serviceUrl.defaultZone=http://admin:admin@localhost:8763/eureka/</code></pre><h2 id="服务的续约和保活"><a href="#服务的续约和保活" class="headerlink" title="服务的续约和保活"></a>服务的续约和保活</h2><p>当客户端启动向eureka注册本身服务列表后，需要隔段时间发送一次心跳给eureka服务端来证明自己还活着，当eureka收到这个心跳请求后才会知道客户端还活着，继续维护该客户端的服务列表信息。一旦因为某些原因导致客户端没有按时发送心跳给eureka服务端，这时候eureka可能就会认为客户端已经挂掉，就有可能把该服务从服务列表中删除掉。</p>
-<h3 id="客户端配置-1"><a href="#客户端配置-1" class="headerlink" title="客户端配置"></a>客户端配置</h3><pre><code class="properties">#服务续约，心跳的时间间隔
-eureka.instance.lease-renewal-interval-in-seconds=30
-#如果从前一次发送心跳时间起，90秒没接受到新的心跳，将剔除服务
-eureka.instance.lease-expiration-duration-in-seconds=90
-#表示eureka client间隔多久去拉取服务注册信息，默认为30秒
-eureka.client.registry-fetch-interval-seconds=30</code></pre>
-<h3 id="服务端的配置"><a href="#服务端的配置" class="headerlink" title="服务端的配置"></a>服务端的配置</h3><pre><code class="properties">#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式
-eureka.server.enable-self-preservation=true
-#Eureka Server 在运行期间会去统计心跳失败比例在15分钟之内是否低于85%，如果低于85%，Eureka Server会将这些实例保护起来
-eureka.server.renewal-percent-threshold=0.85
-#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒
-eureka.server.eviction-interval-timer-in-ms=60000</code></pre>
-<h2 id="Eureka监控检测"><a href="#Eureka监控检测" class="headerlink" title="Eureka监控检测"></a>Eureka监控检测</h2><p>Eureka默认的健康检测只是校验服务连接是否是UP还是DOWN的，客户端只会调用状态为UP状态的服务，但是可能会有服务连接正常，接口调用出现问题的情况，如连接Redis、mongodb、数据库出现问题导致接口调用失败，这时候就需要做自定义的检测。</p>
-<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p>pom文件中引入</p>
+<h3 id="消费方"><a href="#消费方" class="headerlink" title="消费方"></a>消费方</h3><p>pom文件</p>
 <pre><code class="xml">&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-openfeign&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
-<p>application.properties</p>
-<pre><code class="properties">#开启健康检测
-eureka.client.healthcheck.enabled=true</code></pre>
-<p>配置类</p>
+<p>service接口（该service不需要实现类）</p>
+<pre><code class="java">@FeignClient(name = &quot;MICRO-ORDER&quot;,path = &quot;/feign&quot;)
+public interface OrderService {
+    @GetMapping(&quot;/order/listAll&quot;)
+    String listAll();
+}</code></pre>
+<p>controller</p>
+<pre><code class="java">@RestController
+@RequestMapping(&quot;/order&quot;)
+public class OrderController {
+    @Autowired
+    private OrderService orderFeignService;
+    @GetMapping(&quot;/listAll&quot;)
+    public String listAll(){
+        return orderFeignService.listAll();
+    }
+}</code></pre>
+<p>启动类</p>
+<pre><code class="java">@SpringBootApplication
+@EnableCircuitBreaker
+@EnableEurekaClient
+@EnableFeignClients(clients = OrderService.class)
+public class MicroWebApplication {</code></pre>
+<h2 id="参数传递"><a href="#参数传递" class="headerlink" title="参数传递"></a>参数传递</h2><p>消费方</p>
+<pre><code class="java">@FeignClient(name = &quot;MICRO-ORDER&quot;, path = &quot;/feign&quot;)
+public interface OrderService {
+    @GetMapping(&quot;/order/listAll&quot;)
+    String listAll();
+
+    @GetMapping(&quot;/order/getById&quot;)
+    String getById(@RequestParam(&quot;id&quot;) Integer id);
+
+    @PostMapping(&quot;/order/save&quot;)
+    String save(@RequestBody Map&lt;String, String&gt; paramMap);
+}</code></pre>
+<p>提供方</p>
+<pre><code class="java">@Slf4j
+@RestController
+public class OrderController {
+    @Autowired
+    private OrderService orderService;
+
+    @RequestMapping(&quot;/feign/order/listAll&quot;)
+    public String listAll() {
+        return orderService.listAll();
+    }
+
+    @PostMapping(&quot;/feign/order/save&quot;)
+    public String save(@RequestBody Map&lt;String, String&gt; paramMap) {
+        return paramMap.keySet().stream().map(key -&gt; key + paramMap.get(key)).collect(Collectors.joining());
+    }
+
+    @RequestMapping(&quot;/feign/order/getById&quot;)
+    public String getById(@RequestParam(&quot;id&quot;) Integer id) {
+        return id + &quot;&quot;;
+    }
+}</code></pre>
+<h2 id="开启熔断功能"><a href="#开启熔断功能" class="headerlink" title="开启熔断功能"></a>开启熔断功能</h2><p>feign其实是对hystrix和ribbon的整合，@FeignClient中的每一个方法进行了服务隔离。</p>
+<p>在properties中</p>
+<pre><code class="properties">#feign开启熔断器
+feign.hystrix.enabled=true
+#开启feign压缩功能
+feign.compression.request.enabled=true
+#feign.compression.request.mime-types=text/xml,application/xml,application/json
+#feign.compression.request.min-request-size=2048
+feign.compression.response.enabled=true</code></pre>
+<h2 id="公共接口抽取"><a href="#公共接口抽取" class="headerlink" title="公共接口抽取"></a>公共接口抽取</h2><p>可以在项目的公共jar包中加入公共接口类，然后在提供方和消费方实现公共接口即可。</p>
+<p>定义公共接口</p>
+<pre><code class="java">@RequestMapping(&quot;/feign/teacher&quot;)
+public interface TeacherService {
+    @GetMapping(&quot;/getAllTeacher&quot;)
+    String getAllTeacher();
+
+    @PostMapping(&quot;/saveTeacher&quot;)
+    String saveTeacher(@RequestBody Teacher Teacher);
+
+    @GetMapping(&quot;/getTeacherById&quot;)
+    String getTeacherById(@RequestParam(&quot;id&quot;) Integer id);
+
+    @GetMapping(&quot;/getTeacherByName/{name}&quot;)
+    String getTeacherByName(@PathVariable(&quot;name&quot;) String name);
+
+    @GetMapping(&quot;/errorMessage&quot;)
+    String errorMessage(@RequestParam(&quot;id&quot;) Integer id);
+}</code></pre>
+<p>提供方</p>
+<pre><code class="java">@FeignClient(name = &quot;MICRO-ORDER&quot;)
+public interface TeacherServiceFeign extends TeacherService {
+}</code></pre>
+<p>消费方</p>
+<pre><code class="java">@RestController
+public class TeacherController implements TeacherService {
+    @Override
+    public String getAllTeacher() {
+        return &quot;micro-order.getAllTeacher&quot;;
+    }
+
+    @Override
+    public String saveTeacher(@RequestBody Teacher Teacher) {
+        return &quot;micro-order.saveTeacher&quot;;
+    }
+
+    @Override
+    public String getTeacherById(@RequestParam(&quot;id&quot;) Integer id) {
+        return &quot;micro-order.getTeacherById&quot;;
+    }
+
+    @Override
+    public String getTeacherByName(@PathVariable(&quot;name&quot;) String name) {
+        return &quot;micro-order.getTeacherByName&quot;;
+    }
+
+    @Override
+    public String errorMessage(@RequestParam(&quot;id&quot;) Integer id) {
+        return &quot;micro-order.errorMessage&quot;;
+    }
+}</code></pre>
+<h2 id="服务降级"><a href="#服务降级" class="headerlink" title="服务降级"></a>服务降级</h2><h3 id="设置fallback属性"><a href="#设置fallback属性" class="headerlink" title="设置fallback属性"></a>设置fallback属性</h3><p>使用方法</p>
+<pre><code class="java">@FeignClient(name = &quot;MICRO-ORDER&quot;, path = &quot;/feign&quot;, fallback = OrderServiceFallback.class)
+public interface OrderService {
+    @GetMapping(&quot;/order/listAll&quot;)
+    String listAll();
+
+    @GetMapping(&quot;/order/getById&quot;)
+    String getById(@RequestParam(&quot;id&quot;) Integer id);
+
+    @PostMapping(&quot;/order/save&quot;)
+    String save(@RequestBody Map&lt;String, String&gt; paramMap);
+}</code></pre>
+<pre><code class="java">@Slf4j
+@Component
+public class OrderServiceFallback implements OrderService {
+    @Override
+    public String listAll() {
+        return &quot;请求失败&quot;;
+    }
+
+    @Override
+    public String getById(@RequestParam(&quot;id&quot;) Integer id) {
+        log.info(&quot;id:{}&quot;, id);
+        return &quot;请求失败&quot;;
+    }
+
+    @Override
+    public String save(@RequestBody Map&lt;String, String&gt; paramMap) {
+        paramMap.forEach((key, value) -&gt; {
+            log.info(&quot;key:{},value:{}&quot;, key, value);
+        });
+        return &quot;请求失败&quot;;
+    }
+}</code></pre>
+<p>当出现异常时，会调用OrderServiceFallback中对应的方法，但这种方式无法获取到出现的异常。</p>
+<h3 id="设置fallbackFactory属性"><a href="#设置fallbackFactory属性" class="headerlink" title="设置fallbackFactory属性"></a>设置fallbackFactory属性</h3><p>这种方法可以获取到异常信息，推荐使用。</p>
+<pre><code class="java">@FeignClient(name = &quot;MICRO-ORDER&quot;, path = &quot;/feign&quot;
+        ,fallbackFactory = OrderServiceFallbackFactory.class)
+public interface OrderService {
+    @GetMapping(&quot;/order/listAll&quot;)
+    String listAll();
+
+    @GetMapping(&quot;/order/getById&quot;)
+    String getById(@RequestParam(&quot;id&quot;) Integer id);
+
+    @PostMapping(&quot;/order/save&quot;)
+    String save(@RequestBody Map&lt;String, String&gt; paramMap);
+}</code></pre>
+<pre><code class="java">@Slf4j
+@Service
+public class OrderServiceFallback implements OrderService {
+    @Override
+    public String listAll() {
+        return &quot;请求失败&quot;;
+    }
+
+    @Override
+    public String getById(@RequestParam(&quot;id&quot;) Integer id) {
+        log.info(&quot;id:{}&quot;, id);
+        return &quot;请求失败&quot;;
+    }
+
+    @Override
+    public String save(@RequestBody Map&lt;String, String&gt; paramMap) {
+        paramMap.forEach((key, value) -&gt; {
+            log.info(&quot;key:{},value:{}&quot;, key, value);
+        });
+        return &quot;请求失败&quot;;
+    }
+}</code></pre>
+<h3 id="feign的全局过滤器"><a href="#feign的全局过滤器" class="headerlink" title="feign的全局过滤器"></a>feign的全局过滤器</h3><p>调用顺序在降级方法前，当服务提供方返回的状态码不是200时就会触发，可以进行异常的包装。</p>
 <pre><code class="java">@Configuration
-public class MicroOrderHealthIndicator implements HealthIndicator {
-    @Override
-    public Health health() {
-        if (OrderController.canVisitDb) {
-            return new Health.Builder(Status.UP).build();
-        } else {
-            return new Health.Builder(Status.DOWN).build();
-        }
+public class FeignErrMessageFilter {
+
+    @Bean
+    public ErrorDecoder errorDecoder() {
+        return new FeignErrorDecoder();
     }
-}</code></pre>
-<h2 id="服务下线"><a href="#服务下线" class="headerlink" title="服务下线"></a>服务下线</h2><p>比如有些情况是服务主机意外宕机了，无法给eureka发送心跳，但是eureka在没有接受到心跳的情况下依赖维护该服务90s，在这90s之内可能会有客户端调用到该服务，这就可能会导致调用失败。所以eureka提供了接口可以将宕机的服务立即从eureka服务列表中清除掉，避免被服务调用方调用到。</p>
-<p>注意，该请求方式为DELETE，可以用postman请求这个接口，如果需要认证则在Authorization中选择Basic Auth然后输入用户名密码即可。如果服务状态正常，依然在发送心跳，即使调用这个接口也不会删除。</p>
-<pre><code>http://localhost:8763/eureka/apps/{Application}/{Status中的地址}</code></pre><p>还可以缩短eureka服务端中的清理无效节点、客户端拉取服务注册信息的时间间隔。</p>
-<p>服务端</p>
-<pre><code class="properties">#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒
-eureka.server.eviction-interval-timer-in-ms=60000</code></pre>
-<p>客户端</p>
-<pre><code class="properties">#表示 eureka client 间隔多久去拉取服务注册信息，默认为 30 秒
-eureka.client.registry-fetch-interval-seconds=30</code></pre>
-<h2 id="Eureka高可用"><a href="#Eureka高可用" class="headerlink" title="Eureka高可用"></a>Eureka高可用</h2><img src="/2020/04/23/springcloud%E4%B8%ADeureka%E5%92%8Cribbon%E7%9A%84%E4%BD%BF%E7%94%A8/pic1.png" srcset="/img/loading.gif" class="">
 
-<p>整个微服务中存在多个eureka服务，每个eureka服务都是相互复制的，会把客户端注册进来的服务复制到eureka集群中的其他节点里面来。其实简单来说就是eureka每个节点相互复制。</p>
-<p>eureka1的配置</p>
-<pre><code class="properties">server.port=8761
-eureka.instance.hostname=eureka-8761
-#是否注册到eureka
-eureka.client.registerWithEureka=true
-#是否从eureka拉取注册信息
-eureka.client.fetchRegistry=true
-#暴露eureka服务的地址
-eureka.client.serviceUrl.defaultZone=http://admin:admin@eureka-8762:8762/eureka/
-#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式
-eureka.server.enable-self-preservation=true
-#Eureka Server 在运行期间会去统计心跳失败比例在15分钟之内是否低于85%，如果低于85%，Eureka Server会将这些实例保护起来
-eureka.server.renewal-percent-threshold=0.85
-#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒
-eureka.server.eviction-interval-timer-in-ms=60000
-
-security.basic.enabled=true
-spring.security.user.name=admin
-spring.security.user.password=admin</code></pre>
-<p>eureka2的配置</p>
-<pre><code class="properties">server.port=8762
-eureka.instance.hostname=eureka-8762
-#是否注册到eureka
-eureka.client.registerWithEureka=true
-#是否从eureka拉取注册信息
-eureka.client.fetchRegistry=true
-#暴露eureka服务的地址
-eureka.client.serviceUrl.defaultZone=http://admin:admin@eureka-8761:8761/eureka/
-#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式
-eureka.server.enable-self-preservation=true
-#Eureka Server 在运行期间会去统计心跳失败比例在15分钟之内是否低于85%，如果低于85%，Eureka Server会将这些实例保护起来
-eureka.server.renewal-percent-threshold=0.85
-#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒
-eureka.server.eviction-interval-timer-in-ms=60000
-
-security.basic.enabled=true
-spring.security.user.name=admin
-spring.security.user.password=admin</code></pre>
-<p>注意：eureka-8761、eureka-8762需要在本地配置host，对应的地址一般都为127.0.0.1。</p>
-<h2 id="Eureka自我保护模式"><a href="#Eureka自我保护模式" class="headerlink" title="Eureka自我保护模式"></a>Eureka自我保护模式</h2><p>如果开启了自我保护，如果服务没有发送心跳会继续维护90s，如果关闭自我保护在很短一段时间就会删除服务，不会继续维护90s。</p>
-<pre><code class="properties">#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式
-eureka.server.enable-self-preservation=true</code></pre>
-<h2 id="Ribbon-API"><a href="#Ribbon-API" class="headerlink" title="Ribbon API"></a>Ribbon API</h2><p>Ribbon是一个独立的组件，用来进行远程接口调用的。Ribbon会从本地列表选择服务来调用。</p>
-<p>配置类中</p>
-<pre><code class="java">    /**
-     *负载均衡的注解
+    /**
+     * 当调用服务时，如果服务返回的状态码不是200，就会进入到Feign的ErrorDecoder中
+     * 只有这种方式才能获取所有的被feign包装过的异常信息
+     * 这里如果创建的Exception是HystrixBadRequestException,则不会走熔断逻辑，不记入熔断统计
      */
-    @LoadBalanced
-    @Bean
-    RestTemplate restTemplate() {
-        return new RestTemplate();
-    }</code></pre>
-<p>具体的调用</p>
-<pre><code class="java">    @Autowired
-    private RestTemplate restTemplate;
+    class FeignErrorDecoder implements ErrorDecoder {
 
-    @Override
-    public String queryOrder() {
-        String SERVICE_NAME = &quot;micro-order&quot;;
-        return restTemplate.getForObject(&quot;http://&quot; + SERVICE_NAME + &quot;/queryOrder&quot;, String.class);
-    }</code></pre>
-<h2 id="Ribbon配置"><a href="#Ribbon配置" class="headerlink" title="Ribbon配置"></a>Ribbon配置</h2><p>配置文件方式：</p>
-<pre><code class="properties">#是否从eureka获取服务列表
-ribbon.eureka.enabled=true
-#用于不从eureka获取服务列表，提供服务调用的节点，不建议使用
-#micro-order.ribbon.listOfServers=localhost:8081,localhost:8082
-#单位ms，请求连接超时时间
-micro-order.ribbon.ConnectTimeout=1000
-#单位mx，请求处理超时时间
-micro-order.ribbon.ReadTimeout=2000
-#如果调用失败是否针对所有接口进行重试
-micro-order.ribbon.OkToRetryOnAllOperations=true
-#切换实例的重试次数
-micro-order.ribbon.MaxAutoRetriesNextServer=2
-#对当前实例的重试次数 当Eureka中可以找到服务，但是服务连接不上时会重试
-micro-order.ribbon.MaxAutoRetries=2
-#配置负载均衡策略
-micro-order.ribbon.NFLoadBalancerRuleClassName=com.netflix.loadbalancer.RoundRobinRule
-#
-micro-order.ribbon.NFLoadBalancerPingClassName=com.netflix.loadbalancer.PingUrl</code></pre>
-<p>配置类方式：</p>
-<p>使用@RebbonClients加载配置，这个配置类只针对micro-order服务，可以区别化配置。</p>
-<pre><code class="java">@Configuration
-@RibbonClients(value = {
-        @RibbonClient(name = &quot;micro-order&quot;,configuration = RibbonLoadBalanceMicroOrderConfig.class)
-})
-public class LoadBalanceConfig {
+        private Logger logger = LoggerFactory.getLogger(FeignErrorDecoder.class);
 
-}</code></pre>
-<pre><code class="java">/*
- * 这个类最好不要出现在启动类的@ComponentScan扫描范围
- * 如果出现在@ComponentScan扫描访问，那么这个配置类就是每个服务共用的配置了
- * */
-@Configuration
-public class RibbonLoadBalanceMicroOrderConfig {
+        @Override
+        public Exception decode(String s, Response response) {
+            RuntimeException runtimeException = null;
+            try {
+                String retMsg = Util.toString(response.body().asReader());
+                logger.info(retMsg);
 
-    //    @RibbonClientName
-    private String name = &quot;micro-order&quot;;
-
-    @Bean
-    @ConditionalOnClass
-    public IClientConfig defaultClientConfigImpl() {
-        DefaultClientConfigImpl config = new DefaultClientConfigImpl();
-        config.loadProperties(name);
-        config.set(CommonClientConfigKey.MaxAutoRetries, 2);
-        config.set(CommonClientConfigKey.MaxAutoRetriesNextServer, 2);
-        config.set(CommonClientConfigKey.ConnectTimeout, 2000);
-        config.set(CommonClientConfigKey.ReadTimeout, 4000);
-        config.set(CommonClientConfigKey.OkToRetryOnAllOperations, true);
-        return config;
-    }
-
-    /*
-     * 用于请求前判断服务是否存活，会拉长请求时间，不建议使用
-     * */
-//    @Bean
-    public IPing iPing() {
-        //这个实现类会去调用服务来判断服务是否存活
-        return new PingUrl();
-    }
-
-    @Bean
-    public IRule ribbonRule() {
-        //线性轮训
-        new RoundRobinRule();
-        //可以重试的轮训
-        new RetryRule();
-        //根据运行情况来计算权重
-        new WeightedResponseTimeRule();
-        //过滤掉故障实例，选择请求数最小的实例
-        new BestAvailableRule();
-        return new RandomRule();
-    }
-}</code></pre>
-<p>负载均衡策略：</p>
-<ul>
-<li>RoundRobinRule：线性轮询</li>
-<li>RetryRule：可以重试的轮询</li>
-<li>WeightedResponseTimeRule：根据运行情况计算权重</li>
-<li>BestAvailableRule：过滤掉故障实例，选择请求数最小的</li>
-</ul>
-<p>注：涉及到的统计数据来源于actuator。</p>
-<h2 id="Ribbon的单独使用"><a href="#Ribbon的单独使用" class="headerlink" title="Ribbon的单独使用"></a>Ribbon的单独使用</h2><p>Ribbon是一个独立的组件，可以脱离springcloud单独使用。</p>
-<pre><code class="java">    public void test1() {
-        try {
-            //myClients随便取值
-            ConfigurationManager.getConfigInstance().setProperty(&quot;myClients.ribbon.listOfServers&quot;,&quot;localhost:8001,localhost:8002&quot;);
-            RestClient client = (RestClient)ClientFactory.getNamedClient(&quot;myClients&quot;);
-            HttpRequest request = HttpRequest.newBuilder().uri(new URI(&quot;/user/queryContent&quot;)).build();
-
-            for (int i = 0; i &lt; 10; i++) {
-                HttpResponse httpResponse = client.executeWithLoadBalancer(request);
-                String entity = httpResponse.getEntity(String.class);
-                System.out.println(entity);
+                runtimeException = new RuntimeException(retMsg);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (ClientException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
+            return runtimeException;
         }
-    }</code></pre>
-<p>需要的jar包：</p>
-<ul>
-<li>com.netflix.ribbon:ribbon-core:2.3.0</li>
-<li>com.netflix.ribbon:ribbon-httpclient:2.3.0</li>
-</ul>
+    }
+}</code></pre>
 
             </div>
             <hr>
@@ -446,18 +447,12 @@ public class RibbonLoadBalanceMicroOrderConfig {
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/04/24/springcloud%E7%86%94%E6%96%AD%E9%99%8D%E7%BA%A7%E7%BB%84%E4%BB%B6hystrix%E8%AF%A6%E8%A7%A3/">
-                        <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">springcloud熔断降级组件hystrix详解</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </div>
                   <div class="post-next col-6">
                     
                     
-                      <a href="/2020/04/23/springcloud%E7%9A%84%E7%AE%80%E5%8D%95%E6%90%AD%E5%BB%BA/">
-                        <span class="hidden-mobile">springcloud的简单搭建</span>
+                      <a href="/2020/04/24/springcloud%E7%86%94%E6%96%AD%E9%99%8D%E7%BA%A7%E7%BB%84%E4%BB%B6hystrix%E8%AF%A6%E8%A7%A3/">
+                        <span class="hidden-mobile">springcloud熔断降级组件hystrix详解</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -677,7 +672,7 @@ public class RibbonLoadBalanceMicroOrderConfig {
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "springcloud中eureka和ribbon的使用&nbsp;",
+        "springcloud中feign的使用&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
