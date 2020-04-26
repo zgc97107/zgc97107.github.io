@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>springcloud分布式配置中心 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期六, 四月 25日 2020, 3:08 下午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    2.8k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      13 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期日, 四月 26日 2020, 7:08 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="分布式配置中心的作用"><a href="#分布式配置中心的作用" class="headerlink" title="分布式配置中心的作用"></a>分布式配置中心的作用</h2><ul>
+<li>抽取出公共配置，做到一处修改各处生效的目标。</li>
+<li>配置文件的热加载，修改了配置文件后各个模块动态刷新，不需要重启服务器。</li>
+</ul>
+<h2 id="分布式配置中心的基本使用"><a href="#分布式配置中心的基本使用" class="headerlink" title="分布式配置中心的基本使用"></a>分布式配置中心的基本使用</h2><p>与hystrix的监控相同，配置中心可以不注册到eureka</p>
+<h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p>pom文件</p>
+<pre><code class="xml">&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-cloud-config-server&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>启动类</p>
+<pre><code class="java">@EnableConfigServer
+@SpringBootApplication
+public class ConfigApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigApplication.class, args);
+    }
+}</code></pre>
+<p>github连接配置</p>
+<pre><code class="properties">spring.cloud.config.server.git.uri=https://github.com/zgc97107/micro-config
+spring.cloud.config.server.git.search-paths=config
+spring.cloud.config.server.git.username=347398631@qq.com
+spring.cloud.config.server.git.password=zhao19971107</code></pre>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p>pom文件</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-config&lt;/artifactId&gt;
+    &lt;version&gt;LATEST&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<p>配置文件</p>
+<pre><code class="properties">#指定对应的环境
+spring.cloud.config.profile=dev
+#github分支名称
+spring.cloud.config.label=master
+#configserver单机情况下的配置
+spring.cloud.config.uri=http://localhost:8085/
+#如果连接不上获取配置有问题，快速响应失败
+spring.cloud.config.fail-fast=true
+#本地缓存目录
+#spring.cloud.config.server.git.basedir=C:/work/config/tmp
+#强制从GitHub中拉取配置信息，不走缓存
+spring.cloud.config.server.git.force-pull=true</code></pre>
+<p>具体使用</p>
+<pre><code class="java">@RestController
+@RequestMapping(&quot;/user&quot;)
+public class UserController {
+
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    UserService userService;
+
+    @Value(&quot;${username}&quot;)
+    private String username;
+
+    @Value(&quot;${redis.password}&quot;)
+    private String redispass;
+
+    @Autowired
+    Environment environment;
+
+    @RequestMapping(&quot;/queryContent&quot;)
+    public List&lt;ConsultContent&gt; queryContent(HttpServletRequest request) {
+        logger.info(&quot;==================已经调用==========&quot; + request.getRemotePort());
+        logger.info(&quot;@Value======username======&quot; + username);
+        logger.info(&quot;Environment======username======&quot; + environment.getProperty(&quot;username&quot;));
+        logger.info(&quot;@Value======redispass======&quot; + redispass);
+        logger.info(&quot;Environment======redispass======&quot; + environment.getProperty(&quot;redis.password&quot;));
+        return userService.queryContent();
+    }
+}</code></pre>
+<p>通过@Value跟environment.getProperty()方式都可以获取到。</p>
+<h2 id="重试功能"><a href="#重试功能" class="headerlink" title="重试功能"></a>重试功能</h2><p>客户端jar包导入</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.retry&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-retry&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>配置</p>
+<pre><code class="properties">#默认重试的间隔时间，默认1000ms
+spring.cloud.config.retry.multiplier=1000
+#下一间隔时间的乘数，默认是 1.1
+spring.cloud.config.retry.initial-interval=1.1
+#最大间隔时间，默认2000ms
+spring.cloud.config.retry.max-interval=2000
+#最大重试次数，默认 6 次
+spring.cloud.config.retry.max-attempts=6</code></pre>
+<h2 id="配置信息的加密"><a href="#配置信息的加密" class="headerlink" title="配置信息的加密"></a>配置信息的加密</h2><p>在配置中心中，有些信息是比较敏感的，比如密码信息，在配置密码信息的时候有必要对密码信息加密以免密码信息泄露，springcloud配置中心也支持配置信息加密的，这里一RSA非对称加密举例。</p>
+<h3 id="服务端-1"><a href="#服务端-1" class="headerlink" title="服务端"></a>服务端</h3><ol>
+<li><p>本地生成秘钥对：进入到jdk的keytool目录中：<code>jdk1.8.0_92\jre\bin\keytool</code></p>
+</li>
+<li><p>执行指令生成秘钥文件：<code>keytool -genkeypair -alias config-server -keyalg RSA -keystore config-server.keystore -validity 365</code>，指令执行成功后会在当前目录生成一个config-server.keystore文件。</p>
+</li>
+<li><p>将文件config-server.keystore复制到配置中心服务端的resources目录下</p>
+</li>
+<li><p>在pom文件的build标签下中添加设置，避免maven重新编译.keystore文件</p>
+<pre><code class="xml">&lt;resources&gt;
+    &lt;resource&gt;
+        &lt;directory&gt;src/main/java&lt;/directory&gt;
+        &lt;includes&gt;
+            &lt;include&gt;**/*.properties&lt;/include&gt;
+            &lt;include&gt;**/*.xml&lt;/include&gt;
+        &lt;/includes&gt;
+        &lt;filtering&gt;false&lt;/filtering&gt;
+    &lt;/resource&gt;
+    &lt;resource&gt;
+        &lt;directory&gt;src/main/resources&lt;/directory&gt;
+        &lt;includes&gt;
+            &lt;include&gt;**/*.properties&lt;/include&gt;
+            &lt;include&gt;**/*.xml&lt;/include&gt;
+            &lt;include&gt;**/*.txt&lt;/include&gt;
+            &lt;include&gt;**/*.keystore&lt;/include&gt;
+        &lt;/includes&gt;
+        &lt;filtering&gt;false&lt;/filtering&gt;
+    &lt;/resource&gt;
+&lt;/resources&gt;</code></pre>
+</li>
+<li><p>配置文件中</p>
+<pre><code class="properties">encrypt.key-store.location=config-server.keystore
+encrypt.key-store.alias=config-server
+encrypt.key-store.password=123456
+encrypt.key-store.secret=123456</code></pre>
+</li>
+</ol>
+<h3 id="加密和解密接口"><a href="#加密和解密接口" class="headerlink" title="加密和解密接口"></a>加密和解密接口</h3><p>配置完成后，服务端会提供信息加密和解密接口：</p>
+<ul>
+<li>加密接口：<code>http://localhost:8085/encrypt</code>，请求方式POST，请求参数需要放到body中。</li>
+<li>解密接口：<code>http://localhost:8085/decrypt</code>，请求方式POST，所需参数为加密接口返回的参数。</li>
+</ul>
+<p>注意：将配置信息通过加密接口加密后，设置到git时需要在密文前增加{cipher}标识。</p>
+<h2 id="配置中心高可用"><a href="#配置中心高可用" class="headerlink" title="配置中心高可用"></a>配置中心高可用</h2><p>首先将配置中心注册到eureka中，来实现配置中心的服务化，然后启动多个配置中心即可。在配置之前需要将上面指定的配置中心uri删除。</p>
+<h3 id="客户端-1"><a href="#客户端-1" class="headerlink" title="客户端"></a>客户端</h3><pre><code class="properties">#开启config server服务发现功能
+spring.cloud.config.discovery.enabled=true
+#config server服务名称
+spring.cloud.config.discovery.service-id=config-server</code></pre>
+<h3 id="服务端-2"><a href="#服务端-2" class="headerlink" title="服务端"></a>服务端</h3><p>需要引入并开启Eureka客户端功能，并向eureka注册</p>
+<p>pom</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>properties</p>
+<pre><code class="properties">spring.application.name=config-server
+eureka.client.serviceUrl.defaultZone=http://admin:admin@localhost:8763/eureka/</code></pre>
+<p>启动类</p>
+<pre><code class="java">@EnableEurekaClient
+@EnableConfigServer
+@SpringBootApplication
+public class MicroConfigApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MicroConfigApplication.class, args);
+    }
+}</code></pre>
+<p>注意：此处有个坑，如果在配置文件bootstrap.properties文件中同时含有以下内容，会导致eureka中的服务状态变为unkown！可以将该配置注释掉，或者迁移至application.properties中。</p>
+<pre><code class="properties">#开启健康检测
+eureka.client.healthcheck.enabled=true</code></pre>
+<p>关于这个坑springcloud官网的解释</p>
+
+
+<p>大意为，<code>eureka.client.healthcheck.enabled=true</code>应该设置在application.yml中，如果设置在bootstrap.yml文件中时可能会有UNKNOW的情况出现。</p>
+<h2 id="动态加载刷新"><a href="#动态加载刷新" class="headerlink" title="动态加载刷新"></a>动态加载刷新</h2><p>这是一个革命性的功能，可以在运行期间修改配置文件后，不需要重启就能使最新的配置文件生效。</p>
+<h3 id="Environment的动态刷新"><a href="#Environment的动态刷新" class="headerlink" title="Environment的动态刷新"></a>Environment的动态刷新</h3><p>动态刷新其实要有一个契机，其实这个契机就是手动调用刷新接口，如果你想刷新哪台主机的配置，就调用哪台注解的刷新接口。刷新接口为：<code>http://localhost:8081/actuator/refresh</code>，请求方式为POST。</p>
+<h3 id="Value属性的动态刷新"><a href="#Value属性的动态刷新" class="headerlink" title="@Value属性的动态刷新"></a>@Value属性的动态刷新</h3><p>在调用刷新接口后，@Value注入的属性依然不会改变，因为@Value注入的属性是项目启动就已经确定的。如果要使@Value属性也刷新，就必须要在类上面加上@RefreshScope注解。加上该注解后，在调用刷新接口时，就会重新生成实例。</p>
+<p>但是这种方式在需要刷新的集群机器数量比较多时会比较繁琐，此时可以使用Springcloud中提供消息总线，当需要刷新时只要调用一次刷新接口即可然后借助消息的广播来生效即可。</p>
+<h3 id="消息总线"><a href="#消息总线" class="headerlink" title="消息总线"></a>消息总线</h3><p>pom文件</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-bus-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>properties文件</p>
+<pre><code class="properties">spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+
+spring.cloud.bus.refresh.enabled=true
+spring.cloud.bus.trace.enabled=true</code></pre>
+<p>然后调用：<code>http://localhost:8081/actuator/bus-refresh</code>接口就可以通知到所有使用总线的服务。</p>
+<p>也可以在git中配置，实现内容变动时自动调用接口。配置方式为Settings-&gt;Webhooks-&gt;Add webhook，然后输入url后点击Add webhook。</p>
+<h2 id="自定义的分布式配置中心"><a href="#自定义的分布式配置中心" class="headerlink" title="自定义的分布式配置中心"></a>自定义的分布式配置中心</h2><p>原理是利用zookeeper节点的通知机制，完成对Environment中属性的修改及bean中@Value属性的修改，并将使用自定义作用域的对象销毁，然后重新生成，完成@Value的动态更新。如果要使@Value属性的动态更新，需要在类上加上@Scope(“refresh”)注解。</p>
+<p>此处遗留问题：</p>
+<ul>
+<li>使用@Autowired属性注入的类中使用@Scope(“refresh”)能不能成功刷新。</li>
+<li>使用redis的通知机制代替zookeeper的通知机制。</li>
+</ul>
+<p>引入jar包</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.curator&lt;/groupId&gt;
+    &lt;artifactId&gt;curator-recipes&lt;/artifactId&gt;
+    &lt;version&gt;2.11.0&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<p>核心类</p>
+<p>该类实现了ApplicationContextAware接口，将在类初始化完成并调用IOC、DI之后调用init()方法，在调用时会通过setApplicationContext()将上下文对象传入。</p>
+<pre><code class="java">@Compoent
+public class CuratorUtil implements ApplicationContextAware {
+
+    private static String connnectStr = &quot;192.168.67.139:2181&quot;;
+
+    private static CuratorFramework client;
+
+    private static String path = &quot;/config&quot;;
+
+    @Value((&quot;${zookeeper.config.enable:false}&quot;))
+    private boolean enbale;
+
+    @Autowired
+    Environment environment;
+
+    private static String zkPropertyName = &quot;zookeeperSource&quot;;
+
+    private static String scopeName = &quot;refresh&quot;;
+
+    private static ConfigurableApplicationContext applicationContext;
+
+    private ConcurrentHashMap map = new ConcurrentHashMap();
+
+    private BeanDefinitionRegistry beanDefinitionRegistry;
+
+    @PostConstruct
+    public void init() {
+        if (!enbale) return;
+
+        RefreshScopeRegistry refreshScopeRegistry = (RefreshScopeRegistry) applicationContext.getBean(&quot;refreshScopeRegistry&quot;);
+        beanDefinitionRegistry = refreshScopeRegistry.getBeanDefinitionRegistry();
+
+        client = CuratorFrameworkFactory.
+                builder().
+                connectString(connnectStr).
+                sessionTimeoutMs(5000).
+                retryPolicy(new ExponentialBackoffRetry(1000, 3)).
+                build();
+        client.start();
+
+        try {
+            Stat stat = client.checkExists().forPath(path);
+            if (stat == null) {
+                //创建zookeeper配置节点
+                client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).
+                        forPath(path, &quot;zookeeper config&quot;.getBytes());
+                TimeUnit.SECONDS.sleep(1);
+            } else {
+                //将zookeeper配置节点下面的子节点加载到spring容器的属性对象中
+                addChildToSpringProperty(client, path);
+            }
+
+//            nodeCache(client,path);
+            //注册节点监听监听器
+            childNodeCache(client, path);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addChildToSpringProperty(CuratorFramework client, String path) {
+        if (!checkExistsSpringProperty()) {
+            //如果不存在zookeeper的配置属性对象则创建
+            createZookeeperSpringProperty();
+        }
+
+        //把config目录下的子节点添加到 zk的PropertySource对象中
+        MutablePropertySources propertySources = applicationContext.getEnvironment().getPropertySources();
+        PropertySource&lt;?&gt; propertySource = propertySources.get(zkPropertyName);
+        ConcurrentHashMap zkmap = (ConcurrentHashMap) propertySource.getSource();
+        try {
+            List&lt;String&gt; strings = client.getChildren().forPath(path);
+            for (String string : strings) {
+                zkmap.put(string, client.getData().forPath(path + &quot;/&quot; + string));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 将节点中的信息添加到spring中
+     */
+    private void createZookeeperSpringProperty() {
+        MutablePropertySources propertySources = applicationContext.getEnvironment().getPropertySources();
+        OriginTrackedMapPropertySource zookeeperSource = new OriginTrackedMapPropertySource(zkPropertyName, map);
+        propertySources.addLast(zookeeperSource);
+    }
+
+    private boolean checkExistsSpringProperty() {
+        MutablePropertySources propertySources = applicationContext.getEnvironment().getPropertySources();
+        for (PropertySource&lt;?&gt; propertySource : propertySources) {
+            if (zkPropertyName.equals(propertySource.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void childNodeCache(CuratorFramework client, String path) {
+        try {
+            final PathChildrenCache pathChildrenCache = new PathChildrenCache(client, path, false);
+            pathChildrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
+            pathChildrenCache.getListenable().addListener(new PathChildrenCacheListener() {
+                @Override
+                public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+                    switch (event.getType()) {
+                        case CHILD_ADDED:
+                            System.out.println(&quot;增加了节点&quot;);
+                            addEnv(event.getData(), client);
+                            break;
+                        case CHILD_REMOVED:
+                            System.out.println(&quot;删除了节点&quot;);
+                            delEnv(event.getData());
+                            break;
+                        case CHILD_UPDATED:
+                            System.out.println(&quot;更新了节点&quot;);
+                            addEnv(event.getData(), client);
+                            break;
+                        default:
+                            break;
+                    }
+                    //对refresh作用域的实例进行刷新
+                    refreshBean();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void refreshBean() {
+        String[] beanDefinitionNames = applicationContext.getBeanDefinitionNames();
+        for (String beanDefinitionName : beanDefinitionNames) {
+            BeanDefinition beanDefinition = beanDefinitionRegistry.getBeanDefinition(beanDefinitionName);
+            if (scopeName.equals(beanDefinition.getScope())) {
+                //先删除
+                applicationContext.getBeanFactory().destroyScopedBean(beanDefinitionName);
+                //在实例化
+                applicationContext.getBean(beanDefinitionName);
+            }
+        }
+    }
+
+    private void delEnv(ChildData childData) {
+        ChildData next = childData;
+        String childpath = next.getPath();
+        MutablePropertySources propertySources = applicationContext.getEnvironment().getPropertySources();
+        for (PropertySource&lt;?&gt; propertySource : propertySources) {
+            if (zkPropertyName.equals(propertySource.getName())) {
+                OriginTrackedMapPropertySource ps = (OriginTrackedMapPropertySource) propertySource;
+                ConcurrentHashMap chm = (ConcurrentHashMap) ps.getSource();
+                chm.remove(childpath.substring(path.length() + 1));
+            }
+        }
+    }
+
+    private void addEnv(ChildData childData, CuratorFramework client) {
+        ChildData next = childData;
+        String childpath = next.getPath();
+        String data = null;
+        try {
+            data = new String(client.getData().forPath(childpath));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        MutablePropertySources propertySources = applicationContext.getEnvironment().getPropertySources();
+        for (PropertySource&lt;?&gt; propertySource : propertySources) {
+            if (zkPropertyName.equals(propertySource.getName())) {
+                OriginTrackedMapPropertySource ps = (OriginTrackedMapPropertySource) propertySource;
+                ConcurrentHashMap chm = (ConcurrentHashMap) ps.getSource();
+                chm.put(childpath.substring(path.length() + 1), data);
+            }
+        }
+    }
+
+    private void nodeCache(final CuratorFramework client, final String path) {
+
+        try {
+            //第三个参数是是否压缩
+            //就是对path节点进行监控，是一个事件模板
+            final NodeCache nodeCache = new NodeCache(client, path, false);
+            nodeCache.start();
+
+            //这个就是事件注册
+            nodeCache.getListenable().addListener(new NodeCacheListener() {
+                @Override
+                public void nodeChanged() throws Exception {
+                    byte[] data = nodeCache.getCurrentData().getData();
+                    String path1 = nodeCache.getCurrentData().getPath();
+
+                    Object put = map.put(path1.replace(&quot;/&quot;, &quot;&quot;), new String(data));
+                    MutablePropertySources propertySources = applicationContext.getEnvironment().getPropertySources();
+                    OriginTrackedMapPropertySource zookeeperSource = new OriginTrackedMapPropertySource(&quot;zookeeper source&quot;, map);
+                    propertySources.addLast(zookeeperSource);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext context) throws BeansException {
+        CuratorUtil.applicationContext = (ConfigurableApplicationContext) context;
+    }
+}</code></pre>
+<p>自定义作用域</p>
+<p>remove()方法将在销毁时调用，get()方法为获取时调用。</p>
+<pre><code class="java">public class RefreshScope implements Scope {
+
+    private ConcurrentHashMap map = new ConcurrentHashMap();
+
+    @Override
+    public Object get(String name, ObjectFactory&lt;?&gt; objectFactory) {
+        if (map.containsKey(name)) {
+            return map.get(name);
+        }
+
+        Object object = objectFactory.getObject();
+        map.put(name, object);
+        return object;
+    }
+
+    @Override
+    public Object remove(String name) {
+        return map.remove(name);
+    }
+
+    @Override
+    public void registerDestructionCallback(String name, Runnable callback) {
+
+    }
+
+    @Override
+    public Object resolveContextualObject(String key) {
+        return null;
+    }
+
+    @Override
+    public String getConversationId() {
+        return null;
+    }
+}</code></pre>
+<p>自定义作用域的注册</p>
+<pre><code class="java">@Data
+@Component
+public class RefreshScopeRegistry implements BeanDefinitionRegistryPostProcessor {
+
+    private BeanDefinitionRegistry beanDefinitionRegistry;
+
+
+    @Override
+    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+        this.beanDefinitionRegistry = registry;
+    }
+
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        beanFactory.registerScope(&quot;refresh&quot;,new RefreshScope());
+    }
+}</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/springcloud/">springcloud</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/springcloud/">springcloud</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/26/springcloud%E7%9A%84%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3zuul/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">springcloud服务网关zuul</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/24/springcloud%E4%B8%ADfeign%E7%9A%84%E4%BD%BF%E7%94%A8/">
+                        <span class="hidden-mobile">springcloud中feign的使用</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "springcloud分布式配置中心&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      15 分钟
+                      16 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期二, 四月 21日 2020, 9:31 晚上</p>
+                class="note note-warning">本文最后更新于：星期日, 四月 26日 2020, 1:06 下午</p>
             
             <div class="markdown-body">
               <h2 id="核心方法的入口"><a href="#核心方法的入口" class="headerlink" title="核心方法的入口"></a>核心方法的入口</h2><p>在servlet规范中，当请求到达servlet时首先会调用service()方法，此方法会根据请求的请求头调用不同的方法。</p>
@@ -429,7 +429,7 @@ protected void doService(HttpServletRequest request, HttpServletResponse respons
 
    return executionChain;
 }</code></pre>
-<h4 id="getHandlerInternal-方法"><a href="#getHandlerInternal-方法" class="headerlink" title="getHandlerInternal()方法"></a>getHandlerInternal()方法</h4><p>getHandlerInternal()方法首先会从请求中获取uri，然后调用lookupHandlerMethod()方法获取到HandlerMethod对象。</p>
+<h4 id="getHandlerInternal-方法"><a href="#getHandlerInternal-方法" class="headerlink" title="getHandlerInternal()方法"></a>getHandlerInternal()方法</h4><p>getHandlerInternal()方法首先会从请求中获取uri，然后调用lookupHandlerMethod()方法获取到HandlerMethod对象。然后调用createWithResolvedBean()方法创建HandlerMethod中的bean。</p>
 <pre><code class="java">protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
    //从request对象中获取uri，/common/query2
    String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
@@ -444,8 +444,7 @@ protected void doService(HttpServletRequest request, HttpServletResponse respons
       this.mappingRegistry.releaseReadLock();
    }
 }</code></pre>
-<p>lookupHandlerMethod()方法</p>
-<p>该方法会根据uri从urlLookup中获取到RequestMappingInfo的List，然后调用addMatchingMappings()方法根据request的信息跟@ReqeustMaping中的信息对HandlerMethod进行匹配，最后将匹配后的RequestMappingInfo对象和匹配到的HandlerMethod对象封装到Match对象中。最后返回HandlerMethod对象。</p>
+<h5 id="lookupHandlerMethod-方法"><a href="#lookupHandlerMethod-方法" class="headerlink" title="lookupHandlerMethod()方法"></a>lookupHandlerMethod()方法</h5><p>该方法会根据uri从urlLookup中获取到RequestMappingInfo的List，然后调用addMatchingMappings()方法根据request的信息跟@ReqeustMaping中的信息对HandlerMethod进行匹配，最后将匹配后的RequestMappingInfo对象和匹配到的HandlerMethod对象封装到Match对象中。最后返回HandlerMethod对象。</p>
 <pre><code class="java">protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request) throws Exception {
    List&lt;Match&gt; matches = new ArrayList&lt;&gt;();
    List&lt;T&gt; directPathMatches = this.mappingRegistry.getMappingsByUrl(lookupPath);
@@ -485,6 +484,17 @@ protected void doService(HttpServletRequest request, HttpServletResponse respons
    else {
       return handleNoMatch(this.mappingRegistry.getMappings().keySet(), lookupPath, request);
    }
+}</code></pre>
+<h5 id="createWithResolvedBean-方法"><a href="#createWithResolvedBean-方法" class="headerlink" title="createWithResolvedBean()方法"></a>createWithResolvedBean()方法</h5><p>注意：此方法会重新创建一个HandlerMethod对象返回，原有对象不会进行修改。</p>
+<pre><code class="java">public HandlerMethod createWithResolvedBean() {
+    Object handler = this.bean;
+    if (this.bean instanceof String) {
+        Assert.state(this.beanFactory != null, &quot;Cannot resolve bean name without BeanFactory&quot;);
+        String beanName = (String)this.bean;
+        handler = this.beanFactory.getBean(beanName);
+    }
+
+    return new HandlerMethod(this, handler);
 }</code></pre>
 <h4 id="getHandlerExecutionChain-方法"><a href="#getHandlerExecutionChain-方法" class="headerlink" title="getHandlerExecutionChain()方法"></a>getHandlerExecutionChain()方法</h4><p>该方法首先会将HandlerMethod对象包装到HandlerExecutionChain对象中，然后根据uri获取到匹配的拦截器加入到HandlerExecutionChain对象中。</p>
 <pre><code class="java">protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {

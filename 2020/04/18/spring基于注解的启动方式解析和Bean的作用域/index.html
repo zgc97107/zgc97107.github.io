@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    2.6k 字
+                    3.4k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      13 分钟
+                      17 分钟
                   </span>
                 
 
@@ -176,30 +176,200 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期日, 四月 19日 2020, 4:41 下午</p>
+                class="note note-warning">本文最后更新于：星期日, 四月 26日 2020, 12:07 中午</p>
             
             <div class="markdown-body">
-              <h2 id="Bean的作用域"><a href="#Bean的作用域" class="headerlink" title="Bean的作用域"></a>Bean的作用域</h2><p>可以通过@Scope注解设置bean的作用域，不同的作用域对bean对象的管理不同。也可以通过AbstractBeanFactory的regtsterScope()方法添加自定义作用域。</p>
-<pre><code class="java">    public void registerScope(String scopeName, Scope scope) {
-        Assert.notNull(scopeName, &quot;Scope identifier must not be null&quot;);
-        Assert.notNull(scope, &quot;Scope must not be null&quot;);
-        if (SCOPE_SINGLETON.equals(scopeName) || SCOPE_PROTOTYPE.equals(scopeName)) {
-            throw new IllegalArgumentException(&quot;Cannot replace existing scopes &#39;singleton&#39; and &#39;prototype&#39;&quot;);
-        }
-        Scope previous = this.scopes.put(scopeName, scope);
-        if (previous != null &amp;&amp; previous != scope) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(&quot;Replacing scope &#39;&quot; + scopeName + &quot;&#39; from [&quot; + previous + &quot;] to [&quot; + scope + &quot;]&quot;);
+              <h2 id="Bean的作用域"><a href="#Bean的作用域" class="headerlink" title="Bean的作用域"></a>Bean的作用域</h2><p>@Scope注解可以设置bean的作用域，不同的作用域对bean对象的获取方式不同，spring也允许开发者注册自己的作用域，实现对对象作用域的控制。</p>
+<h3 id="doGetBean-的再分析"><a href="#doGetBean-的再分析" class="headerlink" title="doGetBean()的再分析"></a>doGetBean()的再分析</h3><p>如果缓存中获取不到实例且实例作用域不是单例时，spring就会获取到bean的作用域对象，并调用作用域对象的get()方法创建实例。</p>
+<pre><code class="java">protected &lt;T&gt; T doGetBean(final String name, @Nullable final Class&lt;T&gt; requiredType,
+            @Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {    
+
+  final String beanName = transformedBeanName(name);
+    Object bean;
+
+    //从缓存中拿实例
+    // Eagerly check singleton cache for manually registered singletons.
+    Object sharedInstance = getSingleton(beanName);
+    //如果缓存里面能拿到实例
+    if (sharedInstance != null &amp;&amp; args == null) {
+        if (logger.isTraceEnabled()) {
+            if (isSingletonCurrentlyInCreation(beanName)) {
+                logger.trace(&quot;Returning eagerly cached instance of singleton bean &#39;&quot; + beanName +
+                        &quot;&#39; that is not fully initialized yet - a consequence of a circular reference&quot;);
+            }
+            else {
+                logger.trace(&quot;Returning cached instance of singleton bean &#39;&quot; + beanName + &quot;&#39;&quot;);
             }
         }
-        else {
+        //改方法是FactoryBean接口的调用入口
+        bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
+    }
+
+    else {
+
+        //如果singletonObjects缓存里面没有，则走下来
+        // Fail if we&#39;re already creating this bean instance:
+        // We&#39;re assumably within a circular reference.
+
+        //如果是scope 是Prototype的，校验是否有出现循环依赖，如果有则直接报错
+        if (isPrototypeCurrentlyInCreation(beanName)) {
+            throw new BeanCurrentlyInCreationException(beanName);
+        }
+
+        // Check if bean definition exists in this factory.
+        BeanFactory parentBeanFactory = getParentBeanFactory();
+        if (parentBeanFactory != null &amp;&amp; !containsBeanDefinition(beanName)) {
+            // Not found -&gt; check parent.
+            String nameToLookup = originalBeanName(name);
+            if (parentBeanFactory instanceof AbstractBeanFactory) {
+                return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
+                        nameToLookup, requiredType, args, typeCheckOnly);
+            }
+            else if (args != null) {
+                // Delegation to parent with explicit args.
+                return (T) parentBeanFactory.getBean(nameToLookup, args);
+            }
+            else if (requiredType != null) {
+                // No args -&gt; delegate to standard getBean method.
+                return parentBeanFactory.getBean(nameToLookup, requiredType);
+            }
+            else {
+                return (T) parentBeanFactory.getBean(nameToLookup);
+            }
+        }
+
+        if (!typeCheckOnly) {
+            markBeanAsCreated(beanName);
+        }
+
+        try {
+            //父子BeanDefinition合并
+            final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+            checkMergedBeanDefinition(mbd, beanName, args);
+
+            //获取依赖对象属性，依赖对象要先实例化
+            // Guarantee initialization of beans that the current bean depends on.
+            String[] dependsOn = mbd.getDependsOn();
+            if (dependsOn != null) {
+                for (String dep : dependsOn) {
+                    if (isDependent(beanName, dep)) {
+                        throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                                &quot;Circular depends-on relationship between &#39;&quot; + beanName + &quot;&#39; and &#39;&quot; + dep + &quot;&#39;&quot;);
+                    }
+                    registerDependentBean(dep, beanName);
+                    try {
+                        //实例化
+                        getBean(dep);
+                }
+                    catch (NoSuchBeanDefinitionException ex) {
+                        throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                                &quot;&#39;&quot; + beanName + &quot;&#39; depends on missing bean &#39;&quot; + dep + &quot;&#39;&quot;, ex);
+                    }
+                }
+            }
+
+            //作用域为单例时的实例化
+            // Create bean instance.
+            if (mbd.isSingleton()) {
+                sharedInstance = getSingleton(beanName, () -&gt; {
+                    try {
+                        return createBean(beanName, mbd, args);
+                    }
+                    catch (BeansException ex) {
+                        // Explicitly remove instance from singleton cache: It might have been put there
+                        // eagerly by the creation process, to allow for circular reference resolution.
+                        // Also remove any beans that received a temporary reference to the bean.
+                        destroySingleton(beanName);
+                        throw ex;
+                    }
+                });
+                //该方法是FactoryBean接口的调用入口
+                bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
+            }
+
+            else if (mbd.isPrototype()) {
+                // It&#39;s a prototype -&gt; create a new instance.
+                Object prototypeInstance = null;
+                try {
+                    beforePrototypeCreation(beanName);
+                    prototypeInstance = createBean(beanName, mbd, args);
+                }
+                finally {
+                    afterPrototypeCreation(beanName);
+                }
+                //该方法是FactoryBean接口的调用入口
+                bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
+            }
+      //其他作用域，如自定义作用域
+            else {
+                String scopeName = mbd.getScope();
+                final Scope scope = this.scopes.get(scopeName);
+                if (scope == null) {
+                    throw new IllegalStateException(&quot;No Scope registered for scope name &#39;&quot; + scopeName + &quot;&#39;&quot;);
+                }
+                try {
+                    Object scopedInstance = scope.get(beanName, () -&gt; {
+                        beforePrototypeCreation(beanName);
+                        try {
+                            return createBean(beanName, mbd, args);
+                        }
+                        finally {
+                            afterPrototypeCreation(beanName);
+                        }
+                    });
+                    //改方法是FactoryBean接口的调用入口
+                    bean = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
+                }
+                catch (IllegalStateException ex) {
+                    throw new BeanCreationException(beanName,
+                            &quot;Scope &#39;&quot; + scopeName + &quot;&#39; is not active for the current thread; consider &quot; +
+                            &quot;defining a scoped proxy for this bean if you intend to refer to it from a singleton&quot;,
+                            ex);
+                }
+            }
+        }
+        catch (BeansException ex) {
+            cleanupAfterBeanCreationFailure(beanName);
+            throw ex;
+        }
+    }
+
+    // Check if required type matches the type of the actual bean instance.
+    if (requiredType != null &amp;&amp; !requiredType.isInstance(bean)) {
+        try {
+            T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
+            if (convertedBean == null) {
+                throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
+            }
+            return convertedBean;
+        }
+        catch (TypeMismatchException ex) {
             if (logger.isTraceEnabled()) {
-                logger.trace(&quot;Registering scope &#39;&quot; + scopeName + &quot;&#39; with implementation [&quot; + scope + &quot;]&quot;);
+                logger.trace(&quot;Failed to convert bean &#39;&quot; + name + &quot;&#39; to required type &#39;&quot; +
+                        ClassUtils.getQualifiedName(requiredType) + &quot;&#39;&quot;, ex);
             }
+            throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
         }
-    }</code></pre>
-<p>spring在初始化时会将beanFactory传给BeanFactoryPostProcessor接口中的postProcessBeanFactory()方法，可以通过这个方法添加scope对象。</p>
-<p>在创建实例时会调用到Scope对象的get方法， 并向get()方法中传递beanName跟创建方法factory.getObject()。所以我们可以在Scope中精准的控制bean对象的作用域。比如创建一个线程间共享的作用域。</p>
+    }
+    return (T) bean;
+}</code></pre>
+<h3 id="自定义作用域的实现"><a href="#自定义作用域的实现" class="headerlink" title="自定义作用域的实现"></a>自定义作用域的实现</h3><p>spring在完成BeanDefinition的实例化及IOC、DI后，会调用BeanFactoryPostProcessor接口的postProcessBeanFactory()方法并将beanFactory传递进去，我们可以在这个方法中调用beanFactory的regtsterScope()方法将自定义作用域添加到spring容器中。</p>
+<pre><code class="java">@Component
+public class ThreadScopeRegistry implements BeanDefinitionRegistryPostProcessor {
+
+    private BeanDefinitionRegistry beanDefinitionRegistry;
+
+    @Override
+    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+        this.beanDefinitionRegistry = registry;
+    }
+
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        beanFactory.registerScope(&quot;refresh&quot;,new ThreadScope());
+    }
+}</code></pre>
+<p>在创建实例时会调用到Scope对象的get()方法， 并向get()方法中传递beanName跟创建方法factory.getObject()。所以我们可以在Scope中精准的控制bean对象的作用域。比如创建一个线程间共享的作用域。</p>
 <pre><code class="java">public class ThreadScope implements Scope {
     private ThreadLocal local = new ThreadLocal();
 

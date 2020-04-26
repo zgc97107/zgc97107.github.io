@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>springcloud分布式配置中心 - zgcheng&#39;s blog</title>
+  <title>springcloud服务网关zuul - zgcheng&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期六, 四月 25日 2020, 3:08 下午
+                  星期日, 四月 26日 2020, 1:33 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    1.6k 字
+                    1.5k 字
                   </span>
                 
 
@@ -176,186 +176,246 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期六, 四月 25日 2020, 10:53 晚上</p>
+                class="note note-warning">本文最后更新于：星期日, 四月 26日 2020, 7:09 晚上</p>
             
             <div class="markdown-body">
-              <h2 id="分布式配置中心的作用"><a href="#分布式配置中心的作用" class="headerlink" title="分布式配置中心的作用"></a>分布式配置中心的作用</h2><ul>
-<li>抽取出公共配置，做到一处修改各处生效的目标。</li>
-<li>配置文件的热加载，修改了配置文件后各个模块动态刷新，不需要重启服务器。</li>
-</ul>
-<h2 id="分布式配置中心的基本使用"><a href="#分布式配置中心的基本使用" class="headerlink" title="分布式配置中心的基本使用"></a>分布式配置中心的基本使用</h2><p>与hystrix的监控相同，配置中心可以不注册到eureka</p>
-<h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p>pom文件</p>
+              <h2 id="Zuul服务网关的搭建"><a href="#Zuul服务网关的搭建" class="headerlink" title="Zuul服务网关的搭建"></a>Zuul服务网关的搭建</h2><p>zuul是springcloud项目的流量入口，理论上所有进入到微服务系统的请求都要经过Zuul来过滤和路由。</p>
+<p>pom</p>
 <pre><code class="xml">&lt;dependency&gt;
-  &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
-  &lt;artifactId&gt;spring-cloud-config-server&lt;/artifactId&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-netflix-zuul&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
 <p>启动类</p>
-<pre><code class="java">@EnableConfigServer
-@SpringBootApplication
-public class ConfigApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(ConfigApplication.class, args);
-    }
+<pre><code class="java">@SpringBootApplication
+@EnableZuulProxy
+public class MicroZuulApplication {
 }</code></pre>
-<p>github连接配置</p>
-<pre><code class="properties">spring.cloud.config.server.git.uri=https://github.com/zgc97107/micro-config
-spring.cloud.config.server.git.search-paths=config
-spring.cloud.config.server.git.username=347398631@qq.com
-spring.cloud.config.server.git.password=zhao19971107</code></pre>
-<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p>pom文件</p>
+<p>配置文件</p>
+<pre><code class="properties">spring.application.name=micro-zuul
+server.port=8071
+eureka.client.serviceUrl.defaultZone=http://admin:admin@localhost:8763/eureka/
+# 使用路径方式匹配路由规则
+# 结构：zuul.routes.&lt;customName&gt;.path=xxx
+# 其中customName自定义。通常使用要调用的服务名称，方便后期管理
+# 可使用的通配符有：* ** ?
+# ?单个字符
+# ** 任意多个字符，包含多级路径
+zuul.routes.micro-web.path=/web/**
+zuul.routes.micro-order.path=/order/**
+
+# 结构：zuul.routes.&lt;customName&gt;.url=xxx
+# 用于配置符合path的请求路径路由到的服务地址
+#zuul.routes.micro-order.url=http://localhost:8080/
+
+# 结构：zuul.routes.&lt;customName&gt;.serviceId=xxx
+# 用于配置符合path的请求路径路由到的服务名称
+zuul.routes.micro-web.serviceId=micro-web
+zuul.routes.micro-order.serviceId=micro-order
+
+# 配置不被zuul管理的服务列表，多个服务名称使用，分隔。
+#zuul.ignored-services=eureka-application-service
+
+# 通配方式配置排除列表
+# zuul.ignored-services=*
+
+# 通配方式排除网关代理路径。所有符合ignored-patterns下的请求路径都不被zuul网关代理
+#zuul.ignored-patterns=/**/local/**
+
+# 配置请求路径前缀，所有基于此前缀的请求都由zuul网关提供代理
+#zuul.prefix=/api
+
+#过滤指定的headers信息，默认为Cookie、Set-Cookie、Authorization这三个信息
+#为空的代表不需要过滤请求头信息
+zuul.routes.micro-web.sensitive-headers=
+
+management.endpoint.health.show-details=always
+management.endpoint.shutdown.enabled=true
+management.endpoints.web.exposure.include=*</code></pre>
+<p>配置完成后可以通过<code>http://localhost:8071/actuator/routes</code>接口查看路由信息，也可以使用hystrix的路由监控功能，监控端点为：<code>http://localhost:8071/actuator/hystrix.stream</code>。zuul是集成了hystrix跟ribbon，可以直接进行相应的配置，如超时时间。</p>
+<h2 id="动态路由"><a href="#动态路由" class="headerlink" title="动态路由"></a>动态路由</h2><p>需要结合分布式配置中心使用。</p>
+<p>pom</p>
 <pre><code class="xml">&lt;dependency&gt;
     &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
     &lt;artifactId&gt;spring-cloud-starter-config&lt;/artifactId&gt;
     &lt;version&gt;LATEST&lt;/version&gt;
-&lt;/dependency&gt;</code></pre>
-<p>配置文件</p>
-<pre><code class="properties">#指定对应的环境
-spring.cloud.config.profile=dev
-#github分支名称
-spring.cloud.config.label=master
-#configserver单机情况下的配置
-spring.cloud.config.uri=http://localhost:8085/
-#如果连接不上获取配置有问题，快速响应失败
-spring.cloud.config.fail-fast=true
-#本地缓存目录
-#spring.cloud.config.server.git.basedir=C:/work/config/tmp
-#强制从GitHub中拉取配置信息，不走缓存
-spring.cloud.config.server.git.force-pull=true</code></pre>
-<p>具体使用</p>
-<pre><code class="java">@RestController
-@RequestMapping(&quot;/user&quot;)
-public class UserController {
-
-    private org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    UserService userService;
-
-    @Value(&quot;${username}&quot;)
-    private String username;
-
-    @Value(&quot;${redis.password}&quot;)
-    private String redispass;
-
-    @Autowired
-    Environment environment;
-
-    @RequestMapping(&quot;/queryContent&quot;)
-    public List&lt;ConsultContent&gt; queryContent(HttpServletRequest request) {
-        logger.info(&quot;==================已经调用==========&quot; + request.getRemotePort());
-        logger.info(&quot;@Value======username======&quot; + username);
-        logger.info(&quot;Environment======username======&quot; + environment.getProperty(&quot;username&quot;));
-        logger.info(&quot;@Value======redispass======&quot; + redispass);
-        logger.info(&quot;Environment======redispass======&quot; + environment.getProperty(&quot;redis.password&quot;));
-        return userService.queryContent();
-    }
-}</code></pre>
-<p>通过@Value跟environment.getProperty()方式都可以获取到。</p>
-<h2 id="重试功能"><a href="#重试功能" class="headerlink" title="重试功能"></a>重试功能</h2><p>客户端jar包导入</p>
-<pre><code class="xml">&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.retry&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-retry&lt;/artifactId&gt;
-&lt;/dependency&gt;</code></pre>
-<p>配置</p>
-<pre><code class="properties">#默认重试的间隔时间，默认1000ms
-spring.cloud.config.retry.multiplier=1000
-#下一间隔时间的乘数，默认是 1.1
-spring.cloud.config.retry.initial-interval=1.1
-#最大间隔时间，默认2000ms
-spring.cloud.config.retry.max-interval=2000
-#最大重试次数，默认 6 次
-spring.cloud.config.retry.max-attempts=6</code></pre>
-<h2 id="配置信息的加密"><a href="#配置信息的加密" class="headerlink" title="配置信息的加密"></a>配置信息的加密</h2><p>在配置中心中，有些信息是比较敏感的，比如密码信息，在配置密码信息的时候有必要对密码信息加密以免密码信息泄露，springcloud配置中心也支持配置信息加密的，这里一RSA非对称加密举例。</p>
-<h3 id="服务端-1"><a href="#服务端-1" class="headerlink" title="服务端"></a>服务端</h3><ol>
-<li><p>本地生成秘钥对：进入到jdk的keytool目录中：<code>jdk1.8.0_92\jre\bin\keytool</code></p>
-</li>
-<li><p>执行指令生成秘钥文件：<code>keytool -genkeypair -alias config-server -keyalg RSA -keystore config-server.keystore -validity 365</code>，指令执行成功后会在当前目录生成一个config-server.keystore文件。</p>
-</li>
-<li><p>将文件config-server.keystore复制到配置中心服务端的resources目录下</p>
-</li>
-<li><p>在pom文件的build标签下中添加设置，避免maven重新编译.keystore文件</p>
-<pre><code class="xml">&lt;resources&gt;
-    &lt;resource&gt;
-        &lt;directory&gt;src/main/java&lt;/directory&gt;
-        &lt;includes&gt;
-            &lt;include&gt;**/*.properties&lt;/include&gt;
-            &lt;include&gt;**/*.xml&lt;/include&gt;
-        &lt;/includes&gt;
-        &lt;filtering&gt;false&lt;/filtering&gt;
-    &lt;/resource&gt;
-    &lt;resource&gt;
-        &lt;directory&gt;src/main/resources&lt;/directory&gt;
-        &lt;includes&gt;
-            &lt;include&gt;**/*.properties&lt;/include&gt;
-            &lt;include&gt;**/*.xml&lt;/include&gt;
-            &lt;include&gt;**/*.txt&lt;/include&gt;
-            &lt;include&gt;**/*.keystore&lt;/include&gt;
-        &lt;/includes&gt;
-        &lt;filtering&gt;false&lt;/filtering&gt;
-    &lt;/resource&gt;
-&lt;/resources&gt;</code></pre>
-</li>
-<li><p>配置文件中</p>
-<pre><code class="properties">encrypt.key-store.location=config-server.keystore
-encrypt.key-store.alias=config-server
-encrypt.key-store.password=123456
-encrypt.key-store.secret=123456</code></pre>
-</li>
-</ol>
-<h3 id="加密和解密接口"><a href="#加密和解密接口" class="headerlink" title="加密和解密接口"></a>加密和解密接口</h3><p>配置完成后，服务端会提供信息加密和解密接口：</p>
-<ul>
-<li>加密接口：<code>http://localhost:8085/encrypt</code>，请求方式POST，请求参数需要放到body中。</li>
-<li>解密接口：<code>http://localhost:8085/decrypt</code>，请求方式POST，所需参数为加密接口返回的参数。</li>
-</ul>
-<p>注意：将配置信息通过加密接口加密后，设置到git时需要在密文前增加{cipher}标识。</p>
-<h2 id="配置中心高可用"><a href="#配置中心高可用" class="headerlink" title="配置中心高可用"></a>配置中心高可用</h2><p>首先将配置中心注册到eureka中，来实现配置中心的服务化，然后启动多个配置中心即可。在配置之前需要将上面指定的配置中心uri删除。</p>
-<h3 id="客户端-1"><a href="#客户端-1" class="headerlink" title="客户端"></a>客户端</h3><pre><code class="properties">#开启config server服务发现功能
-spring.cloud.config.discovery.enabled=true
-#config server服务名称
-spring.cloud.config.discovery.service-id=config-server</code></pre>
-<h3 id="服务端-2"><a href="#服务端-2" class="headerlink" title="服务端"></a>服务端</h3><p>需要引入并开启Eureka客户端功能，并向eureka注册</p>
-<p>pom</p>
-<pre><code class="xml">&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
-&lt;/dependency&gt;</code></pre>
-<p>properties</p>
-<pre><code class="properties">spring.application.name=config-server
-eureka.client.serviceUrl.defaultZone=http://admin:admin@localhost:8763/eureka/</code></pre>
-<p>启动类</p>
-<pre><code class="java">@EnableEurekaClient
-@EnableConfigServer
-@SpringBootApplication
-public class MicroConfigApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(MicroConfigApplication.class, args);
-    }
-}</code></pre>
-<p>注意：此处有个坑，如果在配置文件bootstrap.properties文件中同时含有以下内容，会导致eureka中的服务状态变为unkown！可以将该配置注释掉，或者迁移至application.properties中。</p>
-<pre><code class="properties">#开启健康检测
-eureka.client.healthcheck.enabled=true</code></pre>
-<p>关于这个坑springcloud官网的解释</p>
-<img src="/2020/04/25/springcloud%E5%88%86%E5%B8%83%E5%BC%8F%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/pic1.png" srcset="/img/loading.gif" class="">
-
-<p>大意为，<code>eureka.client.healthcheck.enabled=true</code>应该设置在application.yml中，如果设置在bootstrap.yml文件中时可能会有UNKNOW的情况出现。</p>
-<h2 id="动态加载刷新"><a href="#动态加载刷新" class="headerlink" title="动态加载刷新"></a>动态加载刷新</h2><p>这是一个革命性的功能，可以在运行期间修改配置文件后，不需要重启就能使最新的配置文件生效。</p>
-<h3 id="Environment的动态刷新"><a href="#Environment的动态刷新" class="headerlink" title="Environment的动态刷新"></a>Environment的动态刷新</h3><p>动态刷新其实要有一个契机，其实这个契机就是手动调用刷新接口，如果你想刷新哪台主机的配置，就调用哪台注解的刷新接口。刷新接口为：<code>http://localhost:8081/actuator/refresh</code>，请求方式为POST。</p>
-<h3 id="Value属性的动态刷新"><a href="#Value属性的动态刷新" class="headerlink" title="@Value属性的动态刷新"></a>@Value属性的动态刷新</h3><p>在调用刷新接口后，@Value注入的属性依然不会改变，因为@Value注入的属性是项目启动就已经确定的。如果要使@Value属性也刷新，就必须要在类上面加上@RefreshScope注解。</p>
-<p>但是这种方式在需要刷新的集群机器数量比较多时会比较繁琐，此时可以使用Springcloud中提供消息总线，当需要刷新时只要调用一次刷新接口即可然后借助消息的广播来生效即可。</p>
-<h3 id="消息总线"><a href="#消息总线" class="headerlink" title="消息总线"></a>消息总线</h3><p>pom文件</p>
-<pre><code class="xml">&lt;dependency&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
     &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
     &lt;artifactId&gt;spring-cloud-starter-bus-amqp&lt;/artifactId&gt;
 &lt;/dependency&gt;</code></pre>
-<p>properties文件</p>
-<pre><code class="properties">spring.rabbitmq.host=localhost
+<p>配置信息</p>
+<pre><code class="properties">#指定对应的环境
+spring.cloud.config.profile=zuul
+#github分支名称
+spring.cloud.config.label=master
+#configserver单机情况下的配置
+#spring.cloud.config.uri=http://localhost:8085/
+#开启config server服务发现功能
+spring.cloud.config.discovery.enabled=true
+#config server服务名称
+spring.cloud.config.discovery.service-id=config-server
+#如果连接不上获取配置有问题，快速响应失败
+spring.cloud.config.fail-fast=true
+#默认重试的间隔时间，默认1000ms
+spring.cloud.config.retry.multiplier=1000
+#下一间隔时间的乘数，默认是 1.1
+#spring.cloud.config.retry.initial-interval=1
+#最大间隔时间，默认2000ms
+spring.cloud.config.retry.max-interval=2000
+#最大重试次数，默认 6 次
+spring.cloud.config.retry.max-attempts=6
+
+spring.rabbitmq.host=localhost
 spring.rabbitmq.port=5672
 spring.rabbitmq.username=guest
 spring.rabbitmq.password=guest
 
 spring.cloud.bus.refresh.enabled=true
 spring.cloud.bus.trace.enabled=true</code></pre>
-<p>然后调用：<code>http://localhost:8081/actuator/bus-refresh</code>接口就可以通知到所有使用总线的服务。</p>
+<p>启动类</p>
+<pre><code class="java">@SpringBootApplication
+@EnableZuulProxy
+public class MicroZuulApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MicroZuulApplication.class, args);
+    }
+
+    @Bean
+    @RefreshScope
+    @ConfigurationProperties(&quot;zuul&quot;)
+    @Primary
+    public ZuulProperties zuulProperties(){
+        return new ZuulProperties();
+    }
+}</code></pre>
+<p>修改配置后调用刷新接口：<code>http://localhost:8071/actuator/bus-refresh</code>就可以完成自动刷新。</p>
+<h2 id="Zuul过滤器"><a href="#Zuul过滤器" class="headerlink" title="Zuul过滤器"></a>Zuul过滤器</h2><p>Zuul大部分功能都是通过过滤器来实现的，Zuul定义了4种标准的过滤器类型，这些过滤器类型对应于请求的典型生命周期。</p>
+<ul>
+<li><p><strong>pre</strong>：这种过滤器在请求被路由之前调用。可利用这种过滤器实现身份验证、在集群中选择请求的微服务，记录调试信息等。</p>
+</li>
+<li><p><strong>routing</strong>：这种过滤器将请求路由到微服务。这种过滤器用于构建发送给微服务的请求，并使用apachehttpclient或netflixribbon请求微服务。</p>
+</li>
+<li><p><strong>post</strong>：这种过滤器在路由到微服务以后执行。这种过滤器可用来为响应添加标准的httpheader、收集统计信息和指标、将响应从微服务发送给客户端等。</p>
+</li>
+<li><p><strong>error</strong>：在其他阶段发送错误时执行该过滤器。</p>
+</li>
+</ul>
+
+
+<p>如使用前置过滤器完成accessToken的验证</p>
+<pre><code class="java">@Slf4j
+@Component
+public class AccessFilter extends ZuulFilter {
+    @Override
+    public String filterType() {
+        return FilterConstants.PRE_TYPE;
+    }
+
+    @Override
+    public int filterOrder() {
+        return 0;
+    }
+
+    @Override
+    public boolean shouldFilter() {
+        return RequestContext.getCurrentContext().sendZuulResponse();
+    }
+
+    @Override
+    public Object run() throws ZuulException {
+        //获取上下文
+        RequestContext ctx = RequestContext.getCurrentContext();
+        //获取Request
+        HttpServletRequest request = ctx.getRequest();
+        //获取请求参数accessToken
+        String accessToken = request.getParameter(&quot;accessToken&quot;);
+        //使用String工具类
+        if (StringUtils.isBlank(accessToken)) {
+            log.warn(&quot;accessToken is empty&quot;);
+            //设置为false不进行路由
+            ctx.setSendZuulResponse(false);
+            ctx.setResponseStatusCode(401);
+            try {
+                ctx.getResponse().getWriter().write(&quot;accessToken is empty&quot;);
+            } catch (Exception e) {
+            }
+            return null;
+        }
+        log.info(&quot;access is ok&quot;);
+        return null;
+    }
+}</code></pre>
+<h2 id="SpringCloud-Admin"><a href="#SpringCloud-Admin" class="headerlink" title="SpringCloud Admin"></a>SpringCloud Admin</h2><p>pom文件</p>
+<pre><code class="xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;de.codecentric&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-admin-starter-server&lt;/artifactId&gt;
+    &lt;version&gt;LATEST&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;de.codecentric&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-admin-server-ui&lt;/artifactId&gt;
+    &lt;version&gt;LATEST&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>配置信息</p>
+<pre><code class="properties">spring.application.name=micro-admin
+server.port=8888
+#是否注册到eureka
+eureka.client.registerWithEureka=true
+#是否从eureka拉取注册信息
+eureka.client.fetchRegistry=true
+eureka.client.serviceUrl.defaultZone=http://admin:admin@localhost:8763/eureka/
+
+#安全配置
+spring.security.user.name=admin
+spring.security.user.password=admin
+eureka.instance.metadata-map.user.name=${spring.security.user.name}
+eureka.instance.metadata-map.user.password=${spring.security.user.password}</code></pre>
+<p>配置类</p>
+<pre><code class="java">@Configuration
+public class SecuritySecureConfig extends WebSecurityConfigurerAdapter {
+
+    private final String adminContextPath;
+
+    public SecuritySecureConfig(AdminServerProperties adminServerProperties) {
+        this.adminContextPath = adminServerProperties.getContextPath();
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        SavedRequestAwareAuthenticationSuccessHandler successHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+        successHandler.setTargetUrlParameter(&quot;redirectTo&quot;);
+        http.authorizeRequests()
+                .antMatchers(adminContextPath + &quot;/assets/**&quot;).permitAll()
+                .antMatchers(adminContextPath + &quot;/login&quot;).permitAll()
+                .anyRequest().authenticated()
+                .and()
+                .formLogin().loginPage(adminContextPath + &quot;/login&quot;).successHandler(successHandler).and()
+                .logout().logoutUrl(adminContextPath + &quot;/logout&quot;).and()
+                .httpBasic().and()
+                .csrf().disable();
+    }
+}</code></pre>
+<p>启动类</p>
+<pre><code class="java">@EnableAdminServer
+@EnableEurekaClient
+@SpringBootApplication
+public class MicroAdminApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MicroAdminApplication.class, args);
+    }
+}</code></pre>
 
             </div>
             <hr>
@@ -387,12 +447,18 @@ spring.cloud.bus.trace.enabled=true</code></pre>
                   <div class="post-prev col-6">
                     
                     
+                      <a href="/2020/04/26/springcloud%E6%9D%83%E9%99%90%E6%A3%80%E9%AA%8C/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">springcloud权限检验</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
                   </div>
                   <div class="post-next col-6">
                     
                     
-                      <a href="/2020/04/24/springcloud%E4%B8%ADfeign%E7%9A%84%E4%BD%BF%E7%94%A8/">
-                        <span class="hidden-mobile">springcloud中feign的使用</span>
+                      <a href="/2020/04/25/springcloud%E7%9A%84%E5%88%86%E5%B8%83%E5%BC%8F%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/">
+                        <span class="hidden-mobile">springcloud分布式配置中心</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -612,7 +678,7 @@ spring.cloud.bus.trace.enabled=true</code></pre>
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "springcloud分布式配置中心&nbsp;",
+        "springcloud服务网关zuul&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
