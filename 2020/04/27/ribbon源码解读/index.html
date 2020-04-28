@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>ribbon源码解读 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期一, 四月 27日 2020, 6:52 晚上
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    1.9k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      9 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期一, 四月 27日 2020, 10:11 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="ribbon基础类的注册"><a href="#ribbon基础类的注册" class="headerlink" title="ribbon基础类的注册"></a>ribbon基础类的注册</h2><p>spring-cloud-netflix-ribbon-2.2.2.RELEASE.jar类的spring.factories会引入RibbonAutoConfiguration类，该类会创建两个比较重要的点：LoadBanlancerClient跟SpringClientFactory，configurations属性也需要注意下。</p>
+<pre><code class="java">@Configuration
+@Conditional(RibbonAutoConfiguration.RibbonClassesConditions.class)
+@RibbonClients
+@AutoConfigureAfter(
+        name = &quot;org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration&quot;)
+@AutoConfigureBefore({ LoadBalancerAutoConfiguration.class,
+        AsyncLoadBalancerAutoConfiguration.class })
+@EnableConfigurationProperties({ RibbonEagerLoadProperties.class,
+        ServerIntrospectorProperties.class })
+public class RibbonAutoConfiguration {
+
+    @Autowired(required = false)
+    private List&lt;RibbonClientSpecification&gt; configurations = new ArrayList&lt;&gt;();
+
+    @Autowired
+    private RibbonEagerLoadProperties ribbonEagerLoadProperties;
+
+    @Bean
+    public HasFeatures ribbonFeature() {
+        return HasFeatures.namedFeature(&quot;Ribbon&quot;, Ribbon.class);
+    }
+
+    @Bean
+    public SpringClientFactory springClientFactory() {
+        SpringClientFactory factory = new SpringClientFactory();
+        factory.setConfigurations(this.configurations);
+        return factory;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(LoadBalancerClient.class)
+    public LoadBalancerClient loadBalancerClient() {
+        return new RibbonLoadBalancerClient(springClientFactory());
+    }
+  {...}
+}</code></pre>
+<p>spring-cloud-commons-2.2.2.RELEASE.jar的spring.factores会引入一个比较重要的类：LoadBalancerAutoConfiguration，LoadBalancerAutoConfiguration类的restTemplateCustomizer()方法会设置拦截器到restTemplate中。</p>
+<pre><code class="java">@Bean
+@ConditionalOnMissingBean
+public RestTemplateCustomizer restTemplateCustomizer(
+      final LoadBalancerInterceptor loadBalancerInterceptor) {
+   return restTemplate -&gt; {
+      List&lt;ClientHttpRequestInterceptor&gt; list = new ArrayList&lt;&gt;(
+            restTemplate.getInterceptors());
+      list.add(loadBalancerInterceptor);
+      restTemplate.setInterceptors(list);
+   };
+}</code></pre>
+<h2 id="RestTemplate的主流程"><a href="#RestTemplate的主流程" class="headerlink" title="RestTemplate的主流程"></a>RestTemplate的主流程</h2><p>RestTemplate中的execute方法首先会调用到InterceptingClientHttpRequest类中的execute()方法，该方法首先会调用restTemplate中的拦截器的intercept()方法。</p>
+<pre><code class="java">@Override
+public ClientHttpResponse execute(HttpRequest request, byte[] body) throws IOException {
+   if (this.iterator.hasNext()) {
+      ClientHttpRequestInterceptor nextInterceptor = this.iterator.next();
+      return nextInterceptor.intercept(request, body, this);
+   }
+   else {
+      HttpMethod method = request.getMethod();
+      Assert.state(method != null, &quot;No standard HTTP method&quot;);
+      ClientHttpRequest delegate = requestFactory.createRequest(request.getURI(), method);
+      request.getHeaders().forEach((key, value) -&gt; delegate.getHeaders().addAll(key, value));
+      if (body.length &gt; 0) {
+         if (delegate instanceof StreamingHttpOutputMessage) {
+            StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) delegate;
+            streamingOutputMessage.setBody(outputStream -&gt; StreamUtils.copy(body, outputStream));
+         }
+         else {
+            StreamUtils.copy(body, delegate.getBody());
+         }
+      }
+      return delegate.execute();
+   }
+}</code></pre>
+<p>intercept()方法会调用createRequest()方法创建获取到服务之后的调用的request对象。</p>
+<pre><code class="java">@Override
+public ClientHttpResponse intercept(final HttpRequest request, final byte[] body,
+      final ClientHttpRequestExecution execution) throws IOException {
+   final URI originalUri = request.getURI();
+   String serviceName = originalUri.getHost();
+   Assert.state(serviceName != null,
+         &quot;Request URI does not contain a valid hostname: &quot; + originalUri);
+   return this.loadBalancer.execute(serviceName,
+         this.requestFactory.createRequest(request, body, execution));
+}</code></pre>
+<p>intercept()方法会调用到RibbonLoadBalancerClient的execute()方法，RibbonLoadBalancerClient已经在RibbonAutoConfiguration中已经通过@Bean的方式注入。该方法会调用getLoadBalancer()方法获取到服务列表，然后调用getServer()方法获取到要调用的服务。</p>
+<pre><code class="java">public &lt;T&gt; T execute(String serviceId, LoadBalancerRequest&lt;T&gt; request, Object hint)
+      throws IOException {
+   ILoadBalancer loadBalancer = getLoadBalancer(serviceId);
+   Server server = getServer(loadBalancer, hint);
+   if (server == null) {
+      throw new IllegalStateException(&quot;No instances available for &quot; + serviceId);
+   }
+   RibbonServer ribbonServer = new RibbonServer(serviceId, server,
+         isSecure(server, serviceId),
+         serverIntrospector(serviceId).getMetadata(server));
+
+   return execute(serviceId, ribbonServer, request);
+}</code></pre>
+<p>该方法会由execute()方法调用，用于获取到服务之后会进行reqeust的回调。</p>
+<pre><code class="java">@Override
+public &lt;T&gt; T execute(String serviceId, ServiceInstance serviceInstance,
+      LoadBalancerRequest&lt;T&gt; request) throws IOException {
+   Server server = null;
+   if (serviceInstance instanceof RibbonServer) {
+      server = ((RibbonServer) serviceInstance).getServer();
+   }
+   if (server == null) {
+      throw new IllegalStateException(&quot;No instances available for &quot; + serviceId);
+   }
+
+   RibbonLoadBalancerContext context = this.clientFactory
+         .getLoadBalancerContext(serviceId);
+   RibbonStatsRecorder statsRecorder = new RibbonStatsRecorder(context, server);
+
+   try {
+      T returnVal = request.apply(serviceInstance);
+      statsRecorder.recordStats(returnVal);
+      return returnVal;
+   }
+   // catch IOException and rethrow so RestTemplate behaves correctly
+   catch (IOException ex) {
+      statsRecorder.recordStats(ex);
+      throw ex;
+   }
+   catch (Exception ex) {
+      statsRecorder.recordStats(ex);
+      ReflectionUtils.rethrowRuntimeException(ex);
+   }
+   return null;
+}</code></pre>
+<h3 id="获取服务列表"><a href="#获取服务列表" class="headerlink" title="获取服务列表"></a>获取服务列表</h3><p>intercept()方法会调用getLoadBalancer()方法获取ILoadBalancer类型的实例，getLoadBalancer()方法会调用clientFactory的getLoadBalancer()方法，clientFactory已经在RibbonAutoConfiguration中已经通过@Bean的方式注入。</p>
+<pre><code class="java">protected ILoadBalancer getLoadBalancer(String serviceId) {
+   return this.clientFactory.getLoadBalancer(serviceId);
+}</code></pre>
+<p>getLoadBalancer()会调用getInstance()方法，该方法根据服务名称创建一个容器，然后把容器跟服务名称放入缓存，所以ribbon在第一次服务名称调用的时候是比较慢的，涉及到创建容器过程，第二次就直接从缓存里面拿容器对象了。这里在调用的时候获取容器的目的是为了拿到最新的服务列表。</p>
+<pre><code class="java">public &lt;T&gt; T getInstance(String name, Class&lt;T&gt; type) {
+   AnnotationConfigApplicationContext context = getContext(name);
+   if (BeanFactoryUtils.beanNamesForTypeIncludingAncestors(context,
+         type).length &gt; 0) {
+      return context.getBean(type);
+   }
+   return null;
+}</code></pre>
+<p>getInstance()方法会调用getContext()方法。</p>
+<pre><code class="java">protected AnnotationConfigApplicationContext getContext(String name) {
+   if (!this.contexts.containsKey(name)) {
+      synchronized (this.contexts) {
+         if (!this.contexts.containsKey(name)) {
+            this.contexts.put(name, createContext(name));
+         }
+      }
+   }
+   return this.contexts.get(name);
+}</code></pre>
+<p>如果不存在context就会调用createContext()方法创建容器，并加载两个比较重要的类EurekaRibbonClientConfiguration跟RibbonClientConfiguration到容器中，然后触发这两个类重新获取服务列表。</p>
+<pre><code class="java">protected AnnotationConfigApplicationContext createContext(String name) {
+   AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+   if (this.configurations.containsKey(name)) {
+      for (Class&lt;?&gt; configuration : this.configurations.get(name)
+            .getConfiguration()) {
+         context.register(configuration);
+      }
+   }
+   for (Map.Entry&lt;String, C&gt; entry : this.configurations.entrySet()) {
+      if (entry.getKey().startsWith(&quot;default.&quot;)) {
+         for (Class&lt;?&gt; configuration : entry.getValue().getConfiguration()) {
+            context.register(configuration);
+         }
+      }
+   }
+   context.register(PropertyPlaceholderAutoConfiguration.class,
+         this.defaultConfigType);
+   context.getEnvironment().getPropertySources().addFirst(new MapPropertySource(
+         this.propertySourceName,
+         Collections.&lt;String, Object&gt;singletonMap(this.propertyName, name)));
+   if (this.parent != null) {
+      // Uses Environment from parent as well as beans
+      context.setParent(this.parent);
+      // jdk11 issue
+      // https://github.com/spring-cloud/spring-cloud-netflix/issues/3101
+      context.setClassLoader(this.parent.getClassLoader());
+   }
+   context.setDisplayName(generateDisplayName(name));
+   context.refresh();
+   return context;
+}</code></pre>
+<h4 id="EurekaRibbonClientConfiguration类"><a href="#EurekaRibbonClientConfiguration类" class="headerlink" title="EurekaRibbonClientConfiguration类"></a>EurekaRibbonClientConfiguration类</h4><p>EurekaRibbonClientConfiguration的ribbonServerList()方法会创建服务列表</p>
+<pre><code class="java">@Bean
+@ConditionalOnMissingBean
+public ServerList&lt;?&gt; ribbonServerList(IClientConfig config,
+      Provider&lt;EurekaClient&gt; eurekaClientProvider) {
+   if (this.propertiesFactory.isSet(ServerList.class, serviceId)) {
+      return this.propertiesFactory.get(ServerList.class, config, serviceId);
+   }
+   DiscoveryEnabledNIWSServerList discoveryServerList = new DiscoveryEnabledNIWSServerList(
+         config, eurekaClientProvider);
+   DomainExtractingServerList serverList = new DomainExtractingServerList(
+         discoveryServerList, config, this.approximateZoneFromHostname);
+   return serverList;
+}</code></pre>
+<p>DiscoveryEnabledNIWSServerList类会在ribbonServerList()方法中创建，该类中有一个特别重要的方法getInitialListOfServers()。</p>
+<pre><code class="java">public List&lt;DiscoveryEnabledServer&gt; getInitialListOfServers() {
+    return this.obtainServersViaDiscovery();
+}</code></pre>
+<p>getInitialListOfServers()方法会调用obtainServersViaDiscovery()方法</p>
+<pre><code class="java">private List&lt;DiscoveryEnabledServer&gt; obtainServersViaDiscovery() {
+    List&lt;DiscoveryEnabledServer&gt; serverList = new ArrayList();
+    if (this.eurekaClientProvider != null &amp;&amp; this.eurekaClientProvider.get() != null) {
+        EurekaClient eurekaClient = (EurekaClient)this.eurekaClientProvider.get();
+        if (this.vipAddresses != null) {
+            String[] var3 = this.vipAddresses.split(&quot;,&quot;);
+            int var4 = var3.length;
+
+            for(int var5 = 0; var5 &lt; var4; ++var5) {
+                String vipAddress = var3[var5];
+                List&lt;InstanceInfo&gt; listOfInstanceInfo = eurekaClient.getInstancesByVipAddress(vipAddress, this.isSecure, this.targetRegion);
+                Iterator var8 = listOfInstanceInfo.iterator();
+
+                while(var8.hasNext()) {
+                    InstanceInfo ii = (InstanceInfo)var8.next();
+                    if (ii.getStatus().equals(InstanceStatus.UP)) {
+                        if (this.shouldUseOverridePort) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(&quot;Overriding port on client name: &quot; + this.clientName + &quot; to &quot; + this.overridePort);
+                            }
+
+                            InstanceInfo copy = new InstanceInfo(ii);
+                            if (this.isSecure) {
+                                ii = (new Builder(copy)).setSecurePort(this.overridePort).build();
+                            } else {
+                                ii = (new Builder(copy)).setPort(this.overridePort).build();
+                            }
+                        }
+
+                        DiscoveryEnabledServer des = this.createServer(ii, this.isSecure, this.shouldUseIpAddr);
+                        serverList.add(des);
+                    }
+                }
+
+                if (serverList.size() &gt; 0 &amp;&amp; this.prioritizeVipAddressBasedServers) {
+                    break;
+                }
+            }
+        }
+
+        return serverList;
+    } else {
+        logger.warn(&quot;EurekaClient has not been initialized yet, returning an empty list&quot;);
+        return new ArrayList();
+    }
+}</code></pre>
+<p>obtainServersViaDiscovery()方法会调用getInstancesByVipAddress()方法，该方法会从localRegionApps中或eureka服务端拉取到的服务列表的变量中获取到服务列表。localRegionApps中的服务列表来源于eureka客户端源码中的服务拉取部分。</p>
+<pre><code class="java">@Override
+public List&lt;InstanceInfo&gt; getInstancesByVipAddress(String vipAddress, boolean secure,
+                                                   @Nullable String region) {
+    if (vipAddress == null) {
+        throw new IllegalArgumentException(
+                &quot;Supplied VIP Address cannot be null&quot;);
+    }
+    Applications applications;
+    if (instanceRegionChecker.isLocalRegion(region)) {
+        applications = this.localRegionApps.get();
+    } else {
+        applications = remoteRegionVsApps.get(region);
+        if (null == applications) {
+            logger.debug(&quot;No applications are defined for region {}, so returning an empty instance list for vip &quot;
+                    + &quot;address {}.&quot;, region, vipAddress);
+            return Collections.emptyList();
+        }
+    }
+
+    if (!secure) {
+        return applications.getInstancesByVirtualHostName(vipAddress);
+    } else {
+        return applications.getInstancesBySecureVirtualHostName(vipAddress);
+
+    }
+
+}</code></pre>
+<h4 id="RibbonClientConfiguration类"><a href="#RibbonClientConfiguration类" class="headerlink" title="RibbonClientConfiguration类"></a>RibbonClientConfiguration类</h4><p>这个类中有一个非常重要的方法ribbonLoadBalancer()，该方法会将serverList注入，serverList是从EurekaRibbonClientConfiguration中获取的。</p>
+<pre><code class="java">@Bean
+@ConditionalOnMissingBean
+public ILoadBalancer ribbonLoadBalancer(IClientConfig config,
+      ServerList&lt;Server&gt; serverList, ServerListFilter&lt;Server&gt; serverListFilter,
+      IRule rule, IPing ping, ServerListUpdater serverListUpdater) {
+   if (this.propertiesFactory.isSet(ILoadBalancer.class, name)) {
+      return this.propertiesFactory.get(ILoadBalancer.class, config, name);
+   }
+   return new ZoneAwareLoadBalancer&lt;&gt;(config, rule, ping, serverList,
+         serverListFilter, serverListUpdater);
+}</code></pre>
+<p>ribbonLoadBalancer()方法获取到的实例就是ZoneAwareLoadBalancer实例。在该类实例化的构造函数中，最终会调到其父类的构造函数。</p>
+<pre><code class="java">public DynamicServerListLoadBalancer(IClientConfig clientConfig, IRule rule, IPing ping,
+                                     ServerList&lt;T&gt; serverList, ServerListFilter&lt;T&gt; filter,
+                                     ServerListUpdater serverListUpdater) {
+    super(clientConfig, rule, ping);
+    this.serverListImpl = serverList;
+    this.filter = filter;
+    this.serverListUpdater = serverListUpdater;
+    if (filter instanceof AbstractServerListFilter) {
+        ((AbstractServerListFilter) filter).setLoadBalancerStats(getLoadBalancerStats());
+    }
+    restOfInit(clientConfig);
+}</code></pre>
+<p>restOfInit()方法会在构造函数中被调用。</p>
+<pre><code class="java">void restOfInit(IClientConfig clientConfig) {
+    boolean primeConnection = this.isEnablePrimingConnections();
+    // turn this off to avoid duplicated asynchronous priming done in BaseLoadBalancer.setServerList()
+    this.setEnablePrimingConnections(false);
+    enableAndInitLearnNewServersFeature();
+
+    updateListOfServers();
+    if (primeConnection &amp;&amp; this.getPrimeConnections() != null) {
+        this.getPrimeConnections()
+                .primeConnections(getReachableServers());
+    }
+    this.setEnablePrimingConnections(primeConnection);
+    LOGGER.info(&quot;DynamicServerListLoadBalancer for client {} initialized: {}&quot;, clientConfig.getClientName(), this.toString());
+}</code></pre>
+<p>restOfInit()方法会调用updateListOfServers()方法。</p>
+<pre><code class="java">@VisibleForTesting
+public void updateListOfServers() {
+    List&lt;T&gt; servers = new ArrayList&lt;T&gt;();
+    if (serverListImpl != null) {
+        servers = serverListImpl.getUpdatedListOfServers();
+        LOGGER.debug(&quot;List of Servers for {} obtained from Discovery client: {}&quot;,
+                getIdentifier(), servers);
+
+        if (filter != null) {
+            servers = filter.getFilteredListOfServers(servers);
+            LOGGER.debug(&quot;Filtered List of Servers for {} obtained from Discovery client: {}&quot;,
+                    getIdentifier(), servers);
+        }
+    }
+    updateAllServerList(servers);
+}</code></pre>
+<p>updateListOfServers()调用getUpdatedListOfServers()方法，从本地服务列表中获取到了服务列表信息</p>
+<pre><code class="java">public List&lt;DiscoveryEnabledServer&gt; getUpdatedListOfServers() {
+    return this.obtainServersViaDiscovery();
+}</code></pre>
+<h3 id="服务选择"><a href="#服务选择" class="headerlink" title="服务选择"></a>服务选择</h3><p>intercept()方法会调用getServer()方法，getServer()方法最终会调用到BaseLoadBalancer中的chooseServer()方法，会根据具体策略中的choose()方法，选择一个服务返回。</p>
+<pre><code class="java">    public Server chooseServer(Object key) {
+        if (counter == null) {
+            counter = createCounter();
+        }
+        counter.increment();
+        if (rule == null) {
+            return null;
+        } else {
+            try {
+                return rule.choose(key);
+            } catch (Exception e) {
+                logger.warn(&quot;LoadBalancer [{}]:  Error choosing server for key {}&quot;, name, key, e);
+                return null;
+            }
+        }
+    }</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/springcloud/">springcloud</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/tags/springcloud/">springcloud</a>
+                    
+                      <a class="hover-with-bg" href="/tags/ribbon/">ribbon</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/27/hystrix%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">hystrix源码解读</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/27/eureka%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">eureka源码解读</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "ribbon源码解读&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

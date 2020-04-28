@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>eureka源码解读 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期一, 四月 27日 2020, 2:57 下午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    3.7k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      21 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期一, 四月 27日 2020, 6:38 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="eureka客户端源码解析"><a href="#eureka客户端源码解析" class="headerlink" title="eureka客户端源码解析"></a>eureka客户端源码解析</h2><p>springboot在启动时会通过SPI加载spring.factors</p>
+<pre><code class="properties">org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.springframework.cloud.netflix.eureka.config.EurekaClientConfigServerAutoConfiguration,\
+org.springframework.cloud.netflix.eureka.config.EurekaDiscoveryClientConfigServiceAutoConfiguration,\
+org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration,\
+org.springframework.cloud.netflix.ribbon.eureka.RibbonEurekaAutoConfiguration,\
+org.springframework.cloud.netflix.eureka.EurekaDiscoveryClientConfiguration,\
+org.springframework.cloud.netflix.eureka.reactive.EurekaReactiveDiscoveryClientConfiguration,\
+org.springframework.cloud.netflix.eureka.loadbalancer.LoadBalancerEurekaAutoConfiguration
+
+org.springframework.cloud.bootstrap.BootstrapConfiguration=\
+org.springframework.cloud.netflix.eureka.config.EurekaDiscoveryClientConfigServiceBootstrapConfiguration</code></pre>
+<p>其中的EurekaClientAutoConfiguration类有一个静态内部类EurekaClientConfiguration，EurekaClientConfiguration中的eurekaClient方法会创建一个CloudEurekaClient类。其构造方法如下：</p>
+<pre><code class="java">@Bean(destroyMethod = &quot;shutdown&quot;)
+@ConditionalOnMissingBean(value = EurekaClient.class,
+      search = SearchStrategy.CURRENT)
+public EurekaClient eurekaClient(ApplicationInfoManager manager,
+      EurekaClientConfig config) {
+   return new CloudEurekaClient(manager, config, this.optionalArgs,
+         this.context);
+}</code></pre>
+<p>CloudEurekaClient类继承了DiscoveryClient，这个类是eureka最重要的类，构造方法中会设置三个比较重要的定时器，负责服务注册、续约、拉取，然后调用initScheduledTasks()方法</p>
+<pre><code class="java">@Inject
+DiscoveryClient(ApplicationInfoManager applicationInfoManager, EurekaClientConfig config, AbstractDiscoveryClientOptionalArgs args,
+                Provider&lt;BackupRegistry&gt; backupRegistryProvider, EndpointRandomizer endpointRandomizer) {
+    if (args != null) {
+        this.healthCheckHandlerProvider = args.healthCheckHandlerProvider;
+        this.healthCheckCallbackProvider = args.healthCheckCallbackProvider;
+        this.eventListeners.addAll(args.getEventListeners());
+        this.preRegistrationHandler = args.preRegistrationHandler;
+    } else {
+        this.healthCheckCallbackProvider = null;
+        this.healthCheckHandlerProvider = null;
+        this.preRegistrationHandler = null;
+    }
+
+    this.applicationInfoManager = applicationInfoManager;
+    InstanceInfo myInfo = applicationInfoManager.getInfo();
+
+    clientConfig = config;
+    staticClientConfig = clientConfig;
+    transportConfig = config.getTransportConfig();
+    instanceInfo = myInfo;
+    if (myInfo != null) {
+        appPathIdentifier = instanceInfo.getAppName() + &quot;/&quot; + instanceInfo.getId();
+    } else {
+        logger.warn(&quot;Setting instanceInfo to a passed in null value&quot;);
+    }
+
+    this.backupRegistryProvider = backupRegistryProvider;
+    this.endpointRandomizer = endpointRandomizer;
+    this.urlRandomizer = new EndpointUtils.InstanceInfoBasedUrlRandomizer(instanceInfo);
+    localRegionApps.set(new Applications());
+
+    fetchRegistryGeneration = new AtomicLong(0);
+
+    remoteRegionsToFetch = new AtomicReference&lt;String&gt;(clientConfig.fetchRegistryForRemoteRegions());
+    remoteRegionsRef = new AtomicReference&lt;&gt;(remoteRegionsToFetch.get() == null ? null : remoteRegionsToFetch.get().split(&quot;,&quot;));
+
+    if (config.shouldFetchRegistry()) {
+        this.registryStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRY_PREFIX + &quot;lastUpdateSec_&quot;, new long[]{15L, 30L, 60L, 120L, 240L, 480L});
+    } else {
+        this.registryStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
+    }
+
+    if (config.shouldRegisterWithEureka()) {
+        this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + &quot;lastHeartbeatSec_&quot;, new long[]{15L, 30L, 60L, 120L, 240L, 480L});
+    } else {
+        this.heartbeatStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
+    }
+
+    logger.info(&quot;Initializing Eureka in region {}&quot;, clientConfig.getRegion());
+
+    if (!config.shouldRegisterWithEureka() &amp;&amp; !config.shouldFetchRegistry()) {
+        logger.info(&quot;Client configured to neither register nor query for data.&quot;);
+        scheduler = null;
+        heartbeatExecutor = null;
+        cacheRefreshExecutor = null;
+        eurekaTransport = null;
+        instanceRegionChecker = new InstanceRegionChecker(new PropertyBasedAzToRegionMapper(config), clientConfig.getRegion());
+
+        // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
+        // to work with DI&#39;d DiscoveryClient
+        DiscoveryManager.getInstance().setDiscoveryClient(this);
+        DiscoveryManager.getInstance().setEurekaClientConfig(config);
+
+        initTimestampMs = System.currentTimeMillis();
+        logger.info(&quot;Discovery Client initialized at timestamp {} with initial instances count: {}&quot;,
+                initTimestampMs, this.getApplications().size());
+
+        return;  // no need to setup up an network tasks and we are done
+    }
+
+    try {
+        // 这里注册了三个比较重要的定时器，负责服务注册、续约和服务拉取
+        // default size of 2 - 1 each for heartbeat and cacheRefresh
+        scheduler = Executors.newScheduledThreadPool(2,
+                new ThreadFactoryBuilder()
+                        .setNameFormat(&quot;DiscoveryClient-%d&quot;)
+                        .setDaemon(true)
+                        .build());
+
+        heartbeatExecutor = new ThreadPoolExecutor(
+                1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
+                new SynchronousQueue&lt;Runnable&gt;(),
+                new ThreadFactoryBuilder()
+                        .setNameFormat(&quot;DiscoveryClient-HeartbeatExecutor-%d&quot;)
+                        .setDaemon(true)
+                        .build()
+        );  // use direct handoff
+
+        cacheRefreshExecutor = new ThreadPoolExecutor(
+                1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
+                new SynchronousQueue&lt;Runnable&gt;(),
+                new ThreadFactoryBuilder()
+                        .setNameFormat(&quot;DiscoveryClient-CacheRefreshExecutor-%d&quot;)
+                        .setDaemon(true)
+                        .build()
+        );  // use direct handoff
+
+        eurekaTransport = new EurekaTransport();
+        scheduleServerEndpointTask(eurekaTransport, args);
+
+        AzToRegionMapper azToRegionMapper;
+        if (clientConfig.shouldUseDnsForFetchingServiceUrls()) {
+            azToRegionMapper = new DNSBasedAzToRegionMapper(clientConfig);
+        } else {
+            azToRegionMapper = new PropertyBasedAzToRegionMapper(clientConfig);
+        }
+        if (null != remoteRegionsToFetch.get()) {
+            azToRegionMapper.setRegionsToFetch(remoteRegionsToFetch.get().split(&quot;,&quot;));
+        }
+        instanceRegionChecker = new InstanceRegionChecker(azToRegionMapper, clientConfig.getRegion());
+    } catch (Throwable e) {
+        throw new RuntimeException(&quot;Failed to initialize DiscoveryClient!&quot;, e);
+    }
+
+    if (clientConfig.shouldFetchRegistry() &amp;&amp; !fetchRegistry(false)) {
+        fetchRegistryFromBackup();
+    }
+
+    // call and execute the pre registration handler before all background tasks (inc registration) is started
+    if (this.preRegistrationHandler != null) {
+        this.preRegistrationHandler.beforeRegistration();
+    }
+
+    if (clientConfig.shouldRegisterWithEureka() &amp;&amp; clientConfig.shouldEnforceRegistrationAtInit()) {
+        try {
+            if (!register() ) {
+                throw new IllegalStateException(&quot;Registration error at startup. Invalid server response.&quot;);
+            }
+        } catch (Throwable th) {
+            logger.error(&quot;Registration error at startup: {}&quot;, th.getMessage());
+            throw new IllegalStateException(th);
+        }
+    }
+
+    // finally, init the schedule tasks (e.g. cluster resolvers, heartbeat, instanceInfo replicator, fetch
+    initScheduledTasks();
+
+    try {
+        Monitors.registerObject(this);
+    } catch (Throwable e) {
+        logger.warn(&quot;Cannot register timers&quot;, e);
+    }
+
+    // This is a bit of hack to allow for existing code using DiscoveryManager.getInstance()
+    // to work with DI&#39;d DiscoveryClient
+    DiscoveryManager.getInstance().setDiscoveryClient(this);
+    DiscoveryManager.getInstance().setEurekaClientConfig(config);
+
+    initTimestampMs = System.currentTimeMillis();
+    logger.info(&quot;Discovery Client initialized at timestamp {} with initial instances count: {}&quot;,
+            initTimestampMs, this.getApplications().size());
+}</code></pre>
+<p>initScheduledTasks()，该方法根据配置文件中的属性设置定时器，如心跳间隔等，然后将CacheRefreshThread类设置到定时器中进行服务信息拉取，将HeartbeatThread类设置到定时器中进行服务的注册和续约。</p>
+<pre><code class="java">private void initScheduledTasks() {
+    if (clientConfig.shouldFetchRegistry()) {
+        // registry cache refresh timer
+        int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
+        int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
+        cacheRefreshTask = new TimedSupervisorTask(
+                &quot;cacheRefresh&quot;,
+                scheduler,
+                cacheRefreshExecutor,
+                registryFetchIntervalSeconds,
+                TimeUnit.SECONDS,
+                expBackOffBound,
+                new CacheRefreshThread()
+        );
+        scheduler.schedule(
+                cacheRefreshTask,
+                registryFetchIntervalSeconds, TimeUnit.SECONDS);
+    }
+
+    if (clientConfig.shouldRegisterWithEureka()) {
+        int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+        int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
+        logger.info(&quot;Starting heartbeat executor: &quot; + &quot;renew interval is: {}&quot;, renewalIntervalInSecs);
+
+        // Heartbeat timer
+        heartbeatTask = new TimedSupervisorTask(
+                &quot;heartbeat&quot;,
+                scheduler,
+                heartbeatExecutor,
+                renewalIntervalInSecs,
+                TimeUnit.SECONDS,
+                expBackOffBound,
+                new HeartbeatThread()
+        );
+        scheduler.schedule(
+                heartbeatTask,
+                renewalIntervalInSecs, TimeUnit.SECONDS);
+
+        // InstanceInfo replicator
+        instanceInfoReplicator = new InstanceInfoReplicator(
+                this,
+                instanceInfo,
+                clientConfig.getInstanceInfoReplicationIntervalSeconds(),
+                2); // burstSize
+
+        statusChangeListener = new ApplicationInfoManager.StatusChangeListener() {
+            @Override
+            public String getId() {
+                return &quot;statusChangeListener&quot;;
+            }
+
+            @Override
+            public void notify(StatusChangeEvent statusChangeEvent) {
+                if (InstanceStatus.DOWN == statusChangeEvent.getStatus() ||
+                        InstanceStatus.DOWN == statusChangeEvent.getPreviousStatus()) {
+                    // log at warn level if DOWN was involved
+                    logger.warn(&quot;Saw local status change event {}&quot;, statusChangeEvent);
+                } else {
+                    logger.info(&quot;Saw local status change event {}&quot;, statusChangeEvent);
+                }
+                instanceInfoReplicator.onDemandUpdate();
+            }
+        };
+
+        if (clientConfig.shouldOnDemandUpdateStatusChange()) {
+            applicationInfoManager.registerStatusChangeListener(statusChangeListener);
+        }
+
+        instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
+    } else {
+        logger.info(&quot;Not registering with Eureka server per configuration&quot;);
+    }
+}</code></pre>
+<h3 id="服务拉取"><a href="#服务拉取" class="headerlink" title="服务拉取"></a>服务拉取</h3><p>CacheRefreshThread类实现了Runnable接口，在run()方法中会调用refreshRegistry()方法</p>
+<pre><code class="java">void refreshRegistry() {
+    try {
+        boolean isFetchingRemoteRegionRegistries = isFetchingRemoteRegionRegistries();
+
+        boolean remoteRegionsModified = false;
+        // This makes sure that a dynamic change to remote regions to fetch is honored.
+        String latestRemoteRegions = clientConfig.fetchRegistryForRemoteRegions();
+        if (null != latestRemoteRegions) {
+            String currentRemoteRegions = remoteRegionsToFetch.get();
+            if (!latestRemoteRegions.equals(currentRemoteRegions)) {
+                // Both remoteRegionsToFetch and AzToRegionMapper.regionsToFetch need to be in sync
+                synchronized (instanceRegionChecker.getAzToRegionMapper()) {
+                    if (remoteRegionsToFetch.compareAndSet(currentRemoteRegions, latestRemoteRegions)) {
+                        String[] remoteRegions = latestRemoteRegions.split(&quot;,&quot;);
+                        remoteRegionsRef.set(remoteRegions);
+                        instanceRegionChecker.getAzToRegionMapper().setRegionsToFetch(remoteRegions);
+                        remoteRegionsModified = true;
+                    } else {
+                        logger.info(&quot;Remote regions to fetch modified concurrently,&quot; +
+                                &quot; ignoring change from {} to {}&quot;, currentRemoteRegions, latestRemoteRegions);
+                    }
+                }
+            } else {
+                // Just refresh mapping to reflect any DNS/Property change
+                instanceRegionChecker.getAzToRegionMapper().refreshMapping();
+            }
+        }
+
+        boolean success = fetchRegistry(remoteRegionsModified);
+        if (success) {
+            registrySize = localRegionApps.get().size();
+            lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
+        }
+
+        if (logger.isDebugEnabled()) {
+            StringBuilder allAppsHashCodes = new StringBuilder();
+            allAppsHashCodes.append(&quot;Local region apps hashcode: &quot;);
+            allAppsHashCodes.append(localRegionApps.get().getAppsHashCode());
+            allAppsHashCodes.append(&quot;, is fetching remote regions? &quot;);
+            allAppsHashCodes.append(isFetchingRemoteRegionRegistries);
+            for (Map.Entry&lt;String, Applications&gt; entry : remoteRegionVsApps.entrySet()) {
+                allAppsHashCodes.append(&quot;, Remote region: &quot;);
+                allAppsHashCodes.append(entry.getKey());
+                allAppsHashCodes.append(&quot; , apps hashcode: &quot;);
+                allAppsHashCodes.append(entry.getValue().getAppsHashCode());
+            }
+            logger.debug(&quot;Completed cache refresh task for discovery. All Apps hash code is {} &quot;,
+                    allAppsHashCodes);
+        }
+    } catch (Throwable e) {
+        logger.error(&quot;Cannot fetch registry from server&quot;, e);
+    }
+}</code></pre>
+<p>refreshRegistry()方法会调用fetchRegistry()方法进行服务信息的拉取</p>
+<pre><code class="java">private boolean fetchRegistry(boolean forceFullRegistryFetch) {
+    Stopwatch tracer = FETCH_REGISTRY_TIMER.start();
+
+    try {
+        // If the delta is disabled or if it is the first time, get all
+        // applications
+        Applications applications = getApplications();
+
+        if (clientConfig.shouldDisableDelta()
+                || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
+                || forceFullRegistryFetch
+                || (applications == null)
+                || (applications.getRegisteredApplications().size() == 0)
+                || (applications.getVersion() == -1)) //Client application does not have latest library supporting delta
+        {
+            logger.info(&quot;Disable delta property : {}&quot;, clientConfig.shouldDisableDelta());
+            logger.info(&quot;Single vip registry refresh property : {}&quot;, clientConfig.getRegistryRefreshSingleVipAddress());
+            logger.info(&quot;Force full registry fetch : {}&quot;, forceFullRegistryFetch);
+            logger.info(&quot;Application is null : {}&quot;, (applications == null));
+            logger.info(&quot;Registered Applications size is zero : {}&quot;,
+                    (applications.getRegisteredApplications().size() == 0));
+            logger.info(&quot;Application version is -1: {}&quot;, (applications.getVersion() == -1));
+            getAndStoreFullRegistry();
+        } else {
+            getAndUpdateDelta(applications);
+        }
+        applications.setAppsHashCode(applications.getReconcileHashCode());
+        logTotalInstances();
+    } catch (Throwable e) {
+        logger.error(PREFIX + &quot;{} - was unable to refresh its cache! status = {}&quot;, appPathIdentifier, e.getMessage(), e);
+        return false;
+    } finally {
+        if (tracer != null) {
+            tracer.stop();
+        }
+    }
+
+    // Notify about cache refresh before updating the instance remote status
+    onCacheRefreshed();
+
+    // Update remote status based on refreshed data held in the cache
+    updateInstanceRemoteStatus();
+
+    // registry was fetched successfully, so return true
+    return true;
+}</code></pre>
+<p>fetchRegistry()方法会调用getAndStoreFullRegistry()方法和getAndUpdateDelta()方法进行全量拉取和增量拉取。</p>
+<p>getAndStoreFullRegistry()全量拉取，通过getApplications()方法从服务器获取服务列表后存储到localRegionApps中，后面ribbon、feign、config、zuul都会用到localRegionApps。</p>
+<pre><code class="java">private void getAndStoreFullRegistry() throws Throwable {
+    long currentUpdateGeneration = fetchRegistryGeneration.get();
+
+    logger.info(&quot;Getting all instance registry info from the eureka server&quot;);
+
+    Applications apps = null;
+    EurekaHttpResponse&lt;Applications&gt; httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
+            ? eurekaTransport.queryClient.getApplications(remoteRegionsRef.get())
+            : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress(), remoteRegionsRef.get());
+    if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
+        apps = httpResponse.getEntity();
+    }
+    logger.info(&quot;The response status is {}&quot;, httpResponse.getStatusCode());
+
+    if (apps == null) {
+        logger.error(&quot;The application is null for some reason. Not storing this information&quot;);
+    } else if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
+        localRegionApps.set(this.filterAndShuffle(apps));
+        logger.debug(&quot;Got full registry with apps hashcode {}&quot;, apps.getAppsHashCode());
+    } else {
+        logger.warn(&quot;Not updating applications as another thread is updating it already&quot;);
+    }
+}</code></pre>
+<p>getApplications()方法会调用到getApplicationsInternal()方法，用get请求获取eureka服务端的配置信息。</p>
+<pre><code class="java">private EurekaHttpResponse&lt;Applications&gt; getApplicationsInternal(String urlPath, String[] regions) {
+    ClientResponse response = null;
+    String regionsParamValue = null;
+    try {
+        WebResource webResource = jerseyClient.resource(serviceUrl).path(urlPath);
+        if (regions != null &amp;&amp; regions.length &gt; 0) {
+            regionsParamValue = StringUtil.join(regions);
+            webResource = webResource.queryParam(&quot;regions&quot;, regionsParamValue);
+        }
+        Builder requestBuilder = webResource.getRequestBuilder();
+        addExtraHeaders(requestBuilder);
+        response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+
+        Applications applications = null;
+        if (response.getStatus() == Status.OK.getStatusCode() &amp;&amp; response.hasEntity()) {
+            applications = response.getEntity(Applications.class);
+        }
+        return anEurekaHttpResponse(response.getStatus(), Applications.class)
+                .headers(headersOf(response))
+                .entity(applications)
+                .build();
+    } finally {
+        if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Jersey HTTP GET {}/{}?{}; statusCode={}&quot;,
+                    serviceUrl, urlPath,
+                    regionsParamValue == null ? &quot;&quot; : &quot;regions=&quot; + regionsParamValue,
+                    response == null ? &quot;N/A&quot; : response.getStatus()
+            );
+        }
+        if (response != null) {
+            response.close();
+        }
+    }</code></pre>
+<h3 id="注册和续约"><a href="#注册和续约" class="headerlink" title="注册和续约"></a>注册和续约</h3><p>HeartbeatThread同样实现了Runnable接口，在run()方法中会调用renew()方法。</p>
+<pre><code class="java">boolean renew() {
+    EurekaHttpResponse&lt;InstanceInfo&gt; httpResponse;
+    try {
+        httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        logger.debug(PREFIX + &quot;{} - Heartbeat status: {}&quot;, appPathIdentifier, httpResponse.getStatusCode());
+        if (httpResponse.getStatusCode() == Status.NOT_FOUND.getStatusCode()) {
+            REREGISTER_COUNTER.increment();
+            logger.info(PREFIX + &quot;{} - Re-registering apps/{}&quot;, appPathIdentifier, instanceInfo.getAppName());
+            long timestamp = instanceInfo.setIsDirtyWithTime();
+            boolean success = register();
+            if (success) {
+                instanceInfo.unsetIsDirty(timestamp);
+            }
+            return success;
+        }
+        return httpResponse.getStatusCode() == Status.OK.getStatusCode();
+    } catch (Throwable e) {
+        logger.error(PREFIX + &quot;{} - was unable to send heartbeat!&quot;, appPathIdentifier, e);
+        return false;
+    }
+}</code></pre>
+<h4 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h4><p>renew()方法中会调用register()方法，register()方法最终会调用到AbstractJerseyEurekaHttpClient类的register()方法发送post请求至eureka进行服务注册</p>
+<pre><code class="java">public EurekaHttpResponse&lt;Void&gt; register(InstanceInfo info) {
+    String urlPath = &quot;apps/&quot; + info.getAppName();
+    ClientResponse response = null;
+    try {
+        Builder resourceBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
+        addExtraHeaders(resourceBuilder);
+        response = resourceBuilder
+                .header(&quot;Accept-Encoding&quot;, &quot;gzip&quot;)
+                .type(MediaType.APPLICATION_JSON_TYPE)
+                .accept(MediaType.APPLICATION_JSON)
+                .post(ClientResponse.class, info);
+        return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
+    } finally {
+        if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Jersey HTTP POST {}/{} with instance {}; statusCode={}&quot;, serviceUrl, urlPath, info.getId(),
+                    response == null ? &quot;N/A&quot; : response.getStatus());
+        }
+        if (response != null) {
+            response.close();
+        }
+    }
+}</code></pre>
+<h4 id="续约"><a href="#续约" class="headerlink" title="续约"></a>续约</h4><p>renew()方法中会调用到sendHeartBeat()方法，sendHeartBeat()方法最终也会调用到AbstractJerseyEurekaHttpClientl类的sendHeartBeat()方法，发送put请求将节点状态发到服务端。</p>
+<pre><code class="java">public EurekaHttpResponse&lt;InstanceInfo&gt; sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
+    String urlPath = &quot;apps/&quot; + appName + &#39;/&#39; + id;
+    ClientResponse response = null;
+    try {
+        WebResource webResource = jerseyClient.resource(serviceUrl)
+                .path(urlPath)
+                .queryParam(&quot;status&quot;, info.getStatus().toString())
+                .queryParam(&quot;lastDirtyTimestamp&quot;, info.getLastDirtyTimestamp().toString());
+        if (overriddenStatus != null) {
+            webResource = webResource.queryParam(&quot;overriddenstatus&quot;, overriddenStatus.name());
+        }
+        Builder requestBuilder = webResource.getRequestBuilder();
+        addExtraHeaders(requestBuilder);
+        response = requestBuilder.put(ClientResponse.class);
+        EurekaHttpResponseBuilder&lt;InstanceInfo&gt; eurekaResponseBuilder = anEurekaHttpResponse(response.getStatus(), InstanceInfo.class).headers(headersOf(response));
+        if (response.hasEntity() &amp;&amp;
+                !HTML.equals(response.getType().getSubtype())) { //don&#39;t try and deserialize random html errors from the server
+            eurekaResponseBuilder.entity(response.getEntity(InstanceInfo.class));
+        }
+        return eurekaResponseBuilder.build();
+    } finally {
+        if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Jersey HTTP PUT {}/{}; statusCode={}&quot;, serviceUrl, urlPath, response == null ? &quot;N/A&quot; : response.getStatus());
+        }
+        if (response != null) {
+            response.close();
+        }
+    }
+}</code></pre>
+<h2 id="eureka服务端源码解析"><a href="#eureka服务端源码解析" class="headerlink" title="eureka服务端源码解析"></a>eureka服务端源码解析</h2><p>ApplicationsResource类通过JAX-RS规范接收客户端请求，注册请求首先会被getApplicationResource()方法接收，getInstanceInfo()方法则接收到服务的续约请求。</p>
+<pre><code class="java">@Path(&quot;{appId}&quot;)
+public ApplicationResource getApplicationResource(
+        @PathParam(&quot;version&quot;) String version,
+        @PathParam(&quot;appId&quot;) String appId) {
+    CurrentRequestVersion.set(Version.toEnum(version));
+    try {
+        return new ApplicationResource(appId, serverConfig, registry);
+    } finally {
+        CurrentRequestVersion.remove();
+    }
+}
+{...}
+@Path(&quot;{id}&quot;)
+public InstanceResource getInstanceInfo(@PathParam(&quot;id&quot;) String id) {
+    return new InstanceResource(this, id, serverConfig, registry);
+}</code></pre>
+<h3 id="服务的注册"><a href="#服务的注册" class="headerlink" title="服务的注册"></a>服务的注册</h3><p>addInstrance()方法会在getApplicationResource()方法之后调用。</p>
+<pre><code class="java">@POST
+@Consumes({&quot;application/json&quot;, &quot;application/xml&quot;})
+public Response addInstance(InstanceInfo info,
+                            @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+    logger.debug(&quot;Registering instance {} (replication={})&quot;, info.getId(), isReplication);
+    // validate that the instanceinfo contains all the necessary required fields
+    if (isBlank(info.getId())) {
+        return Response.status(400).entity(&quot;Missing instanceId&quot;).build();
+    } else if (isBlank(info.getHostName())) {
+        return Response.status(400).entity(&quot;Missing hostname&quot;).build();
+    } else if (isBlank(info.getIPAddr())) {
+        return Response.status(400).entity(&quot;Missing ip address&quot;).build();
+    } else if (isBlank(info.getAppName())) {
+        return Response.status(400).entity(&quot;Missing appName&quot;).build();
+    } else if (!appName.equals(info.getAppName())) {
+        return Response.status(400).entity(&quot;Mismatched appName, expecting &quot; + appName + &quot; but was &quot; + info.getAppName()).build();
+    } else if (info.getDataCenterInfo() == null) {
+        return Response.status(400).entity(&quot;Missing dataCenterInfo&quot;).build();
+    } else if (info.getDataCenterInfo().getName() == null) {
+        return Response.status(400).entity(&quot;Missing dataCenterInfo Name&quot;).build();
+    }
+
+    // handle cases where clients may be registering with bad DataCenterInfo with missing data
+    DataCenterInfo dataCenterInfo = info.getDataCenterInfo();
+    if (dataCenterInfo instanceof UniqueIdentifier) {
+        String dataCenterInfoId = ((UniqueIdentifier) dataCenterInfo).getId();
+        if (isBlank(dataCenterInfoId)) {
+            boolean experimental = &quot;true&quot;.equalsIgnoreCase(serverConfig.getExperimental(&quot;registration.validation.dataCenterInfoId&quot;));
+            if (experimental) {
+                String entity = &quot;DataCenterInfo of type &quot; + dataCenterInfo.getClass() + &quot; must contain a valid id&quot;;
+                return Response.status(400).entity(entity).build();
+            } else if (dataCenterInfo instanceof AmazonInfo) {
+                AmazonInfo amazonInfo = (AmazonInfo) dataCenterInfo;
+                String effectiveId = amazonInfo.get(AmazonInfo.MetaDataKey.instanceId);
+                if (effectiveId == null) {
+                    amazonInfo.getMetadata().put(AmazonInfo.MetaDataKey.instanceId.getName(), info.getId());
+                }
+            } else {
+                logger.warn(&quot;Registering DataCenterInfo of type {} without an appropriate id&quot;, dataCenterInfo.getClass());
+            }
+        }
+    }
+
+    registry.register(info, &quot;true&quot;.equals(isReplication));
+    return Response.status(204).build();  // 204 to be backwards compatible
+}</code></pre>
+<p>addInstrance()方法最终会调用register()方法，完成服务注册。</p>
+<pre><code>public void register(final InstanceInfo info, final boolean isReplication) {
+    int leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;
+    if (info.getLeaseInfo() != null &amp;&amp; info.getLeaseInfo().getDurationInSecs() &gt; 0) {
+        leaseDuration = info.getLeaseInfo().getDurationInSecs();
+    }
+    super.register(info, leaseDuration, isReplication);
+    replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
+}</code></pre><h4 id="服务的本地保存"><a href="#服务的本地保存" class="headerlink" title="服务的本地保存"></a>服务的本地保存</h4><p>register()方法会调用到AbstractInstanceRegistry的register()，将服务信息保存到ConcurrentHashMap中，Key是对应的服务名称，value则是这个服务对应的服务列表信息。</p>
+<pre><code class="java">public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
+    try {
+        read.lock();
+        Map&lt;String, Lease&lt;InstanceInfo&gt;&gt; gMap = registry.get(registrant.getAppName());
+        REGISTER.increment(isReplication);
+        if (gMap == null) {
+            final ConcurrentHashMap&lt;String, Lease&lt;InstanceInfo&gt;&gt; gNewMap = new ConcurrentHashMap&lt;String, Lease&lt;InstanceInfo&gt;&gt;();
+            gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
+            if (gMap == null) {
+                gMap = gNewMap;
+            }
+        }
+        Lease&lt;InstanceInfo&gt; existingLease = gMap.get(registrant.getId());
+        // Retain the last dirty timestamp without overwriting it, if there is already a lease
+        if (existingLease != null &amp;&amp; (existingLease.getHolder() != null)) {
+            Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
+            Long registrationLastDirtyTimestamp = registrant.getLastDirtyTimestamp();
+            logger.debug(&quot;Existing lease found (existing={}, provided={}&quot;, existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
+
+            // this is a &gt; instead of a &gt;= because if the timestamps are equal, we still take the remote transmitted
+            // InstanceInfo instead of the server local copy.
+            if (existingLastDirtyTimestamp &gt; registrationLastDirtyTimestamp) {
+                logger.warn(&quot;There is an existing lease and the existing lease&#39;s dirty timestamp {} is greater&quot; +
+                        &quot; than the one that is being registered {}&quot;, existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
+                logger.warn(&quot;Using the existing instanceInfo instead of the new instanceInfo as the registrant&quot;);
+                registrant = existingLease.getHolder();
+            }
+        } else {
+            // The lease does not exist and hence it is a new registration
+            synchronized (lock) {
+                if (this.expectedNumberOfClientsSendingRenews &gt; 0) {
+                    // Since the client wants to register it, increase the number of clients sending renews
+                    this.expectedNumberOfClientsSendingRenews = this.expectedNumberOfClientsSendingRenews + 1;
+                    updateRenewsPerMinThreshold();
+                }
+            }
+            logger.debug(&quot;No previous lease information found; it is new registration&quot;);
+        }
+        Lease&lt;InstanceInfo&gt; lease = new Lease&lt;InstanceInfo&gt;(registrant, leaseDuration);
+        if (existingLease != null) {
+            lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
+        }
+        gMap.put(registrant.getId(), lease);
+        recentRegisteredQueue.add(new Pair&lt;Long, String&gt;(
+                System.currentTimeMillis(),
+                registrant.getAppName() + &quot;(&quot; + registrant.getId() + &quot;)&quot;));
+        // This is where the initial state transfer of overridden status happens
+        if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
+            logger.debug(&quot;Found overridden status {} for instance {}. Checking to see if needs to be add to the &quot;
+                            + &quot;overrides&quot;, registrant.getOverriddenStatus(), registrant.getId());
+            if (!overriddenInstanceStatusMap.containsKey(registrant.getId())) {
+                logger.info(&quot;Not found overridden id {} and hence adding it&quot;, registrant.getId());
+                overriddenInstanceStatusMap.put(registrant.getId(), registrant.getOverriddenStatus());
+            }
+        }
+        InstanceStatus overriddenStatusFromMap = overriddenInstanceStatusMap.get(registrant.getId());
+        if (overriddenStatusFromMap != null) {
+            logger.info(&quot;Storing overridden status {} from map&quot;, overriddenStatusFromMap);
+            registrant.setOverriddenStatus(overriddenStatusFromMap);
+        }
+
+        // Set the status based on the overridden status rules
+        InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(registrant, existingLease, isReplication);
+        registrant.setStatusWithoutDirty(overriddenInstanceStatus);
+
+        // If the lease is registered with UP status, set lease service up timestamp
+        if (InstanceStatus.UP.equals(registrant.getStatus())) {
+            lease.serviceUp();
+        }
+        registrant.setActionType(ActionType.ADDED);
+        recentlyChangedQueue.add(new RecentlyChangedItem(lease));
+        registrant.setLastUpdatedTimestamp();
+        invalidateCache(registrant.getAppName(), registrant.getVIPAddress(), registrant.getSecureVipAddress());
+        logger.info(&quot;Registered instance {}/{} with status {} (replication={})&quot;,
+                registrant.getAppName(), registrant.getId(), registrant.getStatus(), isReplication);
+    } finally {
+        read.unlock();
+    }
+}</code></pre>
+<h4 id="服务的复制"><a href="#服务的复制" class="headerlink" title="服务的复制"></a>服务的复制</h4><p>replicateToPeers()方法会在register()中调用，该方法会获取到所有eureka节点，并调用replicateInstanceActionsToPeers()方法同步给所有节点。</p>
+<pre><code class="java">private void replicateToPeers(Action action, String appName, String id,
+                              InstanceInfo info /* optional */,
+                              InstanceStatus newStatus /* optional */, boolean isReplication) {
+    Stopwatch tracer = action.getTimer().start();
+    try {
+        if (isReplication) {
+            numberOfReplicationsLastMin.increment();
+        }
+        // If it is a replication already, do not replicate again as this will create a poison replication
+        if (peerEurekaNodes == Collections.EMPTY_LIST || isReplication) {
+            return;
+        }
+
+        for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
+            // If the url represents this host, do not replicate to yourself.
+            if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
+                continue;
+            }
+            replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
+        }
+    } finally {
+        tracer.stop();
+    }
+}</code></pre>
+<p>replicateInstanceActionsToPeers()方法，该方法只是简单的同步，并没有相应的机制保证一定成功，所以eureka只能保证CAP中的AP即可用行和分区容错性，不能保证一致性。</p>
+<pre><code class="java">private void replicateInstanceActionsToPeers(Action action, String appName,
+                                             String id, InstanceInfo info, InstanceStatus newStatus,
+                                             PeerEurekaNode node) {
+    try {
+        InstanceInfo infoFromRegistry;
+        CurrentRequestVersion.set(Version.V2);
+        switch (action) {
+            case Cancel:
+                node.cancel(appName, id);
+                break;
+            case Heartbeat:
+                InstanceStatus overriddenStatus = overriddenInstanceStatusMap.get(id);
+                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                node.heartbeat(appName, id, infoFromRegistry, overriddenStatus, false);
+                break;
+            case Register:
+                node.register(info);
+                break;
+            case StatusUpdate:
+                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                node.statusUpdate(appName, id, newStatus, infoFromRegistry);
+                break;
+            case DeleteStatusOverride:
+                infoFromRegistry = getInstanceByAppAndId(appName, id, false);
+                node.deleteStatusOverride(appName, id, infoFromRegistry);
+                break;
+        }
+    } catch (Throwable t) {
+        logger.error(&quot;Cannot replicate information to {} for action {}&quot;, node.getServiceUrl(), action.name(), t);
+    } finally {
+        CurrentRequestVersion.remove();
+    }
+}</code></pre>
+<h3 id="服务的续约"><a href="#服务的续约" class="headerlink" title="服务的续约"></a>服务的续约</h3><p>addInstrance()方法会在getInstanceInfo()方法之后调用，该方法会完成服务的心跳时间、心跳次数、状态等属性的更新，这里不在赘述。</p>
+<pre><code class="java">@PUT
+public Response renewLease(
+        @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
+        @QueryParam(&quot;overriddenstatus&quot;) String overriddenStatus,
+        @QueryParam(&quot;status&quot;) String status,
+        @QueryParam(&quot;lastDirtyTimestamp&quot;) String lastDirtyTimestamp) {
+    boolean isFromReplicaNode = &quot;true&quot;.equals(isReplication);
+    boolean isSuccess = registry.renew(app.getName(), id, isFromReplicaNode);
+
+    // Not found in the registry, immediately ask for a register
+    if (!isSuccess) {
+        logger.warn(&quot;Not Found (Renew): {} - {}&quot;, app.getName(), id);
+        return Response.status(Status.NOT_FOUND).build();
+    }
+    // Check if we need to sync based on dirty time stamp, the client
+    // instance might have changed some value
+    Response response;
+    if (lastDirtyTimestamp != null &amp;&amp; serverConfig.shouldSyncWhenTimestampDiffers()) {
+        response = this.validateDirtyTimestamp(Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
+        // Store the overridden status since the validation found out the node that replicates wins
+        if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()
+                &amp;&amp; (overriddenStatus != null)
+                &amp;&amp; !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))
+                &amp;&amp; isFromReplicaNode) {
+            registry.storeOverriddenStatusIfRequired(app.getAppName(), id, InstanceStatus.valueOf(overriddenStatus));
+        }
+    } else {
+        response = Response.ok().build();
+    }
+    logger.debug(&quot;Found (Renew): {} - {}; reply status={}&quot;, app.getName(), id, response.getStatus());
+    return response;
+}</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/springcloud/">springcloud</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/tags/springcloud/">springcloud</a>
+                    
+                      <a class="hover-with-bg" href="/tags/eureka/">eureka</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/27/ribbon%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">ribbon源码解读</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/27/springcloud%E9%93%BE%E8%B7%AF%E8%BF%BD%E8%B8%AA/">
+                        <span class="hidden-mobile">springcloud链路追踪</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "eureka源码解读&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>springcloud权限检验 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      <div class="container nopadding-md">
+        <div class="py-5 z-depth-3" id="board"
+          >
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
+                
+
+<div class="page-content">
+  <h2 id="微服务系统的权限校验"><a href="#微服务系统的权限校验" class="headerlink" title="微服务系统的权限校验"></a>微服务系统的权限校验</h2>
+
+<p>在进行请求前需要先从认证服务器获取到token信息，请求zuul服务器。理论上zuul服务器是不需要进行权限校验的，因为zuul服务器没有接口，不需要从zuul调用业务接口，zuul只做简单的路由工作。下游系统在获取到token后，在过滤器中把token发到认证服务器校验该token是否有效，如果认证服务器校验通过就会将token相关的验证信息传回给下游系统，下游系统根据这个返回结果就可以获取到token具有的权限。但是在校验token的过程，涉及到下游系统和认证服务器的交互，这会对请求时间产生影响。还有种方案就是在zuul中进行token认证，校验是否有接口调用权限，在下游系统设置访问白名单只允许zuul服务器访问，但这种方案也有缺陷，如果内网环境攻破，资源服务器上没有任何认证功能是十分危险的。</p>
+<h2 id="OAuth2获取token的方式"><a href="#OAuth2获取token的方式" class="headerlink" title="OAuth2获取token的方式"></a>OAuth2获取token的方式</h2><ul>
+<li>客户端模式：一般用在无需用户登录的系统做接口的安全校验，因为token只需要跟客户端绑定，控制粒度不够细。</li>
+<li>密码模式：token是跟用户绑定的，可以根据不同用户的角色和权限来控制不同用户的访问权限，相对来说控制粒度更细</li>
+<li>授权码模式：授权码模式更安全，因为前面的密码模式可能会存在密码泄露后，别人拿到密码也可以照样的申请到token来进行接口访问，而授权码模式用户提供用户名和密码获取后，还需要有一个回调过程，这个回调你可以想象成是用户的手机或者邮箱的回调，只有用户本人能收到这个code，即使用户名密码被盗也不会影响整个系统的安全。</li>
+</ul>
+<h2 id="获取token的过程"><a href="#获取token的过程" class="headerlink" title="获取token的过程"></a>获取token的过程</h2><p>token是通过一个单独的认证服务器来颁发的，只有具备某种资质认证，服务器才会把token给申请者。</p>
+<ol>
+<li>平台认证申请：平台认证申请往往是一个比较繁琐的过程，需要申请方提供比较完整的认证申请材料，比如公司资质，营业执照等等信息，提交申请后认证方审核通过后，该平台才会允许申请token。完成申请后一般会返回申请方id跟secret。</li>
+<li>获取token在oauth2中共有四种模式，这里介绍其中的三种<ul>
+<li>客户端模式：将第一步中申请的id跟secret再加上grant_type（授权方式）传递给认证服务器，认证服务器校验后返回token。</li>
+<li></li>
+</ul>
+</li>
+</ol>
+<ul>
+<li>授权码模式：用于客户端和服务端应用之前授权</li>
+<li>密码模式：应用直接都是信任的，用户向客户端提供自己的用户名和密码。客户端使用这些信息，向服务提供方索要授权。这这种模式中，用户必须把自己的密码给客户端，但是客户端不得不存储密码。</li>
+<li>客户端模式：常用的验证方式。客户端以自己的名义向服务提供商进行认证，客户端并不属于OAuth框架所要解决的问题，在这种模式中，用户直接向客户端注册，客户端以自己的名义要求服务提供商提供服务，其实不存在授权问题。</li>
+</ul>
+<h2 id="客户端模式认证服务器的搭建"><a href="#客户端模式认证服务器的搭建" class="headerlink" title="客户端模式认证服务器的搭建"></a>客户端模式认证服务器的搭建</h2><p>pom</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+         xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;parent&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+        &lt;version&gt;2.2.6.RELEASE&lt;/version&gt;
+    &lt;/parent&gt;
+
+    &lt;groupId&gt;pers.zgc&lt;/groupId&gt;
+    &lt;artifactId&gt;micro-security&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;name&gt;micro-security&lt;/name&gt;
+    &lt;!-- FIXME change it to the project&#39;s website --&gt;
+    &lt;url&gt;http://www.example.com&lt;/url&gt;
+
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+        &lt;maven.compiler.source&gt;1.8&lt;/maven.compiler.source&gt;
+        &lt;maven.compiler.target&gt;1.8&lt;/maven.compiler.target&gt;
+        &lt;spring-cloud.version&gt;Hoxton.SR3&lt;/spring-cloud.version&gt;
+    &lt;/properties&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-oauth2&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-security&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.security&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-security-data&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-data-redis&lt;/artifactId&gt;
+            &lt;!-- 1.5的版本默认采用的连接池技术是jedis  2.0以上版本默认连接池是lettuce, 在这里采用jedis，所以需要排除lettuce的jar --&gt;
+            &lt;exclusions&gt;
+                &lt;exclusion&gt;
+                    &lt;groupId&gt;redis.clients&lt;/groupId&gt;
+                    &lt;artifactId&gt;jedis&lt;/artifactId&gt;
+                &lt;/exclusion&gt;
+                &lt;exclusion&gt;
+                    &lt;groupId&gt;io.lettuce&lt;/groupId&gt;
+                    &lt;artifactId&gt;lettuce-core&lt;/artifactId&gt;
+                &lt;/exclusion&gt;
+            &lt;/exclusions&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;redis.clients&lt;/groupId&gt;
+            &lt;artifactId&gt;jedis&lt;/artifactId&gt;
+            &lt;version&gt;3.1.0&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;mysql&lt;/groupId&gt;
+            &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+    &lt;dependencyManagement&gt;
+        &lt;dependencies&gt;
+            &lt;dependency&gt;
+                &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+                &lt;artifactId&gt;spring-cloud-dependencies&lt;/artifactId&gt;
+                &lt;version&gt;${spring-cloud.version}&lt;/version&gt;
+                &lt;type&gt;pom&lt;/type&gt;
+                &lt;scope&gt;import&lt;/scope&gt;
+            &lt;/dependency&gt;
+        &lt;/dependencies&gt;
+    &lt;/dependencyManagement&gt;
+
+    &lt;build&gt;
+        &lt;pluginManagement&gt;&lt;!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) --&gt;
+            &lt;plugins&gt;
+                &lt;!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle --&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-clean-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.1.0&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging --&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.0.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.8.0&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-surefire-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;2.22.1&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.0.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-install-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;2.5.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-deploy-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;2.8.2&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle --&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-site-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.7.1&lt;/version&gt;
+                &lt;/plugin&gt;
+                &lt;plugin&gt;
+                    &lt;artifactId&gt;maven-project-info-reports-plugin&lt;/artifactId&gt;
+                    &lt;version&gt;3.0.0&lt;/version&gt;
+                &lt;/plugin&gt;
+            &lt;/plugins&gt;
+        &lt;/pluginManagement&gt;
+    &lt;/build&gt;
+&lt;/project&gt;
+</code></pre>
+<p>配置信息</p>
+<pre><code class="properties">spring.application.name=micro-security
+server.port=3030
+eureka.client.serviceUrl.defaultZone=http://admin:admin@localhost:8763/eureka/
+
+#spring.data.mongodb.uri=mongodb://192.168.67.139:27017/micro_security
+
+#security.oauth2.resource.filter-order=3
+
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.url=jdbc:mysql://localhost:3306/consult?serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=zhao19971107A
+
+spring.jpa.hibernate.ddl-auto:update
+spring.jpa.show-sql:true
+
+#sql日志
+logging.level.com.xiangxue.jack.dao=debug
+
+# Redis数据库索引
+spring.redis.database=0
+# Redis服务器地址
+spring.redis.host=localhost
+# Redis服务器连接端口
+spring.redis.port=6379
+# Redis服务器连接密码（默认为空）
+spring.redis.password=
+# 连接池最大连接数
+spring.redis.jedis.pool.max-active=8
+# 连接池最大阻塞等待时间
+spring.redis.jedis.pool.max-wait=-1
+# 连接池中的最大空闲连接
+spring.redis.jedis.pool.max-idle=8
+# 连接池中的最小空闲连接
+spring.redis.jedis.pool.min-idle=0
+# 连接超时时间（毫秒）
+spring.redis.timeout=0
+
+logging.level.org.springframework.security=debug</code></pre>
+<p>启动类</p>
+<pre><code class="java">@SpringBootApplication
+@EnableResourceServer
+public class MicroSecurityApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MicroSecurityApplication.class, args);
+    }
+}</code></pre>
+<p>配置类</p>
+<pre><code class="java">@Configuration
+@EnableAuthorizationServer
+public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private RedisConnectionFactory connectionFactory;
+
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Bean
+    public TokenStore tokenStore() {
+        return new MyRedisTokenStore(connectionFactory);
+    }
+
+    /**
+     * AuthorizationServerEndpointsConfigurer：用来配置授权（authorization）以及令牌（token）的访问端点和令牌服务(token services)。
+     */
+    @Override
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+        endpoints
+                .authenticationManager(authenticationManager)
+                //若无，refresh_token会有UserDetailsService is required错误
+                .userDetailsService(userDetailsService)
+                .tokenStore(tokenStore()).
+                allowedTokenEndpointRequestMethods(HttpMethod.GET, HttpMethod.POST);
+    }
+
+    /**
+     * AuthorizationServerSecurityConfigurer 用来配置令牌端点(Token Endpoint)的安全约束
+     */
+    @Override
+    public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
+        // 允许表单认证
+        security.allowFormAuthenticationForClients().tokenKeyAccess(&quot;permitAll()&quot;)
+                .checkTokenAccess(&quot;isAuthenticated()&quot;);
+    }
+
+    /**
+     * ClientDetailsServiceConfigurer：用来配置客户端详情服务（ClientDetailsService），客户端详情信息在这里进行初始化，你能够把客户端详情信息写死在这里或者是通过数据库来存储调取详情信息
+     * 1.授权码模式（authorization code）
+     * 2.简化模式（implicit）
+     * 3.密码模式（resource owner password credentials）
+     * 4.客户端模式（client credentials）
+     */
+    @Override
+    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
+        String finalSecret = &quot;{bcrypt}&quot; + new BCryptPasswordEncoder().encode(&quot;123456&quot;);
+
+        clients.
+//                jdbc(dataSource).
+        inMemory().
+                withClient(&quot;micro-web&quot;)
+                .resourceIds(&quot;micro-web&quot;)
+                .authorizedGrantTypes(&quot;client_credentials&quot;, &quot;refresh_token&quot;)
+                .scopes(&quot;all&quot;, &quot;read&quot;, &quot;write&quot;, &quot;aa&quot;)
+                .authorities(&quot;client_credentials&quot;)
+                .secret(finalSecret)
+                .accessTokenValiditySeconds(1200)
+                .refreshTokenValiditySeconds(50000)
+                .and()
+                .withClient(&quot;micro-zuul&quot;)
+                .resourceIds(&quot;micro-zuul&quot;)
+                .authorizedGrantTypes(&quot;password&quot;, &quot;refresh_token&quot;)
+                .scopes(&quot;server&quot;)
+                .authorities(&quot;password&quot;)
+                .secret(finalSecret)
+                .accessTokenValiditySeconds(1200)
+                .refreshTokenValiditySeconds(50000);
+    }
+}</code></pre>
+<pre><code class="java">@Configuration
+@EnableWebSecurity
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    @Override
+    protected UserDetailsService userDetailsService() {
+        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+
+        String finalPassword = &quot;{bcrypt}&quot; + bCryptPasswordEncoder.encode(&quot;123456&quot;);
+        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+        manager.createUser(User.withUsername(&quot;jack&quot;).password(finalPassword).authorities(&quot;USER&quot;).build());
+        manager.createUser(User.withUsername(&quot;admin&quot;).password(finalPassword).authorities(&quot;USER&quot;).build());
+
+        return manager;
+    }
+
+    /*@Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService()).passwordEncoder(new BCryptPasswordEncoder());;
+    }*/
+
+    @Bean
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        AuthenticationManager manager = super.authenticationManagerBean();
+        return manager;
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable();
+//        http.requestMatchers().anyRequest()
+//                .and()
+//                .authorizeRequests()
+//                .antMatchers(&quot;/oauth/**&quot;).permitAll();
+
+        http.authorizeRequests()
+                .antMatchers(&quot;/oauth/**&quot;,&quot;/actuator/**&quot;).permitAll()
+                .and()
+                .httpBasic().disable();
+    }
+}</code></pre>
+<p>获取token</p>
+
+
+<h2 id="密码模式认证服务器的搭建"><a href="#密码模式认证服务器的搭建" class="headerlink" title="密码模式认证服务器的搭建"></a>密码模式认证服务器的搭建</h2><h2 id="JWT（Json-Web-Token）模式授权"><a href="#JWT（Json-Web-Token）模式授权" class="headerlink" title="JWT（Json Web Token）模式授权"></a>JWT（Json Web Token）模式授权</h2>
+</div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "springcloud权限检验&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

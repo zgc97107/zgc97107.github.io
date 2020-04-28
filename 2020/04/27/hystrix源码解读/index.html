@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>hystrix源码解读 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期一, 四月 27日 2020, 10:11 晚上
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    3.6k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      20 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期二, 四月 28日 2020, 11:30 中午</p>
+            
+            <div class="markdown-body">
+              <h2 id="Hystrix源码"><a href="#Hystrix源码" class="headerlink" title="Hystrix源码"></a>Hystrix源码</h2><p>首先分析下开启Hystrix的注解@EnableCircuitBreaker</p>
+<pre><code class="java">@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@Import(EnableCircuitBreakerImportSelector.class)
+public @interface EnableCircuitBreaker {
+
+}</code></pre>
+<p>该注解会引入EnableCircuitBreakerImportSelector类，SpringFactoryImportSelector是它的的父类，该类selectImports()方法通过springboot的SPI机制引入spring.factories中以@EnableCircuitBreaker为key的所有类。</p>
+<pre><code class="java">public String[] selectImports(AnnotationMetadata metadata) {
+   if (!isEnabled()) {
+      return new String[0];
+   }
+   AnnotationAttributes attributes = AnnotationAttributes.fromMap(
+         metadata.getAnnotationAttributes(this.annotationClass.getName(), true));
+
+   Assert.notNull(attributes, &quot;No &quot; + getSimpleName() + &quot; attributes found. Is &quot;
+         + metadata.getClassName() + &quot; annotated with @&quot; + getSimpleName() + &quot;?&quot;);
+
+   // Find all possible auto configuration classes, filtering duplicates
+   List&lt;String&gt; factories = new ArrayList&lt;&gt;(new LinkedHashSet&lt;&gt;(SpringFactoriesLoader
+         .loadFactoryNames(this.annotationClass, this.beanClassLoader)));
+
+   if (factories.isEmpty() &amp;&amp; !hasDefaultFactory()) {
+      throw new IllegalStateException(&quot;Annotation @&quot; + getSimpleName()
+            + &quot; found, but there are no implementations. Did you forget to include a starter?&quot;);
+   }
+
+   if (factories.size() &gt; 1) {
+      // there should only ever be one DiscoveryClient, but there might be more than
+      // one factory
+      this.log.warn(&quot;More than one implementation &quot; + &quot;of @&quot; + getSimpleName()
+            + &quot; (now relying on @Conditionals to pick one): &quot; + factories);
+   }
+
+   return factories.toArray(new String[factories.size()]);
+}</code></pre>
+<p>HystrixCircuitBreakerConfiguration类再上一步中被引入，该类会创建hystrixCommand注解的切面类HystrixCommandAspect。</p>
+<pre><code class="java">@Configuration(proxyBeanMethods = false)
+public class HystrixCircuitBreakerConfiguration {
+
+   @Bean
+   public HystrixCommandAspect hystrixCommandAspect() {
+      return new HystrixCommandAspect();
+   }
+   {...}
+}</code></pre>
+<p>HystrixCommandAspect类，会判断类上是否有@HystrixCommand或者@HystrixCollapser注解，如果有就会进入methodsAnnotatedWithHystrixCommand()环绕增强方法。</p>
+<pre><code class="java">@Around(&quot;hystrixCommandAnnotationPointcut() || hystrixCollapserAnnotationPointcut()&quot;)
+public Object methodsAnnotatedWithHystrixCommand(final ProceedingJoinPoint joinPoint) throws Throwable {
+    Method method = getMethodFromTarget(joinPoint);
+    Validate.notNull(method, &quot;failed to get method from joinPoint: %s&quot;, joinPoint);
+    if (method.isAnnotationPresent(HystrixCommand.class) &amp;&amp; method.isAnnotationPresent(HystrixCollapser.class)) {
+        throw new IllegalStateException(&quot;method cannot be annotated with HystrixCommand and HystrixCollapser &quot; +
+                &quot;annotations at the same time&quot;);
+    }
+    MetaHolderFactory metaHolderFactory = META_HOLDER_FACTORY_MAP.get(HystrixPointcutType.of(method));
+    MetaHolder metaHolder = metaHolderFactory.create(joinPoint);
+    HystrixInvokable invokable = HystrixCommandFactory.getInstance().create(metaHolder);
+    ExecutionType executionType = metaHolder.isCollapserAnnotationPresent() ?
+            metaHolder.getCollapserExecutionType() : metaHolder.getExecutionType();
+
+    Object result;
+    try {
+        if (!metaHolder.isObservable()) {
+            result = CommandExecutor.execute(invokable, executionType, metaHolder);
+        } else {
+            result = executeObservable(invokable, executionType, metaHolder);
+        }
+    } catch (HystrixBadRequestException e) {
+        throw e.getCause();
+    } catch (HystrixRuntimeException e) {
+        throw hystrixRuntimeExceptionToThrowable(metaHolder, e);
+    }
+    return result;
+}</code></pre>
+<p>methodsAnnotatedWithHystrixCommand()方法会调用execute()方法，这里涉及到同步及异步调用。</p>
+<pre><code class="java">public static Object execute(HystrixInvokable invokable, ExecutionType executionType, MetaHolder metaHolder) throws RuntimeException {
+    Validate.notNull(invokable);
+    Validate.notNull(metaHolder);
+
+    switch (executionType) {
+        case SYNCHRONOUS: {
+            return castToExecutable(invokable, executionType).execute();
+        }
+        case ASYNCHRONOUS: {
+            HystrixExecutable executable = castToExecutable(invokable, executionType);
+            if (metaHolder.hasFallbackMethodCommand()
+                    &amp;&amp; ExecutionType.ASYNCHRONOUS == metaHolder.getFallbackExecutionType()) {
+                return new FutureDecorator(executable.queue());
+            }
+            return executable.queue();
+        }
+        case OBSERVABLE: {
+            HystrixObservable observable = castToObservable(invokable);
+            return ObservableExecutionMode.EAGER == metaHolder.getObservableExecutionMode() ? observable.observe() : observable.toObservable();
+        }
+        default:
+            throw new RuntimeException(&quot;unsupported execution type: &quot; + executionType);
+    }
+}</code></pre>
+<h3 id="同步调用"><a href="#同步调用" class="headerlink" title="同步调用"></a>同步调用</h3><p>HystrixCommand类中的execute()方法，HystrixCommand类是实现了Hystrix功能的类。</p>
+<pre><code class="java">public R execute() {
+    try {
+        return queue().get();
+    } catch (Exception e) {
+        throw Exceptions.sneakyThrow(decomposeException(e));
+    }
+}</code></pre>
+<p>queue()</p>
+<pre><code class="java"> public Future&lt;R&gt; queue() {
+     /*
+      * The Future returned by Observable.toBlocking().toFuture() does not implement the
+      * interruption of the execution thread when the &quot;mayInterrupt&quot; flag of Future.cancel(boolean) is set to true;
+      * thus, to comply with the contract of Future, we must wrap around it.
+      */
+     final Future&lt;R&gt; delegate = toObservable().toBlocking().toFuture();
+
+     final Future&lt;R&gt; f = new Future&lt;R&gt;() {
+
+         @Override
+         public boolean cancel(boolean mayInterruptIfRunning) {
+             if (delegate.isCancelled()) {
+                 return false;
+             }
+
+             if (HystrixCommand.this.getProperties().executionIsolationThreadInterruptOnFutureCancel().get()) {
+                 /*
+                  * The only valid transition here is false -&gt; true. If there are two futures, say f1 and f2, created by this command
+                  * (which is super-weird, but has never been prohibited), and calls to f1.cancel(true) and to f2.cancel(false) are
+                  * issued by different threads, it&#39;s unclear about what value would be used by the time mayInterruptOnCancel is checked.
+                  * The most consistent way to deal with this scenario is to say that if *any* cancellation is invoked with interruption,
+                  * than that interruption request cannot be taken back.
+                  */
+                 interruptOnFutureCancel.compareAndSet(false, mayInterruptIfRunning);
+          }
+
+             final boolean res = delegate.cancel(interruptOnFutureCancel.get());
+
+             if (!isExecutionComplete() &amp;&amp; interruptOnFutureCancel.get()) {
+                 final Thread t = executionThread.get();
+                 if (t != null &amp;&amp; !t.equals(Thread.currentThread())) {
+                     t.interrupt();
+                 }
+             }
+
+             return res;
+}
+
+         @Override
+         public boolean isCancelled() {
+             return delegate.isCancelled();
+}
+
+         @Override
+         public boolean isDone() {
+             return delegate.isDone();
+}
+
+         @Override
+         public R get() throws InterruptedException, ExecutionException {
+             return delegate.get();
+         }
+
+         @Override
+         public R get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+             return delegate.get(timeout, unit);
+         }
+
+     };
+
+     /* special handling of error states that throw immediately */
+     if (f.isDone()) {
+         try {
+             f.get();
+             return f;
+         } catch (Exception e) {
+             Throwable t = decomposeException(e);
+             if (t instanceof HystrixBadRequestException) {
+                 return f;
+             } else if (t instanceof HystrixRuntimeException) {
+                 HystrixRuntimeException hre = (HystrixRuntimeException) t;
+                 switch (hre.getFailureType()) {
+      case COMMAND_EXCEPTION:
+      case TIMEOUT:
+         // we don&#39;t throw these types from queue() only from queue().get() as they are execution errors
+         return f;
+      default:
+         // these are errors we throw from queue() as they as rejection type errors
+         throw hre;
+      }
+             } else {
+                 throw Exceptions.sneakyThrow(t);
+             }
+         }
+     }
+
+     return f;
+ }</code></pre>
+<p>toObservable()方法中使用了RxJava的写法，会定义多个action然后使用defer()方法调用action中的call()方法。这里重点关注applyHystrixSemantics的call()方法。</p>
+<pre><code class="java">public Observable&lt;R&gt; toObservable() {
+    final AbstractCommand&lt;R&gt; _cmd = this;
+
+    //doOnCompleted handler already did all of the SUCCESS work
+    //doOnError handler already did all of the FAILURE/TIMEOUT/REJECTION/BAD_REQUEST work
+    final Action0 terminateCommandCleanup = new Action0() {
+
+        @Override
+        public void call() {
+            if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) {
+                handleCommandEnd(false); //user code never ran
+            } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) {
+                handleCommandEnd(true); //user code did run
+            }
+        }
+    };
+
+    //mark the command as CANCELLED and store the latency (in addition to standard cleanup)
+    final Action0 unsubscribeCommandCleanup = new Action0() {
+        @Override
+        public void call() {
+            if (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) {
+                if (!_cmd.executionResult.containsTerminalEvent()) {
+                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                    try {
+                        executionHook.onUnsubscribe(_cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn(&quot;Error calling HystrixCommandExecutionHook.onUnsubscribe&quot;, hookEx);
+                    }
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                }
+                handleCommandEnd(false); //user code never ran
+            } else if (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) {
+                if (!_cmd.executionResult.containsTerminalEvent()) {
+                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                    try {
+                        executionHook.onUnsubscribe(_cmd);
+                    } catch (Throwable hookEx) {
+                        logger.warn(&quot;Error calling HystrixCommandExecutionHook.onUnsubscribe&quot;, hookEx);
+                    }
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((int) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                }
+                handleCommandEnd(true); //user code did run
+            }
+        }
+    };
+
+    final Func0&lt;Observable&lt;R&gt;&gt; applyHystrixSemantics = new Func0&lt;Observable&lt;R&gt;&gt;() {
+        @Override
+        public Observable&lt;R&gt; call() {
+            if (commandState.get().equals(CommandState.UNSUBSCRIBED)) {
+                return Observable.never();
+            }
+            return applyHystrixSemantics(_cmd);
+        }
+    };
+
+    final Func1&lt;R, R&gt; wrapWithAllOnNextHooks = new Func1&lt;R, R&gt;() {
+        @Override
+        public R call(R r) {
+            R afterFirstApplication = r;
+
+            try {
+                afterFirstApplication = executionHook.onComplete(_cmd, r);
+            } catch (Throwable hookEx) {
+                logger.warn(&quot;Error calling HystrixCommandExecutionHook.onComplete&quot;, hookEx);
+            }
+
+            try {
+                return executionHook.onEmit(_cmd, afterFirstApplication);
+            } catch (Throwable hookEx) {
+                logger.warn(&quot;Error calling HystrixCommandExecutionHook.onEmit&quot;, hookEx);
+                return afterFirstApplication;
+            }
+        }
+    };
+
+    final Action0 fireOnCompletedHook = new Action0() {
+        @Override
+        public void call() {
+            try {
+                executionHook.onSuccess(_cmd);
+            } catch (Throwable hookEx) {
+                logger.warn(&quot;Error calling HystrixCommandExecutionHook.onSuccess&quot;, hookEx);
+            }
+        }
+    };
+
+    return Observable.defer(new Func0&lt;Observable&lt;R&gt;&gt;() {
+        @Override
+        public Observable&lt;R&gt; call() {
+             /* this is a stateful object so can only be used once */
+            if (!commandState.compareAndSet(CommandState.NOT_STARTED, CommandState.OBSERVABLE_CHAIN_CREATED)) {
+                IllegalStateException ex = new IllegalStateException(&quot;This instance can only be executed once. Please instantiate a new instance.&quot;);
+                //TODO make a new error type for this
+                throw new HystrixRuntimeException(FailureType.BAD_REQUEST_EXCEPTION, _cmd.getClass(), getLogMessagePrefix() + &quot; command executed multiple times - this is not permitted.&quot;, ex, null);
+            }
+
+            commandStartTimestamp = System.currentTimeMillis();
+
+            if (properties.requestLogEnabled().get()) {
+                // log this command execution regardless of what happened
+                if (currentRequestLog != null) {
+                    currentRequestLog.addExecutedCommand(_cmd);
+                }
+            }
+
+            final boolean requestCacheEnabled = isRequestCachingEnabled();
+            final String cacheKey = getCacheKey();
+
+            /* try from cache first */
+            if (requestCacheEnabled) {
+                HystrixCommandResponseFromCache&lt;R&gt; fromCache = (HystrixCommandResponseFromCache&lt;R&gt;) requestCache.get(cacheKey);
+                if (fromCache != null) {
+                    isResponseFromCache = true;
+                    return handleRequestCacheHitAndEmitValues(fromCache, _cmd);
+                }
+            }
+
+            Observable&lt;R&gt; hystrixObservable =
+                    Observable.defer(applyHystrixSemantics)
+                            .map(wrapWithAllOnNextHooks);
+
+            Observable&lt;R&gt; afterCache;
+
+            // put in cache
+            if (requestCacheEnabled &amp;&amp; cacheKey != null) {
+                // wrap it for caching
+                HystrixCachedObservable&lt;R&gt; toCache = HystrixCachedObservable.from(hystrixObservable, _cmd);
+                HystrixCommandResponseFromCache&lt;R&gt; fromCache = (HystrixCommandResponseFromCache&lt;R&gt;) requestCache.putIfAbsent(cacheKey, toCache);
+                if (fromCache != null) {
+                    // another thread beat us so we&#39;ll use the cached value instead
+                    toCache.unsubscribe();
+                    isResponseFromCache = true;
+                    return handleRequestCacheHitAndEmitValues(fromCache, _cmd);
+                } else {
+                    // we just created an ObservableCommand so we cast and return it
+                    afterCache = toCache.toObservable();
+                }
+            } else {
+                afterCache = hystrixObservable;
+            }
+
+            return afterCache
+                    .doOnTerminate(terminateCommandCleanup)     // perform cleanup once (either on normal terminal state (this line), or unsubscribe (next line))
+                    .doOnUnsubscribe(unsubscribeCommandCleanup) // perform cleanup once
+                    .doOnCompleted(fireOnCompletedHook);
+        }
+    });
+}</code></pre>
+<p>call()方法中会调用applyHystrixSemantics()方法，会通过allowRequest()方法来判断是否允许请求，如果是信号量策略，会调用getExecutionSemaphore()方法拿到信号量，再调用tryAcquire()判断是否超过最大请求数，然后执行executeCommandAndObserve()方法。如果不是信号量策略tryAcquire()方法会直接返回true，然后在executeCommandAndObserve()方法进行判断。不允许或者已超过最大请求数都会走到handleShortCircuitViaFallback()降级方法。降级方法的逻辑与正常方法基本一致，此处不在赘述，唯一不同的是，如果降级方法超过了设置的最大请求数，会直接拒绝请求抛出异常，所以hystrix能够接收的请求数为二倍的最大请求数，超过就会直接拒绝。</p>
+<pre><code class="java">private Observable&lt;R&gt; applyHystrixSemantics(final AbstractCommand&lt;R&gt; _cmd) {
+    // mark that we&#39;re starting execution on the ExecutionHook
+    // if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent
+    executionHook.onStart(_cmd);
+
+    /* determine if we&#39;re allowed to execute */
+    if (circuitBreaker.allowRequest()) {
+        final TryableSemaphore executionSemaphore = getExecutionSemaphore();
+        final AtomicBoolean semaphoreHasBeenReleased = new AtomicBoolean(false);
+        final Action0 singleSemaphoreRelease = new Action0() {
+            @Override
+            public void call() {
+                if (semaphoreHasBeenReleased.compareAndSet(false, true)) {
+                    executionSemaphore.release();
+                }
+            }
+        };
+
+        final Action1&lt;Throwable&gt; markExceptionThrown = new Action1&lt;Throwable&gt;() {
+            @Override
+            public void call(Throwable t) {
+                eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, commandKey);
+            }
+        };
+
+        if (executionSemaphore.tryAcquire()) {
+            try {
+                /* used to track userThreadExecutionTime */
+                executionResult = executionResult.setInvocationStartTime(System.currentTimeMillis());
+                return executeCommandAndObserve(_cmd)
+                        .doOnError(markExceptionThrown)
+                        .doOnTerminate(singleSemaphoreRelease)
+                        .doOnUnsubscribe(singleSemaphoreRelease);
+            } catch (RuntimeException e) {
+                return Observable.error(e);
+            }
+        } else {
+            return handleSemaphoreRejectionViaFallback();
+        }
+    } else {
+        return handleShortCircuitViaFallback();
+    }
+}</code></pre>
+<h3 id="判断是否允许请求"><a href="#判断是否允许请求" class="headerlink" title="判断是否允许请求"></a>判断是否允许请求</h3><p>allowRequest()方法，刚方法首先会判断熔断器是否开启，如果开启就会返回false，如果关闭会调用isOpen()方法判断是否要开启熔断器，最后根据isOpen()方法及allowSingleTest()方法的返回值决定是否允许请求。allowSingleTest()方法用于判断本次请求是否允许，即熔断器半开状态。</p>
+<pre><code class="java">@Override
+public boolean allowRequest() {
+    // 判断熔断器是否开启
+    if (properties.circuitBreakerForceOpen().get()) {
+        // properties have asked us to force the circuit open so we will allow NO requests
+        return false;
+    }
+    // 熔断器关闭，继续判断
+    if (properties.circuitBreakerForceClosed().get()) {
+        // we still want to allow isOpen() to perform it&#39;s calculations so we simulate normal behavior
+        isOpen();
+        // properties have asked us to ignore errors so we will ignore the results of isOpen and just allow all traffic through
+        return true;
+    }
+    return !isOpen() || allowSingleTest();
+}</code></pre>
+<h4 id="判断是否开启熔断器"><a href="#判断是否开启熔断器" class="headerlink" title="判断是否开启熔断器"></a>判断是否开启熔断器</h4><p>isOpen()方法首先会根据请求数及错误率决定是否开启熔断器，设置熔断器的状态时使用了cas保证线程安全。</p>
+<pre><code class="java">    public boolean isOpen() {
+        if (circuitOpen.get()) {
+            // if we&#39;re open we immediately return true and don&#39;t bother attempting to &#39;close&#39; ourself as that is left to allowSingleTest and a subsequent successful test to close
+            return true;
+        }
+
+        // we&#39;re closed, so let&#39;s see if errors have made us so we should trip the circuit open
+        HealthCounts health = metrics.getHealthCounts();
+
+        // check if we are past the statisticalWindowVolumeThreshold
+        // 判断请求数
+        if (health.getTotalRequests() &lt; properties.circuitBreakerRequestVolumeThreshold().get()) {
+            // we are not past the minimum volume threshold for the statisticalWindow so we&#39;ll return false immediately and not calculate anything
+            return false;
+        }
+        // 判断错误率
+        if (health.getErrorPercentage() &lt; properties.circuitBreakerErrorThresholdPercentage().get()) {
+            return false;
+        } else {
+            // our failure rate is too high, trip the circuit
+            if (circuitOpen.compareAndSet(false, true)) {
+                // if the previousValue was false then we want to set the currentTime
+                circuitOpenedOrLastTestedTime.set(System.currentTimeMillis());
+                return true;
+            } else {
+                // How could previousValue be true? If another thread was going through this code at the same time a race-condition could have
+                // caused another thread to set it to true already even though we were in the process of doing the same
+                // In this case, we know the circuit is open, so let the other thread set the currentTime and report back that the circuit is open
+                return true;
+            }
+        }
+    }
+
+}</code></pre>
+<h4 id="是否允许本次请求（半开状态）"><a href="#是否允许本次请求（半开状态）" class="headerlink" title="是否允许本次请求（半开状态）"></a>是否允许本次请求（半开状态）</h4><p>allowSingleTest()方法用于判断是否允许本次请求，即熔断器半开状态的判断。该方法首先会判断熔断器的状态，即当前时间是否大于熔断器开启时间+熔断器转为半开状态时间。</p>
+<pre><code class="java">public boolean allowSingleTest() {
+    long timeCircuitOpenedOrWasLastTested = circuitOpenedOrLastTestedTime.get();
+    // 1) if the circuit is open
+    // 2) and it&#39;s been longer than &#39;sleepWindow&#39; since we opened the circuit
+    if (circuitOpen.get() &amp;&amp; System.currentTimeMillis() &gt; timeCircuitOpenedOrWasLastTested + properties.circuitBreakerSleepWindowInMilliseconds().get()) {
+        // We push the &#39;circuitOpenedTime&#39; ahead by &#39;sleepWindow&#39; since we have allowed one request to try.
+        // If it succeeds the circuit will be closed, otherwise another singleTest will be allowed at the end of the &#39;sleepWindow&#39;.
+        if (circuitOpenedOrLastTestedTime.compareAndSet(timeCircuitOpenedOrWasLastTested, System.currentTimeMillis())) {
+            // if this returns true that means we set the time so we&#39;ll return true to allow the singleTest
+            // if it returned false it means another thread raced us and allowed the singleTest before we did
+            return true;
+        }
+    }
+    return false;
+}</code></pre>
+<h3 id="判断最大请求数"><a href="#判断最大请求数" class="headerlink" title="判断最大请求数"></a>判断最大请求数</h3><pre><code class="java">@Override
+public boolean tryAcquire() {
+    int currentCount = count.incrementAndGet();
+    if (currentCount &gt; numberOfPermits.get()) {
+        count.decrementAndGet();
+        return false;
+    } else {
+        return true;
+    }
+}</code></pre>
+<h3 id="业务方法的执行"><a href="#业务方法的执行" class="headerlink" title="业务方法的执行"></a>业务方法的执行</h3><p>主要是通过executeCommandAndObserve()方法中注册的匿名内部类完成的，包括超时时间的判断，线程数的判断，还有具体的业务方法执行。</p>
+<h4 id="超时时间及线程数的判断"><a href="#超时时间及线程数的判断" class="headerlink" title="超时时间及线程数的判断"></a>超时时间及线程数的判断</h4><p>executeCommandAndObserve()中创建HystrixObservableTimeoutOperator类，并调用其call()方法，该方法会创建一个TimeListener并设置超时时间，然后调用addTimerListener()方法创建线程。</p>
+<pre><code class="java">@Override
+public Subscriber&lt;? super R&gt; call(final Subscriber&lt;? super R&gt; child) {
+    final CompositeSubscription s = new CompositeSubscription();
+    // if the child unsubscribes we unsubscribe our parent as well
+    child.add(s);
+
+    /*
+     * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext
+     * of the calling thread which doesn&#39;t exist on the Timer thread.
+     */
+    final HystrixContextRunnable timeoutRunnable = new HystrixContextRunnable(originalCommand.concurrencyStrategy, new Runnable() {
+
+        @Override
+        public void run() {
+            child.onError(new HystrixTimeoutException());
+        }
+    });
+
+    TimerListener listener = new TimerListener() {
+
+        @Override
+        public void tick() {
+            // if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath
+            // otherwise it means we lost a race and the run() execution completed or did not start
+            if (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) {
+                // report timeout failure
+                originalCommand.eventNotifier.markEvent(HystrixEventType.TIMEOUT, originalCommand.commandKey);
+
+                // shut down the original request
+                s.unsubscribe();
+
+                timeoutRunnable.run();
+                //if it did not start, then we need to mark a command start for concurrency metrics, and then issue the timeout
+            }
+        }
+
+        @Override
+        public int getIntervalTimeInMilliseconds() {
+            return originalCommand.properties.executionTimeoutInMilliseconds().get();
+        }
+    };
+
+    final Reference&lt;TimerListener&gt; tl = HystrixTimer.getInstance().addTimerListener(listener);
+
+    // set externally so execute/queue can see this
+    originalCommand.timeoutTimer.set(tl);
+
+    /**
+     * If this subscriber receives values it means the parent succeeded/completed
+     */
+    Subscriber&lt;R&gt; parent = new Subscriber&lt;R&gt;() {
+
+        @Override
+        public void onCompleted() {
+            if (isNotTimedOut()) {
+                // stop timer and pass notification through
+                tl.clear();
+                child.onCompleted();
+            }
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            if (isNotTimedOut()) {
+                // stop timer and pass notification through
+                tl.clear();
+                child.onError(e);
+            }
+        }
+
+        @Override
+        public void onNext(R v) {
+            if (isNotTimedOut()) {
+                child.onNext(v);
+            }
+        }
+
+        private boolean isNotTimedOut() {
+            // if already marked COMPLETED (by onNext) or succeeds in setting to COMPLETED
+            return originalCommand.isCommandTimedOut.get() == TimedOutStatus.COMPLETED ||
+                    originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED);
+        }
+
+    };
+
+    // if s is unsubscribed we want to unsubscribe the parent
+    s.add(parent);
+
+    return parent;
+}</code></pre>
+<p>addTimerListener()方法主要是获取到配置的线程池然后创建线程。</p>
+<pre><code class="java">public Reference&lt;TimerListener&gt; addTimerListener(final TimerListener listener) {
+    startThreadIfNeeded();
+    // add the listener
+
+    Runnable r = new Runnable() {
+
+        @Override
+        public void run() {
+            try {
+                listener.tick();
+            } catch (Exception e) {
+                logger.error(&quot;Failed while ticking TimerListener&quot;, e);
+            }
+        }
+    };
+
+    ScheduledFuture&lt;?&gt; f = executor.get().getThreadPool().scheduleAtFixedRate(r, listener.getIntervalTimeInMilliseconds(), listener.getIntervalTimeInMilliseconds(), TimeUnit.MILLISECONDS);
+    return new TimerReference(listener, f);
+}</code></pre>
+<h4 id="业务方法的执行-1"><a href="#业务方法的执行-1" class="headerlink" title="业务方法的执行"></a>业务方法的执行</h4><p>executeCommandWithSpecifiedIsolation()方法</p>
+<pre><code class="java">private Observable&lt;R&gt; executeCommandWithSpecifiedIsolation(final AbstractCommand&lt;R&gt; _cmd) {
+    if (properties.executionIsolationStrategy().get() == ExecutionIsolationStrategy.THREAD) {
+        // mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)
+        return Observable.defer(new Func0&lt;Observable&lt;R&gt;&gt;() {
+            @Override
+            public Observable&lt;R&gt; call() {
+                executionResult = executionResult.setExecutionOccurred();
+                if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
+                    return Observable.error(new IllegalStateException(&quot;execution attempted while in state : &quot; + commandState.get().name()));
+                }
+
+                metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
+
+                if (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) {
+                    // the command timed out in the wrapping thread so we will return immediately
+                    // and not increment any of the counters below or other such logic
+                    return Observable.error(new RuntimeException(&quot;timed out before executing run()&quot;));
+                }
+                if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.STARTED)) {
+                    //we have not been unsubscribed, so should proceed
+                    HystrixCounters.incrementGlobalConcurrentThreads();
+                    threadPool.markThreadExecution();
+                    // store the command that is being run
+                    endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                    executionResult = executionResult.setExecutedInThread();
+                    /**
+                     * If any of these hooks throw an exception, then it appears as if the actual execution threw an error
+                     */
+                    try {
+                        executionHook.onThreadStart(_cmd);
+                        executionHook.onRunStart(_cmd);
+                        executionHook.onExecutionStart(_cmd);
+                        return getUserExecutionObservable(_cmd);
+                    } catch (Throwable ex) {
+                        return Observable.error(ex);
+                    }
+                } else {
+                    //command has already been unsubscribed, so return immediately
+                    return Observable.error(new RuntimeException(&quot;unsubscribed before executing run()&quot;));
+                }
+            }
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.TERMINAL)) {
+                    handleThreadEnd(_cmd);
+                }
+                if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.TERMINAL)) {
+                    //if it was never started and received terminal, then no need to clean up (I don&#39;t think this is possible)
+                }
+                //if it was unsubscribed, then other cleanup handled it
+            }
+        }).doOnUnsubscribe(new Action0() {
+            @Override
+            public void call() {
+                if (threadState.compareAndSet(ThreadState.STARTED, ThreadState.UNSUBSCRIBED)) {
+                    handleThreadEnd(_cmd);
+                }
+                if (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.UNSUBSCRIBED)) {
+                    //if it was never started and was cancelled, then no need to clean up
+                }
+                //if it was terminal, then other cleanup handled it
+            }
+        }).subscribeOn(threadPool.getScheduler(new Func0&lt;Boolean&gt;() {
+            @Override
+            public Boolean call() {
+                return properties.executionIsolationThreadInterruptOnTimeout().get() &amp;&amp; _cmd.isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT;
+            }
+        }));
+    } else {
+        return Observable.defer(new Func0&lt;Observable&lt;R&gt;&gt;() {
+            @Override
+            public Observable&lt;R&gt; call() {
+                executionResult = executionResult.setExecutionOccurred();
+                if (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) {
+                    return Observable.error(new IllegalStateException(&quot;execution attempted while in state : &quot; + commandState.get().name()));
+                }
+
+                metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
+                // semaphore isolated
+                // store the command that is being run
+                endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                try {
+                    executionHook.onRunStart(_cmd);
+                    executionHook.onExecutionStart(_cmd);
+                    return getUserExecutionObservable(_cmd);  //the getUserExecutionObservable method already wraps sync exceptions, so this shouldn&#39;t throw
+                } catch (Throwable ex) {
+                    //If the above hooks throw, then use that as the result of the run method
+                    return Observable.error(ex);
+                }
+            }
+        });
+    }
+}</code></pre>
+<p>getUserExecutionObservable()</p>
+<p>该方法最终会调用到HystrixCommand的getExecutionObservable()方法，该方法会调用到HystrixCommand中run()方法，该方法是比较重要的一个钩子方法。</p>
+<pre><code class="java">final protected Observable&lt;R&gt; getExecutionObservable() {
+    return Observable.defer(new Func0&lt;Observable&lt;R&gt;&gt;() {
+        @Override
+        public Observable&lt;R&gt; call() {
+            try {
+                return Observable.just(run());
+            } catch (Throwable ex) {
+                return Observable.error(ex);
+            }
+        }
+    }).doOnSubscribe(new Action0() {
+        @Override
+        public void call() {
+            // Save thread on which we get subscribed so that we can interrupt it later if needed
+            executionThread.set(Thread.currentThread());
+        }
+    });
+}</code></pre>
+<p>run()方法会调用到GenericCommand的run()方法，该方法最终会通过反射调用到业务方法。</p>
+<pre><code class="java">@Override
+protected Object run() throws Exception {
+    LOGGER.debug(&quot;execute command: {}&quot;, getCommandKey().name());
+    return process(new Action() {
+        @Override
+        Object execute() {
+            return getCommandAction().execute(getExecutionType());
+        }
+    });
+}</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/springcloud/">springcloud</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/tags/springcloud/">springcloud</a>
+                    
+                      <a class="hover-with-bg" href="/tags/hystrix/">hystrix</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/28/feign%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">feign源码解读</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/27/ribbon%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">ribbon源码解读</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "hystrix源码解读&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
