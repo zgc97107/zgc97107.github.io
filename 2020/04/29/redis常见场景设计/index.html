@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>redis常见场景设计 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期三, 四月 29日 2020, 9:19 上午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    1.4k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      5 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期三, 四月 29日 2020, 12:41 下午</p>
+            
+            <div class="markdown-body">
+              <h2 id="key设计的注意事项"><a href="#key设计的注意事项" class="headerlink" title="key设计的注意事项"></a>key设计的注意事项</h2><p>一般以业务功能模块或者表名为前缀，再加上唯一主键，中间以冒号分隔，比如购物车cart:001，表示1号用户的购物车。设计以简短、明了以主， 节约内存。</p>
+<h2 id="redis分布式锁"><a href="#redis分布式锁" class="headerlink" title="redis分布式锁"></a>redis分布式锁</h2><h4 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h4><p><code>SETNX {key} {value} ex|px {time}</code>指令可以将key的值设为value并指定一个失效时间，SETNX是SET if Not eXists(如果不存在，则 SET)的简写，如果key已经存在，则SETNX不会成功。</p>
+<p>在加锁时通过setnx向特定的key写入一个随机值，并同时设置失效时间，写值成功既加锁成功。</p>
+<p>注意：</p>
+<ul>
+<li>必须给锁设置一个失效时间， 避免死锁问题。</li>
+<li>加锁时必须写入一个随机字符串，用于解锁时避免锁的误删。</li>
+<li>整个过程必须是原子的。</li>
+</ul>
+<h4 id="解锁"><a href="#解锁" class="headerlink" title="解锁"></a>解锁</h4><p>解锁步骤为：</p>
+<ol>
+<li>获取key上的值</li>
+<li>判断value中的随机字符串是否一致</li>
+<li>删除数据</li>
+</ol>
+<p>这三个步骤必须要保证原子性，所以要借助lua脚本执行。</p>
+<p>lua脚本：</p>
+<pre><code class="java">if redis.call(&quot;get&quot;,KEYS[1]) == ARGV[1] then
+    return redis.call(&quot;del&quot;,KEYS[1])
+else
+    return 0
+end</code></pre>
+<p>具体实现：</p>
+<pre><code class="java">@Service
+public class RedisLock implements Lock {
+
+    private static final String  KEY = &quot;LOCK_KEY&quot;;
+
+    @Resource
+    private JedisConnectionFactory factory;
+
+    private ThreadLocal&lt;String&gt; local = new ThreadLocal&lt;&gt;();
+
+
+    @Override
+    //阻塞式的加锁
+    public void lock() {
+        //1.尝试加锁
+        if(tryLock()){
+            return;
+        }
+        //2.加锁失败，当前任务休眠一段时间
+        try {
+            Thread.sleep(10);//性能浪费
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        //3.递归调用，再次去抢锁
+        lock();
+    }
+
+
+
+    @Override
+    //阻塞式加锁,使用setNx命令返回OK的加锁成功，并生产随机值
+    public boolean tryLock() {
+        //产生随机值，标识本次锁编号
+        String uuid = UUID.randomUUID().toString();
+        Jedis jedis = (Jedis) factory.getConnection().getNativeConnection();
+
+        /**
+         * key:我们使用key来当锁
+         * uuid:唯一标识，这个锁是我加的，属于我
+         * NX：设入模式【SET_IF_NOT_EXIST】--仅当key不存在时，本语句的值才设入
+         * PX：给key加有效期
+         * 1000：有效时间为 1 秒
+         */
+        String ret = jedis.set(KEY, uuid,&quot;NX&quot;,&quot;PX&quot;,1000);
+
+        //设值成功--抢到了锁
+        if(&quot;OK&quot;.equals(ret)){
+            local.set(uuid);//抢锁成功，把锁标识号记录入本线程--- Threadlocal
+            return true;
+        }
+
+        //key值里面有了，我的uuid未能设入进去，抢锁失败
+        return false;
+    }
+
+    //正确解锁方式
+    public void unlock() {
+        //读取lua脚本
+        String script = FileUtils.getScript(&quot;unlock.lua&quot;);
+        //获取redis的原始连接
+        Jedis jedis = (Jedis) factory.getConnection().getNativeConnection();
+        //通过原始连接连接redis执行lua脚本
+        jedis.eval(script, Arrays.asList(KEY), Arrays.asList(local.get()));
+    }
+
+    //-----------------------------------------------
+
+    @Override
+    public Condition newCondition() {
+        return null;
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit)
+            throws InterruptedException {
+        return false;
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+    }
+
+}</code></pre>
+<h2 id="购物车"><a href="#购物车" class="headerlink" title="购物车"></a>购物车</h2><p>所需要的功能：</p>
+<ul>
+<li><p>全选功能：获取该用户的所有购物车商品</p>
+</li>
+<li><p>商品数量：购物车里商品的总数</p>
+</li>
+<li><p>删除：要能移除购物车里某个商品</p>
+</li>
+<li><p>增加或减少某个商品的数量</p>
+</li>
+</ul>
+<p>设计实现：以当前登录用户ID号做为key，商品ID号为field, 加入购物车数量为value。如<code>hmset cart:001 prod:01 1 prod:02 1</code>。</p>
+<h2 id="堆栈功能"><a href="#堆栈功能" class="headerlink" title="堆栈功能"></a>堆栈功能</h2><p>可以利用List实现堆、栈的先进后出，先进先出功能</p>
+<ul>
+<li>先进后出：存取操作都在队列左端或右端即可，如LPUSH+LPOP</li>
+<li>先进先出：存取操作的两端必须相反，如LPUSH + RPOP</li>
+</ul>
+<h2 id="阻塞队列"><a href="#阻塞队列" class="headerlink" title="阻塞队列"></a>阻塞队列</h2><img src="/2020/04/29/redis%E5%B8%B8%E8%A7%81%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1/pic1.png" srcset="/img/loading.gif" class="">
+
+<p>阻塞队列可以使用BRPOP指令来实现，当队列中没有元素是会一直阻塞。</p>
+<h2 id="生成数据库主键标识"><a href="#生成数据库主键标识" class="headerlink" title="生成数据库主键标识"></a>生成数据库主键标识</h2><p>可以使用incr指令在入库前将对应的主键加1，但redis每秒支持的并发量是有上限的，这么做会对redis的性能有比较大的影响，这时可以通过incry指令一次获取多个主键标识，如<code>incrby serialNo 1000</code>获取1000个标识，放到系统中使用，使用完后再去获取。</p>
+<h2 id="文章列表"><a href="#文章列表" class="headerlink" title="文章列表"></a>文章列表</h2><p>发表文章时将文章ID加入list中，然后通过lrange指令获取，如</p>
+<ul>
+<li><p>XX发布一篇文章ID为999：<code>lpush mes:004 999</code></p>
+</li>
+<li><p>XXX也发布了一条消息ID为1000：<code>lpush mes:004 1000</code></p>
+</li>
+<li><p>获取文章列表实现如下：<code>lrange mes:004 0 5</code></p>
+</li>
+</ul>
+<h2 id="抽奖"><a href="#抽奖" class="headerlink" title="抽奖"></a>抽奖</h2><p>可以使用set实现，将所有参与者加入set中，然后用srandmember或者spop命令随机抽取，如：</p>
+<p>活动id为001，用户id为004</p>
+<ul>
+<li>当004参与抽奖时放入set集合：<code>sadd act:001 004</code></li>
+<li>抽取2名中奖者：<code>srandmember act:001 2</code>或<code>spop act:001 2</code>，spop会移除用户。</li>
+<li>查看有多少用户参加了本次抽奖：<code>smembers act:001</code></li>
+</ul>
+<h2 id="点赞"><a href="#点赞" class="headerlink" title="点赞"></a>点赞</h2><p>点赞的实现也可以借助set，如果有顺序要求可以使用zset</p>
+<p>如张三用户id为01</p>
+<ul>
+<li><p>张三对消息008点赞<code>sadd zan:008  userId:01</code></p>
+</li>
+<li><p>张三取消了对消息008的点赞<code>srem zan:008  userId:01</code></p>
+</li>
+<li><p>检查用户是否点过赞<code>sismember zan:008  userId:01</code></p>
+</li>
+<li><p>获取消息008所有的点赞用户列表<code>smembers zan:008</code></p>
+</li>
+<li><p>消息008的点赞数计算<code>scard zan:008</code></p>
+</li>
+</ul>
+<h2 id="关注"><a href="#关注" class="headerlink" title="关注"></a>关注</h2><ul>
+<li>user1关注的人：<code>sadd user1:care user2,user4,user5,user3</code></li>
+<li>user2关注的人：<code>sadd user2:care user1,user3,user6,user5</code></li>
+<li>user3关注的人：<code>sadd user3:care deer,user6,user5</code></li>
+<li>user1和user2共同关注的人，求交集：<code>sinter user1:care user2:care</code>, 计算结果为 {user3, user5}</li>
+<li>user1关注的人也关注user5，判断user5是否在关注的人的集合中存在：<code>sismember user2:care user5</code>，<code>sismember user3:care user5</code></li>
+<li>user1可能认识的人，也可以先并集后差集：<code>SDIFF user2:care user1:care</code>，结果为{user1.user6}</li>
+</ul>
+<h2 id="每日热搜"><a href="#每日热搜" class="headerlink" title="每日热搜"></a>每日热搜</h2><p>热搜功能可以使用zset来实现，以日期做为Key ：</p>
+<ul>
+<li>点击id为1的话题： <code>zincrby topic:20191022 1 topic:1</code></li>
+<li>展示今日前20排名：<code>zrevrange topic:20191022 0 20 withscores</code></li>
+<li>统计近3日点击数据：<code>zunionstore topic:20191022-20191020 3 topic:20191022 topic:20191021 topic:20191020</code></li>
+<li>展示近3日的排行前9名：<code>zrevrange topic:20191022-20191020 0 9 withscores</code></li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/redis/">redis</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/redis/">redis</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/04/29/redis-lua%E5%AE%9E%E7%8E%B0%E9%99%90%E6%B5%81/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">redis+lua实现限流</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/28/redis%E7%9A%84%E6%8C%87%E4%BB%A4/">
+                        <span class="hidden-mobile">redis的指令</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "redis常见场景设计&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

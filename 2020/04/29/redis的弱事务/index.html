@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>redis的弱事务 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期三, 四月 29日 2020, 6:43 晚上
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    1.9k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      8 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期三, 四月 29日 2020, 10:02 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="RESP协议"><a href="#RESP协议" class="headerlink" title="RESP协议"></a>RESP协议</h2><p>Redis服务器与客户端通过RESP(REdisSerializationProtocol)协议通信。主要以下特点：实现简单、解析快、人类可读。RESP底层采用的是TCP的连接方式，通过tcp进行数据传输，然后根据解析规则解析相应信息，完成交互。</p>
+<p>我们可以测试下，首先运行一个serverSocket监听6379，来接收redis客户端的请求信息，实现如下：</p>
+<p>服务端程序如下：</p>
+<pre><code class="java">public class ServerRedis{
+  public static void main(String[] args){
+    try {
+      ServerSocket server = new ServerSocket(6379);
+      Socket rec = server.accept();
+      byte[] result = new byte[2048];
+      rec.getInputStream().read(result);
+      System.out.println(new String(result))
+    } catch (IOException e){
+      e.printStackTrace();
+    }
+  }
+}</code></pre>
+<p>客户端程序如下：</p>
+<pre><code class="java">public class JedisTest{
+  public static void main(String[] args){
+    Jedis jedis = new Jedis(&quot;127.0.0.1&quot;,6379);
+    jedis.set(&quot;key&quot;,&quot;value&quot;);
+    jedis.close();
+  }
+}</code></pre>
+<p>服务端打印的信息如下：</p>
+<pre><code>*3
+$3
+SET
+$3
+key
+$5
+value</code></pre><p>其中*表示后面有几组数据，set key value共三组，所以为*3</p>
+<p>$表示本组数据的长度，所以SET、key为3，value为5</p>
+<h2 id="数据库表数据存储到redis"><a href="#数据库表数据存储到redis" class="headerlink" title="数据库表数据存储到redis"></a>数据库表数据存储到redis</h2><p>原理就是将数据库中查询出的数据按照RESP协议处理，然后使用PIPE管道导入到redis。</p>
+<p>流程如下:</p>
+<ul>
+<li>使用用户名和密码登陆连接数据库</li>
+<li>登陆成功后执行order.sql的select语句得到查询结果集result</li>
+<li>使用密码登陆Redis</li>
+<li>Redis登陆成功后，使用PIPE管道将result导入redis。</li>
+</ul>
+<p>操作指令如下:<br><code>mysql -utest -ptest stress --default-character-set=utf8 --skip-column-names --raw &lt; order.sql | redis-cli -h 192.168.42.111 -p 6379 -a 12345678 --pipe</code></p>
+<p>–raw是指将order.sql中的文件按行执行。</p>
+<p>order.sql文件</p>
+<pre><code class="mysql">SELECT CONCAT(
+ &#39;*10\r\n&#39;,
+   &#39;$&#39;, LENGTH(redis_cmd), &#39;\r\n&#39;, redis_cmd, &#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(redis_key), &#39;\r\n&#39;, redis_key, &#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hkey1),&#39;\r\n&#39;,hkey1,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hval1),&#39;\r\n&#39;,hval1,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hkey2),&#39;\r\n&#39;,hkey2,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hval2),&#39;\r\n&#39;,hval2,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hkey3),&#39;\r\n&#39;,hkey3,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hval3),&#39;\r\n&#39;,hval3,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hkey4),&#39;\r\n&#39;,hkey4,&#39;\r\n&#39;,
+   &#39;$&#39;, LENGTH(hval4),&#39;\r\n&#39;,hval4,&#39;\r&#39;
+)
+FROM (
+ SELECT
+ &#39;HSET&#39; AS redis_cmd,
+ CONCAT(&#39;order:info:&#39;,orderid) AS redis_key,
+ &#39;ordertime&#39; AS hkey1, ordertime AS hval1,
+ &#39;ordermoney&#39; AS hkey2, ordermoney AS hval2,
+ &#39;orderstatus&#39; AS hkey3, orderstatus AS hval3,
+ &#39;version&#39; AS hkey4, `version` AS hval4
+ FROM `order`
+) AS t</code></pre>
+<h2 id="socket连接redis"><a href="#socket连接redis" class="headerlink" title="socket连接redis"></a>socket连接redis</h2><pre><code class="java">public class SocketRedis {
+
+    public static String set(Socket socket,String key, String value) throws IOException {
+        StringBuffer str = new StringBuffer();
+        str.append(&quot;*3&quot;).append(&quot;\r\n&quot;);
+        str.append(&quot;$3&quot;).append(&quot;\r\n&quot;);
+        str.append(&quot;SET&quot;).append(&quot;\r\n&quot;);
+        str.append(&quot;$&quot;).append(key.getBytes().length).append(&quot;\r\n&quot;);
+        str.append(key).append(&quot;\r\n&quot;);
+        str.append(&quot;$&quot;).append(value.getBytes().length).append(&quot;\r\n&quot;);
+        str.append(value).append(&quot;\r\n&quot;);
+        socket.getOutputStream().write(str.toString().getBytes());
+        byte[] response = new byte[2048];
+        socket.getInputStream().read(response);
+        return new String(response);
+
+    }
+    public static String get(Socket socket,String key) throws IOException {
+        StringBuffer str = new StringBuffer();
+        str.append(&quot;*2&quot;).append(&quot;\r\n&quot;);
+        str.append(&quot;$3&quot;).append(&quot;\r\n&quot;);
+        str.append(&quot;GET&quot;).append(&quot;\r\n&quot;);
+        str.append(&quot;$&quot;).append(key.getBytes().length).append(&quot;\r\n&quot;);
+        str.append(key).append(&quot;\r\n&quot;);
+        socket.getOutputStream().write(str.toString().getBytes());
+        byte[] response = new byte[2048];
+        socket.getInputStream().read(response);
+        return new String(response);
+    }
+
+    public static void main(String[] args) throws IOException {
+        Socket socket = new Socket(&quot;127.0.0.1&quot;,6379);
+        set(socket,&quot;test&quot;,&quot;value&quot;);
+        System.out.println(get(socket,&quot;test&quot;));
+    }
+}</code></pre>
+<h2 id="PIPELINE操作"><a href="#PIPELINE操作" class="headerlink" title="PIPELINE操作"></a>PIPELINE操作</h2><p>单指令批量操作执行过程</p>
+
+
+<p>每次执行命令前都需要通过网络发送命令、获取结果，网络开销大，对执行时间有比较大的影响。</p>
+<p>pipeline可以将多个指令封装，然后请求到redis，返回结果，这样只需要通过网络发送、返回一次，减少了网络开销。</p>
+
+
+<p>使用方法</p>
+<pre><code class="java">public class ServiceTest {
+    public static void delNoPipe(String...keys){
+        Jedis jedis = new Jedis(RedisTools.ip,RedisTools.port);
+        Pipeline pipelined = jedis.pipelined();
+        for(String key:keys){
+            pipelined.del(key);//redis?
+        }
+        pipelined.sync();//
+        jedis.close();
+    }
+}</code></pre>
+<h2 id="redis事务"><a href="#redis事务" class="headerlink" title="redis事务"></a>redis事务</h2><p>pipeline其实是对多条命令的组合，为了保证它的原子性，redis提供了简单的事务。使用方法为将一组需要一起执行的命令放到multi和exec两个命令之间，其中multi代表事务开始，exec代表事务结束，discard取消事务，watch命令用于监视key，如果事务执行之前key被改动，事务将被打断（取消），对应的有unwatch命令，用于取消watch操作。</p>
+<p>如果事务执行中，出现命令错误，导致事务不能正常结束，就会发生回滚。但如果出现类型错误，事务可以正常结束，就不会在进行回滚。</p>
+<h2 id="redis发布与订阅"><a href="#redis发布与订阅" class="headerlink" title="redis发布与订阅"></a>redis发布与订阅</h2><p>redis提供了“发布、订阅”模式的消息机制，其中消息订阅者与发布者不直接通信，发布者向指定的频道（channel）发布消息，订阅该频道的每个客户端都可以接收到消息。</p>
+
+
+<p>redis主要提供发布消息、订阅频道、取消订阅以及按照模式订阅和取消订阅，和很多专业的消息队列kafka rabbitmq相比比较简单，比如无法实现消息规程和回溯，可以使用在简单的应用。</p>
+<h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><ul>
+<li>发布消息：<code>publish {channel} {message}</code></li>
+<li>订阅消息：<code>subscrible {channel}</code></li>
+<li>查看订阅数：<code>pubsub numsub {channel}</code></li>
+<li>取消订阅：<code>unsubscribe {channel}</code></li>
+<li>按模式（模糊匹配）订阅和取消订阅：<code>psubscribe ch*</code> <code>punsubscribe ch*</code></li>
+</ul>
+<h2 id="键的迁移"><a href="#键的迁移" class="headerlink" title="键的迁移"></a>键的迁移</h2><p>把部分数据迁移到另一台redis服务器，</p>
+<ul>
+<li><code>move {key} {db}</code> ：db为数据库编号，reids共有16个库， 编号为0－15，这种模式不建议在生产环境使用。数据库切换可以使用<code>select {db}</code>。</li>
+<li><code>dump {key}</code>：在迁出的数据库上使用<code>dum {key}</code>，然后将获取到的值value复制到迁入的数据库，使用<code>restore {key} {time} {value}</code>。</li>
+<li><code>migrate {迁入的目标ip} {端口} {key} {db} {timeout} copy|replace</code>：migrate命令是将dump、restore、del三个命令进行组合，从而简化了操作流程。migrate命令具有原子性，从Redis 3.0.6版本后已经支持迁移多个键的功能。migrate命令的数据传输直接在源Redis和目标Redis上完成，目标Redis完成restore后会发送OK给源Redis。</li>
+</ul>
+<h2 id="key的遍历"><a href="#key的遍历" class="headerlink" title="key的遍历"></a>key的遍历</h2><h3 id="全量遍历"><a href="#全量遍历" class="headerlink" title="全量遍历"></a>全量遍历</h3><p><code>keys  *</code>：返回所有的键, *匹配任意字符多个字符，全局匹配 ，可以使用正则表达式</p>
+<p><code>keys n?me</code>：?问号代表只匹配一个字符 </p>
+<p><code>keys [j,l]*</code>：返回以j、l开头的所有键</p>
+<h3 id="渐进式遍历"><a href="#渐进式遍历" class="headerlink" title="渐进式遍历"></a>渐进式遍历</h3><p><code>scan 0 match n* count 5</code>：匹配以n开头的键，最大是取5条，第一次0开始，相当于一页一页的取，第二次取时将0改为返回的游标，当最后游标返回0时，键被取完。</p>
+<p>scan相比keys具备有以下特点:</p>
+<ol>
+<li>通过游标分布进行的，不会阻塞线程;</li>
+<li>提供limit参数，可以控制每次返回结果的最大条数，limit不准，返回的结果可多可少;</li>
+<li>同keys一样，Scan也提供模式匹配功能;</li>
+<li>服务器不需要为游标保存状态，游标的唯一状态就是scan返回给客户端的游标整数;</li>
+<li>scan返回的结果可能会有重复，需要客户端去重复;</li>
+<li>scan遍历的过程中如果有数据修改，改动后的数据能不能遍历到是不确定的;</li>
+<li>单次返回的结果是空的并不意味着遍历结束，而要看返回的游标值是否为零;</li>
+</ol>
+<h3 id="其他数据结构的遍历"><a href="#其他数据结构的遍历" class="headerlink" title="其他数据结构的遍历"></a>其他数据结构的遍历</h3><p>除scan字符串外：还有以下命令，用法和scan一样。</p>
+<ul>
+<li>SCAN 命令用于迭代当前数据库中的数据库键。</li>
+<li>SSCAN 命令用于迭代集合键中的元素。</li>
+<li>HSCAN 命令用于迭代哈希键中的键值对。</li>
+<li>ZSCAN 命令用于迭代有序集合中的元素（包括元素成员和元素分值）。</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/redis/">redis</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/redis/">redis</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/29/redis%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/">
+                        <span class="hidden-mobile">redis性能测试</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "redis的弱事务&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
