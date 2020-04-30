@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>tomcat源码解析 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期四, 四月 30日 2020, 6:26 晚上
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    2.9k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      11 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期四, 四月 30日 2020, 11:04 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="tomcat源码目录"><a href="#tomcat源码目录" class="headerlink" title="tomcat源码目录"></a>tomcat源码目录</h2><ul>
+<li><p>catalina目录：catalina包含所有的Servlet容器实现，以及涉及到安全、会话、集群、部署管理Servlet容器的各个方面，同时，它还包含了启动入口。</p>
+</li>
+<li><p>coyote目录：coyote是Tomcat链接器框架的名称，是Tomcat服务器提供的客户端访问的外部接口，客户端通过Coyote与服务器建立链接、发送请求并接收响应。</p>
+</li>
+<li><p>El目录，提供java表达式语言</p>
+</li>
+<li><p>Jasper模块提供JSP引擎</p>
+</li>
+<li><p>Naming模块提供JNDI的服务</p>
+</li>
+<li><p>Juli提供服务器日志的服务</p>
+</li>
+<li><p>tomcat提供外部调用的接口api</p>
+</li>
+</ul>
+<h2 id="tomcat启动流程分析"><a href="#tomcat启动流程分析" class="headerlink" title="tomcat启动流程分析"></a>tomcat启动流程分析</h2><img src="/2020/04/30/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic1.png" srcset="/img/loading.gif" class="">
+
+<h3 id="组件的生命周期管理"><a href="#组件的生命周期管理" class="headerlink" title="组件的生命周期管理"></a>组件的生命周期管理</h3><h4 id="各种组件如何统一管理"><a href="#各种组件如何统一管理" class="headerlink" title="各种组件如何统一管理"></a>各种组件如何统一管理</h4><p>tomcat的架构设计是清晰的、模块化、它拥有很多组件，加入在启动Tomcat时一个一个组件启动，很容易遗漏组件，同时还会对后面的动态组件拓展带来麻烦。如果采用我们传统的方式的话，组件在启动过程中如果发生异常，会很难管理，比如你的下一个组件调用了start方法，但是如果它的上级组件还没有start甚至还没有init的话，Tomcat的启动会非常难管理，因此，Tomcat的设计者提出一个解决方案：用Lifecycle管理启动，停止、关闭。</p>
+<h4 id="生命周期统一接口Lifecycle"><a href="#生命周期统一接口Lifecycle" class="headerlink" title="生命周期统一接口Lifecycle"></a>生命周期统一接口Lifecycle</h4><p>tomcat所有组件有一个统一的Lifecycle接口，把所有的启动、停止、关闭、及所有与生命周期相关的方法都组织到一起，就可以很方便管理tomcat各个容器组件的生命周期。</p>
+<p>Lifecycle其实就是定义了一些状态常量和几个方法，主要方法是init()、start()、stop()三个方法。</p>
+<p>LifecycleBase实现了Lifecycle接口，在init()方法中初始化之前会进行状态检查：</p>
+<pre><code class="java">@Override
+public final synchronized void init() throws LifecycleException {
+    //防止组件启动时状态不对
+    if (!state.equals(LifecycleState.NEW)) {
+        invalidTransition(Lifecycle.BEFORE_INIT_EVENT);
+    }
+
+    try {
+        //设置初始化状态
+        setStateInternal(LifecycleState.INITIALIZING, null, false);
+        initInternal();
+        //设置初始化完成
+        setStateInternal(LifecycleState.INITIALIZED, null, false);
+    } catch (Throwable t) {
+        handleSubClassException(t, &quot;lifecycleBase.initFail&quot;, toString());
+    }
+}</code></pre>
+<p>init()方法中会调用子类的initInternal()方法，这里使用了模版方法设计模式，LifecycleBase为骨架类，initInternal()的具体实现在子类中，spring中也使用了这种设计模式。</p>
+<p>tomcat内部架构中各个核心组件有包含与被包含关系，例如：Server包含了Service.Service又包含了Container和Connector，这个结构有一点像数据结构中的树，树的根结点没有父节点，其他节点有且仅有一个父节点，每一个父节点有0至多个子节点。所以，我们可以通过父容器启动它的子容器，这样只要启动根容器，就可以把其他所有的容器都启动，从而达到了统一的启动，停止、关闭的效果。</p>
+<p>Server组件的init()负责遍历调用其包含所有的Service组件的init()方法，如子类StandardServer中的initInternal()方法。</p>
+<pre><code class="java">@Override
+protected void initInternal() throws LifecycleException {
+
+    super.initInternal();
+
+    // Register global String cache
+    // Note although the cache is global, if there are multiple Servers
+    // present in the JVM (may happen when embedding) then the same cache
+    // will be registered under multiple names
+    onameStringCache = register(new StringCache(), &quot;type=StringCache&quot;);
+
+    // Register the MBeanFactory
+    MBeanFactory factory = new MBeanFactory();
+    factory.setContainer(this);
+    onameMBeanFactory = register(factory, &quot;type=MBeanFactory&quot;);
+
+    // Register the naming resources
+    globalNamingResources.init();
+
+    // Populate the extension validator with JARs from common and shared
+    // class loaders
+    if (getCatalina() != null) {
+        ClassLoader cl = getCatalina().getParentClassLoader();
+        // Walk the class loader hierarchy. Stop at the system class loader.
+        // This will add the shared (if present) and common class loaders
+        while (cl != null &amp;&amp; cl != ClassLoader.getSystemClassLoader()) {
+            if (cl instanceof URLClassLoader) {
+                URL[] urls = ((URLClassLoader) cl).getURLs();
+                for (URL url : urls) {
+                    if (url.getProtocol().equals(&quot;file&quot;)) {
+                        try {
+                            File f = new File (url.toURI());
+                            if (f.isFile() &amp;&amp;
+                                    f.getName().endsWith(&quot;.jar&quot;)) {
+                                ExtensionValidator.addSystemResource(f);
+                            }
+                        } catch (URISyntaxException e) {
+                            // Ignore
+                        } catch (IOException e) {
+                            // Ignore
+                        }
+                    }
+                }
+            }
+            cl = cl.getParent();
+        }
+    }
+    // 调用子类中services的init()方法
+    // Initialize our defined Services
+    for (int i = 0; i &lt; services.length; i++) {
+        services[i].init();
+    }
+}</code></pre>
+<h2 id="tomcat请求过程"><a href="#tomcat请求过程" class="headerlink" title="tomcat请求过程"></a>tomcat请求过程</h2><img src="/2020/04/30/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic2.png" srcset="/img/loading.gif" class="">
+
+<p>Connector用于监听服务端口，读取来自客户端的请求，然后将请求数据按照指定协议进行解析，再根据请求地址匹配正确的容器进行处理，最后将容器的响应返回给客户端。</p>
+<p>Tomcat处理一个HTTP请求的过程</p>
+<ol>
+<li>用户点击网页内容，请求被发送到本机端口8080，被在那里监听的Coyote HTTP/1.1 Connector获得。</li>
+<li>Connector把该请求交给它所在的Service的Engine来处理，并等待Engine的回应。</li>
+<li>Engine获得请求localhost/test/index.jsp，匹配所有的虚拟主机Host。</li>
+<li>Engine匹配到名为localhost的Host（即使匹配不到也把请求交给该Host处理，因为该Host被定义为该Engine的默认主机），名为localhost的Host获得请求/test/index.jsp，匹配它所拥有的所有的Context。Host匹配到路径为/test的Context（如果匹配不到就把该请求交给路径名为“ ”的Context去处理）。</li>
+<li>path=“/test”的Context获得请求/index.jsp，在它的mapping table中寻找出对应的Servlet。Context匹配到URL PATTERN为*.jsp的Servlet,对应于JspServlet类。</li>
+<li>构造HttpServletRequest对象和HttpServletResponse对象，作为参数调用JspServlet的doGet()或doPost()。执行业务逻辑、数据存储等程序。</li>
+<li>Context把执行完之后的HttpServletResponse对象返回给Host。</li>
+<li>Host把HttpServletResponse对象返回给Engine。</li>
+<li>Engine把HttpServletResponse对象返回Connector。</li>
+<li>Connector把HttpServletResponse对象返回给客户Browser。</li>
+</ol>
+<h2 id="管道模式"><a href="#管道模式" class="headerlink" title="管道模式"></a>管道模式</h2><h3 id="管道与阀门"><a href="#管道与阀门" class="headerlink" title="管道与阀门"></a>管道与阀门</h3><p>在一个比较复杂的大型系统中，如果一个对象或数据流需要进行繁杂的逻辑处理，我们可以选择在一个大的组件中直接处理这些繁杂的逻辑处理，这个方式虽然达到目的，但是拓展性和可重用性差。因为牵一发而动全身。</p>
+<p>管道是就像一条管道把多个对象连接起来，整体看起来就像若干个阀门嵌套在管道中，而处理逻辑放在阀门上。它的结构和实现是非常值得我们学习和借鉴的。</p>
+<h3 id="管道的实现"><a href="#管道的实现" class="headerlink" title="管道的实现"></a>管道的实现</h3><p>首先需要定义阀门接口，阀门接口中包含下一个阀门的引用，每个阀门完成自己的逻辑后将调用下一个阀门的方法，直到基础阀门，基础阀门的方法中不再对下一个阀门进行调用。管道接口中保存有第一个阀门及基础阀门的引用，基础阀门的将作为阀门添加时的顺序比较，第一个阀门将用于管道调用的开始，管道调用开始于第一个管道，终止于基础管道。</p>
+<p>管道接口：</p>
+<pre><code class="java">public interface Pipeline {
+    //获取第一个阀门
+    public Valve getFirst();
+    public Valve getBasic();
+    //设置阀门
+    public void setBasic(Valve valve);
+    //添加阀门
+    public void addVave(Valve valve);
+}</code></pre>
+<p>阀门接口</p>
+<pre><code class="java">public interface Valve {
+    public Valve getNext();
+    public void setNext(Valve valve);
+    public void invoke(String handing);
+}</code></pre>
+<p>管道接口的实现：</p>
+<pre><code class="java">public class StandardPipeline implements  Pipeline {
+    //阀门（非基础，定义一个first）
+    protected Valve first = null;
+    //基础阀门
+    protected Valve basic = null;
+
+    @Override
+    public Valve getBasic() {
+        return basic;
+    }
+
+    @Override
+    public void setBasic(Valve valve) {
+        this.basic=valve;
+    }
+
+    @Override
+    public Valve getFirst() {
+        return first;
+    }
+
+    //添加阀门，链式构建阀门的执行顺序（先定制、最后基础阀门）
+    @Override
+    public void addVave(Valve valve) {
+        if(first == null){
+            first = valve;
+            valve.setNext(basic);
+        }else{
+            Valve current =first;
+            while(current !=null){
+                if(current.getNext() == basic){
+                    current.setNext(valve);
+                    valve.setNext(basic);
+                }
+                current = current.getNext();
+            }
+        }
+    }
+}</code></pre>
+<p>基础阀门</p>
+<pre><code class="java">public class StandardValve implements Valve {
+    protected  Valve next =null;
+    @Override
+    public Valve getNext() {
+        return next;
+    }
+
+    @Override
+    public void setNext(Valve valve) {
+        this.next =valve;
+    }
+
+    @Override
+    public void invoke(String request) {
+        System.out.println(&quot;基础阀门处理&quot;);
+    }
+}</code></pre>
+<p>第一个阀门</p>
+<pre><code class="java">public class FirstValve implements Valve {
+    protected  Valve next =null;
+    @Override
+    public Valve getNext() {
+        return next;
+    }
+
+    @Override
+    public void setNext(Valve valve) {
+        this.next =valve;
+    }
+
+    @Override
+    public void invoke(String request) {
+        System.out.println(&quot;阀门1处理&quot;);
+        getNext().invoke(request);
+    }
+}</code></pre>
+<p>第二个阀门</p>
+<pre><code class="java">public class SecondValve implements Valve {
+    protected  Valve next =null;
+    @Override
+    public Valve getNext() {
+        return next;
+    }
+
+    @Override
+    public void setNext(Valve valve) {
+        this.next =valve;
+    }
+
+    @Override
+    public void invoke(String request) {
+        System.out.println(&quot;阀门2处理&quot;);
+        getNext().invoke(request);
+    }
+}</code></pre>
+<p>测试类</p>
+<pre><code class="java">public class Demo {
+    public static void main(String[] args) {
+        String request =&quot;这个是一个Servlet请求&quot;;
+        //new出一个管道
+        StandardPipeline pipeline = new StandardPipeline();
+        //三个阀门(一个基础、2个定制)
+        StandardValve standardValve = new StandardValve();
+        FirstValve firstValve = new FirstValve();
+        SecondValve secondValve = new SecondValve();
+        //设置基础阀门(定制阀门)
+        pipeline.setBasic(standardValve);
+        //设置非基础阀门
+        pipeline.addVave(firstValve);
+        pipeline.addVave(secondValve);
+        //调用对象管道中的第一个阀门
+        pipeline.getFirst().invoke(request);
+    }
+}</code></pre>
+<h2 id="tomcat中的管道"><a href="#tomcat中的管道" class="headerlink" title="tomcat中的管道"></a>tomcat中的管道</h2><img src="/2020/04/30/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic3.png" srcset="/img/loading.gif" class="">
+
+<p>其中的Engine、Host、Context、warpper分别对应StandardEngineValve、StandardHostValve、StandardContextValve、StandardWrapperValve四种阀门。</p>
+<h3 id="管道处理流程"><a href="#管道处理流程" class="headerlink" title="管道处理流程"></a>管道处理流程</h3><img src="/2020/04/30/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic4.png" srcset="/img/loading.gif" class="">
+
+<p>接收到请求后在CoyoteAdapter的service()方法中的<code>connector.getContainer().getPipeline().getFirst().invoke(request, response);</code>将获取管道并开始阀门的调用过程对reqeust、response进行处理。</p>
+<p>StandardEngineValue类中的invoke()方法。</p>
+<pre><code class="java">@Override
+public final void invoke(Request request, Response response)
+    throws IOException, ServletException {
+
+    // 拿到Engline中包含的host
+    Host host = request.getHost();
+    if (host == null) {
+        response.sendError
+            (HttpServletResponse.SC_BAD_REQUEST,
+             sm.getString(&quot;standardEngine.noHost&quot;,
+                          request.getServerName()));
+        return;
+    }
+    if (request.isAsyncSupported()) {
+        request.setAsyncSupported(host.getPipeline().isAsyncSupported());
+    }
+
+    // 将request，response交给下一个阀门
+    host.getPipeline().getFirst().invoke(request, response);
+
+}</code></pre>
+<p>tomcat的Pipeline处理是这样的：</p>
+<ol>
+<li><p>在生产线上的第一个工人拿到生产原料后，二话不说就人给下一个工人，下一个工人也是一样直接扔给下一个工人，直到最后一个工人，而最后一个工人被安排为上面提过的StandardValve，他要完成的是把生产资料运给自己所在包含的container的Pipeline上去。 </p>
+</li>
+<li><p>四个container就相当于有四个生产线（Pipeline），当StandardWrapperValve拿到资源开始调用servlet，返回后，再一步一步按照刚才丢生产原料是的顺序的倒序一次执行。</p>
+</li>
+</ol>
+<h3 id="自定义tomcat阀门"><a href="#自定义tomcat阀门" class="headerlink" title="自定义tomcat阀门"></a>自定义tomcat阀门</h3><p>管道机制给我们带来了更好的拓展性，例如，你要添加一个额外的逻辑处理阀门是很容易的。自定义个阀门PrintIPValve，只要继承ValveBase并重写invoke方法即可。注意在invoke方法中一定要执行调用下一个阀门的操作，否则会出现异常。</p>
+<pre><code class="java">public class PrintIPValve extends ValveBase{
+    @Override
+    public void invoke(Request request, Response response) throws IOException, ServletException {
+        System.out.println(&quot;------自定义阀门PrintIPValve:&quot;+request.getRemoteAddr());
+        getNext().invoke(request,response);
+    }
+}</code></pre>
+<p>配置Tomcat的核心配置文件server.xml,这里把阀门配置到Engine容器下，作用范围就是整个引擎，也可以根据作用范围配置在Host或者是Context下</p>
+<pre><code>&lt;Valve className=&quot;org.apache.catalina.valves.PrintIPValve&quot; /&gt;</code></pre><p>源码中可以直接生效，但是如果是运行版本，可以将这个类导出成一个Jar包放入Tomcat/lib目录下，也可以直接将.class文件打包进catalina.jar包中。</p>
+<h3 id="tomcat中提供常用的阀门"><a href="#tomcat中提供常用的阀门" class="headerlink" title="tomcat中提供常用的阀门"></a>tomcat中提供常用的阀门</h3><p>AccessLogValve：请求访问日志阀门，通过此阀门可以记录所有客户端的访问日志，包括远程主机IP，远程主机名，请求方法，请求协议，会话ID，请求时间，处理时长，数据包大小等。它提供任意参数化的配置，可以通过任意组合来定制访问日志的格式。</p>
+<p>JDBCAccessLogValve：同样是记录访问日志的阀门，但是它有助于将访问日志通过JDBC持久化到数据库中。</p>
+<p>ErrorReportValve：这是一个讲错误以HTML格式输出的阀门。</p>
+<p>PersistentValve：这是对每一个请求的会话实现持久化的阀门。</p>
+<p>RemoteAddrValve：访问控制阀门。可以通过配置决定哪些IP可以访问WEB应用。</p>
+<p>RemoteHostValve：访问控制阀门，通过配置觉得哪些主机名可以访问WEB应用。</p>
+<p>RemoteIpValve：针对代理或者负载均衡处理的一个阀门，一般经过代理或者负载均衡转发的请求都将自己的IP添加到请求头”X-Forwarded-For”中，此时，通过阀门可以获取访问者真实的IP。</p>
+<p>SemaphoreValve：这个是一个控制容器并发访问的阀门，可以作用在不同容器上。</p>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/tomcat/">tomcat</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/tomcat/">tomcat</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/04/30/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/">
+                        <span class="hidden-mobile">tomcat体系架构</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "tomcat源码解析&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
