@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>RabbitMQ的管理 - zgcheng&#39;s blog</title>
+  <title>Kafka入门 - zgcheng&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期一, 五月 11日 2020, 9:10 晚上
+                  星期二, 五月 12日 2020, 4:42 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    1.7k 字
+                    2.5k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      7 分钟
+                      8 分钟
                   </span>
                 
 
@@ -176,190 +176,53 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期二, 五月 12日 2020, 1:55 下午</p>
+                class="note note-warning">本文最后更新于：星期二, 五月 12日 2020, 10:03 晚上</p>
             
             <div class="markdown-body">
-              <h2 id="RabbitMQ日志"><a href="#RabbitMQ日志" class="headerlink" title="RabbitMQ日志"></a>RabbitMQ日志</h2><p>一般放在：<code>/var/log/rabbitmq/rabbit@centosvm.log</code>跟<code>/var/log/rabbitmq/rabbit@centosvm-sasl.log</code>中</p>
-<h2 id="RabbitMQ命令"><a href="#RabbitMQ命令" class="headerlink" title="RabbitMQ命令"></a>RabbitMQ命令</h2><h4 id="管理虚拟主机"><a href="#管理虚拟主机" class="headerlink" title="管理虚拟主机"></a>管理虚拟主机</h4><pre><code class="sh">#添加虚拟主机
-rabbitmqctl add_vhost [vhost_name] 
-#删除虚拟主机
-rabbitmqctl delete_vhost [vhost_name] 
-#查看虚拟主机
-rabbitmqctl list_vhosts </code></pre>
-<h4 id="启动和关闭rabbitmq"><a href="#启动和关闭rabbitmq" class="headerlink" title="启动和关闭rabbitmq"></a>启动和关闭rabbitmq</h4><ul>
-<li><p><code>rabbitmq-server</code>：启动Erlang节点和Rabbitmq应用</p>
+              <h2 id="Kafka介绍"><a href="#Kafka介绍" class="headerlink" title="Kafka介绍"></a>Kafka介绍</h2><p>kafka最初是LinkedIn的一个内部基础设施系统。最初开发的起因是，LinkedIn虽然有了数据库和其他系统可以用来存储数据，但是缺乏一个可以帮助处理持续数据流的组件。所以在设计理念上，开发者不想只是开发一个能够存储数据的系统，如关系数据库、Nosql数据库、搜索引擎等等，更希望把数据看成一个持续变化和不断增长的流，并基于这样的想法构建出一个数据系统，一个数据架构。</p>
+<p>Kafka外在表现很像消息系统，允许发布和订阅消息流，但是它和传统的消息系统有很大的差异，首先，Kafka是个现代分布式系统，以集群的方式运行，可以自由伸缩。其次，Kafka可以按照要求存储数据，保存多久都可以，<br>第三，流式处理将数据处理的层次提示到了新高度，消息系统只会传递数据，Kafka的流式处理能力可以让我们用很少的代码就能动态地处理派生流和数据集。</p>
+<p>Kafka不仅仅是一个消息中间件，同时它是一个流平台，这个平台上可以发布和订阅数据流（Kafka的流，有一个单独的包Stream的处理），并把他们保存起来，进行处理，这个是Kafka作者的设计理念。</p>
+<p>在大数据领域，Kafka还可以看成实时版的Hadoop，但是还是有些区别，Hadoop可以存储和定期处理大量的数据文件，往往以TB计数，而Kafka可以存储和持续处理大型的数据流。Hadoop主要用在数据分析上，而Kafka因为低延迟，更适合于核心的业务应用上。所以国内的大公司一般会结合使用，比如京东在实时数据计算架构中就使用了到了Kafka，具体见《张开涛-海量数据下的应用系统架构实践》。常见的大数据处理框架：storm、spark、Flink、(Blink阿里)。</p>
+<h2 id="Kafka中的基本概念"><a href="#Kafka中的基本概念" class="headerlink" title="Kafka中的基本概念"></a>Kafka中的基本概念</h2><h3 id="消息和批次"><a href="#消息和批次" class="headerlink" title="消息和批次"></a>消息和批次</h3><p>消息，Kafka 里的数据单元，也就是我们一般消息中间件里的消息的概念（可以比作数据库中一条记录）。消息由字节数组组成。消息还可以包含键 （可选元数据，也是字节数组），主要用于对消息选取分区。</p>
+<p>作为一个高效的消息系统，为了提高效率，消息可以被分批写入Kafka。批次就是一组消息，这些消息属于同一个主题和分区。如果只传递单个消息， 会导致大量的网络开销，把消息分成批次传输可以减少这开销。但是，这个需要权衡（时间延迟和吞吐量之间），批次里包含的消息越多，单位时间内处理的消息就越多，单个消息的传输时间就越长（吞吐量高延时也高）。如果进行压缩，可以提升数据的传输和存储能力，但需要更多的计算处理。</p>
+<p>对于 Kafka 来说，消息是晦涩难懂的字节数组，一般我们使用序列化和反序列化技术，格式常用的有JSON和XML，还有Avro（Hadoop开发的一款序列化框架），具体怎么使用依据自身的业务来定。</p>
+<h3 id="主题和分区"><a href="#主题和分区" class="headerlink" title="主题和分区"></a>主题和分区</h3><p>Kafka里的消息用主题进行分类（主题好比数据库中的表），主题下有可以被分为若干个分区（分表技术）。分区本质上是个提交日志文件，有新消息，这个消息就会以追加的方式写入分区（写文件的形式），然后用先入先出的顺序读取。</p>
+<img src="/2020/05/12/Kafka%E5%85%A5%E9%97%A8/pic1.png" srcset="/img/loading.gif" class="">
+
+<p>由于主题会有多个分区，所以在整个主题的范围内，是无法保证消息的顺序的，单个分区则可以保证。</p>
+<p>Kafka 通过分区来实现数据冗余和伸缩性，因为分区可以分布在不同的服务器上，那就是说一个主题可以跨越多个服务器（这是 Kafka 高性能的一个原因，多台服务器的磁盘读写性能比单台更高）。</p>
+<p>前面我们说Kafka可以看成一个流平台，很多时候，我们会把一个主题的数据看成一个流，不管有多少个分区。</p>
+<h3 id="生产者和消费者、偏移量、消费者群组"><a href="#生产者和消费者、偏移量、消费者群组" class="headerlink" title="生产者和消费者、偏移量、消费者群组"></a>生产者和消费者、偏移量、消费者群组</h3><p>生产者消费者就是一般消息中间件里生产者和消费者的概念。Kafka的一些其他的高级客户端API，像数据管道API和流式处理的KafkaStream，都是使用了最基本的生产者和消费者作为内部组件，然后提供了高级功能。</p>
+<p>生产者默认情况下把消息均衡分布到主题的所有分区上，如果需要指定分区，则需要使用消息里的消息键和分区器。</p>
+<p>消费者可以订阅一个或者多个主题，并按照消息的生成顺序读取。消费者通过检查偏移量来区分消息是否读取过。偏移量是一种元数据，一个不断递增的整数值，创建消息的时候，Kafka会把他加入消息。在一个主题中一个分区里，每个消息的偏移量是唯一的。每个分区最后读取的消息偏移量会保存到Zookeeper或者Kafka上，这样分区的消费者关闭或者重启，读取状态都不会丢失。</p>
+<p>共同读取一个主题的多个消费者可以构成一个消费者群组，群组可以保证每个分区只被一个消费者使用。</p>
+<img src="/2020/05/12/Kafka%E5%85%A5%E9%97%A8/pic2.png" srcset="/img/loading.gif" class="">
+
+<p>消费者和分区之间的这种映射关系叫做消费者对分区的所有权关系，很明显，一个分区只有一个消费者，而一个消费者可以有多个分区。一个分区只能被消费者群组中的一个消费者消费（不能重复消费），如果有一个消费者挂掉了，另外的消费者接上。</p>
+<h3 id="Broker和集群"><a href="#Broker和集群" class="headerlink" title="Broker和集群"></a>Broker和集群</h3><p>一个独立的Kafka服务器叫Broker。broker的主要工作是接收生产者的消息、设置偏移量、提交消息到磁盘保存、为消费者提供服务、响应请求、返回消息。在合适的硬件上，单个broker可以处理上千个分区和每秒百万级的消息量（要达到这个目的需要做操作系统调优和JVM调优）。</p>
+<p>多个broker可以组成一个集群，每个集群中broker会选举出一个集群控制器。控制器会进行管理，包括将分区分配给broker和监控broker。在集群中，一个分区可以被分配给多个broler，其中会有一个首领，首领负责接收消息并通过管道的方式与其他broker进行分区复制。</p>
+<img src="/2020/05/12/Kafka%E5%85%A5%E9%97%A8/pic3.png" srcset="/img/loading.gif" class="">
+
+<p>分区复制提供了消息冗余。一旦首领broker失效，其他broker可以接管领导权。当然相关的消费者和生产者都要重新连接到新的首领上。</p>
+<h3 id="保留消息"><a href="#保留消息" class="headerlink" title="保留消息"></a>保留消息</h3><p>在一定期限内保留消息是Kafka的一个重要特性，Kafkabroker默认的保留策略是：保留一段时间（默认7天）或者保留一定大小（比如1个G）。到达限制后会进行旧消息的过期删除。但是每个主题可以根据业务需求配置自己的保留策略（开发时要注意，Kafka不像Mysql之类的永久存储）。 </p>
+<h2 id="Kafka的优势"><a href="#Kafka的优势" class="headerlink" title="Kafka的优势"></a>Kafka的优势</h2><ul>
+<li><p>多生产者和多消费者。</p>
 </li>
-<li><p><code>rabbitmqctl stop</code>：关闭Erlang节点和Rabbitmq应用</p>
+<li><p>基于磁盘的数据存储，换句话说，Kafka 的数据天生就是持久化的。</p>
 </li>
-<li><p><code>rabbitmqctl stop_app</code>：关闭Rabbitmq应用</p>
+<li><p>高伸缩性，Kafka 一开始就被设计成一个具有灵活伸缩性的系统，对在线集群的伸缩丝毫不影响整体系统的可用性。</p>
 </li>
-<li><p><code>rabbitmqctl start_app</code>：启动Rabbitmq应用</p>
-</li>
-<li><p><code>rabbitmqctl status</code>：检查消息节点是否正常</p>
-</li>
-</ul>
-<p>Rabbitmq配置文件放在 /etc/rabbitmq 下，名为rabbitmq.config，没有且需要使用则可以自己新建一个。</p>
-<h4 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h4><pre><code class="shell">rabbitmqctl add_user [username] [pwd]
-rabbitmqctl delete_user [username]
-rabbitmqctl change_password [username] [pwd]</code></pre>
-<h4 id="用户权限"><a href="#用户权限" class="headerlink" title="用户权限"></a>用户权限</h4><p>这个virtual host中所有资源的配置、写、读权限以便管理其中的资源</p>
-<pre><code class="sh">rabbitmqctl set_permissions [-p &lt;vhostpath&gt;] &lt;user&gt; &lt;conf&gt; &lt;write&gt; &lt;read&gt;</code></pre>
-<p>注意在win上，字符全部使用双引号，linux上使用单引号</p>
-<pre><code class="sh">#windows中 .*是正则表达式，表示全部
-rabbitmqctl set_permissions -p / king &quot;.*&quot; &quot;.*&quot; &quot;.*&quot;
-#linux中
-rabbitmqctl set_permissions -p / king &#39;.*&#39; &#39;.*&#39; &#39;.*&#39;</code></pre>
-<h4 id="用户的角色"><a href="#用户的角色" class="headerlink" title="用户的角色"></a>用户的角色</h4><pre><code>rabbitmqctl  set_user_tags [username] [tag]</code></pre><p>username为用户名， tag为角色名共有administrator、monitoring、policymaker、management、none五种。<br>赋予其administrator角色</p>
-<pre><code class="sh">rabbitmqctl set_user_tags testuser administrator</code></pre>
-<h4 id="查看队列"><a href="#查看队列" class="headerlink" title="查看队列"></a>查看队列</h4><pre><code class="sh">rabbitmqctl list_queues</code></pre>
-<h4 id="查看交换器"><a href="#查看交换器" class="headerlink" title="查看交换器"></a>查看交换器</h4><pre><code class="sh">rabbitmqctl list_exchanges</code></pre>
-<h4 id="查看绑定"><a href="#查看绑定" class="headerlink" title="查看绑定"></a>查看绑定</h4><pre><code class="sh">rabbitmqctl list_bindings</code></pre>
-<h2 id="RabbitMQ集群"><a href="#RabbitMQ集群" class="headerlink" title="RabbitMQ集群"></a>RabbitMQ集群</h2><h3 id="内建集群"><a href="#内建集群" class="headerlink" title="内建集群"></a>内建集群</h3><p>RabbitMQ内建集群的设计目的：</p>
-<ul>
-<li>保证生产者和消费者在单个节点崩溃的情况下，能够继续运行。</li>
-<li>通过拓展节点提高吞吐量。</li>
-<li>节点间的元数据、交换器信息会进行复制。元数据信息包括队列名称，属性（是否持久化，是否自动删除等），交换器信息包括交换器类型、属性、绑定关系。</li>
-</ul>
-<p>注意，RabbitMQ节点之间不会复制队列中的消息，如果某个节点宕机，其中保存的消息就会丢失。</p>
-<h3 id="搭建步骤"><a href="#搭建步骤" class="headerlink" title="搭建步骤"></a>搭建步骤</h3><ol>
-<li><p>修改/etc/hosts </p>
-<pre><code>192.168.1.1 node1
-192.168.1.2 node2</code></pre></li>
-<li><p>修改机器名/etc/hostname</p>
-<pre><code>192.168.1.1的机器  node1
-192.168.1.2的机器  node2</code></pre></li>
-<li><p>修改Erlang Cookie文件，不同服务器上的文件内容应该一致，同时权限和所属用户组</p>
-<pre><code>vim /var/lib/rabbitmq/.erlang.cookie</code></pre></li>
-<li><p>node1和node2均要关闭防火墙</p>
-<pre><code>firewall-cmd --permanent --add-port=15672/tcp
-firewall-cmd --permanent --add-port=5672/tcp
-firewall-cmd --permanent --add-port=25672/tcp
-firewall-cmd --permanent --add-port=4369/tcp
-firewall-cmd --reload
-======如果怀疑有端口未打开，使用以下rab命令检查，返回yes表示成功
-firewall-cmd --query-port=4369/tcp</code></pre></li>
-<li><p>在node2上运行，将node2添加到node1中</p>
-<pre><code class="shell">rabbitmqctl stop_app
-rabbitmqctl reset
-#node2中
-rabbitmqctl join_cluster rabbit@node1
-rabbitmqctl start_app
-#检查集群状态（node1和node2均可）
-rabbitmqctl cluster_status</code></pre>
-</li>
-<li><p>加入内存节点</p>
-<pre><code>rabbitmqctl join_cluster rabbit@node1 --ram</code></pre></li>
-<li><p>移除集群中的node2</p>
-<pre><code>rabbitmqctl stop_app
-rabbitmqctl reset
-rabbitmqctl start_app</code></pre></li>
-</ol>
-<h2 id="RabbitMQ集群高可用"><a href="#RabbitMQ集群高可用" class="headerlink" title="RabbitMQ集群高可用"></a>RabbitMQ集群高可用</h2><h3 id="镜像队列"><a href="#镜像队列" class="headerlink" title="镜像队列"></a>镜像队列</h3><p>如果RabbitMQ集群是由多个broker节点构成的，那么从服务的整体可用性上来讲，该集群对于单点失效是有弹性的，但是同时也需要注意，尽管exchange和binding能够在单点失效问题上幸免于难，但是queue和其上持有的message却不行。queue及其内容仅仅存储于单个节点之上，所以一个节点的失效表现为其对应的queue及其内容不可用。</p>
-<p>RabbitMQ的镜像队列机制，可以将queue镜像到cluster中其他的节点之上。在该实现下，如果集群中的一个节点失效了，queue能自动地切换到镜像中的另一个节点以保证服务的可用性。在通常的用法中，针对每一个镜像队列都包含一个master和多个slave，分别对应于不同的节点。slave会准确地按照master执行命令的顺序进行命令执行，故slave与master上维护的状态应该是相同的。除了publish外所有动作都只会向master发送，然后由master将命令执行的结果广播给所有的slave，故看似从镜像队列中的消费操作实际上是在master上执行的。</p>
-<h3 id="镜像队列的配置"><a href="#镜像队列的配置" class="headerlink" title="镜像队列的配置"></a>镜像队列的配置</h3><ol>
-<li>在代码中进行配置</li>
-</ol>
-<pre><code class="java">Map&lt;String, Object&gt; args = new HashMap&lt;String, Object&gt;();
-//镜像到所有节点
-args.put(&quot;x-ha-policy&quot;, &quot;all&quot;);
-//镜像到指定节点
-//args.put(&quot;x-ha-policy&quot;,&quot;nodes&quot;);
-//args.put(&quot;x-ha-nodes&quot;,&quot;[rabbit@node1,rabbit2@node2]&quot;);
-channel.queueDeclare(queueName,false,false, false, args);</code></pre>
-<ol start="2">
-<li>通过命令行配置</li>
-</ol>
-<p>镜像队列的配置通过添加policy完成，policy添加的命令为：</p>
-<pre><code>rabbitmqctl set_policy [-p Vhost] Name Pattern Definition [Priority]</code></pre><ul>
-<li><p>-p Vhost：可选参数，针对指定vhost下的queue进行设置</p>
-</li>
-<li><p>Name：policy的名称</p>
-</li>
-<li><p>Pattern：queue的匹配模式(正则表达式)</p>
-</li>
-<li><p>Definition：镜像定义，包括三个部分ha-mode, ha-params, ha-sync-mode</p>
-<ul>
-<li>ha-mode：指明镜像队列的模式，有效值为 all/exactly/nodes</li>
-<li>all：表示在集群中所有的节点上进行镜像</li>
-<li>exactly：表示在指定个数的节点上进行镜像，节点的个数由ha-params指定</li>
-<li>nodes：表示在指定的节点上进行镜像，节点名称通过ha-params指定</li>
-<li>ha-params：ha-mode模式需要用到的参数</li>
-<li>ha-sync-mode：进行队列中消息的同步方式，有效值为automatic和manual</li>
-</ul>
-</li>
-<li><p>priority：可选参数，policy的优先级</p>
+<li><p>高性能，结合横向扩展生产者、消费者和broker，Kafka 可以轻松处理巨大的信息流（LinkedIn 公司每天处理万亿级数据），同时保证亚秒级的消息延迟。</p>
 </li>
 </ul>
-<p>例如，对队列名称以“queue_”开头的所有队列进行镜像，并在集群的两个节点上完成进行，policy的设置命令为：</p>
-<pre><code>rabbitmqctl set_policy ha-queue-two &#39;^queue_&#39; &#39;{&quot;ha-mode&quot;:&quot;exactly&quot;,&quot;ha-params&quot;:2,&quot;ha-sync-mode&quot;:&quot;automatic&quot;}&#39;</code></pre><h2 id="RabbitMQ负载均衡"><a href="#RabbitMQ负载均衡" class="headerlink" title="RabbitMQ负载均衡"></a>RabbitMQ负载均衡</h2><p>对于RabbitMQ集群来说，主要有两类负载均衡，客户端内部的和服务端的，客户端内部主要是采用负载均衡算法，服务端主要是采用代理服务器，这里采用尝试HAProxy实现RabbitMQ负载均衡的操作。</p>
-<pre><code>============下载并解压============
-cd /usr/local/src/
-wget http://pkgs.fedoraproject.org/repo/pkgs/haproxy/haproxy-1.7.9.tar.gz/sha512/d1ed791bc9607dbeabcfc6a1853cf258e28b3a079923b63d3bf97504dd59e64a5f5f44f9da968c23c12b4279e8d45ff3bd39418942ca6f00d9d548c9a0ccfd73/haproxy-1.7.9.tar.gz
-tar zxvf haproxy-1.7.9.tar.gz
+<h2 id="常见场景"><a href="#常见场景" class="headerlink" title="常见场景"></a>常见场景</h2><h3 id="活动跟踪"><a href="#活动跟踪" class="headerlink" title="活动跟踪"></a>活动跟踪</h3><p>跟踪网站用户和前端应用发生的交互，比如页面访问次数和点击，将这些信息作为消息发布到一个或者多个主题上，这样就可以根据这些数据为机器学习提供数据，更新搜素结果等等（头条、淘宝等总会推送你感兴趣的内容，其实在数据分析之前就已经做了活动跟踪）。</p>
+<h3 id="传递消息"><a href="#传递消息" class="headerlink" title="传递消息"></a>传递消息</h3><p>标准消息中间件的功能</p>
+<h3 id="收集指标和日志"><a href="#收集指标和日志" class="headerlink" title="收集指标和日志"></a>收集指标和日志</h3><p>收集应用程序和系统的度量监控指标，或者收集应用日志信息，通过 Kafka 路由到专门的日志搜索系统，比如 ES（国内用得较多）。</p>
+<h3 id="提交日志"><a href="#提交日志" class="headerlink" title="提交日志"></a>提交日志</h3><p>收集其他系统的变动日志，比如数据库。可以把数据库的更新发布到Kafka上，应用通过监控事件流来接收数据库的实时更新，或者通过事件流将数 据库的更新复制到远程系统。</p>
+<p>还可以当其他系统发生了崩溃，通过重放日志来恢复系统的状态（异地灾备）。</p>
+<h3 id="流处理"><a href="#流处理" class="headerlink" title="流处理"></a>流处理</h3><p>操作实时数据流，进行统计、转换、复杂计算等等。随着大数据技术的不断发展和成熟，无论是传统企业还是互联网公司都已经不再满足于离线批处理，实时流处理的需求和重要性日益增长。</p>
+<p>近年来业界一直在探索实时流计算引擎和API，比如这几年火爆的SparkStreaming、KafkaStreaming、Beam和Flink，其中阿里双11会场展示的实时销售金额，就用的是流计算，是基于Flink，然后阿里在其上定制化的Blink。</p>
 
-============安装============
-cd haproxy-1.7.9
-uname -r
-3.10.0-514.el7.x86_64
-make TARGET=linux310 ARCH=x86_64 PREFIX=/usr/local/haproxy
-make install PREFIX=/usr/local/haproxy
-
-==参数说明：
-==TARGET=linux310，内核版本，使用uname -r查看内核，如：3.10.0-514.el7，此时该参数就为linux310；kernel ==大于2.6.28的可以用：TARGET=linux2628；
-==ARCH=x86_64，系统位数；
-==PREFIX=/usr/local/haprpxy #/usr/local/haprpxy，为haprpxy安装路径。
-
-============添加配置文件============
-cd /usr/local/haproxy
-mkdir conf
-cd conf/
-vim haproxy.cfg
-
-global
-        log 127.0.0.1   local0
-        maxconn 1000
-        daemon
-
-defaults
-        log     global
-        mode    http
-        option  httplog
-        option  dontlognull
-        retries 3
-        timeout connect 5000
-        timeout client  50000
-        timeout server 50000
-
-listen admin_stats
-        bind 0.0.0.0:1080
-        mode http
-        option httplog
-        maxconn 10
-        stats refresh 30s
-        stats uri /stats
-        stats realm XingCloud\ Haproxy
-        stats auth admin:admin
-        stats auth  Frank:Frank
-        stats hide-version
-        stats  admin if TRUE
-
-listen rabbitmq_cluster
-        bind 0.0.0.0:5670
-        mode tcp
-        balance roundrobin
-        server rabbit01 127.0.0.1:5672 check inter 5000 rise 2 fall 3
-        server rabbit02 node2:5672 check inter 5000 rise 2 fall 3
-
-
-
-============启动haproxy============
-/usr/local/haproxy/sbin/haproxy -f /usr/local/haproxy/conf/haproxy.cfg
-
-============验证============
-lsof -i :1080
-
-============访问统计页面============
-http://127.0.0.1:1080/stats</code></pre>
             </div>
             <hr>
             <div>
@@ -379,7 +242,7 @@ http://127.0.0.1:1080/stats</code></pre>
                     
                       <a class="hover-with-bg" href="/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
                     
-                      <a class="hover-with-bg" href="/tags/RabbitMQ/">RabbitMQ</a>
+                      <a class="hover-with-bg" href="/tags/Kafka/">Kafka</a>
                     
                   </span>
                 
@@ -392,9 +255,9 @@ http://127.0.0.1:1080/stats</code></pre>
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/05/12/Kafka%E5%85%A5%E9%97%A8/">
+                      <a href="/2020/05/12/Kafka%E7%9A%84%E5%AE%89%E8%A3%85%E3%80%81%E7%AE%A1%E7%90%86%E5%92%8C%E9%85%8D%E7%BD%AE/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">Kafka入门</span>
+                        <span class="hidden-mobile">Kafka的安装、管理和配置</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -402,8 +265,8 @@ http://127.0.0.1:1080/stats</code></pre>
                   <div class="post-next col-6">
                     
                     
-                      <a href="/2020/05/10/RabbitMQ%E4%B8%8Espring%E7%9A%84%E9%9B%86%E6%88%90/">
-                        <span class="hidden-mobile">RabbitMQ与spring的集成</span>
+                      <a href="/2020/05/11/RabbitMQ%E7%9A%84%E7%AE%A1%E7%90%86/">
+                        <span class="hidden-mobile">RabbitMQ的管理</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -623,7 +486,7 @@ http://127.0.0.1:1080/stats</code></pre>
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "RabbitMQ的管理&nbsp;",
+        "Kafka入门&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
