@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    2.7k 字
+                    3.1k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      10 分钟
+                      11 分钟
                   </span>
                 
 
@@ -176,28 +176,70 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期三, 五月 13日 2020, 8:39 晚上</p>
+                class="note note-warning">本文最后更新于：星期四, 五月 14日 2020, 10:58 上午</p>
             
             <div class="markdown-body">
               <h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="预备环境"><a href="#预备环境" class="headerlink" title="预备环境"></a>预备环境</h3><p>Kafka 是 Java 生态圈下的一员，用 Scala 编写，运行在 Java 虚拟机上，所以安装运行和普通的 Java 程序并没有什么区别。</p>
 <p>安装 Kafka 官方说法，Java 环境推荐 Java8。</p>
-<p>Kafka 需要 Zookeeper 保存集群的元数据信息和消费者信息。Kafka 一般会自带 Zookeeper，但是从稳定性考虑，应该使用单独的 Zookeeper，而且构 建 Zookeeper 集群。</p>
-<h3 id="下载和安装-Kafka"><a href="#下载和安装-Kafka" class="headerlink" title="下载和安装 Kafka"></a>下载和安装 Kafka</h3><p>在 <a href="http://kafka.apache.org/downloads" target="_blank" rel="noopener">http://kafka.apache.org/downloads</a> 上寻找合适的版本下载，我们这里选用的是 kafka_2.11-2.3.0，下载完成后解压到本地目录。</p>
-<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><p>启动 Zookeeper<br> 进入 Kafka 目录下的 bin\windows<br> 执行 <code>kafka-server-start.bat ../../config/server.properties</code>，Linux 下与此类似，进入 bin 后，执行对应的 sh 文件即可</p>
-<h3 id="基本的操作和管理"><a href="#基本的操作和管理" class="headerlink" title="基本的操作和管理"></a>基本的操作和管理</h3><pre><code class="sh">##列出所有主题
-kafka-topics.bat --zookeeper localhost:2181 --list
+<p>Kafka 需要 Zookeeper 保存集群的元数据信息和消费者信息。Kafka 一般会自带 Zookeeper，但是从稳定性考虑，应该使用单独的 Zookeeper，而且构建 Zookeeper 集群。</p>
+<h3 id="windows安装"><a href="#windows安装" class="headerlink" title="windows安装"></a>windows安装</h3><p>在 <a href="http://kafka.apache.org/downloads" target="_blank" rel="noopener">http://kafka.apache.org/downloads</a> 上寻找合适的版本下载，我们这里选用的是 kafka_2.11-2.3.0，下载完成后解压到本地目录。</p>
+<p>启动 Zookeeper后进入 Kafka 目录下的 bin\windows执行 <code>kafka-server-start.bat ../../config/server.properties</code>，Linux 下与此类似，进入 bin 后，执行对应的 sh 文件即可。</p>
+<h3 id="docker安装"><a href="#docker安装" class="headerlink" title="docker安装"></a>docker安装</h3><p>方式1，该命令会安装并启动kafka</p>
+<pre><code>docker run --rm -it -p 2181:2181 -p 3030:3030 -p 8081:8081 -p 8082:8082 -p 8083:8083 -p 9092:9092 -e ADV_HOST=127.0.0.1 -e RUNNING_SAMPLEDATA=1  landoop/fast-data-dev</code></pre><p>方式2</p>
+<pre><code>我操作的linux 地址：172.20.10.10
+kafka需要zookeeper管理，所以需要先安装zookeeper。 
+1、下载zookeeper镜像
+$ docker pull wurstmeister/zookeeper
+
+2、启动镜像生成容器
+$ docker run --name:zookeeper -p 2181:2181 -d wurstmeister/zookeeper
+
+3、下载kafka镜像
+$ docker pull wurstmeister/kafka
+
+4、启动kafka镜像生成容器
+$ docker run -d --name kafka \
+-p 9092:9092 \
+-e KAFKA_BROKER_ID=0 \
+-e KAFKA_ZOOKEEPER_CONNECT=[ip]:2181 \
+-e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://[ip]:9092 \
+-e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -t wurstmeister/kafka
+
+参数说明：
+-e KAFKA_BROKER_ID=0  在kafka集群中，每个kafka都有一个BROKER_ID来区分自己
+-e KAFKA_ZOOKEEPER_CONNECT=[ip]:2181/kafka 配置zookeeper管理kafka的路径
+-e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://[ip]:9092  把kafka的地址端口注册给zookeeper，如果是远程访问要改成外网IP,类如Java程序访问出现无法连接。
+-e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 配置kafka的监听端口
+-v /etc/localtime:/etc/localtime 容器时间同步虚拟机的时间
+
+5、验证kafka是否可以使用
+5.1、进入容器
+$ docker exec -it kafka bash
+
+5.2、进入 /opt/kafka_2.12-2.3.0/bin/ 目录下
+$ cd /opt/kafka_2.12-2.3.0/bin/
+
+5.3、运行kafka生产者发送消息
+$ ./kafka-console-producer.sh --broker-list localhost:9092 --topic sun
+
+发送消息
+&gt; hello word!
+
+5.4、运行kafka消费者接收消息
+$ ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic sun --from-beginning</code></pre><h3 id="基本的操作和管理"><a href="#基本的操作和管理" class="headerlink" title="基本的操作和管理"></a>基本的操作和管理</h3><pre><code class="sh">##列出所有主题
+kafka-topics --zookeeper localhost:2181 --list
 ##列出所有主题的详细信息
-kafka-topics.bat --zookeeper localhost:2181 --describe
+kafka-topics --zookeeper localhost:2181 --describe
 ##创建主题 主题名 my-topic，1 副本，8 分区
-kafka-topics.bat --zookeeper localhost:2181 --create --topic my-topic --replication-factor 1 --partitions 8 ##增加分区，注意:分区无法被删除
-kafka-topics.bat --zookeeper localhost:2181 --alter --topic my-topic --partitions 16
+kafka-topics --zookeeper localhost:2181 --create --topic my-topic --replication-factor 1 --partitions 8 ##增加分区，注意:分区无法被删除
+kafka-topics --zookeeper localhost:2181 --alter --topic my-topic --partitions 16
 ##删除主题
-kafka-topics.bat --zookeeper localhost:2181 --delete --topic my-topic
+kafka-topics --zookeeper localhost:2181 --delete --topic my-topic
 ##创建生产者(控制台)
-kafka-console-producer.bat --broker-list localhost:9092 --topic my-topic ##创建消费者(控制台)
-kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic my-topic --from-beginning ##列出消费者群组(仅 Linux)
-kafka-topics.sh --new-consumer --bootstrap-server localhost:9092 --list ##列出消费者群组详细信息(仅 Linux)
-kafka-topics.sh --new-consumer --bootstrap-server localhost:9092 --describe --group 群组名</code></pre>
+kafka-console-producer --broker-list localhost:9092 --topic my-topic ##创建消费者(控制台)
+kafka-console-consumer --bootstrap-server localhost:9092 --topic my-topic --from-beginning ##列出消费者群组(仅 Linux)
+kafka-topics --new-consumer --bootstrap-server localhost:9092 --list ##列出消费者群组详细信息(仅 Linux)
+kafka-topics --new-consumer --bootstrap-server localhost:9092 --describe --group [群组名]</code></pre>
 <h2 id="Broker配置"><a href="#Broker配置" class="headerlink" title="Broker配置"></a>Broker配置</h2><p>配置文件放在Kafka目录下的config目录中，主要是server.properties文件</p>
 <h3 id="常规配置"><a href="#常规配置" class="headerlink" title="常规配置"></a>常规配置</h3><p><strong>broker.id</strong></p>
 <p>在单机时无需修改，但在集群下部署时往往需要修改。它是每一个 broker 在集群中的唯一表示，要求是正数。当该服务器的 IP 地址发生改变时， broker.id 没有变化，则不会影响 consumers 的消息情况</p>

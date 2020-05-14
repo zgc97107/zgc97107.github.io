@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Kafka的消费者 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期四, 五月 14日 2020, 10:08 上午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    6.9k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      27 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期四, 五月 14日 2020, 6:23 晚上</p>
+            
+            <div class="markdown-body">
+              <h2 id="消费者的工作流程"><a href="#消费者的工作流程" class="headerlink" title="消费者的工作流程"></a>消费者的工作流程</h2><img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic3.png" srcset="/img/loading.gif" class="">
+
+<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="消费者"><a href="#消费者" class="headerlink" title="消费者"></a>消费者</h3><p>消费者的含义，与一般消息中间件中消费者的概念相同。在高并发的情况下，生产者产生消息的速度是远大于消费者消费的速度，单个消费者很可能会 负担不起，此时有必要对消费者进行横向伸缩，于是我们可以使用多个消费者从同一个主题读取消息，对消息进行分流。</p>
+<h3 id="消费者群组"><a href="#消费者群组" class="headerlink" title="消费者群组"></a>消费者群组</h3><p>Kafka里的消费者从属于消费者群组，一个群组里的消费者订阅的都是同一个主题，每个消费者接收主题一部分分区的消息。</p>
+<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic1.png" srcset="/img/loading.gif" class="">
+
+<p>往消费者群组里增加消费者是进行横向伸缩能力的主要方式。所以我们有必要为主题设定合适规模的分区，在负载均衡的时候可以加入更多的消费者。但是要记住，如果群组里消费者数量超过了主题的分区数量，多出来的消费者是没有用处的。</p>
+<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic2.png" srcset="/img/loading.gif" class="">
+
+<p>如果是多个应用程序，需要从同一个主题中读取数据，只要保证每个应用程序有自己的消费者群组就行了。</p>
+<h2 id="消费者的消费方式"><a href="#消费者的消费方式" class="headerlink" title="消费者的消费方式"></a>消费者的消费方式</h2><p>kafka的消费者并不是线程安全的，所以在多线程的环境下，使用KafkaConsumer的实例时需要保证每个消费者线程拥有自己的KafkaConsumer实例。</p>
+<p>创建消费者后，使用subscribe()方法订阅主题，这个方法接受一个主题列表为参数，也可以接受一个正则表达式为参数，正则表达式可以匹配多个主题。如果新创建了新主题，并且主题名字和正则表达式匹配，那么会立即触发一次再均衡，消费者就可以读取新添加的主题。比如，要订阅所有和test相关的主题，可以subscribe(“test.*”)。</p>
+<p>然后使用poll()方法主动的从kafka中获取数据，为了不断的获取消息，需要在循环中不断的进行调用。poll()方法的参数为超时时间，控制poll()方法的阻塞时间，它会让消费者在指定的毫秒数内一直等待broker返回数据。poll()方法将会返回一个记录（消息）列表，每一条记录都包含了记录所属的主题信息，记录所在分区信息，记录在分区里的偏移量，以及记录的键值对。</p>
+<pre><code class="java">public class GroupAConsumer1 {
+
+    private static KafkaConsumer&lt;String,String&gt; consumer = null;
+
+    public static void main(String[] args) {
+        /*消费配置的实例*/
+        Properties properties
+                = KafkaConst.consumerConfig(BusiConst.CONSUMER_GROUP_A,
+                StringDeserializer.class,
+                StringDeserializer.class);
+        /*消息消费者*/
+        consumer = new KafkaConsumer&lt;String, String&gt;(properties);
+        try {
+            //可以订阅多个主题
+            consumer.subscribe(Collections.singletonList(BusiConst.CONSUMER_GROUP_TOPIC));
+            consumer.poll(0);
+            while(true){
+                //kafka只能通过拉取获得消息
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(500);
+                for(ConsumerRecord&lt;String, String&gt; record:records){
+                    System.out.println(String.format(
+                            &quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;,
+                            record.topic(),record.partition(),record.offset(),
+                            record.key(),record.value()));
+                    //do our work
+                }
+            }
+        } finally {
+            consumer.close();
+        }
+    }
+}</code></pre>
+<h3 id="轮询"><a href="#轮询" class="headerlink" title="轮询"></a>轮询</h3><p>poll()方法不仅仅只是获取数据，在新消费者第一次调用时，它会负责查找群组，加入群组，接受分配的分区。如果发生了再均衡，整个过程也是在轮询期间进行的。</p>
+<h2 id="消费者的配置"><a href="#消费者的配置" class="headerlink" title="消费者的配置"></a>消费者的配置</h2><p>消费者有很多属性可以设置，大部分都有合理的默认值，无需调整。有些参数可能对内存使用，性能和可靠性方面有较大影响，可以参考org.apache.kafka.clients.consumer包下ConsumerConfig类。</p>
+<pre><code class="java">public class ConfigKafkaConsumer {
+
+    public static void main(String[] args) {
+        //TODO 消费者三个属性必须指定(broker地址清单、key和value的反序列化器)
+        Properties properties = new Properties();
+        properties.put(&quot;bootstrap.servers&quot;,&quot;127.0.0.1:9092&quot;);
+        properties.put(&quot;key.deserializer&quot;, StringDeserializer.class);
+        properties.put(&quot;value.deserializer&quot;, StringDeserializer.class);
+        //TODO 群组并非完全必须
+        properties.put(ConsumerConfig.GROUP_ID_CONFIG,&quot;test1&quot;);
+        //TODO 更多消费者配置（重要的）
+        properties.put(&quot;auto.offset.reset&quot;,&quot;latest&quot;); //消费者在读取一个没有偏移量的分区或者偏移量无效的情况下，如何处理
+        properties.put(&quot;enable.auto.commit&quot;,true); // 表明消费者是否自动提交偏移 默认值true
+        properties.put(&quot;max.poll.records&quot;,500); // 控制每次poll方法返回的的记录数量 默认值500
+        //分区分配给消费者的策略。系统提供两种策略。默认为Range
+   properties.put(&quot;partition.assignment.strategy&quot;,Collections.singletonList(RangeAssignor.class));
+        KafkaConsumer&lt;String,String&gt; consumer = new KafkaConsumer&lt;String, String&gt;(properties);
+        try {
+            //TODO 消费者订阅主题（可以多个）
+            consumer.subscribe(Collections.singletonList(BusiConst.HELLO_TOPIC));
+            while(true){
+                //TODO 拉取（新版本）
+                ConsumerRecords&lt;String, String&gt; records = consumer.poll(Duration.ofMillis(500));
+                for(ConsumerRecord&lt;String, String&gt; record:records){
+                    System.out.println(String.format(&quot;topic:%s,分区：%d,偏移量：%d,&quot; + &quot;key:%s,value:%s&quot;,record.topic(),record.partition(),
+                            record.offset(),record.key(),record.value()));
+                    //do my work
+                    //打包任务投入线程池
+                    // ex
+                }
+            }
+        } finally {
+            consumer.close();
+        }
+
+    }
+}</code></pre>
+<ul>
+<li>auto.offset.reset：消费者在读取一个没有偏移量的分区或者偏移量无效的情况下，如何处理。默认值是latest，从最新的记录开始读取，另一个值是earliest，表示消费者从起始位置读取分区的记录。注意:如果是消费者在读取一个没有偏移量的分区或者偏移量无效的情况（因消费者长时间失效，包含的偏移量记录已经过时并被删除）下，默认值是latest的话，消费者将从最新的记录开始读取数据（在消费者启动之后生成的记录），所以一般先启动生产者，再启动消费者。</li>
+<li>enable.auto.commit：默认值true，表明消费者是否自动提交偏移。为了尽量避免重复数据和数据丢失，可以改为false，自行控制何时提交。</li>
+<li>partition.assignment.strategy：分区分配给消费者的策略。系统提供两种策略。默认为Range。可以通过继承AbstractPartitionAssigon来自定义策略。<ul>
+<li>Range：把主题的连续分区分配给消费者。(如果分区数量无法被消费者整除、第一个消费者会分到更多分区)</li>
+<li>RoundRobin：把主题的分区循环分配给消费者。</li>
+</ul>
+</li>
+<li>max.poll.records：控制每次poll方法返回的的记录数量。</li>
+<li>fetch.min.bytes：每次fetch请求时，server应该返回的最小字节数。如果没有足够的数据返回，请求会等待，直到足够的数据才会返回。缺省为1个字节。多消费者下，可以设大这个值，以降低broker的工作负载<br>fetch.wait.max.ms，如果没有足够的数据能够满足fetch.min.bytes，则此项配置是指在应答fetch请求之前，server会阻塞的最大时间。缺省为500个毫秒。和上面的fetch.min.bytes结合起来，要么满足数据的大小，要么满足时间，就看哪个条件先满足。</li>
+<li>max.partition.fetch.bytes：指定了服务器从每个分区里返回给消费者的最大字节数，默认1MB。假设一个主题有20个分区和5个消费者，那么每个消费者至少要有4MB的可用内存来接收记录，而且一旦有消费者崩溃，这个内存还需更大。注意，这个参数要比服务器的message.max.bytes更大，否则消费者可能无法读取消息。</li>
+<li>session.timeout.ms：如果consumer在这段时间内没有发送心跳信息，则它会被认为挂掉了。默认3秒。</li>
+<li>client.id：当向server发出请求时，这个字符串会发送给server。目的是能够追踪请求源头，以此来允许ip/port许可列表之外的一些应用可以发送信息。这项应用可以设置任意字符串，因为没有任何功能性的目的，除了记录和跟踪。</li>
+<li>receive.buffer.bytes和send.buffer.bytes：指定TCPsocket接受和发送数据包的缓存区大小。如果它们被设置为-1，则使用操作系统的默认值。如果生产者或消费者处在不同的数据中心，那么可以适当增大这些值，因为跨数据中心的网络一般都有比较高的延迟和比较低的带宽。</li>
+</ul>
+<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="多线程安全问题"><a href="#多线程安全问题" class="headerlink" title="多线程安全问题"></a>多线程安全问题</h3><p>KafkaConsumer的实现不是线程安全的，所以我们在多线程的环境下，使用KafkaConsumer的实例要小心，必须保证每个消费数据的线程拥有自己的KafkaConsumer实例。</p>
+<h3 id="群组协调"><a href="#群组协调" class="headerlink" title="群组协调"></a>群组协调</h3><p>消费者要加入群组时，会向群组协调器发送一个JoinGroup请求，第一个加入群组的消费者成为群主，群主会获得群组的成员列表，并负责给每一个 消费者分配分区。分配完毕后，群组把分配情况发送给群组协调器，协调器再把这些信息发送给所有的消费者，每个消费者只能看到自己的分配信息， 只有群主知道群组里所有消费者的分配信息，这个过程在每次再均衡时都会发生。</p>
+<h3 id="分区再均衡"><a href="#分区再均衡" class="headerlink" title="分区再均衡"></a>分区再均衡</h3><p>当消费者群组里的消费者发生变化，或者主题里的分区发生了变化，都会导致再均衡现象的发生。Kafka中存在着消费者对分区所有权的关系，这样无论是消费者变化，比如增加了消费者，新消费者会读取原本由其他消费者读取的分区，消费者减少，原本由它负责的分区要由其他消费者来读取，增加了分区，哪个消费者来读取这个新增的分区，这些行为，都会导致分区所有权的变化，这种变化就被称为再均衡。</p>
+<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic4.png" srcset="/img/loading.gif" class="">
+
+<p>再均衡对Kafka很重要，这是消费者群组带来高可用性和伸缩性的关键所在。不过一般情况下，尽量减少再均衡，因为再均衡期间，消费者是无法读取消息的，会造成整个群组一小段时间的不可用（STW）。</p>
+<p>消费者通过向称为群组协调器的broker（不同的群组有不同的协调器）发送心跳来维持它和群组的从属关系以及对分区的所有权关系。如果消费者长时间不发送心跳，群组协调器认为它已经死亡，就会触发一次再均衡。在0.10.1及以后的版本中，心跳由单独的线程负责，相关的控制参数为max.poll.interval.ms。</p>
+<h3 id="提交和偏移量"><a href="#提交和偏移量" class="headerlink" title="提交和偏移量"></a>提交和偏移量</h3><p>当我们调用poll()方法的时候，broker返回的是生产者写入Kafka但是还没有被消费者读取过的记录，消费者可以使用Kafka来追踪消息在分区里的位置，我们称之为偏移量。消费者更新自己读取到哪个消息的操作，我们称之为提交。</p>
+<p>消费者会往一个叫做_consumer_offset的特殊主题发送一个消息，里面会包括每个分区的偏移量。发生了再均衡之后，消费者可能会被分配新的分区，为了能够继续工作，消费者需要读取每个分区最后一次提交的偏移量，然后从指定的地方，继续做处理。这时可能会导致两个问题：</p>
+<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic5.png" srcset="/img/loading.gif" class="" title="">
+
+<ul>
+<li>如果提交的偏移量小于消费者实际处理的最后一个消息的偏移量，处于两个偏移量之间的消息会被重复处理。</li>
+<li>如果提交的偏移量大于客户端处理的最后一个消息的偏移量，那么处于两个偏移量之间的消息将会丢失。</li>
+</ul>
+<h2 id="提交偏移量的方式"><a href="#提交偏移量的方式" class="headerlink" title="提交偏移量的方式"></a>提交偏移量的方式</h2><h3 id="自动提交"><a href="#自动提交" class="headerlink" title="自动提交"></a>自动提交</h3><p>自动提交是最简单的提交方式，也是默认提交方式。如果enable.auto.comnit被设为true，消费者会自动把从poll()方法接收到的最大偏移量提交上去。提交时间间隔由auto.commit.interval.ms控制，默认值是5s。自动提交是在轮询里进行的，消费者每次在进行轮询时会检査是否该提交偏移量了，如果是，那么就会提交从上一次轮询返回的偏移量。</p>
+<p>假设我们仍然使用默认的5s提交时间间隔,在最近一次提交之后的3s发生了再均衡，再均衡之后，消费者从最后一次提交的偏移量位置开始读取消息。这个时候偏移量已经落后了3s，所以在这3s内到达的消息会被重复处理。可以通过修改提交时间间隔来更频繁地提交偏移量，减小可能出现重复消息的时间窗，不过这种情况是无法完全避免的。</p>
+<p>在使用自动提交时，每次调用轮询方法都会把上一次调用返回的最大偏移量提交上去，它并不知道具体哪些消息已经被处理了，所以在再次调用之前最好确保所有当前调用返回的消息都已经处理完毕（enable.auto.comnit被设为true时，在调用close()方法之前也会进行自动提交）。一般情况下不会有什么问题，不过在处理异常或提前退出轮询时要格外小心。</p>
+<p>自动提交虽然方便，但是很明显是一种基于时间提交的方式,不过并没有为我们留有余地来避免重复处理消息。</p>
+<h3 id="手动提交（同步）"><a href="#手动提交（同步）" class="headerlink" title="手动提交（同步）"></a>手动提交（同步）</h3><p>我们通过控制偏移量提交时间来消除丢失消息的可能性，并在发生再均衡时减少重复消息的数量。消费者API提供了另一种提交偏移量的方式，开发者可以在必要的时候提交当前偏移量，而不是基于时间间隔。</p>
+<p>auto.commit.offset设为false后，使用commitSync()提交偏移量最简单也最可靠。这个方法会提交由poll()方法返回的最新偏移量，提交成功后马上返回，如果提交失败就抛出异常。</p>
+<pre><code class="java">public class CommitSync {
+
+    public static void main(String[] args) {
+        Properties properties = KafkaConst.consumerConfig(&quot;CommitSync&quot;,
+                StringDeserializer.class,
+                StringDeserializer.class);
+        //取消自动提交
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,false);
+        KafkaConsumer&lt;String,String&gt; consumer
+                = new KafkaConsumer&lt;String, String&gt;(properties);
+        try {
+            consumer.subscribe(Collections.singletonList(
+                    BusiConst.CONSUMER_COMMIT_TOPIC));
+            while(true){
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(500);
+                for(ConsumerRecord&lt;String, String&gt; record:records){
+                    System.out.println(String.format(
+                            &quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;,
+                            record.topic(),record.partition(),record.offset(),
+                            record.key(),record.value()));
+                }
+                //手动提交
+                consumer.commitSync();
+            }
+        } finally {
+            consumer.close();
+        }
+    }
+}</code></pre>
+<p>注意：commitSync()将会提交由poll()返回的最新偏移量，所以在处理完所有记录后要确保调用了commitSync()，否则还是会有丢失消息的风险。如果发生了再均衡，从最近批消息到发生再均衡之间的所有消息都将被重复处理。</p>
+<h3 id="异步提交"><a href="#异步提交" class="headerlink" title="异步提交"></a>异步提交</h3><p>手动提交时，在broker对提交请求作出回应之前，应用程序会一直阻塞。这时我们可以使用commitAsync()方法异步提交，我们只管发送提交请求，无需等待broker的响应。在成功提交或碰到无法恢复的错误之前，commitSync()会一直重试，但是commitAsync不会。它之所以不进行重试，是因为在它收到服务器响应的时候,<br>可能有一个更大的偏移量已经提交成功。</p>
+<p>假设我们发出一个请求用于提交偏移量2000，这个时候发生了短暂的通信问题，服务器收不到请求，自然也不会作出任何响应。与此同时，我们处理了另外一批消息，并成功提交了偏移量3000。如果commitAsync()重新尝试提交偏移量2000，它有可能在偏移量3000之后提交成功。这个时候如果发生再均衡，就会出现重复消息。<br>commitAsync()也支持回调，在broker作出响应时会执行回调。回调经常被用于记录提交错误或生成度量指标。</p>
+<pre><code class="java">public class CommitAsync {
+
+    public static void main(String[] args) {
+        Properties properties = KafkaConst.consumerConfig(
+                &quot;CommitAsync&quot;,
+                StringDeserializer.class,
+                StringDeserializer.class);
+        /*取消自动提交*/
+        properties.put(&quot;enable.auto.commit&quot;, false);
+
+        KafkaConsumer&lt;String, String&gt; consumer
+                = new KafkaConsumer&lt;String, String&gt;(properties);
+        try {
+            consumer.subscribe(Collections.singletonList(
+                    BusiConst.CONSUMER_COMMIT_TOPIC));
+            while (true) {
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(500);
+                for (ConsumerRecord&lt;String, String&gt; record : records) {
+                    System.out.println(String.format(
+                            &quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;,
+                            record.topic(), record.partition(), record.offset(),
+                            record.key(), record.value()));
+                }
+                //异步提交回调方法
+                consumer.commitAsync(new OffsetCommitCallback() {
+                    @Override
+                    public void onComplete(
+                            Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets,
+                            Exception exception) {
+                        if(exception!=null){
+                            System.out.print(&quot;Commmit failed for offsets &quot;);
+                            System.out.println(offsets);
+                            exception.printStackTrace();
+                        }
+                    }
+                });
+            }
+        } finally {
+            consumer.close();
+        }
+    }
+}</code></pre>
+<h3 id="同步和异步组合"><a href="#同步和异步组合" class="headerlink" title="同步和异步组合"></a>同步和异步组合</h3><p>因为同步提交一定会成功、异步可能会失败，所以一般的场景是同步和异步一起来做。一般情况下，针对偶尔出现的提交失败，不进行重试不会有太大问题，因为如果提交失败是因为临时问题导致的，那么后续的提交总会有成功的。但如果这是发生在关闭消费者或再均衡前的最后一次提交，就要确保能够提交成功。</p>
+<p>因此，在消费者关闭前一般会组合使用commitAsync()和commitsync()。</p>
+<pre><code class="java">public class SyncAndAsync {
+    public static void main(String[] args) {
+        /*消息消费者*/
+        Properties properties = KafkaConst.consumerConfig(&quot;SyncAndAsync&quot;,
+                StringDeserializer.class,
+                StringDeserializer.class);
+        /*取消自动提交*/
+        properties.put(&quot;enable.auto.commit&quot;,false);
+
+        KafkaConsumer&lt;String,String&gt; consumer
+                = new KafkaConsumer&lt;String, String&gt;(properties);
+        try {
+            consumer.subscribe(Collections.singletonList(
+                    BusiConst.CONSUMER_COMMIT_TOPIC));
+            while(true){
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(500);
+                for(ConsumerRecord&lt;String, String&gt; record:records){
+                    System.out.println(String.format(
+                            &quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;,
+                            record.topic(),record.partition(),record.offset(),
+                            record.key(),record.value()));
+                }
+                //异步提交
+                consumer.commitAsync();
+            }
+        } catch (CommitFailedException e) {
+            System.out.println(&quot;Commit failed:&quot;);
+            e.printStackTrace();
+        } finally {
+            try {
+                //同步提交
+                consumer.commitSync();
+            } finally {
+                consumer.close();
+            }
+        }
+    }
+}</code></pre>
+<h3 id="特定提交"><a href="#特定提交" class="headerlink" title="特定提交"></a>特定提交</h3><p>在我们前面的提交中，提交偏移量的频率与处理消息批次的频率是一样的。但如果想要更频繁地提交，比如<br>poll()方法返回一大批数据，为了避免因再均衡引起的重复处理整批消息，想要在批次中间提交偏移量，这时无法通过调用commitSync()或commitAsync()来实现，因为它们只会提交最后一个偏移量，而此时该批次里的消息还没有处理完。</p>
+<p>消费者API允许在调用commitSync()和commitAsync()方法时传进去希望提交的分区和偏移量的Map。假设我们处理了半个批次的消息，最后一个来自主题“customers”，分区3的消息的偏移量是5000，你可以调用commitSync()方法来提交它。不过，因为消费者可能不只读取一个分区，因为我们需要跟踪所有分区的偏移量，所以在这个层面上控制偏移量的提交会让代码变复杂。</p>
+<pre><code class="java">public class CommitSpecial {
+    public static void main(String[] args) {
+        /*消息消费者*/
+        Properties properties = KafkaConst.consumerConfig(
+                &quot;CommitSpecial&quot;,
+                StringDeserializer.class,
+                StringDeserializer.class);
+        /*取消自动提交*/
+        properties.put(&quot;enable.auto.commit&quot;,false);
+        KafkaConsumer&lt;String,String&gt; consumer
+                = new KafkaConsumer&lt;String, String&gt;(properties);
+        //创建特定提交所需要的Map
+        Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets
+                = new HashMap&lt;TopicPartition, OffsetAndMetadata&gt;();
+        int count = 0;
+        try {
+            consumer.subscribe(Collections.singletonList(
+                    BusiConst.CONSUMER_COMMIT_TOPIC));
+            while(true){
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(500);
+                for(ConsumerRecord&lt;String, String&gt; record:records){
+                    System.out.println(String.format(
+                            &quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;,
+                            record.topic(),record.partition(),record.offset(),
+                            record.key(),record.value()));
+                    //创建并放入对象
+                    currOffsets.put(new TopicPartition(record.topic(),record.partition()),
+                            new OffsetAndMetadata(record.offset()+1,&quot;no meta&quot;));
+                    if(count%11==0){
+                        //提交
+                        consumer.commitAsync(currOffsets,null);
+                    }
+                    count++;
+                }
+            }
+        } finally {
+            consumer.close();
+        }
+    }
+}</code></pre>
+<h2 id="再均衡监听器"><a href="#再均衡监听器" class="headerlink" title="再均衡监听器"></a>再均衡监听器</h2><p>消费者在退出和进行分区再均衡之前会做一些清理工作比如提交偏移量、关闭文件句柄、数据库连接等。 在为消费者分配新分区或移除旧分区时，可以通过消费者API执行一些应用程序代码来实现一些功能，然后在调用subscribe()方法时传进去一个 ConsumerRebalancelistener实例就可以了。比如实现从特定偏移量处开始获取记录。</p>
+<p>到目前为止，我们知道了如何使用poll()方法从各个分区的最新偏移量处开始处理消息。不过，有时候我们也需要从特定的偏移量处开始读取消息。如果想从分区的起始位置开始读取消息，或者直接跳到分区的末尾开始读取消息，可以使seekToBeginning(Collection&lt;TopicPartition&gt;tp)和seekToEnd(Collection&lt;TopicPartition&gt;tp)这两个方法。不过，Kaka也为我们提供了用于查找特定偏移量的API。它有很多用途，比如向后回退几个消息或者向前跳过几个消息（对时间比较敏感的应用程序在处理滞后的情况下希望能够向前跳过若干个消息）。在使用Kafka以外的系统来存储偏移量时，它将给我们带来更大的惊喜–让消息的业务处理和偏移量的提交变得一致。</p>
+<p>试想一下这样的场景：应用程序从Kaka读取事件对它们进行处理后把结果保存到数据库。如果不想丢失任何数据，也不想在数据库里多次保存相同的结果。可以毎处理一条记录就提交一次偏移量。尽管如此，在记录被保存到数据库之后以及偏移量被提交之前，应用程序仍然有可能发生崩溃，导致重复处理数据，数据库里就会出现重复记录。</p>
+<p>如果保存记录和偏移量可以在一个原子操作里完成，就可以避免出现上述情况。记录和偏移量要么都被成功提交,要么都不提交。如果记录是保存在数据库里而偏移量是提交到Kafka上，那么就无法实现原子操作不过，如果在同一个事务里把记录和偏移量都写到数据库里就可以保证操作的原子性。</p>
+<p>在消费者启动或分配到新分区时，可以使用seck()方法查找保存在数据库里的偏移量。可以使用ConsumerRebalancelistener和seek()方法确保我们是从数据库里保存的偏移量所指定的位置开始处理消息的。</p>
+<pre><code class="java">public class HandlerRebalance implements ConsumerRebalanceListener {
+
+    /*模拟一个保存分区偏移量的数据库表*/
+    public final static ConcurrentHashMap&lt;TopicPartition, Long&gt;
+            PARTITION_OFFSET_MAP = new ConcurrentHashMap&lt;TopicPartition, Long&gt;();
+
+    private final Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets;
+    private final KafkaConsumer&lt;String, String&gt; consumer;
+    //private final Transaction  tr事务类的实例
+
+    public HandlerRebalance(Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets,
+                            KafkaConsumer&lt;String, String&gt; consumer) {
+        this.currOffsets = currOffsets;
+        this.consumer = consumer;
+    }
+
+    //分区再均衡之前
+    @Override
+    public void onPartitionsRevoked(
+            Collection&lt;TopicPartition&gt; partitions) {
+        final String id = Thread.currentThread().getId() + &quot;&quot;;
+        System.out.println(id + &quot;-onPartitionsRevoked参数值为：&quot; + partitions);
+        System.out.println(id + &quot;-服务器准备分区再均衡，提交偏移量。当前偏移量为：&quot;
+                + currOffsets);
+        //我们可以不使用consumer.commitSync(currOffsets);
+        //提交偏移量到kafka,由我们自己维护*/
+        //开始事务
+        //偏移量写入数据库
+        System.out.println(&quot;分区偏移量表中：&quot; + PARTITION_OFFSET_MAP);
+        for (TopicPartition topicPartition : partitions) {
+            PARTITION_OFFSET_MAP.put(topicPartition,
+                    currOffsets.get(topicPartition).offset());
+        }
+        consumer.commitSync(currOffsets);
+        //提交业务数和偏移量入库  tr.commit
+    }
+
+    //分区再均衡完成以后
+    @Override
+    public void onPartitionsAssigned(
+            Collection&lt;TopicPartition&gt; partitions) {
+        final String id = Thread.currentThread().getId() + &quot;&quot;;
+        System.out.println(id + &quot;-再均衡完成，onPartitionsAssigned参数值为：&quot; + partitions);
+        System.out.println(&quot;分区偏移量表中：&quot; + PARTITION_OFFSET_MAP);
+        for (TopicPartition topicPartition : partitions) {
+            System.out.println(id + &quot;-topicPartition&quot; + topicPartition);
+            //模拟从数据库中取得上次的偏移量
+            Long offset = PARTITION_OFFSET_MAP.get(topicPartition);
+            if (offset == null) continue;
+            consumer.seek(topicPartition, PARTITION_OFFSET_MAP.get(topicPartition));
+        }
+
+    }
+}</code></pre>
+<p>消费者中</p>
+<pre><code class="java">public class ConsumerWorker implements Runnable {
+
+    private final KafkaConsumer&lt;String, String&gt; consumer;
+    /*用来保存每个消费者当前读取分区的偏移量*/
+    private final Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets;
+    private final boolean isStop;
+
+    public ConsumerWorker(boolean isStop) {
+        /*消息消费者配置*/
+        Properties properties = KafkaConst.consumerConfig(
+                RebalanceConsumer.GROUP_ID,
+                StringDeserializer.class,
+                StringDeserializer.class);
+        /*取消自动提交*/
+        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG
+                , false);
+        this.isStop = isStop;
+        this.consumer
+                = new KafkaConsumer&lt;String, String&gt;(properties);
+        this.currOffsets
+                = new HashMap&lt;TopicPartition, OffsetAndMetadata&gt;();
+        //设置ConsumerRebalancelistener
+        consumer.subscribe(Collections.singletonList(BusiConst.REBALANCE_TOPIC),
+                new HandlerRebalance(currOffsets, consumer));
+    }
+
+    @Override
+    public void run() {
+        final String id = Thread.currentThread().getId() + &quot;&quot;;
+        int count = 0;
+        TopicPartition topicPartition = null;
+        long offset = 0;
+        try {
+            while (true) {
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(500);
+                //业务处理
+                //开始事务
+                for (ConsumerRecord&lt;String, String&gt; record : records) {
+                    System.out.println(id + &quot;|&quot; + String.format(
+                            &quot;处理主题：%s，分区：%d，偏移量：%d，&quot; +
+                                    &quot;key：%s，value：%s&quot;,
+                            record.topic(), record.partition(),
+                            record.offset(), record.key(), record.value()));
+                    topicPartition = new TopicPartition(record.topic(),
+                            record.partition());
+                    offset = record.offset() + 1;
+                    currOffsets.put(topicPartition, new OffsetAndMetadata(offset,
+                            &quot;no&quot;));
+                    count++;
+                    //执行业务sql
+                }
+                if (currOffsets.size() &gt; 0) {
+                    //提交事务,同时将业务和偏移量放入HandlerRebalance
+                    for (TopicPartition topicPartitionkey : currOffsets.keySet()) {
+                        HandlerRebalance.PARTITION_OFFSET_MAP.put(topicPartitionkey,
+                                currOffsets.get(topicPartitionkey).offset());
+                    }
+                }
+                if (isStop &amp;&amp; count &gt;= 5) {
+                    System.out.println(id + &quot;-将关闭，当前偏移量为：&quot; + currOffsets);
+                    consumer.commitSync();
+                    break;
+                }
+                consumer.commitSync();
+            }
+        } finally {
+            consumer.close();
+        }
+    }
+}</code></pre>
+<h2 id="优雅的退出"><a href="#优雅的退出" class="headerlink" title="优雅的退出"></a>优雅的退出</h2><p>如果确定要退出循环，可以通过另一个线程调用consumer.wakeup()方法。如果循环运行在主线程里，可以在ShutdownHook里调用该方法。要记住，consumer.wakeup()是消费者唯一一个可以从其他线程里安全调用的方法。调用consumer.wakeup()可以退出poll()，并抛出WakeupException异常。我们不需要处理WakeupException，因为它只是用于跳出循环的一种方式。不过，在退出consumer之前仍需要调用consumer.close()方法，它会提交任何还没有提交的东西，并向群组协调器发送消息，告知自己要离开群组，接下来就会触发再均衡，而不需要等待会话超时。</p>
+<h2 id="独立消费者"><a href="#独立消费者" class="headerlink" title="独立消费者"></a>独立消费者</h2><p>到目前为止，我们讨论了消费者群组，分区被自动分配给群组里的消费者，在群组里新增或移除消费者时自动触发再均衡。不过有时候可能只需要一个消费者从一个主题的所有分区或者某个特定的分区读取数据。这个时候就不需要消费者群组和再均衡了，只需要把主题或者分区分配给消费者，然后开始读取消息并提交偏移量。</p>
+<p>如果是这样的话，就不需要订阅主题，取而代之的是为自己分配分区。一个独立消费者可以订阅主题，并加入消费者群组，或者为自己分配分区，但不能同时做这两件事情。</p>
+<pre><code class="java">public class IndependConsumer {
+
+    private static KafkaConsumer&lt;String,String&gt; consumer = null;
+    public static final String SINGLE_CONSUMER_TOPIC = &quot;single-consumer&quot;;
+
+    public static void main(String[] args) {
+        Properties properties = new Properties();
+        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                KafkaConst.LOCAL_BROKER);
+        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+
+        /*独立消息消费者*/
+        consumer= new KafkaConsumer&lt;String, String&gt;(properties);
+        List&lt;TopicPartition&gt; topicPartitionList = new ArrayList&lt;TopicPartition&gt;();
+        //独立消费者不需要订阅主题，只需要分配主题中的分区即可
+        List&lt;PartitionInfo&gt; partitionInfos
+                = consumer.partitionsFor(SINGLE_CONSUMER_TOPIC);
+        //构造分区list（这里全部消费）
+        if(null!=partitionInfos){
+            for(PartitionInfo partitionInfo:partitionInfos){
+                topicPartitionList.add(new TopicPartition(partitionInfo.topic(),
+                        partitionInfo.partition()));
+            }
+        }
+        //订阅分区消息
+        consumer.assign(topicPartitionList);
+        try {
+
+            while(true){
+                ConsumerRecords&lt;String, String&gt; records
+                        = consumer.poll(1000);
+                for(ConsumerRecord&lt;String, String&gt; record:records){
+                    System.out.println(String.format(
+                            &quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;,
+                            record.topic(),record.partition(),record.offset(),
+                            record.key(),record.value()));
+                    //do our work
+                }
+            }
+        } finally {
+            consumer.close();
+        }
+    }
+}</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                      <a class="hover-with-bg" href="/tags/Kafka/">Kafka</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/">
+                        <span class="hidden-mobile">Kafka的生产者</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Kafka的消费者&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

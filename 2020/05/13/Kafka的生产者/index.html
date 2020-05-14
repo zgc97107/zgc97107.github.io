@@ -176,17 +176,19 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期三, 五月 13日 2020, 10:26 晚上</p>
+                class="note note-warning">本文最后更新于：星期四, 五月 14日 2020, 3:23 下午</p>
             
             <div class="markdown-body">
-              <h2 id="生产者发送消息的基本流程"><a href="#生产者发送消息的基本流程" class="headerlink" title="生产者发送消息的基本流程"></a>生产者发送消息的基本流程</h2><img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic1.png" srcset="/img/loading.gif" class="">
+              <h2 id="Kafka整体的工作流程"><a href="#Kafka整体的工作流程" class="headerlink" title="Kafka整体的工作流程"></a>Kafka整体的工作流程</h2><img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic4.png" srcset="/img/loading.gif" class="">
+
+<h2 id="生产者的工作流程"><a href="#生产者的工作流程" class="headerlink" title="生产者的工作流程"></a>生产者的工作流程</h2><img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic1.png" srcset="/img/loading.gif" class="">
 
 <p>首先需要创建一个ProducerRecord对象，ProducerRecord对象包含目标主题和要发送的内容，还可以指定键或分区。在发送ProducerRecord对象时，生产者要先把键和值对象通过序列化器转换为字节数组，然后发送到分区器。</p>
 <p>如果在ProducerRecord对象里指定了分区，分区器会直接返回指定的分区。如果没有指定分区，分区器会根据ProducerRecord对象的键来选择一个分区。选择好分区后，这条记录被添加到一个记录批次中（双端队列，尾部写入），这个批次的所有消息会被发送到相同的主题和分区上。有一个独立的线程负责把这些记录批次发送到相应的broker上。</p>
 <p>注意：序列化器和分区器不属于Kafka服务，是依赖包中提供的功能。</p>
 <p>服务器在收到这些消息时会返回一个响应。如果消息成功写入Kafka，就返回一个RecordMetaData对象，它包含了主题和分区信息，以及记录在分区里的偏移量。如果写入失败，则会返回一个错误。生产者在收到错误之后会尝试重新发送消息，几次之后如果还是失败，就返回错误信息。</p>
 <p>生产者发送消息一般会发生两类错误:一类是可重试错误，比如连接错误（可通过再次建立连接解决）、noleader（无主，可通过分区重新选举首领解决）。另一类是无法通过重试解决，比如消息大小超过了message.max.bytes的限制，这类消息不会进行任何重试直接抛出异常。</p>
-<h2 id="生产者的发送方式"><a href="#生产者的发送方式" class="headerlink" title="生产者的发送方式"></a>生产者的发送方式</h2><p>使用之前需要在pom中引入依赖</p>
+<h2 id="生产者的发送方式"><a href="#生产者的发送方式" class="headerlink" title="生产者的发送方式"></a>生产者的发送方式</h2><p>kafka的生产者是线程安全的，不需要额外的机制来保证线程安全，使用之前需要在pom中引入依赖</p>
 <pre><code class="xml">&lt;dependency&gt;
     &lt;groupId&gt;org.apache.kafka&lt;/groupId&gt;
     &lt;artifactId&gt;kafka-clients&lt;/artifactId&gt;
@@ -284,7 +286,7 @@
         }
     }
 }</code></pre>
-<h2 id="发送属性的配置"><a href="#发送属性的配置" class="headerlink" title="发送属性的配置"></a>发送属性的配置</h2><p>生产者有很多属性可以设置，大部分都有合理的默认值，无需调整。有些参数可能对内存使用，性能和可靠性方面有较大影响。ProducerConfig类中，有关于参数的默认设置。</p>
+<h2 id="生产者的配置"><a href="#生产者的配置" class="headerlink" title="生产者的配置"></a>生产者的配置</h2><p>生产者有很多属性可以设置，大部分都有合理的默认值，无需调整。有些参数可能对内存使用，性能和可靠性方面有较大影响，可以参考org.apache.kafka.clients.producer包下ProducerConfig类。</p>
 <pre><code class="java">public class ConfigKafkaProducer {
 
     public static void main(String[] args) {
@@ -402,6 +404,12 @@
                 <div class="post-prevnext row">
                   <div class="post-prev col-6">
                     
+                    
+                      <a href="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">Kafka的消费者</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </div>
                   <div class="post-next col-6">
