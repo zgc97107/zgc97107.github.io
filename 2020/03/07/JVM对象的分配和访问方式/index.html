@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>JVM的整体介绍和运行时数据区 - zgcheng&#39;s blog</title>
+  <title>JVM对象的分配和访问方式 - zgcheng&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期四, 三月 5日 2020, 12:23 中午
+                  星期六, 三月 7日 2020, 5:47 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    2.7k 字
+                    2.3k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      9 分钟
+                      8 分钟
                   </span>
                 
 
@@ -176,114 +176,98 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期六, 五月 23日 2020, 11:47 中午</p>
+                class="note note-warning">本文最后更新于：星期六, 五月 23日 2020, 12:15 中午</p>
             
             <div class="markdown-body">
-              <h2 id="整体介绍"><a href="#整体介绍" class="headerlink" title="整体介绍"></a>整体介绍</h2><h3 id="Java-SE体系架构"><a href="#Java-SE体系架构" class="headerlink" title="Java SE体系架构"></a>Java SE体系架构</h3><p>JavaSE，Java平台标准版，为Java EE和Java ME提供了基础。</p>
-<p>JDK：Java开发工具包，JDK是JRE的超集，包含JRE中的所有内容，以及开发程序所需的编译器和调试程序等工具。</p>
-<p>JRE：Java SE运行时环境 ，提供库、Java虚拟机和其他组件来运行用Java编程语言编写的程序。主要类库，包括：程序部署发布、用户界面工具类、继承库、其他基础库，语言和工具基础库</p>
-<p>JVM：java虚拟机，负责JavaSE平台的硬件和操作系统无关性、编译执行代码（字节码）和平台安全性</p>
-<img src="/2020/03/05/JVM%E7%9A%84%E6%95%B4%E4%BD%93%E4%BB%8B%E7%BB%8D%E5%92%8C%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/pic1.png" srcset="/img/loading.gif" class="">
+              <h2 id="对象的分配过程"><a href="#对象的分配过程" class="headerlink" title="对象的分配过程"></a>对象的分配过程</h2><img src="/2020/03/07/JVM%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%86%E9%85%8D%E5%92%8C%E8%AE%BF%E9%97%AE%E6%96%B9%E5%BC%8F/pic1.png" srcset="/img/loading.gif" class="">
 
-<h3 id="虚拟机的历史"><a href="#虚拟机的历史" class="headerlink" title="虚拟机的历史"></a>虚拟机的历史</h3><p>虚拟机的区别主要在于字节码的执行的方式，目前主要的执行方式有解释执行和编译执行（针对字节码的执行），解释执行就是边翻译为机器码边执行，编译执行（即时编译）就是先将一个方法中的所有字节码全部编译成机器码之后再执行。</p>
-<p>常见的几种虚拟机有：</p>
+<ol>
+<li><p><strong>检查加载</strong></p>
+<p>先检查对应的类是否已经加载。如果没有，则进行类加载</p>
+</li>
+<li><p><strong>分配内存</strong></p>
+<p>虚拟机将为新生对象分配内存。为对象分配空间的任务等同于把一块确定大小的内存从Java堆中划分出来，内存的大小由方法区的信息确定</p>
+<p><strong>内存的分配方式</strong>：</p>
 <ul>
-<li><p>HotSpot VM（SUN）：以前使用最广的Java虚拟机，采用的是先解释执行，到了一定时机后热点代码（多次执行、循环等）再翻译成机器码，具有热点代码探测技术（通过执行计数器找到最有编译价值的代码，如果代码用得非常频繁，就会把这些代码编译成本地代码）。</p>
-</li>
-<li><p>JRcokit VM（BEA）：号称“世界上最快的Java虚拟机 ”，JRockit采取的方法是在执行class时直接编译为机器码（Java程序启动速度会比较慢）。</p>
-</li>
-<li><p>J9 VM（IBM）J9和Hotspot比较接近，主要是用在IBM产品（IBM WebSphere和IBM的AIX平台上），华为有的项目用的J9。</p>
-</li>
-<li><p>Dalvik VM（Google）：Google Android Dalivk VM：谷歌移动端的虚拟机，使用的寄存器架构，执行dex（Dalvik Executable）通过class转化而来。</p>
-</li>
-<li><p>HotSpot VM（ORACLE）：目前使用范围最广的Java虚拟机，由ORACLE公司收购HotSpot VM(SUN)和JRcokit VM(BEA)之后合并而来。</p>
-</li>
+<li><strong>指针碰撞</strong>：如果<strong>Java堆中内存是绝对规整的</strong>，所有用过的内存都放在一边，空闲的内存放在另一边，中间放着一个指针作为分界点的指示器，那所分配内存就仅仅是把那个指针向空闲空间那边挪动一段与对象大小相等的距离，这种分配方式称为“<strong>指针碰撞</strong>”。    </li>
+<li><strong>空闲列表</strong>：如果<strong>Java堆中的内存并不是规整的</strong>，已使用的内存和空闲的内存相互交错，那就没有办法简单地进行指针碰撞了，虚拟机就必须维护一个列表，记录上哪些内存块是可用的，在分配的时候从列表中找到一块足够大的空间划分给对象实例，并更新列表上的记录，这种分配方式称为“<strong>空闲列表</strong>”。</li>
 </ul>
-<h3 id="未来的发展方向"><a href="#未来的发展方向" class="headerlink" title="未来的发展方向"></a>未来的发展方向</h3><ul>
-<li><p><strong>模块化：</strong>OSGI（动态化、模块化），应用层面就是微服务，互联网的发展方向</p>
-</li>
-<li><p><strong>混合语言</strong>：多个语言都可以运行在JVM中，google的Kotlin成为了Android的官方语言，还有使用Scala语言编写的Kafka。</p>
-</li>
-<li><p><strong>多核并行</strong>：CPU从高频次转变为多核心，多核时代。JDK1.7引入了Fork/Join，JDK1.8提出lambda表达式（函数式编程天生适合并行运）。</p>
-</li>
-<li><p><strong>丰富语法：</strong>JDK5提出自动装箱、泛型、动态注解等语法。JDK7二进制原生支持。try-catch-finally 至try-with-resource</p>
-</li>
-<li><p><strong>64位：</strong>虽然同样的程序64位内存消耗比32位要多一点，但是支持内存大，所以虚拟机都会完全过渡到64位，32位的JVM有4G的堆大小限制。</p>
-</li>
-<li><p><strong>更强的垃圾回收器（CMS、G1位现在主流的回收器）</strong>：JDK11中提出了ZGC，其垃圾回收暂停时间不超过10毫秒，且不会随着堆的增加而增加，可以支持TB级别的堆回收。JDK12支持并发类卸载，进一步缩短暂停时间 JDK13（计划于2019年9月）将最大堆大小从4TB增加到16TB</p>
-</li>
+<p>选择哪种分配方式由<strong>Java堆是否规整</strong>决定，而Java堆是否规整又由<strong>所采用的垃圾收集器是否带有压缩整理功能决定</strong>。</p>
+<p>对象创建在虚拟机中是非常频繁的行为，修改指针的指向位置可能存在线程安全问题。可能出现正在给对象A分配内存，指针还没来得及修改，对象B又同时使用了原来的指针来分配内存的情况。</p>
+<p>解决这个问题有两种方案：</p>
+<ul>
+<li><strong>CAS机制及失败重试的方法</strong>保证分配内存空间的动作的线程安全。</li>
+<li>使用<strong>分配缓冲（Thread Local Allocation Buffer,TLAB）</strong>，即为每个线程在Java堆中预先分配一块大小约为Eden1%的私有内存，让线程在为新对象分配内存空间时使用自己专属的分配指针来分配空间，减少同步开销。</li>
 </ul>
-<h2 id="运行时数据区域"><a href="#运行时数据区域" class="headerlink" title="运行时数据区域"></a>运行时数据区域</h2><img src="/2020/03/05/JVM%E7%9A%84%E6%95%B4%E4%BD%93%E4%BB%8B%E7%BB%8D%E5%92%8C%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/pic2.png" srcset="/img/loading.gif" class="">
+<p>分配只是让每个线程有私有的分配指针，<strong>对象的内存空间还是给所有线程访问的</strong>，只是其它线程无法在这个区域分配而已。当一个TLAB用满（分配指针top撞上分配极限end了），就需要重新从Eden区域申请。</p>
+</li>
+<li><p><strong>内存空间初始化</strong></p>
+<p>内存分配完成后，虚拟机需要将分配到的内存空间初始化为零值，这一步操作保证了对象的实例字段不赋初始值也可以访问对应的零值(如int值为0，boolean值为false，对象类型为null等)。</p>
+</li>
+<li><p><strong>设置</strong></p>
+<p>对对象头的信息进行必要的设置，例如这个对象的hashcode、GC分代年龄、锁标志状态、线程持有的锁、偏向线程ID、偏向时间戳、对应的类的实例、类的元数据信息等。</p>
+</li>
+<li><p><strong>对象初始化</strong></p>
+<p>在上面工作都完成之后，从虚拟机的视角来看，一个新的对象已经产生了，但从程序的角度来看，对象创建才刚刚开始，所有的字段都还为零值。</p>
+</li>
+</ol>
+<h2 id="堆内存分配策略"><a href="#堆内存分配策略" class="headerlink" title="堆内存分配策略"></a>堆内存分配策略</h2><h3 id="堆内存的划分"><a href="#堆内存的划分" class="headerlink" title="堆内存的划分"></a>堆内存的划分</h3><img src="/2020/03/07/JVM%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%86%E9%85%8D%E5%92%8C%E8%AE%BF%E9%97%AE%E6%96%B9%E5%BC%8F/pic4.png" srcset="/img/loading.gif" class="">
 
-<p>JDK将代码编译为class文件后经过类加载存储在JVM的运行时数据区（内存），执行时会由执行引擎使用c++语言去执行对应的机器码。</p>
-<p>JVM在运行过程中会把它管理的内存划分成不同的数据区域。</p>
-<img src="/2020/03/05/JVM%E7%9A%84%E6%95%B4%E4%BD%93%E4%BB%8B%E7%BB%8D%E5%92%8C%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/pic3.png" srcset="/img/loading.gif" class="">
+<p>在 Java 中，堆被划分成两个不同的区域：<strong>新生代 ( Young )</strong>、<strong>老年代 ( Old )</strong>。新生代 ( Young ) 又被划分为三个区域：<strong>Eden</strong>、<strong>From Survivor</strong>、<strong>To Survivor</strong>。 </p>
+<p>参数设置</p>
+<ul>
+<li><p><code>-Xmn20m</code>表示新生代大小为20m（初始容量和最大容量）</p>
+</li>
+<li><p><code>-XX:SurvivorRatio=8</code> 表示Eden和Survivor的比值，缺省为8表示Eden:From:To= 8:1:1，如果设置为2则表示 Eden:From:To= 2:1:1</p>
+</li>
+<li><p><code>-XX:PretenureSizeThreshold=4m</code> 表示如果对象大小超过该数值将进入老年代</p>
+</li>
+<li><p><code>-XX:+PrintGCDetails</code> 表示打印GC详细信息</p>
+</li>
+<li><p><code>-XX:TargetSurvivorRatio=50%</code> 设定survivor区的目标使用率，默认为50%（分配策略中会有详细解释）</p>
+</li>
+<li><p><code>-XX:MaxTenuringThreshold=15</code> 晋升年龄最大阈值，默认15</p>
+</li>
+</ul>
+<h3 id="分配策略"><a href="#分配策略" class="headerlink" title="分配策略"></a>分配策略</h3><ul>
+<li><p><strong>对象优先在Eden分配</strong></p>
+<p>大多数情况下，对象在新生代Eden区中分配。当Eden区没有足够空间分配时，虚拟机将发起一次Minor GC。</p>
+</li>
+<li><p><strong>大对象直接进入老年代</strong></p>
+<p>如果对象的大小超过<code>PretenureSizeThreshold</code>的数值将直接进入老年代。</p>
+</li>
+<li><p><strong>长期存活的对象将进入老年代</strong></p>
+<p>Minor GC进行回收后，新生代中所有区域存活对象的年龄会加1，Eden区域中存活的对象将进入Survivor(from)区或Survivor(to)区，Survivor(from)区的存活对象会进入Survivor(to)区，Survivor(to)区存活的对象会进入Survivor(from)区，当多次回收、对象的年龄达到<code>MaxTenuringThreshold</code>之后就会进入老年代。Survivor(to)区，Survivor(to)区的对象会频繁交换，这也是Survivor(from)区、Survivor(to)区使用复制回收算法的原因。</p>
+</li>
+<li><p><strong>动态对象年龄判定</strong></p>
+<p>Survivor将区域的年龄从小到大进行累加，当加入某个年龄段后，累加和超过survivor区域<code>TargetSurvivorRatio</code>的时候，就从这个年龄段往上的年龄的对象进入到老年代。</p>
+</li>
+<li><p><strong>空间分配担保</strong></p>
+<p>在发生minor gc之前，虚拟机会检测老年代的连续空间是否大于新生代对象总大小，如果满足就会进行minor gc，如果不满足虚拟机查看<code>HandlePromotionFailure</code>参数是否允许担保失败，如果允许担保失败，会继续检测老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小。若大于，将尝试进行一次minor gc，如果minor gc失败，则重新进行一次full gc，若小于或者不允许担保，那这时也要改为进行一次Full GC。</p>
+<p>JDK 6 Update 24之后<code>HandlePromotionFailure</code>参数不会再影响到虚拟机的空间分配担保策略，虽然源码中还定义了<code>HandlePromotionFailure</code>参数，但是在代码中已经不会再使用它。规则变为只要老年代的连续空间大于新生代对象总大小或者历次晋升的平均大小就会进行Minor GC，否则将进行Full GC。</p>
+</li>
+</ul>
+<h2 id="对象的内存布局"><a href="#对象的内存布局" class="headerlink" title="对象的内存布局"></a>对象的内存布局</h2><p>在HotSpot虚拟机中，对象在内存中存储的布局可以分为3块区域：<strong>对象头（Header）</strong>、<strong>实例数据（Instance Data）</strong>和<strong>对齐填充（Padding）</strong>。</p>
+<p><strong>对象头</strong>包括两部分信息：</p>
+<ul>
+<li><p>一部分用于存储<strong>对象自身的运行时数据</strong>，如<strong>哈希码（HashCode）</strong>、<strong>GC分代年龄</strong>、<strong>锁状态标志</strong>、<strong>线程持有的锁</strong>、<strong>偏向线程ID</strong>、<strong>偏向时间戳</strong>等。</p>
+</li>
+<li><p>另外一部分是<strong>类型指针</strong>，即指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。</p>
+</li>
+</ul>
+<p><strong>实例数据</strong>就是指<strong>实际的数据</strong>，如int类型为1，String类型为字符串等。</p>
+<p><strong>对齐填充</strong>这部分信息不一定存在，也没有特别的含义，仅仅起着<strong>占位符</strong>的作用。由于HotSpot VM的内存管理系统要求对对象的大小必须是8字节的整数倍，而对象正好是9字节的整数，所以当对象其他数据部分（对象实例数据）没有对齐时，就需要通过对齐填充来补全。</p>
+<h2 id="对象的访问方式"><a href="#对象的访问方式" class="headerlink" title="对象的访问方式"></a>对象的访问方式</h2><p>建立对象是为了使用对象，Java程序需要通过栈上的<strong>引用（reference）</strong>数据来操作堆上的具体对象。目前主流的访问方式有使用<strong>句柄</strong>和<strong>直接指针</strong>两种。</p>
+<h3 id="句柄"><a href="#句柄" class="headerlink" title="句柄"></a>句柄</h3><img src="/2020/03/07/JVM%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%86%E9%85%8D%E5%92%8C%E8%AE%BF%E9%97%AE%E6%96%B9%E5%BC%8F/pic2.png" srcset="/img/loading.gif" class="">
 
-<p>其中<strong>程序计数器</strong>，<strong>虚拟机栈</strong>，<strong>本地方法栈</strong>，这部分区域属于<strong>线程私有</strong>，会随着线程产生和消亡，不用担心内存回收问题。<strong>堆</strong>、<strong>方法区</strong>为线程<strong>共享区域</strong>。</p>
-<p>计算机的运行由指令和数据组成，线程私有的区域主要与<strong>指令执行</strong>有关，线程共享区域通常用来<strong>存储共享数据</strong>。</p>
-<img src="/2020/03/05/JVM%E7%9A%84%E6%95%B4%E4%BD%93%E4%BB%8B%E7%BB%8D%E5%92%8C%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/pic4.png" srcset="/img/loading.gif" class="">
+<p>句柄是一种特殊的<strong>智能指针</strong> 。句柄与普通指针的区别在于，指针包含的是引用对象的内存地址，而句柄则是由<strong>系统所管理的引用标识</strong>，该标识<strong>可以被系统重新定位到一个内存地址上</strong>。</p>
+<p>如果使用句柄访问的话，那么Java堆中将会划分出一块内存来作为<strong>句柄池</strong>，<strong>引用（reference）</strong>中存储的就是对象的<strong>句柄地址</strong>，而句柄中包含了对象实例数据与类型数据各自的具体地址信息。</p>
+<p>使用句柄来访问的最大好处就是引用（reference）中存储的是<strong>稳定的句柄地址</strong>，在对象被移动（垃圾收集时移动对象是非常普遍的行为）时只会改变句柄中的实例数据指针，而引用（reference）本身不需要修改。</p>
+<h3 id="直接指针"><a href="#直接指针" class="headerlink" title="直接指针"></a>直接指针</h3><img src="/2020/03/07/JVM%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%86%E9%85%8D%E5%92%8C%E8%AE%BF%E9%97%AE%E6%96%B9%E5%BC%8F/pic3.png" srcset="/img/loading.gif" class="">
 
-<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><p>程序计数器是一个较小的内存空间，指向当前线程正在执行的字节码指令的地址。</p>
-<p>由于java是多线程的，存在线程切换的情况，当前线程在执行过程中随时可能会被挂起，所以JVM需要通过程序计数器记录当前线程的执行情况。</p>
-<h3 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h3><p>以栈帧的方式存储<strong>当前线程</strong>运行方法所需的<strong>数据指令</strong>、<strong>返回地址</strong>和<strong>调用过程中变量</strong>，大小缺省为<strong>1M</strong>，可用参数 <strong>–Xss</strong>调整大小，例如-Xss256k。虚拟机在在运行时可能会出现<strong>java.lang.StackOverflowError</strong>，但一般的方法调用是很难出现的，如果出现了要考虑是否有<strong>无限递归</strong>。</p>
-<p>每个方法在执行的同时都会创建一个<strong>栈帧</strong>并将其入栈，当前线程正在执行的方法就是其虚拟机栈顶的栈桢。</p>
-<p>栈帧中主要包括：</p>
-<ul>
-<li><strong>局部变量表：</strong>用于存储方法中的变量（方法入参等）。如果是Java的八大基础数据类型可以直接存储，如果是对象则存放它的引用地址。大小在代码编译时就已经写入到方法表的Code属性，之后不会改变，仅仅取决于具体虚拟机的实现。</li>
-<li><strong>操作数栈</strong>：用于执行方法中对数据的操作，操作的的数据可以是任意的java数据类型。</li>
-<li><strong>动态连接：</strong>提供符号引用和直接引用在运行时进行解析和链接。</li>
-<li><strong>返回地址：</strong>记录方法执行完成后返回的位置。</li>
-</ul>
-<p>使用javap -v JavaStack.class &gt; a.txt之后可以得到字节码文件反编译后的汇编代码，通过汇编代码我们可以深入的了解java代码的工作机制。</p>
-<p>例如将</p>
-<pre><code>public void sub(int num){
-    num = num - 100;
-}</code></pre><p>反编译后</p>
-<pre><code>public void sub(int);
-    descriptor: (I)V
-    flags: ACC_PUBLIC
-    Code:
-      stack=2, locals=2, args_size=2
-         0: iload_1    // 冒号前的数字表示字节码指令的地址行号，iload_1:下标为1的局部变量表入栈
-         1: bipush        100    // 将一个byte类型的常量入栈
-         3: isub    // 将栈顶的两个int的数据出栈、相减，结果入栈
-         4: istore_1  // 栈顶的int类型存入局部变量表1的位置
-         5: return
-      LineNumberTable:
-        line 9: 0
-        line 10: 5
-      LocalVariableTable:    //
-        Start  Length  Slot  Name   Signature
-            0       6     0  this   Lcom/jvm/ch01/JavaStack1;
-            0       6     1   num   I</code></pre><h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>本地方法栈保存的是native方法的信息，当一个JVM创建的线程调用native方法后，JVM不再为其在虚拟机栈中创建栈帧，JVM只是简单地动态链接并直接调用native方法。</p>
-<p>虚拟机规范无强制规定，各版本虚拟机自由实现HotSpot直接把本地方法栈和虚拟机栈合二为一</p>
-<h3 id="方法区（永久代、元空间）"><a href="#方法区（永久代、元空间）" class="headerlink" title="方法区（永久代、元空间）"></a>方法区（永久代、元空间）</h3><p>主要用于存储已被虚拟机加载的类信息（包括类名、修饰符、变量名、方法名、方法代码、返回值、直接接口的有序列表）、常量、静态变量等数据。</p>
-<p>在JDK1.7之前，这块区域也被称为永久代，可以通过<code>-XX:PermSize</code>、<code>-XX:MaxPermSize</code>进行设置，1.8之后改为元空间通过<code>-XX:MetaspaceSize</code>、 <code>-XX:MaxMetaspaceSize</code>进行设置，不再受制于JVM内存空间，而是与JVM共享本机总内存。</p>
-<p>永久代的空间受制于堆内存的大小，如果超过这个值就会OOM，所以永久代在存储类信息、常量、静态变量等数据，可能会遇到内存溢出的问题，而且对永久代进行调优是很困难的。</p>
-<p>元空间的内存管理由<strong>元空间虚拟机</strong>来完成，先前，对于类的元数据我们需要不同的垃圾回收器进行处理，现在只需要执行元空间虚拟机的C++代码即可完成。在元空间中，<strong>类和其元数据的生命周期和其对应的类加载器是相同的</strong>。只要类加载器存活，其加载的类的元数据也是存活的，因而不会被回收掉。 准确的来说，<strong>每一个类加载器的存储区域都称作一个元空间，所有的元空间合在一起就是我们一直说的元空间。</strong>当一个类加载器被垃圾回收器标记为不再存活，其对应的元空间会被回收。在元空间的回收过程中没有重定位和压缩等操作。但是元空间内的元数据会进行扫描来确定Java引用。</p>
-<p>注意：元空间的大小不会受制于堆内存的大小，而只受制于物理机的最大内存，因此如果元空间的占据了过多的物理机内存，就会挤压堆空间的大小。</p>
-<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><p>堆内存用来存储Java中的对象。无论是成员变量，局部变量，还是类变量，它们指向的对象都存储在堆内存中，堆是需要重点关注的一块区域，因为涉及到内存的分配(new关键字，反射等)与回收(回收算法，收集器等)，</p>
-<p>几乎所有的对象都是在堆中分配，可用以下参数调整：</p>
-<p><code>-Xms</code>：堆的最小值；</p>
-<p><code>-Xmx</code>：堆的最大值；</p>
-<p><code>-Xmn</code>：新生代的大小；</p>
-<p><code>-XX:NewSize</code>；新生代最小值；</p>
-<p><code>-XX:MaxNewSize</code>：新生代最大值；</p>
-<p>例如<code>- Xmx256m</code></p>
-<h3 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h3><p>Class 文件中的常量池（编译器生成的各种字面量和符号引用）会在类加载后被放入这个区域。在JDK1.6中运行时常量池存储在方法区，JDK1.7中<strong>字符串常量池</strong>被从方法区拿到了<strong>堆</strong>中，JDK1.8中使用元空间替代永久代，运行时常量池还在方法区, 只不过方法区的实现从永久代变成了元空间。</p>
-<p>符号引用：通常是字符串，能根据这个字符串定位到指定的数据，比如java/lang/StringBuilder，用于存储：</p>
-<ul>
-<li>类和接口的全限定名</li>
-<li>字段名称和描述符</li>
-<li>方法名称和描述符</li>
-</ul>
-<p>字面量：在代码中直接出现的值，如：</p>
-<ul>
-<li>String a = “A”;</li>
-<li>int b= 1;</li>
-</ul>
-<p>其中 “A”与1都是字面量</p>
-<h3 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h3><p>直接内存不属于JVM运行时数据区域，也不是java虚拟机规范中定义的内存区域，可以通过<code>-XX:MaxDirectMemorySize</code>来设置，默认值与堆内存最大值相同，也会出现OOM异常。直接内存可以避免在Java 堆和Native堆中来回复制数据，能够提高效率。如果使用NIO这块区域会被频繁使用，也可以使directByteBuffer对象直接饮用并操作。</p>
+<p>如果使用直接指针访问， <strong>引用（reference）中</strong>存储的直接就是<strong>对象地址</strong>。</p>
+<p>使用直接指针访问方式的最大好处就是<strong>速度更快</strong>，它节省了一次指针定位的时间开销，由于对象的访问在Java中非常频繁，因此这类开销积少成多后也是一项非常可观的执行成本。</p>
+<p><strong>HotSpot是使用直接指针访问方式进行对象访问的。</strong></p>
 
             </div>
             <hr>
@@ -317,9 +301,9 @@
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/03/07/JVM%E5%AF%B9%E8%8C%83%E5%9E%8B%E7%9A%84%E5%A4%84%E7%90%86/">
+                      <a href="/2020/03/09/JVM%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%AE%97%E6%B3%95%E4%B8%8E%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">JVM对范型的处理</span>
+                        <span class="hidden-mobile">JVM的垃圾回收算法与垃圾回收器</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -327,8 +311,8 @@
                   <div class="post-next col-6">
                     
                     
-                      <a href="/2020/03/04/%E6%80%BB%E5%A4%8D%E4%B9%A0%E5%92%8C%E5%B8%B8%E8%A7%81%E7%9A%84%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E9%A2%98/">
-                        <span class="hidden-mobile">总复习和常见的并发面试题</span>
+                      <a href="/2020/03/07/JVM%E5%AF%B9%E8%8C%83%E5%9E%8B%E7%9A%84%E5%A4%84%E7%90%86/">
+                        <span class="hidden-mobile">JVM对范型的处理</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -548,7 +532,7 @@
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "JVM的整体介绍和运行时数据区&nbsp;",
+        "JVM对象的分配和访问方式&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
