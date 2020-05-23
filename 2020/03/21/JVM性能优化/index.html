@@ -176,10 +176,10 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期日, 三月 22日 2020, 10:25 晚上</p>
+                class="note note-warning">本文最后更新于：星期六, 五月 23日 2020, 8:09 晚上</p>
             
             <div class="markdown-body">
-              <h2 id="内存溢出"><a href="#内存溢出" class="headerlink" title="内存溢出"></a>内存溢出</h2><p>程序在申请内存时，没有足够的内存空间就会发生内存溢出。</p>
+              <h2 id="JVM可能出现的问题"><a href="#JVM可能出现的问题" class="headerlink" title="JVM可能出现的问题"></a>JVM可能出现的问题</h2><h3 id="内存溢出"><a href="#内存溢出" class="headerlink" title="内存溢出"></a>内存溢出</h3><p>程序在申请内存时，没有足够的内存空间就会发生内存溢出。</p>
 <p>内存溢出的几种方式：</p>
 <ul>
 <li><p><strong>栈溢出</strong>：方法死循环递归调用即线程内的栈空间不足：<strong>StackOverflowError</strong>，不断建立线程即JVM栈空间不足：<strong>StackOutOfMemoryError</strong></p>
@@ -191,7 +191,7 @@
 <li><p><strong>直接内存溢出</strong>：分配的本机直接内存（NIO使用的就是本机直接内存）大小大于JVM对直接内存的限制：<strong>OutOfMemoryError</strong>:Direct buffer memory</p>
 </li>
 </ul>
-<h2 id="内存泄漏"><a href="#内存泄漏" class="headerlink" title="内存泄漏"></a>内存泄漏</h2><p>程序在申请内存后不再使用，但由于与GC Roots仍存在关联，在垃圾回收时无法释放已申请的内存空间，导致内存长期被占用。</p>
+<h3 id="内存泄漏"><a href="#内存泄漏" class="headerlink" title="内存泄漏"></a>内存泄漏</h3><p>程序在申请内存后不再使用，但由于与GC Roots仍存在关联，在垃圾回收时无法释放已申请的内存空间，导致内存长期被占用。</p>
 <p>内存泄露的几种原因：</p>
 <ul>
 <li><p><strong>长生命周期的对象持有短生命周期对象的引用</strong>：例如将ArrayList设置为静态变量，则容器中的对象在程序结束之前将不能被释放，从而造成内存泄漏</p>
@@ -206,48 +206,102 @@
 <li><p><strong>Hash值改变</strong>：在集合中，如果修改了对象中的参与计算哈希值的字段，会导致无法从集合中单独删除当前对象，造成内存泄露</p>
 </li>
 </ul>
-<h2 id="内存泄漏和内存溢出辨析"><a href="#内存泄漏和内存溢出辨析" class="headerlink" title="内存泄漏和内存溢出辨析"></a>内存泄漏和内存溢出辨析</h2><ul>
-<li><p><strong>产生原因</strong>：内存溢出是由于内存空间不足导致，而且内存泄漏是由于应该释放的对象没有释放，导致可使用内存的缩小。</p>
+<h3 id="内存泄漏和内存溢出辨析"><a href="#内存泄漏和内存溢出辨析" class="headerlink" title="内存泄漏和内存溢出辨析"></a>内存泄漏和内存溢出辨析</h3><ul>
+<li><strong>产生原因</strong>：内存溢出是由于内存空间不足导致，而且内存泄漏是由于应该释放的对象没有释放，导致可使用内存的缩小。</li>
+<li><strong>如何避免：</strong>内存溢出可以通过检查代码问题以及调整虚拟机参数设置足够的空间来解决，内存泄漏一定是代码的问题，所以只能通过检查代码问题来解决，很多情况下内存溢出是内存泄漏导致的。</li>
+</ul>
+<h2 id="GC调优"><a href="#GC调优" class="headerlink" title="GC调优"></a>GC调优</h2><p>JVM调优并不能显著的提高系统性能，主要提升的是系统稳定性。如果系统出现了频繁的垃圾回收，这时候系统是不稳定的，所以需要进行JVM调优，调整垃圾回收的频次。</p>
+<h3 id="GC调优原则"><a href="#GC调优原则" class="headerlink" title="GC调优原则"></a>GC调优原则</h3><ol>
+<li>大多数的java应用不需要GC调优</li>
+<li>大多数需要GC调优的情况是由于代码问题引起的</li>
+<li>优化GC参数是最后的手段</li>
+</ol>
+<h3 id="GC调优指标"><a href="#GC调优指标" class="headerlink" title="GC调优指标"></a>GC调优指标</h3><ul>
+<li><p><strong>GC的时间</strong></p>
+<ul>
+<li>Minor GC执行时间在50ms内</li>
+<li>Full GC执行时间在1000ms内</li>
+</ul>
 </li>
-<li><p><strong>如何避免：</strong>内存溢出可以通过检查代码问题以及调整虚拟机参数设置足够的空间来解决，内存泄漏一定是代码的问题，所以只能通过检查代码问题来解决，很多情况下内存溢出是内存泄漏导致的。</p>
+<li><p><strong>GC的频率</strong></p>
+<ul>
+<li>Minor GC执行大于10秒一次</li>
+<li>Full GC执行频率大于10分钟1次</li>
+</ul>
 </li>
 </ul>
-<h2 id="MAT"><a href="#MAT" class="headerlink" title="MAT"></a>MAT</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>MAT是Eclipse Memory Analyzer的简称，是一个快速且功能丰富的Java堆分析器，可以用于查找内存泄露以及查看内存消耗情况。使用Memory Analyzer分析具有数亿个对象的高效堆转储，快速计算对象的保留大小，查看谁阻止垃圾收集器收集对象，运行报告以自动提取泄漏嫌疑者。可以在<a href="http://www.eclipse.org/mat/下载并使用MAT。" target="_blank" rel="noopener">http://www.eclipse.org/mat/下载并使用MAT。</a></p>
-<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><p>模拟内存溢出错误并导出dump文件</p>
-<pre><code>public class OOMTest {
-    public static void main(String[] args) {
-        List&lt;Object&gt; list = new LinkedList&lt;&gt;();
-        int i = 0;
-        while (true) {
-            i++;
-            if (i % 10000 == 0) {
-                System.out.println(&quot;i=&quot; + i);
-            }
-            list.add(new Object());
-        }
+<p>即：如果满足下面的指标，则一般不需要进行GC调优</p>
+<ul>
+<li><p>Minor GC执行时间不到50ms；</p>
+</li>
+<li><p>Minor GC执行不频繁，约10秒一次；</p>
+</li>
+<li><p>Full GC执行时间不到1s</p>
+</li>
+<li><p>Full GC执行频率不算频繁，不低于10分钟1次；</p>
+</li>
+</ul>
+<h3 id="GC调优步骤"><a href="#GC调优步骤" class="headerlink" title="GC调优步骤"></a>GC调优步骤</h3><ol>
+<li><p><strong>监控GC的状态：使用各种JVM工具</strong>，查看当前日志，分析当前JVM参数设置，并且分析当前堆内存快照和GC日志，根据实际的各区域内存划分和GC执行时间，决定是否进行优化。</p>
+</li>
+<li><p><strong>分析结果，判断是否需要优化</strong>：如果各项参数设置合理，系统没有超时日志出现，GC频率不高，GC耗时不高，那么没有必要进行GC优化；如果GC时间超过1-3秒，或者频繁GC，则必须优化；</p>
+</li>
+<li><p><strong>调整GC类型和内存分配</strong>：如果内存分配过大或过小，或者采用的GC收集器比较慢，则应该优先调整这些参数，并且先找1台或几台机器进行beta，然后比较优化过的机器和没有优化的机器的性能对比，并有针对性的做出最后选择；</p>
+</li>
+<li><p><strong>不断的分析和调整</strong>：通过不断的试验和试错，分析并找到最合适的参数</p>
+</li>
+<li><p><strong>全面应用参数</strong>：如果找到了最合适的参数，则将这些参数应用到所有服务器，并进行后续跟踪。</p>
+</li>
+</ol>
+<h3 id="GC调优实战"><a href="#GC调优实战" class="headerlink" title="GC调优实战"></a>GC调优实战</h3><h4 id="如何阅读GC日志"><a href="#如何阅读GC日志" class="headerlink" title="如何阅读GC日志"></a>如何阅读GC日志</h4><p>主要关注MinorGC和FullGC 的回收效率（回收前大小和回收比较）、回收的时间。</p>
+<p>以参数<code>-Xms5m -Xmx5m -XX:+PrintGCDetails -XX:+UseSerialGC</code>为例：</p>
+<pre><code>[DefNew: 1855K-&gt;1855K(1856K), 0.0000148 secs][Tenured: 2815K-&gt;4095K(4096K), 0.0134819 secs] 4671K</code></pre><p><code>DefNew</code>指明了收集器类型，而且说明了收集发生在新生代。</p>
+<p><code>1855K-&gt;1855K(1856K)</code>：表示，回收前 新生代占用1855K，回收后占用1855K，新生代大小1856K。</p>
+<p><code>0.0000148 secs</code>：表明新生代回收耗时。</p>
+<p><code>Tenured</code>：表明收集发生在老年代</p>
+<p><code>2815K-&gt;4095K(4096K), 0.0134819 sec</code>：含义同新生代</p>
+<p>最后的<code>4671K</code>指明堆的大小。</p>
+<p>收集器参数变为<code>-XX:+UseParNewGC</code>，日志变为：</p>
+<p><code>[ParNew: 1856K-&gt;1856K(1856K), 0.0000107 secs][Tenured: 2890K-&gt;4095K(4096K), 0.0121148 secs]</code></p>
+<p>收集器参数变为<code>-XX:+ UseParallelGC或UseParallelOldGC</code>，日志变为：</p>
+<p><code>[PSYoungGen: 1024K-&gt;1022K(1536K)] [ParOldGen: 3783K-&gt;3782K(4096K)] 4807K-&gt;4804K(5632K)</code></p>
+<p>当收集器参数变为：<code>-XX:+UseConcMarkSweepGC**、**-XX:+UseG1GC</code>时，CMS收集器和G1收集器会有明显的相关字样。</p>
+<h4 id="项目启动时的GC优化"><a href="#项目启动时的GC优化" class="headerlink" title="项目启动时的GC优化"></a>项目启动时的GC优化</h4><ol>
+<li>开启日志分析<code>-XX:+PrintGCDetails</code>发现有7次Minor GC，2次Full GC，执行FullGC的原因是Metaspace空间不足。</li>
+<li>调整Metadata空间<code>-XX:MetaspaceSize=64m</code>，调整后FullGC不再出现。</li>
+<li>调整堆空间<code>-Xms500m</code>，调整后Minor GC次数减少至4次</li>
+<li>继续调整堆空间<code>-Xms1000m</code>，调整后Minor GC减少至2次</li>
+<li>调整新生代空间<code>-Xmn900m</code>，调整后Minor GC减少至1次</li>
+<li>继续调整新生代空间<code>-Xms2000m -Xmn1800m</code>，调整后Minor GC次数没有变化，这次的调整时没有意义的，反而会造成资源浪费。</li>
+</ol>
+<h4 id="项目运行GC优化"><a href="#项目运行GC优化" class="headerlink" title="项目运行GC优化"></a>项目运行GC优化</h4><p>使用jmeter同时访问三个接口，index、time、noblemetal</p>
+<p>使用40个线程，循环2500次进行压力测试，观察并发的变化</p>
+<p>使用单线程GC<code>-XX:+UseSerialGC</code></p>
+{% asset_img pic8.png %}
 
-    }
-}</code></pre><p>加入vm参数-Xms30m -Xmx30m  -XX:+PrintGCDetails -XX:+HeapDumpOnOutOfMemoryError</p>
-<p>栈溢出时会在项目目录下生成*.hprof文件</p>
-<p>使用MAT打开文件 File-&gt;Open Heap Dump-&gt;Leak Suspects Report-&gt;Finash</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/img/loading.gif" class="">
+<p>使用多线程GC<code>-XX:+UseParNewGC</code></p>
+{% asset_img pic9.png %}
 
-<p>在<strong>Problem Supect</strong>中显示主线程占用了97.88%的空间，点击Details后可以看到更加具体的分析。</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/img/loading.gif" class="">
+<p>可以看到吞吐量有一定的上升</p>
+<p>使用CMS<code>-XX:+UseConcMarkSweepGC</code></p>
+{% asset_img pic10.png %}
 
-<p>其中</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic3.png" srcset="/img/loading.gif" class="">
+<p>CMS采用了并发收集，所以STW的时间较小，吞吐量较单线程GC有一定提高，最大请求时间有明显的下降。</p>
+<p>使用G1<code>-XX:+UseG1GC</code></p>
+{% asset_img pic11.png %}
 
-<p><strong>浅堆</strong>（Shallow Heap）：分配一个对象所消耗的内存</p>
-<p><strong>深堆</strong>（Retained Heap）：深堆大小是对象直接或间接引用到的所有对象的浅堆大小之，即GC回收时真实可回收的内存大小。</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic4.png" srcset="/img/loading.gif" class="">
-
-<p>例如：对象A引用了C和D，对象B引用了E。那么对象A的浅堆大小只是A本身，而如果A被回收，那么C和D都会被回收(可达性分析算法)，所以A的深堆大小为A+C+D之和，同时由于对象E还可以通过对象B访问到，因此不在对象A的深堆范围内。</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic5.png" srcset="/img/loading.gif" class="">
-
-<p><strong>incoming</strong>：当前对象引用的对象</p>
-<p><strong>outgoing</strong>：当前对象在哪些对象中被引用</p>
-<h2 id="JVM工具"><a href="#JVM工具" class="headerlink" title="JVM工具"></a>JVM工具</h2><h3 id="命令行工具"><a href="#命令行工具" class="headerlink" title="命令行工具"></a>命令行工具</h3><ul>
+<p>此时的吞吐量是最大的，最大请求时间有明显的下降。</p>
+<h4 id="推荐策略"><a href="#推荐策略" class="headerlink" title="推荐策略"></a>推荐策略</h4><h5 id="堆空间的设置"><a href="#堆空间的设置" class="headerlink" title="堆空间的设置"></a>堆空间的设置</h5><p>可以将新生代尽可能的设置的大一些，减少MinorGC的次数。如果新生代设置的过小会导致对象直接进入老年代，如果此时老年代满了，会触发FullGC.。</p>
+<h5 id="垃圾收集器的选择"><a href="#垃圾收集器的选择" class="headerlink" title="垃圾收集器的选择"></a>垃圾收集器的选择</h5><p>响应时间优先的应用：老年代尽量使用并发收集器，大小需要小心设置一般要考虑并发会话率和会话持续时间等一些参数。如果堆设置小了,可能会造成内存碎片，高回收频率以及应用暂停而使用传统的标记清除方式。如果堆大了，则需要较长的收集时间。最优化的方案,一般需要参考以下数据获得：</p>
+<ul>
+<li>并发垃圾收集信息</li>
+<li>持久代并发收集次数</li>
+<li>传统GC信息</li>
+<li>新生代和老年代回收上的时间比例。</li>
+</ul>
+<p>吞吐量优先的应用：一般吞吐量优先的应用都有一个很大的新生代和一个较小的老年代。这样可以尽可能回收掉大部分短期对象，减少中期的对象，而老年代可以尽量存放长期存活对象。</p>
+<p>GC调优是个很复杂、很细致的过程，要根据实际情况调整，不同的机器、不同的应用、不同的性能要求调优的手段都是不同的，king老师也无法告诉大家全部，即使是jvm参数也是如此，比如说性能有关的操作系统工具，和操作系统本身相关的所谓大页机制，都需要大家平时去积累，去观察，去实践，king老师在这个专题上告诉大家的除了各种java虚拟机基础知识和内部原理，也告诉大家一个性能优化的一个基本思路和着手的方向。</p>
+<h2 id="JVM提供的工具"><a href="#JVM提供的工具" class="headerlink" title="JVM提供的工具"></a>JVM提供的工具</h2><h3 id="命令行工具"><a href="#命令行工具" class="headerlink" title="命令行工具"></a>命令行工具</h3><ul>
 <li><p><strong>jps</strong></p>
 <p>列出当前机器上正在运行的虚拟机进程，JPS从操作系统的临时目录上去找。</p>
 <p>-q:仅仅显示进程号</p>
@@ -303,108 +357,49 @@
 <p>-Dcom.sun.management.jmxremote.authenticate=false</p>
 <p>-Dcom.sun.management.jmxremote.ssl=false</p>
 <h4 id="Jconsole"><a href="#Jconsole" class="headerlink" title="Jconsole"></a>Jconsole</h4><p>java监视与管理控制台</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic7.png" srcset="/img/loading.gif" class="">
+{% asset_img pic7.png %}
 
 <h4 id="Jvisualvm"><a href="#Jvisualvm" class="headerlink" title="Jvisualvm"></a>Jvisualvm</h4><p>多合一故障处理工具，一般来说用于本机调试用，如果需要用于生产环境必须启用远程连接</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic6.png" srcset="/img/loading.gif" class="">
+{% asset_img pic6.png %}
 
 <p>插件中心地址</p>
 <p><a href="https://visualvm.github.io/archive/uc/8u40/updates.xml.gz" target="_blank" rel="noopener">https://visualvm.github.io</a></p>
 <p>但是注意版本问题，不同的JDK所带的visualvm是不一样的，下载插件时需要下对应的版本。</p>
-<h2 id="GC调优"><a href="#GC调优" class="headerlink" title="GC调优"></a>GC调优</h2><p>JVM调优并不能显著的提高系统性能，主要提升的是系统稳定性。如果系统出现了频繁的垃圾回收，这时候系统是不稳定的，所以需要进行JVM调优，调整垃圾回收的频次。</p>
-<h3 id="GC调优原则"><a href="#GC调优原则" class="headerlink" title="GC调优原则"></a>GC调优原则</h3><ol>
-<li>大多数的java应用不需要GC调优</li>
-<li>大多数需要GC调优的情况是由于代码问题引起的</li>
-<li>优化GC参数是最后的手段</li>
-</ol>
-<h3 id="GC调优指标"><a href="#GC调优指标" class="headerlink" title="GC调优指标"></a>GC调优指标</h3><ul>
-<li><p><strong>GC的时间</strong></p>
-<p>参考性指标：</p>
-<ul>
-<li>Minor GC执行时间在50ms内</li>
-<li>Full GC执行时间在1000ms内</li>
-</ul>
-</li>
-<li><p><strong>GC的频率</strong></p>
-<p>参考性指标：</p>
-<ul>
-<li>Minor GC执行大于10秒一次</li>
-<li>Full GC执行频率大于10分钟1次</li>
-</ul>
-</li>
-</ul>
-<p>即：如果满足下面的指标，则一般不需要进行GC调优</p>
-<ul>
-<li><p>Minor GC执行时间不到50ms；</p>
-</li>
-<li><p>Minor GC执行不频繁，约10秒一次；</p>
-</li>
-<li><p>Full GC执行时间不到1s</p>
-</li>
-<li><p>Full GC执行频率不算频繁，不低于10分钟1次；</p>
-</li>
-</ul>
-<h3 id="GC调优步骤"><a href="#GC调优步骤" class="headerlink" title="GC调优步骤"></a>GC调优步骤</h3><ol>
-<li><p><strong>监控GC的状态：使用各种JVM工具</strong>，查看当前日志，分析当前JVM参数设置，并且分析当前堆内存快照和GC日志，根据实际的各区域内存划分和GC执行时间，决定是否进行优化。</p>
-</li>
-<li><p><strong>分析结果，判断是否需要优化</strong>：如果各项参数设置合理，系统没有超时日志出现，GC频率不高，GC耗时不高，那么没有必要进行GC优化；如果GC时间超过1-3秒，或者频繁GC，则必须优化；</p>
-</li>
-<li><p><strong>调整GC类型和内存分配</strong>：如果内存分配过大或过小，或者采用的GC收集器比较慢，则应该优先调整这些参数，并且先找1台或几台机器进行beta，然后比较优化过的机器和没有优化的机器的性能对比，并有针对性的做出最后选择；</p>
-</li>
-<li><p><strong>不断的分析和调整</strong>：通过不断的试验和试错，分析并找到最合适的参数</p>
-</li>
-<li><p><strong>全面应用参数</strong>：如果找到了最合适的参数，则将这些参数应用到所有服务器，并进行后续跟踪。</p>
-</li>
-</ol>
-<h3 id="GC调优实战"><a href="#GC调优实战" class="headerlink" title="GC调优实战"></a>GC调优实战</h3><h4 id="如何阅读GC日志"><a href="#如何阅读GC日志" class="headerlink" title="如何阅读GC日志"></a>如何阅读GC日志</h4><p>主要关注MinorGC和FullGC 的回收效率（回收前大小和回收比较）、回收的时间。</p>
-<p>以参数<strong>-Xms5m -Xmx5m -XX:+PrintGCDetails -XX:+UseSerialGC</strong>为例：</p>
-<p>[DefNew: 1855K-&gt;1855K(1856K), 0.0000148 secs][Tenured: 2815K-&gt;4095K(4096K), 0.0134819 secs] 4671K</p>
-<p>DefNew指明了收集器类型，而且说明了收集发生在新生代。</p>
-<p>1855K-&gt;1855K(1856K)表示，回收前 新生代占用1855K，回收后占用1855K，新生代大小1856K。</p>
-<p>0.0000148 secs 表明新生代回收耗时。</p>
-<p>Tenured表明收集发生在老年代</p>
-<p>2815K-&gt;4095K(4096K), 0.0134819 secs：含义同新生代</p>
-<p>最后的4671K指明堆的大小。</p>
-<p>收集器参数变为<strong>-XX:+UseParNewGC</strong>，日志变为：</p>
-<p>[ParNew: 1856K-&gt;1856K(1856K), 0.0000107 secs][Tenured: 2890K-&gt;4095K(4096K), 0.0121148 secs]</p>
-<p>收集器参数变为-<strong>XX:+ UseParallelGC或UseParallelOldGC</strong>，日志变为：</p>
-<p>[PSYoungGen: 1024K-&gt;1022K(1536K)] [ParOldGen: 3783K-&gt;3782K(4096K)] 4807K-&gt;4804K(5632K),</p>
-<p>当收集器参数变为：<strong>-XX:+UseConcMarkSweepGC</strong>、<strong>-XX:+UseG1GC</strong>时，CMS收集器和G1收集器会有明显的相关字样</p>
-<h4 id="项目启动时的GC优化"><a href="#项目启动时的GC优化" class="headerlink" title="项目启动时的GC优化"></a>项目启动时的GC优化</h4><ol>
-<li>开启日志分析 -XX:+PrintGCDetails 发现有7次Minor GC，2次Full GC，执行FullGC的原因是Metaspace空间不足。</li>
-<li>调整Metadata空间-XX:MetaspaceSize=64m，调整后FullGC不再出现。</li>
-<li>调整堆空间-Xms500m，调整后Minor GC次数减少至4次</li>
-<li>继续调整堆空间-Xms1000m，调整后Minor GC减少至2次</li>
-<li>调整新生代空间-Xmn900m，调整后Minor GC减少至1次</li>
-<li>继续调整新生代空间-Xms2000m -Xmn1800m，调整后Minor GC次数没有变化，这次的调整时没有意义的，反而会造成资源浪费。</li>
-</ol>
-<h4 id="项目运行GC优化"><a href="#项目运行GC优化" class="headerlink" title="项目运行GC优化"></a>项目运行GC优化</h4><p>使用jmeter同时访问三个接口，index、time、noblemetal</p>
-<p>使用40个线程，循环2500次进行压力测试，观察并发的变化</p>
-<p>使用单线程GC -XX:+UseSerialGC</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic8.png" srcset="/img/loading.gif" class="">
+<h2 id="Java堆分析器MAT"><a href="#Java堆分析器MAT" class="headerlink" title="Java堆分析器MAT"></a>Java堆分析器MAT</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>MAT是Eclipse Memory Analyzer的简称，是一个快速且功能丰富的Java堆分析器，可以用于查找内存泄露以及查看内存消耗情况。使用Memory Analyzer分析具有数亿个对象的高效堆转储，快速计算对象的保留大小，查看谁阻止垃圾收集器收集对象，运行报告以自动提取泄漏嫌疑者。可以在<a href="http://www.eclipse.org/mat/下载并使用MAT。" target="_blank" rel="noopener">http://www.eclipse.org/mat/下载并使用MAT。</a></p>
+<h3 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h3><p>模拟内存溢出错误并导出dump文件</p>
+<pre><code>public class OOMTest {
+    public static void main(String[] args) {
+        List&lt;Object&gt; list = new LinkedList&lt;&gt;();
+        int i = 0;
+        while (true) {
+            i++;
+            if (i % 10000 == 0) {
+                System.out.println(&quot;i=&quot; + i);
+            }
+            list.add(new Object());
+        }
 
-<p>使用多线程GC -XX:+UseParNewGC</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic9.png" srcset="/img/loading.gif" class="">
+    }
+}</code></pre><p>加入vm参数-Xms30m -Xmx30m  -XX:+PrintGCDetails -XX:+HeapDumpOnOutOfMemoryError</p>
+<p>栈溢出时会在项目目录下生成*.hprof文件</p>
+<p>使用MAT打开文件 File-&gt;Open Heap Dump-&gt;Leak Suspects Report-&gt;Finash</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/img/loading.gif" class="">
 
-<p>可以看到吞吐量有一定的上升</p>
-<p>使用CMS -XX:+UseConcMarkSweepGC</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic10.png" srcset="/img/loading.gif" class="">
+<p>在<strong>Problem Supect</strong>中显示主线程占用了97.88%的空间，点击Details后可以看到更加具体的分析。</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/img/loading.gif" class="">
 
-<p>CMS采用了并发收集，所以STW的时间较小，吞吐量较单线程GC有一定提高，最大请求时间有明显的下降。</p>
-<p>使用G1 -XX:+UseG1GC</p>
-<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic11.png" srcset="/img/loading.gif" class="">
+<p>其中</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic3.png" srcset="/img/loading.gif" class="">
 
-<p>此时的吞吐量是最大的，最大请求时间有明显的下降。</p>
-<h4 id="推荐策略"><a href="#推荐策略" class="headerlink" title="推荐策略"></a>推荐策略</h4><h5 id="堆空间的设置"><a href="#堆空间的设置" class="headerlink" title="堆空间的设置"></a>堆空间的设置</h5><p>可以将新生代尽可能的设置的大一些，减少MinorGC的次数。如果新生代设置的过小会导致对象直接进入老年代，如果此时老年代满了，会触发FullGC.。</p>
-<h5 id="垃圾收集器的选择"><a href="#垃圾收集器的选择" class="headerlink" title="垃圾收集器的选择"></a>垃圾收集器的选择</h5><p>响应时间优先的应用：老年代尽量使用并发收集器，大小需要小心设置一般要考虑并发会话率和会话持续时间等一些参数。如果堆设置小了,可能会造成内存碎片，高回收频率以及应用暂停而使用传统的标记清除方式。如果堆大了，则需要较长的收集时间。最优化的方案,一般需要参考以下数据获得：</p>
-<ul>
-<li>并发垃圾收集信息</li>
-<li>持久代并发收集次数</li>
-<li>传统GC信息</li>
-<li>新生代和老年代回收上的时间比例。</li>
-</ul>
-<p>吞吐量优先的应用：一般吞吐量优先的应用都有一个很大的新生代和一个较小的老年代。这样可以尽可能回收掉大部分短期对象，减少中期的对象，而老年代可以尽量存放长期存活对象。</p>
-<p>GC调优是个很复杂、很细致的过程，要根据实际情况调整，不同的机器、不同的应用、不同的性能要求调优的手段都是不同的，king老师也无法告诉大家全部，即使是jvm参数也是如此，比如说性能有关的操作系统工具，和操作系统本身相关的所谓大页机制，都需要大家平时去积累，去观察，去实践，king老师在这个专题上告诉大家的除了各种java虚拟机基础知识和内部原理，也告诉大家一个性能优化的一个基本思路和着手的方向。</p>
+<p><strong>浅堆</strong>（Shallow Heap）：分配一个对象所消耗的内存</p>
+<p><strong>深堆</strong>（Retained Heap）：深堆大小是对象直接或间接引用到的所有对象的浅堆大小之，即GC回收时真实可回收的内存大小。</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic4.png" srcset="/img/loading.gif" class="">
+
+<p>例如：对象A引用了C和D，对象B引用了E。那么对象A的浅堆大小只是A本身，而如果A被回收，那么C和D都会被回收(可达性分析算法)，所以A的深堆大小为A+C+D之和，同时由于对象E还可以通过对象B访问到，因此不在对象A的深堆范围内。</p>
+<img src="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic5.png" srcset="/img/loading.gif" class="">
+
+<p><strong>incoming</strong>：当前对象引用的对象</p>
+<p><strong>outgoing</strong>：当前对象在哪些对象中被引用</p>
 
             </div>
             <hr>
