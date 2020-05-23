@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>JVM的执行子系统 - zgcheng&#39;s blog</title>
+  <title>JVM的类加载 - zgcheng&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期四, 三月 12日 2020, 5:59 下午
+                  星期四, 三月 12日 2020, 5:39 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    9k 字
+                    3.6k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      32 分钟
+                      12 分钟
                   </span>
                 
 
@@ -176,246 +176,10 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期二, 三月 17日 2020, 8:26 晚上</p>
+                class="note note-warning">本文最后更新于：星期六, 五月 23日 2020, 4:57 下午</p>
             
             <div class="markdown-body">
-              <h2 id="Class文件结构"><a href="#Class文件结构" class="headerlink" title="Class文件结构"></a>Class文件结构</h2><h3 id="Jvm的无关性"><a href="#Jvm的无关性" class="headerlink" title="Jvm的无关性"></a>Jvm的无关性</h3><p><strong>平台无关性</strong>是建立在操作系统上，虚拟机厂商提供了许多可以运行在各种不同平台的虚拟机，它们都可以载入和执行字节码，从而实现程序的“一次编写，到处运行”</p>
-<p>各种不同平台的虚拟机与所有平台都统一使用的程序存储格式——字节码（ByteCode）是构成平台无关性的基石，也是<strong>语言无关性</strong>的基础。Java虚拟机不和包括Java在内的任何语言绑定，它只与“Class文件”这种特定的二进制文件格式所关联，Class文件中包含了Java虚拟机指令集和符号表以及若干其他辅助信息。</p>
-<h3 id="Class类文件（字节码）"><a href="#Class类文件（字节码）" class="headerlink" title="Class类文件（字节码）"></a>Class类文件（字节码）</h3><p>整个Class文件中存储的内容几乎全部是程序运行的必要数据，没有空隙存在，各个数据严格按照顺序紧凑地排列，中间没有添加任何分隔符。Class文件是一组以8位字节为基础单位的二进制流，由于它没有任何分隔符号，所以在其中的数据项，无论是顺序还是数量，都是被严格限定的，哪个字节代表什么含义，长度是多少，先后顺序如何，都不允许改变。</p>
-<p>Class文件格式采用一种类似于C语言结构体的伪结构来存储数据，这种伪结构中只有两种数据类型：无符号数和表。</p>
-<p>无符号数属于基本的数据类型，以u1、u2、u4、u8来分别代表1个字节、2个字节、4个字节和8个字节的无符号数，无符号数可以用来描述数字、索引引用、数量值或者按照UTF-8编码构成字符串值。</p>
-<p>表是由多个无符号数或者其他表作为数据项构成的复合数据类型，所有表都习惯性地以“_info”结尾。表用于描述有层次关系的复合结构的数据，整个Class文件本质上就是一张表。</p>
-<p>按顺序包括：</p>
-<ol>
-<li><p><strong>魔数与Class文件的版本</strong></p>
-<p>每个Class文件的头4个字节称为魔数（Magic Number），它的唯一作用是确定这个文件是否为一个能被虚拟机接受的Class文件。使用魔数而不是扩展名来进行识别主要是基于安全方面的考虑，因为文件扩展名可以随意地改动。文件格式的制定者可以自由地选择魔数值，只要这个魔数值还没有被广泛采用过同时又不会引起混淆即可。紧接着魔数的4个字节存储的是Class文件的版本号：第5和第6个字节是次版本号（MinorVersion），第7和第8个字节是主版本号（Major Version）。Java的版本号是从45开始的，JDK 1.1之后的每个JDK大版本发布主版本号向上加1高版本的JDK能向下兼容以前版本的Class文件，但不能运行以后版本的Class文件，即使文件格式并未发生任何变化，虚拟机也必须拒绝执行超过其版本号的Class文件。</p>
-</li>
-<li><p><strong>常量池</strong></p>
-<p>常量池中常量的数量是不固定的，所以在常量池的入口需要放置一项u2类型的数据，代表常量池容量计数值（constant_pool_count）。与Java中语言习惯不一样的是，这个容量计数是从1而不是0开始的</p>
-<p>常量池中主要存放两大类常量：字面量（Literal）和符号引用（Symbolic References）。</p>
-<p>字面量比较接近于Java语言层面的常量概念，如文本字符串、声明为final的常量值等。</p>
-<p>而符号引用则属于编译原理方面的概念，包括了下面三类常量：</p>
-<ul>
-<li>类和接口的全限定名（Fully Qualified Name）</li>
-<li>字段的名称和描述符（Descriptor）</li>
-<li>方法的名称和描述符</li>
-</ul>
-</li>
-<li><p><strong>访问标志</strong></p>
-<p>用于识别一些类或者接口层次的访问信息，包括：这个Class是类还是接口；是否定义为public类型；是否定义为abstract类型；如果是类的话，是否被声明为final等</p>
-</li>
-<li><p><strong>类索引、父类索引与接口索引集合</strong></p>
-<p>这三项数据来确定这个类的继承关系。类索引用于确定这个类的全限定名，父类索引用于确定这个类的父类的全限定名。由于Java语言不允许多重继承，所以父类索引只有一个，除了java.lang.Object之外，所有的Java类都有父类，因此除了java.lang.Object外，所有Java类的父类索引都不为0。接口索引集合就用来描述这个类实现了哪些接口，这些被实现的接口将按implements语句（如果这个类本身是一个接口，则应当是extends语句）后的接口顺序从左到右排列在接口索引集合中</p>
-</li>
-<li><p><strong>字段表集合</strong></p>
-<p>描述接口或者类中声明的变量。字段（field）包括类级变量以及实例级变量。而字段叫什么名字、字段被定义为什么数据类型，这些都是无法固定的，只能引用常量池中的常量来描述。</p>
-<p>字段表集合中不会列出从超类或者父接口中继承而来的字段，但有可能列出原本Java代码之中不存在的字段，譬如在内部类中为了保持对外部类的访问性，会自动添加指向外部类实例的字段。</p>
-</li>
-<li><p><strong>方法表集合</strong></p>
-<p>描述了方法的定义，但是方法里的Java代码，经过编译器编译成字节码指令后，存放在属性表集合中的方法属性表集合中一个名为“Code”的属性里面。</p>
-<p>与字段表集合相类似的，如果父类方法在子类中没有被重写（Override），方法表集合中就不会出现来自父类的方法信息。但同样的，有可能会出现由编译器自动添加的方法，最典型的便是类构造器“＜clinit＞”方法和实例构造器“＜init＞”</p>
-</li>
-<li><p><strong>属性表集合</strong></p>
-<p>存储Class文件、字段表、方法表都自己的属性表集合，以用于描述某些场景专有的信息。如方法的代码就存储在Code属性表中。</p>
-</li>
-</ol>
-<h2 id="字节码指令"><a href="#字节码指令" class="headerlink" title="字节码指令"></a>字节码指令</h2><p>Java虚拟机的指令由一个字节长度的、代表着某种特定操作含义的数字（称为操作码，Opcode）以及跟随其后的零至多个代表此操作所需参数（称为操作数，Operands）而构成。</p>
-<p>由于限制了Java虚拟机操作码的长度为一个字节（即0～255），这意味着指令集的操作码总数不可能超过256条。</p>
-<p>大多数的指令都包含了其操作所对应的数据类型信息。例如：</p>
-<p>iload指令用于从局部变量表中加载int型的数据到操作数栈中，而fload指令加载的则是float类型的数据。</p>
-<p>大部分的指令都没有支持整数类型byte、char和short，甚至没有任何指令支持boolean类型。大多数对于boolean、byte、short和char类型数据的操作，实际上都是使用相应的int类型作为运算类型</p>
-<p>常见指令一般有：</p>
-<ul>
-<li><p><strong>加载和存储指令</strong></p>
-<p>用于将数据在栈帧中的局部变量表和操作数栈之间来回传输，这类指令包括如下内容。</p>
-<p>将一个局部变量加载到操作栈：iload、iload_＜n＞、lload、lload_＜n＞、fload、fload_＜n＞、dload、dload_＜n＞、aload、aload_＜n＞。_</p>
-<p>将一个数值从操作数栈存储到局部变量表：istore、istore_＜n＞、lstore、lstore_＜n＞、fstore、fstore_＜n＞、dstore、dstore_＜n＞、astore、astore_＜n＞。_</p>
-<p>将一个常量加载到操作数栈：bipush、sipush、ldc、ldc_w、ldc2_w、aconst_null、iconst_m1、iconst_＜i＞、lconst_＜l＞、fconst_＜f＞、dconst_＜d＞。</p>
-<p>扩充局部变量表的访问索引的指令：wide。</p>
-</li>
-<li><p><strong>运算或算术指令</strong></p>
-<p>用于对两个操作数栈上的值进行某种特定运算，并把结果重新存入到操作栈顶。</p>
-<p>加法指令：iadd、ladd、fadd、dadd。</p>
-<p>减法指令：isub、lsub、fsub、dsub。</p>
-<p>乘法指令：imul、lmul、fmul、dmul等等</p>
-</li>
-<li><p><strong>类型转换指令</strong></p>
-<p>可以将两种不同的数值类型进行相互转换，</p>
-<p>Java虚拟机直接支持以下数值类型的宽化类型转换（即小范围类型向大范围类型的安全转换）：</p>
-<ul>
-<li>int类型到long、float或者double类型。</li>
-<li>long类型到float、double类型。</li>
-<li>float类型到double类型。</li>
-</ul>
-<p>处理窄化类型转换（Narrowing Numeric Conversions）时，必须显式地使用转换指令来完成，这些转换指令包括：i2b、i2c、i2s、l2i、f2i、f2l、d2i、d2l和d2f。</p>
-</li>
-<li><p><strong>创建类实例的指令</strong></p>
-<p>new</p>
-</li>
-<li><p><strong>创建数组的指令</strong></p>
-<p>newarray、anewarray、multianewarray。</p>
-</li>
-<li><p><strong>访问字段指令</strong></p>
-<p>getfield、putfield、getstatic、putstatic。</p>
-</li>
-<li><p><strong>数组存取相关指令</strong></p>
-<p>把一个数组元素加载到操作数栈的指令：baload、caload、saload、iaload、laload、faload、daload、aaload。</p>
-<p>将一个操作数栈的值存储到数组元素中的指令：bastore、castore、sastore、iastore、fastore、dastore、aastore。</p>
-</li>
-<li><p><strong>取数组长度的指令</strong></p>
-<p>arraylength</p>
-</li>
-<li><p><strong>检查类实例类型的指令</strong></p>
-<p>instanceof、checkcast。</p>
-</li>
-<li><p><strong>操作数栈管理指令</strong></p>
-<p>如同操作一个普通数据结构中的堆栈那样，Java虚拟机提供了一些用于直接操作操作数栈的指令，包括：将操作数栈的栈顶一个或两个元素出栈：pop、pop2。</p>
-<p>复制栈顶一个或两个数值并将复制值或双份的复制值重新压入栈顶：dup、dup2、dup_x1、dup2_x1、dup_x2、dup2_x2。</p>
-<p>将栈最顶端的两个数值互换：swap。</p>
-</li>
-<li><p><strong>控制转移指令</strong></p>
-<p>控制转移指令可以让Java虚拟机有条件或无条件地从指定的位置指令而不是控制转移指令的下一条指令继续执行程序，从概念模型上理解，可以认为控制转移指令就是在有条件或无条件地修改PC寄存器的值。控制转移指令如下。</p>
-<ul>
-<li>条件分支：ifeq、iflt、ifle、ifne、ifgt、ifge、ifnull、ifnonnull、if_icmpeq、if_icmpne、if_icmplt、if_icmpgt、if_icmple、if_icmpge、if_acmpeq和if_acmpne。</li>
-<li>复合条件分支：tableswitch、lookupswitch。</li>
-<li>无条件分支：goto、goto_w、jsr、jsr_w、ret。</li>
-</ul>
-</li>
-<li><p><strong>方法调用指令</strong></p>
-<p>invokevirtual指令用于调用对象的实例方法，根据对象的实际类型进行分派（虚方法分派），这也是Java语言中最常见的方法分派方式。</p>
-<p>invokeinterface指令用于调用接口方法，它会在运行时搜索一个实现了这个接口方法的对象，找出适合的方法进行调用。</p>
-<p>invokespecial指令用于调用一些需要特殊处理的实例方法，包括实例初始化方法、私有方法和父类方法。</p>
-<p>invokestatic指令用于调用类方法（static方法）。</p>
-<p>invokedynamic指令用于在运行时动态解析出调用点限定符所引用的方法，并执行该方法，前面4条调用指令的分派逻辑都固化在Java虚拟机内部，而invokedynamic指令的分派逻辑是由用户所设定的引导方法决定的。</p>
-<p>方法调用指令与数据类型无关。</p>
-</li>
-<li><p><strong>方法返回指令</strong></p>
-<p>是根据返回值的类型区分的，包括ireturn（当返回值是boolean、byte、char、short和int类型时使用）、lreturn、freturn、dreturn和areturn，另外还有一条return指令供声明为void的方法、实例初始化方法以及类和接口的类初始化方法使用。</p>
-</li>
-<li><p><strong>异常处理指令</strong></p>
-<p>在Java程序中显式抛出异常的操作（throw语句）都由athrow指令来实现</p>
-</li>
-<li><p><strong>同步指令</strong></p>
-<p>有monitorenter和monitorexit两条指令来支持synchronized关键字的语义</p>
-</li>
-</ul>
-<h2 id="栈帧详解"><a href="#栈帧详解" class="headerlink" title="栈帧详解"></a>栈帧详解</h2><p>当前栈帧：一个线程的方法调用链可能会很长，这意味着虚拟机栈会被压入很多栈帧，但在线程执行的某个时间点只有位于栈顶的栈帧才是有效的，该栈帧称为“当前栈帧”，与这个栈帧相关联的方法称为“当前方法”。</p>
-<img src="/2020/03/12/JVM%E7%9A%84%E6%89%A7%E8%A1%8C%E5%AD%90%E7%B3%BB%E7%BB%9F/pic1.png" srcset="/img/loading.gif" class="">
-
-<ul>
-<li><p><strong>局部变量表</strong></p>
-<p>局部变量表的容量以变量槽（Variable Slot，下称 Slot）为最小单位，虚拟机规范中导向性地说到每个 Slot 都应该能存放一个 boolean、byte、char、short、int、float、double、long 8 种数据类型和reference ，可以使用 32 位或更小的物理内存来存放。</p>
-<p>对于 64 位的数据类型，虚拟机会以高位对齐的方式为其分配两个连续的 Slot 空间。Java 语言中明确的（reference 类型则可能是 32 位也可能是 64 位）64 位的数据类型只有 long 和 double 两种。</p>
-</li>
-<li><p><strong>操作数栈</strong></p>
-<p>操作数栈（Operand Stack）也常称为操作栈，它是一个先进后出（First In Last Out,FILO）栈。 同局部变量表一样， 操作数栈的每一个元素可以是任意的Java数据类型，包括long和double。 32位数据类型所占的栈容量为1，64位数据类型所占的栈容量为2。 </p>
-<p>当一个方法刚刚开始执行的时候，这个方法的操作数栈是空的，在方法的执行过程中，会有各种字节码指令往操作数栈中写入和提取内容，也就是出栈/入栈操作。 例如，在做算术运算的时候是通过操作数栈来进行的，又或者在”调用其他方法的时候是通过操作数栈来进行参数传递的”。</p>
-<p>java虚拟机的解释执行引擎称为“基于栈的执行引擎”，其中所指的“栈”就是操作数栈。</p>
-</li>
-<li><p><strong>数据重叠优化</strong></p>
-<p>虚拟机概念模型中每二个栈帧都是相互独立的，但在实际应用是我们知道一个方法调用另一个方法时，往往存在参数传递，这种做法在虚拟机实现过程中会做一些优化，具体做法如下：令两个栈帧出现一部分重叠。让下面栈帧的一部分操作数栈与上面栈帧的部分局部变量表重叠在一起，进行方法调用时就可以共用一部分数据，无须进行额外的参数复制传递。</p>
-<img src="/2020/03/12/JVM%E7%9A%84%E6%89%A7%E8%A1%8C%E5%AD%90%E7%B3%BB%E7%BB%9F/pic2.png" srcset="/img/loading.gif" class="">
-</li>
-<li><p><strong>动态连接</strong></p>
-<p>栈帧执行方法是哪个方法，栈帧中会持有一个符号引用，该引用指向某个具体方法。</p>
-<p>符号引用是一个地址位置的代号，在编译的时候我们是不知道某个方法在运行的时候是放到哪里的，这时我用代号com/enjoy/pojo/User.Say:()V指代某个类的方法，将来可以把符号引用转换成直接引用进行真实的调用。</p>
-<p>用符号引用转化成直接引用的解析时机，把解析分为两大类 </p>
-<ul>
-<li><p><strong>静态解析</strong>：符号引用在类加载阶段或者第一次使用的时候就直接转换成直接引用。</p>
-</li>
-<li><p><strong>动态连接</strong>：符号引用在每次运行期间转换为直接引用，即每次运行都重新转换。</p>
-</li>
-</ul>
-</li>
-<li><p><strong>方法返回地址</strong></p>
-<p>方法退出方式有：正常退出与异常退出</p>
-<p>理论上，执行完当前栈帧的方法，需要返回到当前方法被调用的位置，所以栈帧需要记录一些信息，用来恢复上层方法的执行状态。正常退出：上层方法的PC计数器可以做为当前方法的返回地址，被保存在当前栈帧中。异常退出时：通过异常处理器表来确定返回地址。</p>
-<p>方法退出时会做的操作：恢复上次方法的局部变量表、操作数栈，把当前方法的返回值，压入调用者栈帧的操作数栈中，使用当前栈帧保存的返回地址调整PC计数器的值，当前栈帧出栈，随后，执行PC计数器指向的指令。</p>
-</li>
-<li><p><strong>附加信息</strong></p>
-<p>虚拟机规范允许实现虚拟机时增加一些额外信息，例如与调试相关的信息。</p>
-<p>一般把动态连接、方法返回地址、其他额外信息归成一类，称为栈帧信息。</p>
-</li>
-</ul>
-<h2 id="字节码执行引擎"><a href="#字节码执行引擎" class="headerlink" title="字节码执行引擎"></a>字节码执行引擎</h2><p>Java编译器输出的指令流基本上是一种基于栈的指令集架构，指令流中的指令大部分都是零地址指令，它们依赖操作数栈进行工作。</p>
-<p>基于寄存器的指令集，最典型的就是x86的二地址指令集，说得通俗一些，就是现在我们主流PC机中直接支持的指令集架构，这些指令依赖寄存器进行工作。</p>
-<p>举个最简单的例子，分别使用这两种指令集计算“1+1”的结果，基于栈的指令集会是这样子的：</p>
-<p>iconst_1</p>
-<p>iconst_1</p>
-<p>iadd</p>
-<p>istore_0</p>
-<p>两条iconst_1指令连续把两个常量1压入栈后，iadd指令把栈顶的两个值出栈、相加，然后把结果放回栈顶，最后istore_0把栈顶的值放到局部变量表的第0个Slot中。</p>
-<p>如果基于寄存器，那程序可能会是这个样子：</p>
-<p>mov eax，1</p>
-<p>add eax，1</p>
-<p>mov指令把EAX寄存器的值设为1，然后add指令再把这个值加1，结果就保存在EAX寄存器里面。</p>
-<p>基于栈的指令集主要的优点就是可移植，寄存器由硬件直接提供，程序直接依赖这些硬件寄存器则不可避免地要受到硬件的约束。栈架构指令集的主要缺点是执行速度相对来说会稍慢一些。所有主流物理机的指令集都是寄存器架构也从侧面印证了这一点。</p>
-<h2 id="方法调用详解"><a href="#方法调用详解" class="headerlink" title="方法调用详解"></a>方法调用详解</h2><p>在Java语言中符合“编译期可知，运行期不可变”这个要求的方法，主要包括静态方法和私有方法两大类，前者与类型直接关联，后者在外部不可被访问，这两种方法各自的特点决定了它们都不可能通过继承或别的方式重写其他版本，因此它们都适合在类加载阶段进行解析。</p>
-<h3 id="静态分派"><a href="#静态分派" class="headerlink" title="静态分派"></a>静态分派</h3><pre><code>public class StaticDispatch{
-    static abstract class Human{}
-    static class Man extends Human{    }
-    static class Woman extends Human{}
-
-    public void sayHello(Human guy){
-        System.out.println(&quot;hello,guy！&quot;);
-    }
-    public void sayHello(Man guy){
-        System.out.println(&quot;hello,gentleman！&quot;);
-    }
-    public void sayHello(Woman guy){
-        System.out.println(&quot;hello,lady！&quot;);
-    }
-    public static void main(String[]args){
-        Human h1 = new Man();
-        Human h2 = new Woman();
-        StaticDispatch sr = new StaticDispatch();
-        sr.sayHello(h1);
-        sr.sayHello(h2);
-
-        //实际类型变化
-        Human man=new Man();
-        //静态类型变化
-        sr.sayHello((Man)man);
-        man=new Woman();
-        sr.sayHello((Woman)man);
-    }
-}</code></pre><p>输出结果</p>
-<pre><code>hello,guy
-hello,guy</code></pre><p>“Human”称为变量的静态类型（Static Type），或者叫做的外观类型（Apparent Type），后面的“Man”则称为变量的实际类型（Actual Type），静态类型和实际类型在程序中都可以发生一些变化，区别是静态类型的变化仅仅在使用时发生，变量本身的静态类型不会被改变，并且变量本身的静态类型是在编译期可知的；而实际类型变化的结果在运行期才可确定，编译器在编译程序的时候并不知道一个对象的实际类型是什么。</p>
-<p>代码中定义了两个静态类型相同但实际类型不同的变量，但虚拟机（准确地说是编译器）在重载时是通过参数的静态类型而不是实际类型作为判定依据的。并且静态类型是编译期可知的，因此，在编译阶段，Javac编译器会根据参数的静态类型决定使用哪个重载版本，所以选择了sayHello（Human）作为调用目标。所有依赖静态类型来定位方法执行版本的分派动作称为静态分派。静态分派的典型应用是方法重载。静态分派发生在编译阶段，因此确定静态分派的动作实际上不是由虚拟机来执行的。</p>
-<h3 id="动态分派"><a href="#动态分派" class="headerlink" title="动态分派"></a>动态分派</h3><pre><code>public class DynamicDispatch {
-    static abstract class Human{
-        protected abstract void sayHello();
-    }
-    static class Man extends Human{
-        @Override
-        protected void sayHello() {
-            System.out.println(&quot;hello,gentleman！&quot;);
-        }
-    }
-    static class Woman extends Human{
-        @Override
-        protected void sayHello() {
-            System.out.println(&quot;hello,lady！&quot;);
-        }
-    }
-    public static void main(String[]args){
-        Human h1 = new Man();
-        Human h2 = new Woman();
-        h1.sayHello();
-        h2.sayHello();
-
-        h1 = new Woman();
-        h1.sayHello();
-    }
-}</code></pre><p>输出结果</p>
-<pre><code>hello,gentleman！
-hello,lady！
-hello,lady！</code></pre><p>上述代码的静态类型同样都是Human的两个变量h1和h2，但在调用sayHello()方法时执行了不同的行为，并且变量好在两次调用中执行了不同的方法。导致这个现象的原因很明显，是这两个变量的实际类型不同。</p>
-<img src="/2020/03/12/JVM%E7%9A%84%E6%89%A7%E8%A1%8C%E5%AD%90%E7%B3%BB%E7%BB%9F/pic3.png" srcset="/img/loading.gif" class="">
-
-<p>动态分派最常用的实现手段就是为类在方法区中建立一个虚方法表。虚方法表中存放着各个方法的实际入口地址。如果某个方法在子类中没有被重写，那子类的虚方法表里面的地址入口和父类相同方法的地址入口是一致的，都指向父类的实现入口。如果子类中重写了这个方法，子类方法表中的地址将会替换为指向子类实现版本的入口地址。图中，Son重写了来自Father的全部方法，因此Son的方法表没有指向Father类型数据的箭头。但是Son和Father都没有重写来自Object的方法，所以它们的方法表中所有从Object继承来的方法都指向了Object的数据类型。</p>
-<h2 id="类加载机制"><a href="#类加载机制" class="headerlink" title="类加载机制"></a>类加载机制</h2><h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>类从被加载到虚拟机内存中开始，到卸载出内存为止，它的整个生命周期包括：加载（Loading）、验证（Verification）、准备（Preparation）、解析（Resolution）、初始化（Initialization）、使用（Using）和卸载（Unloading）7个阶段。其中验证、准备、解析3个部分统称为连接（Linking）</p>
+              <h2 id="类加载机制"><a href="#类加载机制" class="headerlink" title="类加载机制"></a>类加载机制</h2><h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>类从被加载到虚拟机内存中开始，到卸载出内存为止，它的整个生命周期包括：<strong>加载（Loading）、验证（Verification）、准备（Preparation）、解析（Resolution）、初始化（Initialization）、使用（Using）</strong>和<strong>卸载（Unloading）</strong>7个阶段。其中<strong>验证、准备、解析</strong>3个部分统称为<strong>连接（Linking）</strong>。</p>
 <h3 id="加载阶段"><a href="#加载阶段" class="headerlink" title="加载阶段"></a>加载阶段</h3><p>虚拟机需要完成以下3件事情：</p>
 <ol>
 <li><p>通过一个类的全限定名来获取定义此类的二进制字节流。</p>
@@ -471,7 +235,7 @@ hello,lady！</code></pre><p>上述代码的静态类型同样都是Human的两�
 <p>但从JVM的角度来讲，只存在两种不同的类加载器，启动类加载器（Bootstrap ClassLoader）和所有其他的类加载器，启动类加载器用C++语言实现，是虚拟机自身的一部分，另一种所有其他的类加载器，使用java语言实现，独立于虚拟机外部，并且全都继承自抽象类java.lang.ClassLoader。</p>
 <h3 id="双亲委派模型"><a href="#双亲委派模型" class="headerlink" title="双亲委派模型"></a>双亲委派模型</h3><p>我们的应用程序都是由这3种类加载器互相配合进行加载的，如果有必要，还可以加入自己定义的类加载器。</p>
 <p>双亲委派模型要求除了顶层的启动类加载器外，其余的类加载器都应当有自己的父类加载器。这里类加载器之间的父子关系一般不会以继承（Inheritance）的关系来实现，而是都使用组合（Composition）关系即在代码中保存一个父加载器来复用父加载器的代码。</p>
-<img src="/2020/03/12/JVM%E7%9A%84%E6%89%A7%E8%A1%8C%E5%AD%90%E7%B3%BB%E7%BB%9F/pic4.png" srcset="/img/loading.gif" class="">
+
 
 <p>某个特定的类加载器在接到加载类的请求时，首先将加载任务委托给父类加载器，依次递归，如果父类加载器可以完成类加载任务，就成功返回；只有父类加载器无法完成此加载任务时，才自己去加载。</p>
 <p>使用双亲委派模型来组织类加载器之间的关系，有一个显而易见的好处就是Java类随着它的类加载器一起具备了一种带有优先级的层次关系，保证java程序稳定运行。例如用户自己编写了一个称为java.lang.Object的类，并放在程序的ClassPath中，无论哪一个类加载器要加载这个类，最终都是委派给处于模型最顶端的启动类加载器进行加载，因此Object类在程序的各种类加载器环境中都是同一个类，即rt.jar中的Object类，用户编写的这个类不会被再次加载。相反，如果没有使用双亲委派模型，由各个类加载器自行去加载的话，系统中将会出现多个不同的Object类，Java类型体系中最基础的行为也就无法保证，应用程序也将会变得一片混乱。</p>
@@ -489,7 +253,7 @@ hello,lady！</code></pre><p>上述代码的静态类型同样都是Human的两�
 <li><p><strong>webapp应用类加载器</strong>：每个应用在部署后，都会创建一个唯一的类加载器。该类加载器会加载位于 WEB-INF/lib下的jar文件中的class 和 WEB-INF/classes下的class文件。</p>
 </li>
 </ol>
-<img src="/2020/03/12/JVM%E7%9A%84%E6%89%A7%E8%A1%8C%E5%AD%90%E7%B3%BB%E7%BB%9F/pic5.png" srcset="/img/loading.gif" class="">
+
 
 <p><strong>Common ClassLoader</strong>作为<strong>Catalina ClassLoader</strong>和<strong>Shared ClassLoader</strong>的parent，而<strong>Shared ClassLoader</strong>又可能存在多个children类加载器<strong>WebApp ClassLoader</strong>，一个<strong>WebApp ClassLoader</strong>实际上就对应一个Web应用，那Web应用就有可能存在Jsp页面，这些Jsp页面最终会转成class类被加载，因此也需要一个Jsp的类加载器。</p>
 <p>需要注意的是，在代码层面<strong>Catalina ClassLoader</strong>、<strong>Shared ClassLoader</strong>、<strong>Common ClassLoader</strong>对应的实体类实际上都是<strong>URLClassLoader</strong>或者<strong>SecureClassLoader</strong>，一般我们只是根据加载内容的不同和加载父子顺序的关系，在逻辑上划分为这三个类加载器；而<strong>WebApp ClassLoader</strong>和<strong>JasperLoader</strong>都是存在对应的类加载器类的。</p>
@@ -527,9 +291,9 @@ hello,lady！</code></pre><p>上述代码的静态类型同样都是Human的两�
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/03/21/JVM%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                      <a href="/2020/03/12/JVM%E6%89%A7%E8%A1%8C%E5%AD%90%E7%A8%8B%E5%BA%8F/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">JVM性能优化</span>
+                        <span class="hidden-mobile">JVM执行子程序</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -758,7 +522,7 @@ hello,lady！</code></pre><p>上述代码的静态类型同样都是Human的两�
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "JVM的执行子系统&nbsp;",
+        "JVM的类加载&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
