@@ -176,10 +176,10 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期二, 四月 21日 2020, 6:18 晚上</p>
+                class="note note-warning">本文最后更新于：星期日, 五月 24日 2020, 8:03 晚上</p>
             
             <div class="markdown-body">
-              <h2 id="springmvc的初始化入口"><a href="#springmvc的初始化入口" class="headerlink" title="springmvc的初始化入口"></a>springmvc的初始化入口</h2><p>springmvc是基于servlet规范来完成的一个请求响应模块，也是spring中比较大的一个模块，现在已经支持零配置的方式整合，不再需要web.xml和springmvc.xml文件。</p>
+              <h2 id="初始化入口"><a href="#初始化入口" class="headerlink" title="初始化入口"></a>初始化入口</h2><p>springmvc是基于servlet规范来完成的一个请求响应模块，也是spring中比较大的一个模块，现在已经支持零配置的方式整合，不再需要web.xml和springmvc.xml文件。</p>
 <h3 id="web-xml的替换"><a href="#web-xml的替换" class="headerlink" title="web.xml的替换"></a>web.xml的替换</h3><p>servlet规范中规定当servlet容器启动的时会加载META-INF/services/javax.servlet.ServletContainerInitializer文件中的类。这个类必须实现javax.servlet.ServletContainerInitializer接口，servlet容器在启动后会收集实现@HandlesTypes注解中的接口的实现类，然后传递给onStartup()方法。springmvc就是通过这个规范完成容器初始化。</p>
 <pre><code class="xml">org.springframework.web.SpringServletContainerInitializer</code></pre>
 <p>spring中定义一个了WebApplicationInitializer接口，然后在onStartup()方法中通过反射调用onStart()方法。这里我们着重分析下这个接口的实现类AbstractContextLoaderInitializer跟AbstractDispatcherServletInitializer类。</p>
@@ -221,7 +221,7 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
         }
     }
 }</code></pre>
-<h3 id="AbstractContextLoaderInitializer类"><a href="#AbstractContextLoaderInitializer类" class="headerlink" title="AbstractContextLoaderInitializer类"></a>AbstractContextLoaderInitializer类</h3><p>AbstractContextLoaderInitializer中的onStartup()方法会调用createRootApplicationContext()方法创建spring上下文，并注册ContextLoaderListener。spring上下文的refresh()方法将由ContextLoaderListener来调用</p>
+<h4 id="AbstractContextLoaderInitializer类"><a href="#AbstractContextLoaderInitializer类" class="headerlink" title="AbstractContextLoaderInitializer类"></a>AbstractContextLoaderInitializer类</h4><p>AbstractContextLoaderInitializer中的onStartup()方法会调用registerContextLoaderListener()方法，该方法中会调用createRootApplicationContext()方法创建spring上下文，并注册ContextLoaderListener。spring上下文的refresh()方法将由ContextLoaderListener来调用</p>
 <pre><code class="java">public abstract class AbstractContextLoaderInitializer implements WebApplicationInitializer {
 
     /** Logger available to subclasses. */
@@ -321,7 +321,7 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
         ContextCleanupListener.cleanupAttributes(event.getServletContext());
     }
 }</code></pre>
-<h3 id="AbstractDispatcherServletInitializer类"><a href="#AbstractDispatcherServletInitializer类" class="headerlink" title="AbstractDispatcherServletInitializer类"></a>AbstractDispatcherServletInitializer类</h3><p>AbstractDispatcherServletInitializer的onStartup()方法中，会创建sprngmvc的上下文对象跟DispatcherServlet对象。Serlvet容器在启动时会调用DispatcherServlet的init()方法，该方法继承自父类HttpServletBean，init()方法最终会调用到springmvc上下文的refresh()方法。springmvc上下文对象初始化时会先获取spring的上下文对象，然后将其设置为父容器，之后getBean()操作中会优先从父容器中获取bean。</p>
+<h4 id="AbstractDispatcherServletInitializer类"><a href="#AbstractDispatcherServletInitializer类" class="headerlink" title="AbstractDispatcherServletInitializer类"></a>AbstractDispatcherServletInitializer类</h4><p>AbstractDispatcherServletInitializer的onStartup()方法中，会创建sprngmvc的上下文对象跟DispatcherServlet对象。Serlvet容器在启动时会调用DispatcherServlet的init()方法，该方法继承自父类HttpServletBean，init()方法最终会调用到springmvc上下文的refresh()方法。springmvc上下文对象初始化时会先获取spring的上下文对象，然后将其设置为父容器，之后getBean()操作中会优先从父容器中获取bean。</p>
 <pre><code class="java">public abstract class AbstractDispatcherServletInitializer extends AbstractContextLoaderInitializer {
 
    public static final String DEFAULT_SERVLET_NAME = &quot;dispatcher&quot;;
@@ -441,7 +441,7 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 <li>创建消息转换器加入到HandlerAdapter中</li>
 </ol>
 <p>@EnableWebMvc标签可以完成springmvc.xml中的所有工作。</p>
-<p>该注解中会引入DelegatingWebMvcConfiguration类，该类会通过@Autowired获取到所有的WebMvcConfigurer类。该类的父类WebMvcConfigurationSupport类就是比较核心的类，会替代xml进行完成所有组件的注册。该类十分庞大，主要是通过@Bean的方式将组件注册到上下文对象中。此处我们只分析RequestMappingHandlerMapping的注册，其他组件的注册的流程也基本相同。</p>
+<p>该注解中会引入DelegatingWebMvcConfiguration类，该类会通过@Autowired获取到所有WebMvcConfigurer接口的实现类。该类的父类WebMvcConfigurationSupport类就是比较核心的类，会替代xml进行完成所有组件的注册。该类十分庞大，主要是通过@Bean的方式将组件注册到上下文对象中。此处我们只分析RequestMappingHandlerMapping的注册，其他组件的注册的流程也基本相同。</p>
 <p>该类的requestMappingHandleMapping()方法进行RequestMappingHandlerMapping的注册，该方法会通过调用getInterceptors()方法获取拦截器，然后设置进去，之后设置的属性还包括跨域等属性，这里着重分析getInterceptors()方法，其他属性的获取方式也基本相同。</p>
 <pre><code class="java">@Bean
 public RequestMappingHandlerMapping requestMappingHandlerMapping() {
@@ -732,9 +732,9 @@ protected void addInterceptors(InterceptorRegistry registry) {
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/04/21/springmvc%E7%9A%84%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94%E6%A0%B8%E5%BF%83/">
+                      <a href="/2020/04/21/springmvc%E7%9A%84%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">springmvc的请求响应核心</span>
+                        <span class="hidden-mobile">springmvc的请求响应</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
