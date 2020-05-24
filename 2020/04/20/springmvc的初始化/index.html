@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期日, 五月 24日 2020, 8:03 晚上</p>
+                class="note note-warning">本文最后更新于：星期日, 五月 24日 2020, 8:29 晚上</p>
             
             <div class="markdown-body">
               <h2 id="初始化入口"><a href="#初始化入口" class="headerlink" title="初始化入口"></a>初始化入口</h2><p>springmvc是基于servlet规范来完成的一个请求响应模块，也是spring中比较大的一个模块，现在已经支持零配置的方式整合，不再需要web.xml和springmvc.xml文件。</p>
@@ -494,7 +494,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
    this.configurers.addInterceptors(registry);
 }</code></pre>
 <h2 id="DispatcherServlet中的组件初始化"><a href="#DispatcherServlet中的组件初始化" class="headerlink" title="DispatcherServlet中的组件初始化"></a>DispatcherServlet中的组件初始化</h2><p>DispatcherServlet的父类FrameworkServlet中有一个私有类ContextRefreshListener，这个私有类继承了spring的监听器ApplicationListener&lt;ContextRefreshedEvent&gt;，spring完成初始化会发布一个ContextRefreshedEvent类型的事件来触发这个监听器，监听器监听到这个事件后会在线程中调用私有类的onApplicationEvent()方法。</p>
-<h3 id="onApplicationEvent-方法"><a href="#onApplicationEvent-方法" class="headerlink" title="onApplicationEvent()方法"></a>onApplicationEvent()方法</h3><p>onApplicationEvent()方法会再调用FrameworkServlet类中的onApplicationEvent()方法，在这个方法中会调用onRefresh()方法。</p>
+<p>onApplicationEvent()方法会再调用FrameworkServlet类中的onApplicationEvent()方法，在这个方法中会调用onRefresh()方法。</p>
 <pre><code class="java">private class ContextRefreshListener implements ApplicationListener&lt;ContextRefreshedEvent&gt; {
 
    @Override
@@ -502,8 +502,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
       FrameworkServlet.this.onApplicationEvent(event);
    }
 }</code></pre>
-<p>onRefresh()方法</p>
-<p>该方法会调用到子类DispatcherServlet中的方法，最终调用到initStrategies()方法。完成DispatcherServlet组件的设置。</p>
+<p>onRefresh()方法会调用到子类DispatcherServlet中的方法，最终调用到initStrategies()方法。完成DispatcherServlet组件的设置。</p>
 <pre><code class="java">protected void initStrategies(ApplicationContext context) {
    initMultipartResolver(context);
    initLocaleResolver(context);
@@ -515,8 +514,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
    initViewResolvers(context);
    initFlashMapManager(context);
 }</code></pre>
-<p>initHandlerMappings()方法</p>
-<p>该方法会从上下文中获取到HandlerMapping对象，然后进行排序。如果没有配置HandlerMapping对象，就会加载默认的HandlerMappinig对象。最后设置到handlerMappings属性中。</p>
+<p>initHandlerMappings()方法会从上下文中获取到HandlerMapping对象，然后进行排序。如果没有配置HandlerMapping对象，就会加载默认的HandlerMappinig对象。最后设置到handlerMappings属性中。</p>
 <pre><code class="java">private void initHandlerMappings(ApplicationContext context) {
    this.handlerMappings = null;
 
@@ -559,8 +557,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
    }
    handlerMethodsInitialized(getHandlerMethods());
 }</code></pre>
-<p>processCandidateBean()</p>
-<p>该方法会判断类上面是否有@Controller、@RequestMapping注解，如果有会调用detectHandlerMethods()方法建立url跟method的映射关系。</p>
+<p>processCandidateBean()方法会判断类上面是否有@Controller、@RequestMapping注解，如果有会调用detectHandlerMethods()方法建立url跟method的映射关系。</p>
 <pre><code class="java">protected void processCandidateBean(String beanName) {
    Class&lt;?&gt; beanType = null;
    try {
@@ -578,8 +575,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
       detectHandlerMethods(beanName);
    }
 }</code></pre>
-<p>detectHandlerMethods()</p>
-<p>该方法首先会获取方法对象和方法上的@RequestMapping注解属性，然后向selectMethods()方法中传入getMappingForMethod()方法用来封装映射关系，Map&lt;Method, T&gt;中的T就是属性的封装对象。最后调用registerHandlerMethod()方法建立映射关系。</p>
+<p>detectHandlerMethods()方法首先会获取方法对象和方法上的@RequestMapping注解属性，然后向selectMethods()方法中传入getMappingForMethod()方法用来封装映射关系，Map&lt;Method, T&gt;中的T就是属性的封装对象。最后调用registerHandlerMethod()方法建立映射关系。</p>
 <pre><code class="java">protected void detectHandlerMethods(Object handler) {
    Class&lt;?&gt; handlerType = (handler instanceof String ?
          obtainApplicationContext().getType((String) handler) : handler.getClass());
@@ -608,8 +604,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
       });
    }
 }</code></pre>
-<p>selectMethods()方法</p>
-<p>首先会获取类上的所有method，然后判断method上面是否有@RequestMapping注解，如果有调用外层传入的getMappingForMethod()方法封装成对象返回。</p>
+<p>selectMethods()方法首先会获取类上的所有method，然后判断method上面是否有@RequestMapping注解，如果有调用外层传入的getMappingForMethod()方法封装成对象返回。</p>
 <pre><code class="java">public static &lt;T&gt; Map&lt;Method, T&gt; selectMethods(Class&lt;?&gt; targetType, final MetadataLookup&lt;T&gt; metadataLookup) {
    final Map&lt;Method, T&gt; methodMap = new LinkedHashMap&lt;&gt;();
    Set&lt;Class&lt;?&gt;&gt; handlerTypes = new LinkedHashSet&lt;&gt;();
@@ -641,8 +636,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
 
    return methodMap;
 }</code></pre>
-<p>getMappingForMethod()方法</p>
-<p>首先会调用createRequestMappingInfo()方法封装注解信息，然后将类上的@RequestMapping注解也封装成对象，最后将两个对象结合后返回。</p>
+<p>getMappingForMethod()方法首先会调用createRequestMappingInfo()方法封装注解信息，然后将类上的@RequestMapping注解也封装成对象，最后将两个对象结合后返回。</p>
 <pre><code class="java">protected RequestMappingInfo getMappingForMethod(Method method, Class&lt;?&gt; handlerType) {
    //寻找有@RequestMapping注解的方法，然后注解里面的内容封装成对象
    RequestMappingInfo info = createRequestMappingInfo(method);
@@ -660,8 +654,7 @@ protected void addInterceptors(InterceptorRegistry registry) {
    }
    return info;
 }</code></pre>
-<p>registerHandlerMethod()方法</p>
-<p>register()方法是registerHandlerMethod()的主要方法。该方法首先会调用createHandlerMethod()方法创建HandlerMethod对象，该对象中封装了类跟方法信息，如果此时类还没有被实例化，就会将beanName跟beanFactory一起封装进去，如果类已经实例化就只会封装实例化之后的bean。然后将uri跟HandlerMethod放到mappingLookup中，url跟RequestMappingInfo信息放入urlLookup中。</p>
+<p>registerHandlerMethod()方法中的主要方法是register()，该方法首先会调用createHandlerMethod()方法创建HandlerMethod对象，该对象中封装了类跟方法信息，如果此时类还没有被实例化，就会将beanName跟beanFactory一起封装进去，如果类已经实例化就只会封装实例化之后的bean。然后将uri跟HandlerMethod放到mappingLookup中，url跟RequestMappingInfo信息放入urlLookup中。</p>
 <pre><code class="java">public void register(T mapping, Object handler, Method method) {
    this.readWriteLock.writeLock().lock();
    try {
