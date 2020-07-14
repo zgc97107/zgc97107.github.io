@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>虚拟机性能相关工具 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期四, 七月 9日 2020, 5:51 下午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    2.2k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      9 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期一, 七月 13日 2020, 6:42 晚上</p>
+            
+            <div class="markdown-body">
+              <h3 id="JVM的运行时参数"><a href="#JVM的运行时参数" class="headerlink" title="JVM的运行时参数"></a>JVM的运行时参数</h3><p>jvm的参数类型分为三类：</p>
+<ul>
+<li>标准参数：-help、-version</li>
+<li>-X参数（非标准参数）：-Xint、-Xcomp</li>
+<li>-XX参数（使用率较高）：-XX:newSize、-XX:+UseSerialGC</li>
+</ul>
+<h4 id="标准参数"><a href="#标准参数" class="headerlink" title="标准参数"></a>标准参数</h4><p>jvm的标准参数，一般都是很稳定的，在未来的JVM版本中不会改变，可以使用java -help检索出所有的标准参数。</p>
+<p>通过-D设置系统属性参数</p>
+<pre><code class="java">public class TestJVM {
+  public static void main(String[] args) {
+    String str = System.getProperty(&quot;str&quot;);
+    if (str == null) {
+      System.out.println(&quot;itcast&quot;);
+    } else {
+      System.out.println(str); 
+    } 
+  } 
+}</code></pre>
+<pre><code class="shell">F:\t&gt;javac TestJVM.java
+F:\t&gt;java TestJVM itcast
+F:\t&gt;java -Dstr=123 TestJVM 123</code></pre>
+<h5 id="server与-client参数"><a href="#server与-client参数" class="headerlink" title="-server与-client参数"></a>-server与-client参数</h5><p>可以通过-server或-client设置jvm的运行参数。它们的区别是Server VM的初始堆空间会大一些，默认使用的是并行垃圾回收器，启动慢运行快。Client VM相对来讲会保守一些，初始堆空间会小一些，使用串行的垃圾回收器，它的目标是为了让JVM的启动速度更快，但运行速度会比Server模式慢些。</p>
+<p>JVM在启动的时候会根据硬件和操作系统自动选择使用Server还是Client类型的JVM。</p>
+<p>32位操作系统</p>
+<ul>
+<li><p>如果是Windows系统，不论硬件配置如何，都默认使用Client类型的JVM。</p>
+</li>
+<li><p>如果是其他操作系统上，机器配置有2GB以上的内存同时有2个以上CPU的话默认使用server模式，否则使用client模式。</p>
+</li>
+</ul>
+<p>64位操作系统</p>
+<ul>
+<li>只有server类型，不支持client类型。</li>
+</ul>
+<h4 id="X参数"><a href="#X参数" class="headerlink" title="-X参数"></a>-X参数</h4><p>jvm的-X参数是非标准参数，在不同版本的jvm中，参数可能会有所不同，可以通过java -X查看非标准参数。</p>
+<h5 id="Xint、-Xcomp、-Xmixed"><a href="#Xint、-Xcomp、-Xmixed" class="headerlink" title="-Xint、-Xcomp、-Xmixed"></a>-Xint、-Xcomp、-Xmixed</h5><ul>
+<li><p>在解释模式(interpreted mode)下，-Xint标记会强制JVM执行所有的字节码，当然这会降低运行速度，通常低10倍或更多。</p>
+</li>
+<li><p>-Xcomp参数与它（-Xint）正好相反，JVM在第一次使用时会把所有的字节码编译成本地代码，从而带来最大程度的优化。</p>
+<blockquote>
+<p>然而，很多应用在使用-Xcomp也会有一些性能损失，当然这比使用-Xint损失的少，原因是- xcomp没有让JVM启用JIT编译器的全部功能。JIT编译器可以对是否需要编译做判断，如果所有代码都进行编译的话，对于一些只执行一次的代码就没有意义了。</p>
+</blockquote>
+</li>
+<li><p>-Xmixed是混合模式，将解释模式与编译模式进行混合使用，由jvm自己决定，这是jvm默认的模</p>
+<p>式，也是推荐使用的模式。</p>
+</li>
+</ul>
+<h5 id="Xms与-Xmx参数"><a href="#Xms与-Xmx参数" class="headerlink" title="-Xms与-Xmx参数"></a>-Xms与-Xmx参数</h5><p>-Xms与-Xmx分别是设置jvm的堆内存的初始大小和最大大小。</p>
+<p>-Xmx2048m：等价于-XX:MaxHeapSize，设置JVM最大堆内存为2048M。</p>
+<p>-Xms512m：等价于-XX:InitialHeapSize，设置JVM初始堆内存为512M。</p>
+<h4 id="XX参数"><a href="#XX参数" class="headerlink" title="-XX参数"></a>-XX参数</h4><p>-XX参数也是非标准参数，主要用于jvm的调优和debug操作。</p>
+<p>-XX参数的使用有2种方式，一种是boolean类型，一种是非boolean类型：</p>
+<ul>
+<li><p>boolean类型</p>
+<ul>
+<li>格式：-XX:[+-]&lt;name&gt; 表示启用或禁用&lt;name&gt;属性</li>
+<li>如：-XX:+DisableExplicitGC 表示禁用手动调用gc操作，也就是说调用System.gc()无效</li>
+</ul>
+</li>
+<li><p>非boolean类型</p>
+<ul>
+<li>格式：-XX:&lt;name&gt;=&lt;value&gt; 表示&lt;name&gt;属性的值为&lt;value&gt;</li>
+<li>如：-XX:NewRatio=4 表示新生代和老年代的比值为1:4</li>
+</ul>
+</li>
+</ul>
+<h4 id="查看正在运行的jvm参数"><a href="#查看正在运行的jvm参数" class="headerlink" title="查看正在运行的jvm参数"></a>查看正在运行的jvm参数</h4><pre><code>//查找应用进程编号
+jps -l
+//查看运行参数
+jinfo -flags [进程编号]</code></pre><h4 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h4><p>jstat命令可以查看堆内存各部分的使用量，以及加载类的数量。命令的格式如下：</p>
+<p>jstat -[命令选项] [vmid] [间隔时间/毫秒] [查询次数]</p>
+<p>命名选项如下：</p>
+<ul>
+<li><p>Loaded：加载class的数量</p>
+</li>
+<li><p>Bytes：所占用空间大小</p>
+</li>
+<li><p>Unloaded：未加载数量</p>
+</li>
+<li><p>Bytes：未加载占用空间</p>
+</li>
+<li><p>Time：时间</p>
+</li>
+</ul>
+<h5 id="class加载统计"><a href="#class加载统计" class="headerlink" title="class加载统计"></a>class加载统计</h5><pre><code class="shell">MacBookPro:~ zhaoguocheng$ jstat -class 10730
+Loaded  Bytes  Unloaded  Bytes     Time   
+ 60210 125331.7      953   983.7      47.72</code></pre>
+<h5 id="垃圾回收统计"><a href="#垃圾回收统计" class="headerlink" title="垃圾回收统计"></a>垃圾回收统计</h5><pre><code class="shell">MacBookPro:~ zhaoguocheng$ jstat -gc 10730
+ S0C    S1C    S0U    S1U      EC       EU        OC         OU       MC     MU    CCSC   CCSU   YGC     YGCT    FGC    FGCT     GCT   
+17472.0 17472.0 14212.5  0.0   139776.0 101291.8  508884.0   274618.0  403292.0 385091.1 52184.0 45738.3    196    1.968   0      0.000    1.968
+#指定每秒钟打印一次，总共打印五次
+MacBookPro:~ zhaoguocheng$ jstat -gc 10730
+#说明
+#S0C：第一个Survivor区的大小（KB）
+#S1C：第二个Survivor区的大小（KB）
+#S0U：第一个Survivor区的使用大小（KB）
+#S1U：第二个Survivor区的使用大小（KB）
+#EC：Eden区的大小（KB）
+#EU：Eden区的使用大小（KB）
+#OC：Old区大小（KB）
+#OU：Old使用大小（KB）
+#MC：方法区大小（KB）
+#MU：方法区使用大小（KB） CCSC：压缩类空间大小（KB） CCSU：压缩类空间使用大小（KB） YGC：年轻代垃圾回收次数
+#YGCT：年轻代垃圾回收消耗时间
+#FGC：老年代垃圾回收次数
+#FGCT：老年代垃圾回收消耗时</code></pre>
+<h3 id="MAT工具"><a href="#MAT工具" class="headerlink" title="MAT工具"></a>MAT工具</h3><h4 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h4><p>MAT(Memory Analyzer Tool)，是基于Eclipse的内存分析工具，是一个快速、功能丰富的JAVA heap<br>分析工具，它可以帮助我们查找内存泄漏和减少内存消耗。使用内存分析工具从众多的对象中进行分<br>析，快速的计算出在内存中对象的占用大小，看看是谁阻止了垃圾收集器的回收工作，并可以通过报表<br>直观的查看到可能造成这种结果的对象。官网地址：<a href="https://www.eclipse.org/mat/。" target="_blank" rel="noopener">https://www.eclipse.org/mat/。</a></p>
+<h4 id="下载安装"><a href="#下载安装" class="headerlink" title="下载安装"></a>下载安装</h4><p>下载地址：<a href="https://www.eclipse.org/mat/downloads.php" target="_blank" rel="noopener">https://www.eclipse.org/mat/downloads.php</a></p>
+<p>将下载得到的MemoryAnalyzer-1.8.0.20180604-win32.win32.x86_64.zip进行解压后即可</p>
+<h4 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h4><img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic1.png" srcset="/img/loading.gif" class="">
+
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic2.png" srcset="/img/loading.gif" class="">
+
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic3.png" srcset="/img/loading.gif" class="">
+
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic4.png" srcset="/img/loading.gif" class="">
+
+<p>查看对象及其依赖：</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic5.png" srcset="/img/loading.gif" class="">
+
+<p>查看可能存在内存泄漏的分析</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic6.png" srcset="/img/loading.gif" class="">
+
+<h3 id="查看线程状态"><a href="#查看线程状态" class="headerlink" title="查看线程状态"></a>查看线程状态</h3><pre><code class="shell">jstack [pid]</code></pre>
+<p>如果有死锁会显示</p>
+<pre><code>Found one Java-level deadlock: 
+============================= 
+&quot;Thread-1&quot;:
+  waiting to lock monitor 0x00000000026c3ee8 (object 0x0000000780198bb0, a java.lang.Object),
+  which is held by &quot;Thread-0&quot;
+&quot;Thread-0&quot;:
+  waiting to lock monitor 0x00000000026c40f8 (object 0x0000000780198bc0, a java.lang.Object),
+  which is held by &quot;Thread-1&quot;
+
+Java stack information for the threads listed above: 
+=================================================== 
+&quot;Thread-1&quot;:
+    at cn.itcast.jvm.TestDeadLock$Thread2.run(TestDeadLock.java:49)
+    - waiting to lock &lt;0x0000000780198bb0&gt; (a java.lang.Object)
+    - locked &lt;0x0000000780198bc0&gt; (a java.lang.Object) 
+    at java.lang.Thread.run(Thread.java:748) 
+&quot;Thread-0&quot;: 
+    at cn.itcast.jvm.TestDeadLock$Thread1.run(TestDeadLock.java:29)
+    - waiting to lock &lt;0x0000000780198bc0&gt; (a java.lang.Object) 
+    - locked &lt;0x0000000780198bb0&gt; (a java.lang.Object) 
+    at java.lang.Thread.run(Thread.java:748) 
+Found 1 deadlock.</code></pre><p>可以清晰的看到：</p>
+<ul>
+<li><p>Thread2获取了 &lt;0x0000000780198bc0&gt; 的锁，等待获取 &lt;0x0000000780198bb0&gt; 这个锁</p>
+</li>
+<li><p>Thread1获取了 &lt;0x0000000780198bb0&gt; 的锁，等待获取 &lt;0x0000000780198bc0&gt; 这个锁</p>
+</li>
+</ul>
+<p>由此可见，发生了死锁。</p>
+<h3 id="VisualVM"><a href="#VisualVM" class="headerlink" title="VisualVM"></a>VisualVM</h3><p>VisualVM，能够监控线程，内存情况，查看方法的CPU时间和内存中的对 象，已被GC的对象，反向查</p>
+<p>看分配的堆栈(如100个String对象分别由哪几个对象分配出来的)。</p>
+<p>VisualVM使用简单，几乎0配置，功能还是比较丰富的，几乎囊括了其它JDK自带命令的所有功能。</p>
+<ul>
+<li><p>内存信息</p>
+</li>
+<li><p>线程信息</p>
+</li>
+<li><p>Dump堆（本地进程）</p>
+</li>
+<li><p>Dump线程（本地进程）</p>
+</li>
+<li><p>打开堆Dump。堆Dump可以用jmap来生成。</p>
+</li>
+<li><p>打开线程Dump</p>
+</li>
+<li><p>生成应用快照（包含内存信息、线程信息等等）</p>
+</li>
+<li><p>性能分析。CPU分析（各个方法调用时间，检查哪些方法耗时多），内存分析（各类对象占用的内</p>
+</li>
+</ul>
+<p>存，检查哪些类占用内存多）</p>
+<ul>
+<li>……</li>
+</ul>
+<p>VisualVM在jdk的bin目录下，找到jvisualvm打开即可。</p>
+<h4 id="jvm基本信息"><a href="#jvm基本信息" class="headerlink" title="jvm基本信息"></a>jvm基本信息</h4><img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic7.png" srcset="/img/loading.gif" class="">
+
+<h4 id="CPU、内存、类线程运行信息"><a href="#CPU、内存、类线程运行信息" class="headerlink" title="CPU、内存、类线程运行信息"></a>CPU、内存、类线程运行信息</h4><img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic8.png" srcset="/img/loading.gif" class="">
+
+<h4 id="线程详情"><a href="#线程详情" class="headerlink" title="线程详情"></a>线程详情</h4><img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic9.png" srcset="/img/loading.gif" class="">
+
+<p>右上角的Dump按钮可以到处线程信息，与jstack相同</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic10.png" srcset="/img/loading.gif" class="">
+
+<h4 id="抽样器"><a href="#抽样器" class="headerlink" title="抽样器"></a>抽样器</h4><p>抽样器可以对CPU、内存在一段时间内进行抽样，以供分析。</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic11.png" srcset="/img/loading.gif" class="">
+
+<h4 id="监控远程jvm"><a href="#监控远程jvm" class="headerlink" title="监控远程jvm"></a>监控远程jvm</h4><p>VisualJVM可以借助于JMX技术监控远程的jvm进程。</p>
+<p>JMX（Java Management Extensions，即Java管理扩展）是一个为应用程序、设备、系统等植入管理功能的框架。JMX可以跨越一系列异构操作系统平台、系统体系结构和网络传输协议，灵活的开发无缝集成的系统、网络和服务管理应用。</p>
+<h5 id="监控远程tomcat"><a href="#监控远程tomcat" class="headerlink" title="监控远程tomcat"></a>监控远程tomcat</h5><pre><code class="shell">#在tomcat的bin目录下，修改catalina.sh，添加如下的参数 
+JAVA_OPTS=&quot;-Dcom.sun.management.jmxremote - 
+Dcom.sun.management.jmxremote.port=9999 - 
+Dcom.sun.management.jmxremote.authenticate=false - 
+Dcom.sun.management.jmxremote.ssl=false&quot; 
+#这几个参数的意思是： 
+#-Dcom.sun.management.jmxremote ：允许使用JMX远程管理 
+#-Dcom.sun.management.jmxremote.port=9999 ：JMX远程连接端口 
+#-Dcom.sun.management.jmxremote.authenticate=false ：不进行身份认证，任何用户都可 以连接 
+#-Dcom.sun.management.jmxremote.ssl=false ：不使用ssl</code></pre>
+<h5 id="连接远程tomcat"><a href="#连接远程tomcat" class="headerlink" title="连接远程tomcat"></a>连接远程tomcat</h5><p>添加远程主机：</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic12.png" srcset="/img/loading.gif" class="">
+
+<p>在一个主机下可能会有很多的jvm需要监控，所以接下来要在该主机上添加需要监控的jvm：</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic13.png" srcset="/img/loading.gif" class="">
+
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic14.png" srcset="/img/loading.gif" class="">
+
+<h4 id="检查死锁"><a href="#检查死锁" class="headerlink" title="检查死锁"></a>检查死锁</h4><img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic15.png" srcset="/img/loading.gif" class="">
+
+<h4 id="检测堆内存"><a href="#检测堆内存" class="headerlink" title="检测堆内存"></a>检测堆内存</h4><p>检测堆内存的具体使用情况，需要安装插件Visual GC进行检测：</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic16.png" srcset="/img/loading.gif" class="">
+
+<p>可以看到，年轻代、老年代中的内存使用情况</p>
+<img src="/2020/07/09/%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/pic17.png" srcset="/img/loading.gif" class="">
+
+
+
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/JVM/">JVM</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/JVM/">JVM</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                      <a href="/2020/07/13/JVM%E7%9A%84%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">JVM的垃圾收集</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/2020/07/09/JVM%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">
+                        <span class="hidden-mobile">JVM虚拟机内存管理</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "虚拟机性能相关工具&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>

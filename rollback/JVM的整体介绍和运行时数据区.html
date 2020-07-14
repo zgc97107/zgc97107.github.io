@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>JVM的整体介绍和运行时数据区 - zgcheng&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>zgcheng's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      <div class="container nopadding-md">
+        <div class="py-5 z-depth-3" id="board"
+          >
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
+                
+
+<div class="page-content">
+  <h2 id="整体介绍"><a href="#整体介绍" class="headerlink" title="整体介绍"></a>整体介绍</h2><h3 id="Java-SE体系架构"><a href="#Java-SE体系架构" class="headerlink" title="Java SE体系架构"></a>Java SE体系架构</h3><p>JavaSE，Java平台标准版，为Java EE和Java ME提供了基础。</p>
+<p>JDK：Java开发工具包，JDK是JRE的超集，包含JRE中的所有内容，以及开发程序所需的编译器和调试程序等工具。</p>
+<p>JRE：Java SE运行时环境 ，提供库、Java虚拟机和其他组件来运行用Java编程语言编写的程序。主要类库，包括：程序部署发布、用户界面工具类、继承库、其他基础库，语言和工具基础库</p>
+<p>JVM：java虚拟机，负责JavaSE平台的硬件和操作系统无关性、编译执行代码（字节码）和平台安全性</p>
+
+
+<h3 id="常见的几种虚拟机"><a href="#常见的几种虚拟机" class="headerlink" title="常见的几种虚拟机"></a>常见的几种虚拟机</h3><p>虚拟机的区别主要在于字节码的执行的方式，目前主要的执行方式有解释执行和编译执行（针对字节码的执行），解释执行就是边翻译为机器码边执行，编译执行（即时编译）就是先将一个方法中的所有字节码全部编译成机器码之后再执行。</p>
+<p>常见的几种虚拟机有：</p>
+<ul>
+<li><p>HotSpot VM（SUN）：以前使用最广的Java虚拟机，采用的是先解释执行，到了一定时机后热点代码（多次执行、循环等）再翻译成机器码，具有热点代码探测技术（通过执行计数器找到最有编译价值的代码，如果代码用得非常频繁，就会把这些代码编译成本地代码）。</p>
+</li>
+<li><p>JRcokit VM（BEA）：号称“世界上最快的Java虚拟机 ”，JRockit采取的方法是在执行class时直接编译为机器码（Java程序启动速度会比较慢）。</p>
+</li>
+<li><p>J9 VM（IBM）J9和Hotspot比较接近，主要是用在IBM产品（IBM WebSphere和IBM的AIX平台上），华为有的项目用的J9。</p>
+</li>
+<li><p>Dalvik VM（Google）：Google Android Dalivk VM：谷歌移动端的虚拟机，使用的寄存器架构，执行dex（Dalvik Executable）通过class转化而来。</p>
+</li>
+<li><p>HotSpot VM（ORACLE）：目前使用范围最广的Java虚拟机，由ORACLE公司收购HotSpot VM(SUN)和JRcokit VM(BEA)之后合并而来。</p>
+</li>
+</ul>
+<h3 id="未来的发展方向"><a href="#未来的发展方向" class="headerlink" title="未来的发展方向"></a>未来的发展方向</h3><ul>
+<li><p><strong>模块化：</strong>OSGI（动态化、模块化），应用层面就是微服务，互联网的发展方向</p>
+</li>
+<li><p><strong>混合语言</strong>：多个语言都可以运行在JVM中，google的Kotlin成为了Android的官方语言，还有使用Scala语言编写的Kafka。</p>
+</li>
+<li><p><strong>多核并行</strong>：CPU从高频次转变为多核心，多核时代。JDK1.7引入了Fork/Join，JDK1.8提出lambda表达式（函数式编程天生适合并行运）。</p>
+</li>
+<li><p><strong>丰富语法：</strong>JDK5提出自动装箱、泛型、动态注解等语法。JDK7二进制原生支持。try-catch-finally 至try-with-resource</p>
+</li>
+<li><p><strong>64位：</strong>虽然同样的程序64位内存消耗比32位要多一点，但是支持内存大，所以虚拟机都会完全过渡到64位，32位的JVM有4G的堆大小限制。</p>
+</li>
+<li><p><strong>更强的垃圾回收器（CMS、G1位现在主流的回收器）</strong>：JDK11中提出了ZGC，其垃圾回收暂停时间不超过10毫秒，且不会随着堆的增加而增加，可以支持TB级别的堆回收。JDK12支持并发类卸载，进一步缩短暂停时间 JDK13（计划于2019年9月）将最大堆大小从4TB增加到16TB</p>
+</li>
+</ul>
+<h2 id="运行时数据区域"><a href="#运行时数据区域" class="headerlink" title="运行时数据区域"></a>运行时数据区域</h2>
+
+<p>JDK将代码编译为class文件后经过类加载存储在JVM的运行时数据区（内存），执行时会由执行引擎使用c++语言去执行对应的机器码。</p>
+<p>JVM在运行过程中会把它管理的内存划分成不同的数据区域。</p>
+
+
+<p>其中<strong>程序计数器</strong>，<strong>虚拟机栈</strong>，<strong>本地方法栈</strong>，这部分区域属于<strong>线程私有</strong>，会随着线程产生和消亡，不用担心内存回收问题。<strong>堆</strong>、<strong>方法区</strong>为线程<strong>共享区域</strong>。</p>
+<p>计算机的运行由指令和数据组成，线程私有的区域主要与<strong>指令执行</strong>有关，线程共享区域通常用来<strong>存储共享数据</strong>。</p>
+
+
+<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><p>程序计数器是一个较小的内存空间，指向当前线程正在执行的字节码指令的地址。</p>
+<p>由于java是多线程的，存在线程切换的情况，当前线程在执行过程中随时可能会被挂起，所以JVM需要通过程序计数器记录当前线程的执行情况。</p>
+<h3 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h3><p>以栈帧的方式存储<strong>当前线程</strong>运行方法所需的<strong>数据指令</strong>、<strong>返回地址</strong>和<strong>调用过程中变量</strong>，大小缺省为<strong>1M</strong>，可用参数 <strong>–Xss</strong>调整大小，例如-Xss256k。虚拟机在在运行时可能会出现<strong>java.lang.StackOverflowError</strong>，但一般的方法调用是很难出现的，如果出现了要考虑是否有<strong>无限递归</strong>。</p>
+<p>每个方法在执行的同时都会创建一个<strong>栈帧</strong>并将其入栈，当前线程正在执行的方法就是其虚拟机栈顶的栈桢。</p>
+<p>栈帧中主要包括：</p>
+<ul>
+<li><strong>局部变量表：</strong>用于存储方法中的变量（方法入参等）。如果是Java的八大基础数据类型可以直接存储，如果是对象则存放它的引用地址。大小在代码编译时就已经写入到方法表的Code属性，之后不会改变，仅仅取决于具体虚拟机的实现。</li>
+<li><strong>操作数栈</strong>：用于执行方法中对数据的操作，操作的的数据可以是任意的java数据类型。</li>
+<li><strong>动态连接：</strong>提供符号引用和直接引用在运行时进行解析和链接。</li>
+<li><strong>返回地址：</strong>记录方法执行完成后返回的位置。</li>
+</ul>
+<p>使用javap -v JavaStack.class &gt; a.txt之后可以得到字节码文件反编译后的汇编代码，通过汇编代码我们可以深入的了解java代码的工作机制。</p>
+<p>例如将</p>
+<pre><code>public void sub(int num){
+    num = num - 100;
+}</code></pre><p>反编译后</p>
+<pre><code>public void sub(int);
+    descriptor: (I)V
+    flags: ACC_PUBLIC
+    Code:
+      stack=2, locals=2, args_size=2
+         0: iload_1    // 冒号前的数字表示字节码指令的地址行号，iload_1:下标为1的局部变量表入栈
+         1: bipush        100    // 将一个byte类型的常量入栈
+         3: isub    // 将栈顶的两个int的数据出栈、相减，结果入栈
+         4: istore_1  // 栈顶的int类型存入局部变量表1的位置
+         5: return
+      LineNumberTable:
+        line 9: 0
+        line 10: 5
+      LocalVariableTable:    //
+        Start  Length  Slot  Name   Signature
+            0       6     0  this   Lcom/jvm/ch01/JavaStack1;
+            0       6     1   num   I</code></pre><h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>本地方法栈保存的是native方法的信息，当一个JVM创建的线程调用native方法后，JVM不再为其在虚拟机栈中创建栈帧，JVM只是简单地动态链接并直接调用native方法。</p>
+<p>虚拟机规范无强制规定，各版本虚拟机自由实现HotSpot直接把本地方法栈和虚拟机栈合二为一</p>
+<h3 id="方法区（永久代、元空间）"><a href="#方法区（永久代、元空间）" class="headerlink" title="方法区（永久代、元空间）"></a>方法区（永久代、元空间）</h3><p>主要用于存储已被虚拟机加载的类信息（包括类名、修饰符、变量名、方法名、方法代码、返回值、直接接口的有序列表）、常量、静态变量等数据。</p>
+<p>在JDK1.7之前，这块区域也被称为永久代，可以通过<code>-XX:PermSize</code>、<code>-XX:MaxPermSize</code>进行设置，1.8之后改为元空间通过<code>-XX:MetaspaceSize</code>、 <code>-XX:MaxMetaspaceSize</code>进行设置，不再受制于JVM内存空间，而是与JVM共享本机总内存。</p>
+<p>永久代的空间受制于堆内存的大小，如果超过这个值就会OOM，所以永久代在存储类信息、常量、静态变量等数据，可能会遇到内存溢出的问题，而且对永久代进行调优是很困难的。</p>
+<p>元空间的内存管理由<strong>元空间虚拟机</strong>来完成，先前，对于类的元数据我们需要不同的垃圾回收器进行处理，现在只需要执行元空间虚拟机的C++代码即可完成。在元空间中，<strong>类和其元数据的生命周期和其对应的类加载器是相同的</strong>。只要类加载器存活，其加载的类的元数据也是存活的，因而不会被回收掉。 准确的来说，<strong>每一个类加载器的存储区域都称作一个元空间，所有的元空间合在一起就是我们一直说的元空间。</strong>当一个类加载器被垃圾回收器标记为不再存活，其对应的元空间会被回收。在元空间的回收过程中没有重定位和压缩等操作。但是元空间内的元数据会进行扫描来确定Java引用。</p>
+<p>注意：元空间的大小不会受制于堆内存的大小，而只受制于物理机的最大内存，因此如果元空间的占据了过多的物理机内存，就会挤压堆空间的大小。</p>
+<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><p>堆内存用来存储Java中的对象。无论是成员变量，局部变量，还是类变量，它们指向的对象都存储在堆内存中，堆是需要重点关注的一块区域，因为涉及到内存的分配(new关键字，反射等)与回收(回收算法，收集器等)，</p>
+<p>几乎所有的对象都是在堆中分配，可用以下参数调整：</p>
+<p><code>-Xms</code>：堆的最小值；</p>
+<p><code>-Xmx</code>：堆的最大值；</p>
+<p><code>-Xmn</code>：新生代的大小；</p>
+<p><code>-XX:NewSize</code>；新生代最小值；</p>
+<p><code>-XX:MaxNewSize</code>：新生代最大值；</p>
+<p>例如<code>- Xmx256m</code></p>
+<h3 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h3><p>Class 文件中的常量池（编译器生成的各种字面量和符号引用）会在类加载后被放入这个区域。在JDK1.6中运行时常量池存储在方法区，JDK1.7中<strong>字符串常量池</strong>被从方法区拿到了<strong>堆</strong>中，JDK1.8中使用元空间替代永久代，运行时常量池还在方法区, 只不过方法区的实现从永久代变成了元空间。</p>
+<p>符号引用：通常是字符串，能根据这个字符串定位到指定的数据，比如java/lang/StringBuilder，用于存储：</p>
+<ul>
+<li>类和接口的全限定名</li>
+<li>字段名称和描述符</li>
+<li>方法名称和描述符</li>
+</ul>
+<p>字面量：在代码中直接出现的值，如：</p>
+<ul>
+<li>String a = “A”;</li>
+<li>int b= 1;</li>
+</ul>
+<p>其中 “A”与1都是字面量</p>
+<h3 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h3><p>直接内存不属于JVM运行时数据区域，也不是java虚拟机规范中定义的内存区域，可以通过<code>-XX:MaxDirectMemorySize</code>来设置，默认值与堆内存最大值相同，也会出现OOM异常。直接内存可以避免在Java 堆和Native堆中来回复制数据，能够提高效率。如果使用NIO这块区域会被频繁使用，也可以使directByteBuffer对象直接饮用并操作。</p>
+
+</div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/js/main.js" ></script>
+
+
+  <script  src="/js/lazyload.js" ></script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "JVM的整体介绍和运行时数据区&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
