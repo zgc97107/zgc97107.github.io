@@ -326,27 +326,27 @@ public class ExpressCond {
 <h2 id="CLH队列锁"><a href="#CLH队列锁" class="headerlink" title="CLH队列锁"></a>CLH队列锁</h2><p>CLH队列锁即Craig, Landin, and Hagersten (CLH) locks。</p>
 <p>CLH队列锁是一种基于链表的可扩展、高性能、公平的自旋锁，申请线程仅仅在本地变量上自旋，它不断自旋判断前驱节点的状态，假设发现前驱节点释放了锁就结束自旋。</p>
 <p>当一个线程需要获取锁时会创建一个的QNode，将其中的locked设置为true表示需要获取锁，myPred表示对其前驱节点的引用</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic1.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic1.png" srcset="/img/loading.gif" class>
 
 <p>线程A对tail域调用getAndSet方法，使自己成为队列的尾部，同时获取一个指向其前驱结点的引用myPred</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic2.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic2.png" srcset="/img/loading.gif" class>
 
 <p>线程B需要获得锁，同样的流程再来一遍</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic3.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic3.png" srcset="/img/loading.gif" class>
 
 <p>线程就在前驱结点的locked字段上自旋，直到前驱结点释放锁(前驱节点的锁值 locked == false)</p>
 <p>当一个线程需要释放锁时，将当前结点的locked域设置为false，同时回收前驱结点</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic4.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic4.png" srcset="/img/loading.gif" class>
 
 <p>如上图所示，前驱结点释放锁，线程A的myPred所指向的前驱结点的locked字段变为false，线程A就可以获取到锁。</p>
 <p>CLH队列锁的优点是空间复杂度低（如果有n个线程，L个锁，每个线程每次只获取一个锁，那么需要的存储空间是O（L+n），n个线程有n个myNode，L个锁有L个tail）。CLH队列锁常用在SMP体系结构下。</p>
 <p>Java中的AQS是CLH队列锁的一种变体实现。</p>
 <p><strong>扩展知识点</strong></p>
 <p>SMP（Symmetric Multi-Processor）对称多处理器结构，指server中多个CPU对称工作，每一个CPU访问内存地址所需时间同样。其主要特征是共享，包括对CPU，内存，I/O等进行共享。SMP的长处是可以保证内存一致性。缺点是这些共享的资源非常可能成为性能瓶颈。随着CPU数量的添加，每一个CPU都要访问同样的内存资源，可能导致内存访问冲突，可能会导致CPU资源的浪费。经常使用的PC机就属于这样的。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic5.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic5.png" srcset="/img/loading.gif" class>
 
 <p>NUMA（Non Uniform Memory Access Architecture）非一致存储访问，将CPU分为CPU模块，每个CPU模块由多个<em>CPU*组成，并且具有独立的本地内存、I/O槽口等，模块之间可以通过互联模块相互访问，访问本地内存（本CPU模块的内存）的速度将远远高于访问远地内存</em>(<em>其他CPU模块的内存</em>)*的速度，这也是非一致存储访问的由来。NUMA较好地解决SMP的扩展问题，当CPU数量增加时，因为访问远地内存的延时远远超过本地内存，系统性能无法线性增加。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic6.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic6.png" srcset="/img/loading.gif" class>
 
 <p>CLH唯一的缺点是在NUMA系统结构下性能很差，但是在SMP系统结构下该法还是非常有效的。解决NUMA系统结构的思路是MCS队列锁。</p>
 <h2 id="AbstractQueuedSynchronizer深入分析"><a href="#AbstractQueuedSynchronizer深入分析" class="headerlink" title="AbstractQueuedSynchronizer深入分析"></a>AbstractQueuedSynchronizer深入分析</h2><h3 id="学习AQS的必要性"><a href="#学习AQS的必要性" class="headerlink" title="学习AQS的必要性"></a>学习AQS的必要性</h3><p>队列同步器AbstractQueuedSynchronizer（以下简称同步器或AQS），是用来构建锁或者其他同步组件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获取线程的排队工作。并发包的大师（Doug Lea）期望它能够成为实现大部分同步需求的基础。</p>
@@ -655,7 +655,7 @@ public class SmallCake extends AbstractCake {
         TestMyLock testMyLock = new TestMyLock();
         testMyLock.test();
     }
-}</code></pre><h3 id="AQS中的数据结构节点和同步队列"><a href="#AQS中的数据结构节点和同步队列" class="headerlink" title="AQS中的数据结构节点和同步队列"></a>AQS中的数据结构节点和同步队列</h3><img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic8.png" srcset="/img/loading.gif" class>
+}</code></pre><h3 id="AQS中的数据结构节点和同步队列"><a href="#AQS中的数据结构节点和同步队列" class="headerlink" title="AQS中的数据结构节点和同步队列"></a>AQS中的数据结构节点和同步队列</h3><img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic8.png" srcset="/img/loading.gif" class>
 
 <h4 id="节点Node"><a href="#节点Node" class="headerlink" title="节点Node"></a>节点Node</h4><p>AQS其实是CLH队列锁的一种变体实现，所以必然要有一个节点的数据结构来保存我们前面所说的CLH中的各种域，比如前驱节点，节点的状态等，这个数据结构就是AQS中的内部类Node。Node中保存的信息有：</p>
 <ul>
@@ -666,7 +666,7 @@ public class SmallCake extends AbstractCake {
 <li><p>队列中线程状态</p>
 </li>
 </ul>
-<h4 id="Node类的设计"><a href="#Node类的设计" class="headerlink" title="Node类的设计"></a>Node类的设计</h4><img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic7.png" srcset="/img/loading.gif" class>
+<h4 id="Node类的设计"><a href="#Node类的设计" class="headerlink" title="Node类的设计"></a>Node类的设计</h4><img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic7.png" srcset="/img/loading.gif" class>
 
 <p>线程的2种等待模式：</p>
 <ul>
@@ -703,27 +703,27 @@ public class SmallCake extends AbstractCake {
 <h4 id="head和tail"><a href="#head和tail" class="headerlink" title="head和tail"></a>head和tail</h4><p>AQS还拥有首节点（head）和尾节点（tail）两个引用，一个指向队列头节点，而另一个指向队列尾节点。</p>
 <p>注意 ：因为首节点head是不保存线程信息的节点，仅仅是因为数据结构设计上的需要，在数据结构上，这种做法往往叫做“空头节点链表”，对应的就有“非空头结点链表”。</p>
 <h4 id="节点在同步队列中的增加和移出"><a href="#节点在同步队列中的增加和移出" class="headerlink" title="节点在同步队列中的增加和移出"></a>节点在同步队列中的增加和移出</h4><h5 id="节点加入到同步队列"><a href="#节点加入到同步队列" class="headerlink" title="节点加入到同步队列"></a>节点加入到同步队列</h5><p>当一个线程成功地获取了同步状态（或者锁），其他线程将无法获取到同步状态，也就是获取同步状态失败，AQS会通过addWaiter()方法将这个线程以及等待状态等信息构造成为一个节点（Node）并将其加入同步队列的尾部。而这个加入队列的过程必须要保证线程安全，因此同步器提供了一个基于CAS的设置尾节点的方法：compareAndSetTail(Node expect,Nodeupdate)，AQS它需要传递当前线程“认为”的尾节点和当前节点，只有设置成功后，当前节点才正式与之前的尾节点建立关联。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic9.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic9.png" srcset="/img/loading.gif" class>
 
 <h5 id="首节点的变化"><a href="#首节点的变化" class="headerlink" title="首节点的变化"></a>首节点的变化</h5><p>首节点是获取同步状态成功的节点，首节点的线程在释放同步状态时，将会唤醒后继节点，而后继节点将会在获取同步状态成功时将自己设置为首节点。设置首节点是通过获取同步状态成功的线程来完成的，由于只有一个线程能够成功获取到同步状态，因此设置头节点的方法并不需要使用CAS来保证，它只需要将首节点设置成为原首节点的后继节点并断开原首节点的next引用即可。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic10.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic10.png" srcset="/img/loading.gif" class>
 
-<h5 id="独占式同步状态获取与释放"><a href="#独占式同步状态获取与释放" class="headerlink" title="独占式同步状态获取与释放"></a>独占式同步状态获取与释放</h5><img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic11.png" srcset="/img/loading.gif" class>
+<h5 id="独占式同步状态获取与释放"><a href="#独占式同步状态获取与释放" class="headerlink" title="独占式同步状态获取与释放"></a>独占式同步状态获取与释放</h5><img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic11.png" srcset="/img/loading.gif" class>
 
 <h6 id="获取"><a href="#获取" class="headerlink" title="获取"></a>获取</h6><p>通过调用同步器的acquire(int arg)方法可以获取同步状态，主要完成了同步状态获取、节点构造、加入同步队列以及在同步队列中自旋等待的相关工作，其主要逻辑是：</p>
 <p>首先调用自定义同步器实现的tryAcquire(int arg)方法，该方法需要保证线程安全的获取同步状态。</p>
 <p>如果同步状态获取失败（tryAcquire返回false），则构造同步节点（独占式Node.EXCLUSIVE，同一时刻只能有一个线程成功获取同步状态）并通过addWaiter(Node node)方法将该节点加入到同步队列的尾部，在addWaiter()方法中会尝试通过compareAndSetTail()方法设置首尾节点关系，如果设置不成功才会进入enq()方法循环尝试设置节点关系。</p>
 <p>最后调用acquireQueued(Node node,int arg)方法，使得该节点以“死循环”的方式获取同步状态。如果获取不到则阻塞节点中的线程，而被阻塞线程的唤醒主要依靠前驱节点的出队或阻塞线程被中断来实现。</p>
 <p>addWaiter(Node node)方法中</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic12.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic12.png" srcset="/img/loading.gif" class>
 
 <p>将当前线程包装成Node后，队列不为空的情况下，先尝试把当前节点加入队列并成为尾节点，如果不成功或者队列为空进入enq(final Node node)方法。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic13.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic13.png" srcset="/img/loading.gif" class>
 
 <p>在enq(final Node node)方法中，同步器通过“死循环”来保证节点的正确添加，这个死循环中，做了两件事，第一件，如果队列为空，初始化队列，new出一个空节点，并让<strong>首节点</strong>（head）和<strong>尾节点</strong>（tail）两个引用都指向这个空节点；第二件事，把当前节点加入队列。</p>
 <p>在“死循环”中只有通过CAS将节点设置成为尾节点之后，当前线程才能从该方法返回，否则，当前线程不断地尝试设置。</p>
 <p>节点进入同步队列之后，观察acquireQueued(Node node,int arg)方法</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic14.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic14.png" srcset="/img/loading.gif" class>
 
 <p>其实就是一个自旋的过程，每个节点（或者说每个线程）都在自省地观察，当条件满足，获取到了同步状态，就可以从这个自旋过程中退出，否则依旧留在这个自旋过程中（并会阻塞节点的线程）。</p>
 <p>在acquireQueued(final Node node,int arg)方法中，当前线程在“死循环”中尝试获取同步状态，而只有前驱节点是头节点才能够尝试获取同步状态，这是为什么？原因有两个。</p>
@@ -731,11 +731,11 @@ public class SmallCake extends AbstractCake {
 <p>第二，维护同步队列的FIFO原则。</p>
 <p>当前线程获取到同步状态后，让<strong>首节点</strong>（head）这个引用指向自己所在节点。当同步状态获取成功后，当前线程就从acquire方法返回了。如果同步器实现的是锁，那就代表当前线程获得了锁。</p>
 <h6 id="释放"><a href="#释放" class="headerlink" title="释放"></a>释放</h6><p>当前线程获取同步状态并执行了相应逻辑之后，就需要释放同步状态，使得后续节点能够继续获取同步状态。通过调用同步器的release(int arg)方法可以释放同步状态，该方法在释放了同步状态之后，会唤醒其后继节点（进而使后继节点重新尝试获取同步状态）。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic15.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic15.png" srcset="/img/loading.gif" class>
 
 <p>该方法执行时，会唤醒<strong>首节点</strong>（head）所指向节点的后继节点线程，unparkSuccessor(Node node)方法使用LockSupport来唤醒处于等待状态的线程。</p>
 <p>而在unparkSuccessor中， </p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic16.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic16.png" srcset="/img/loading.gif" class>
 
 <p>这段代码的意思，一般情况下，被唤醒的是head指向节点的后继节点线程，如果这个后继节点处于被cancel状态，（我推测开发者的思路这样的：后继节点处于被cancel状态，意味着当锁竞争激烈时，队列的第一个节点等了很久（一直被还未加入队列的节点抢走锁），包括后续的节点cancel的几率都比较大，所以）先从尾开始遍历，找到最前面且没有被cancel的节点。</p>
 <h6 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h6><p>在获取同步状态时，同步器维护一个同步队列，获取状态失败的线程都会被加入到队列中并在队列中进行自旋；移出队列（或停止自旋）的条件是前驱节点为头节点且成功获取了同步状态。在释放同步状态时，同步器调用tryRelease(int arg)方法释放同步状态，然后唤醒head指向节点的后继节点。</p>
@@ -825,18 +825,18 @@ public class TrinityLock  implements Lock {
         return sync.newCondition();
     }
 }</code></pre><h3 id="Condition分析"><a href="#Condition分析" class="headerlink" title="Condition分析"></a>Condition分析</h3><h4 id="Condition的数据结构"><a href="#Condition的数据结构" class="headerlink" title="Condition的数据结构"></a>Condition的数据结构</h4><p>等待队列是一个FIFO的队列，在队列中的每个节点都包含了一个线程引用，该线程就是在Condition对象上等待的线程，如果一个线程调用了Condition.await()方法，那么该线程将会释放锁、构造成节点加入等待队列并进入等待状态。事实上，节点的定义复用了同步器中节点的定义，也就是说，同步队列和等待队列中节点类型都是同步器的静态内部类。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic17.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic17.png" srcset="/img/loading.gif" class>
 
 <p>一个Condition包含一个等待队列，Condition拥有首节点（firstWaiter）和尾节点（lastWaiter）。当前线程调用Condition.await()方法，将会以当前线程构造节点，并将节点从尾部加入等待队列。Condition拥有首尾节点的引用，而新增节点只需要将原有的尾节点nextWaiter指向它，并且更新尾节点即可。上述节点引用更新的过程并没有使用CAS保证，原因在于调用await()方法的线程必定是获取了锁的线程，也就是说该过程是由锁来保证线程安全的。</p>
 <p>Lock（更确切地说是同步器）拥有一个同步队列和多个等待队列。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic18.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic18.png" srcset="/img/loading.gif" class>
 
 <p>调用Condition的await()方法（或者以await开头的方法），会使当前线程进入等待队列并释放锁，同时线程状态变为等待状态。当从await()方法返回时，当前线程一定获取了Condition相关联的锁。</p>
 <p>如果从队列（同步队列和等待队列）的角度看await()方法，当调用await()方法时，相当于同步队列的首节点（获取了锁的节点）移动到Condition的等待队列中。调用该方法的线程成功获取了锁的线程，也就是同步队列中的首节点，该方法会将当前线程构造成节点并加入等待队列中，然后释放同步状态，唤醒同步队列中的后继节点，然后当前线程会进入等待状态。当等待队列中的节点被唤醒，则唤醒节点的线程开始尝试获取同步状态。如果不是通过其他线程调用Condition.signal()方法唤醒，而是对等待线程进行中断，则会抛出InterruptedException。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic19.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic19.png" srcset="/img/loading.gif" class>
 
 <p>如图所示，同步队列的首节点并不会直接加入等待队列，而是通过addConditionWaiter()方法把当前线程构造成一个新的节点并将其加入等待队列中。</p>
-<img src="/.top//12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic20.png" srcset="/img/loading.gif" class>
+<img src="/2019/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/12/30/%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8CAQS/pic20.png" srcset="/img/loading.gif" class>
 
 <p>调用Condition的signal()方法，将会唤醒在等待队列中等待时间最长的节点（首节点），在唤醒节点之前，会将节点移到同步队列中。</p>
 <p>调用该方法的前置条件是当前线程必须获取了锁，可以看到signal()方法进行了isHeldExclusively()检查，也就是当前线程必须是获取了锁的线程。接着获取等待队列的首节点，将其移动到同步队列并使用LockSupport唤醒节点中的线程。</p>
