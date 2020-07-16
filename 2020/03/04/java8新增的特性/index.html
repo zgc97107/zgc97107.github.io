@@ -184,7 +184,7 @@
 <p>在并发量较低的环境下，线程冲突的概率比较小，自旋的次数不会很多。但是，高并发环境下，N个线程同时进行自旋操作，会出现大量失败并不断自旋的情况，此时<strong>AtomicLong</strong>的自旋会成为瓶颈。</p>
 <p>这就是<strong>LongAdder</strong>引入的初衷——解决高并发环境下<strong>AtomicLong</strong>的自旋瓶颈问题。</p>
 <p><strong>AtomicLong</strong>中有个内部变量<strong>value</strong>保存着实际的long值，所有的操作都是针对该变量进行。也就是说，高并发环境下，value变量其实是一个热点，也就是N个线程竞争一个热点。</p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic1.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic1.png" srcset="/img/loading.gif" class>
 
 <p><strong>LongAdder</strong>的基本思路就是<strong>分散热点</strong>，将value值分散到一个数组中，不同线程会命中到数组的不同槽中，各个线程只对自己槽中的那个值进行CAS操作，这样热点就被分散了，冲突的概率就小很多。如果要获取真正的long值，只要将各个槽中的变量值累加返回。</p>
 <p>这种做法和ConcurrentHashMap中的“分段锁”其实就是类似的思路。</p>
@@ -196,13 +196,13 @@
 <p>对于<strong>LongAdder</strong>来说，内部有一个base变量，一个Cell[]数组。</p>
 <p>base变量：非竞态条件下，直接累加到该变量上。</p>
 <p>Cell[]数组：竞态条件下，累加个各个线程自己的槽Cell[i]中。</p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic2.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic2.png" srcset="/img/loading.gif" class>
 
 <p>所以，最终结果的计算应该是</p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic3.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic3.png" srcset="/img/loading.gif" class>
 
 <p>在实际运用的时候，只有从未出现过并发冲突的时候，base基数才会使用到，一旦出现了并发冲突，之后所有的操作都只针对Cell[]数组中的单元Cell。</p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic4.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic4.png" srcset="/img/loading.gif" class>
 
 <p>而LongAdder最终结果的求和，并没有使用全局锁，返回值不是绝对准确的，因为调用这个方法时还有其他线程可能正在进行计数累加，所以只能得到某个时刻的近似值，这也就是<strong>LongAdder</strong>并不能完全替代<strong>LongAtomic</strong>的原因之一。</p>
 <p>而且从测试情况来看，线程数越多，并发操作数越大，LongAdder的优势越大，线程数较小时，AtomicLong的性能还超过了LongAdder。</p>
@@ -226,7 +226,7 @@
 <p>应对 Future 的完成事件（即当 Future 的完成事件发生时会收到通知，并能使用 Future 计算的结果进行下一步的操作，不只是简单地阻塞等待操作的结果）</p>
 <h4 id="CompletableFuture-1"><a href="#CompletableFuture-1" class="headerlink" title="CompletableFuture"></a>CompletableFuture</h4><p>JDK1.8才新加入的一个实现类CompletableFuture，实现了Future<T>， CompletionStage<T>两个接口。实现了Future接口，意味着可以像以前一样通过阻塞或者轮询的方式获得结果。</T></T></p>
 <h5 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h5><p>除了直接new出一个CompletableFuture的实例，还可以通过工厂方法创建CompletableFuture的实例</p>
-<h5 id="工厂方法"><a href="#工厂方法" class="headerlink" title="工厂方法"></a>工厂方法</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic6.png" srcset="/img/loading.gif" class>
+<h5 id="工厂方法"><a href="#工厂方法" class="headerlink" title="工厂方法"></a>工厂方法</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic6.png" srcset="/img/loading.gif" class>
 
 <p>Asynsc表示异步,而supplyAsync与runAsync不同在与前者异步返回一个结果,后者是void.第二个函数第二个参数表示是用我们自己创建的线程池,否则采用默认的ForkJoinPool.commonPool()作为它的线程池。</p>
 <h5 id="获得结果的方法"><a href="#获得结果的方法" class="headerlink" title="获得结果的方法"></a>获得结果的方法</h5><p>public T get()</p>
@@ -251,46 +251,46 @@
 </li>
 </ol>
 <p>CompletableFuture中的方法归类</p>
-<h5 id="变换类"><a href="#变换类" class="headerlink" title="变换类"></a>变换类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic7.png" srcset="/img/loading.gif" class>
+<h5 id="变换类"><a href="#变换类" class="headerlink" title="变换类"></a>变换类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic7.png" srcset="/img/loading.gif" class>
 
 <p>关键入参是函数式接口Function。它的入参是上一个阶段计算后的结果，返回值是经过转化后结果。</p>
-<h5 id="消费类"><a href="#消费类" class="headerlink" title="消费类"></a>消费类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic8.png" srcset="/img/loading.gif" class>
+<h5 id="消费类"><a href="#消费类" class="headerlink" title="消费类"></a>消费类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic8.png" srcset="/img/loading.gif" class>
 
 <p>关键入参是函数式接口Consumer。它的入参是上一个阶段计算后的结果， 没有返回值。</p>
-<h5 id="执行操作类"><a href="#执行操作类" class="headerlink" title="执行操作类"></a>执行操作类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic9.png" srcset="/img/loading.gif" class>
+<h5 id="执行操作类"><a href="#执行操作类" class="headerlink" title="执行操作类"></a>执行操作类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic9.png" srcset="/img/loading.gif" class>
 
 <p>对上一步的计算结果不关心，执行下一个操作，入参是一个Runnable的实例，表示上一步完成后执行的操作。</p>
-<h5 id="结合转化类"><a href="#结合转化类" class="headerlink" title="结合转化类"></a>结合转化类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic10.png" srcset="/img/loading.gif" class>
+<h5 id="结合转化类"><a href="#结合转化类" class="headerlink" title="结合转化类"></a>结合转化类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic10.png" srcset="/img/loading.gif" class>
 
 <p>需要上一步的处理返回值，并且other代表的CompletionStage 有返回值之后，利用这两个返回值，进行转换后返回指定类型的值。</p>
 <p>两个CompletionStage是并行执行的，它们之间并没有先后依赖顺序，other并不会等待先前的CompletableFuture执行完毕后再执行。</p>
 <p><strong>结合转化类</strong></p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic11.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic11.png" srcset="/img/loading.gif" class>
 
 <p>对于Compose可以连接两个CompletableFuture，其内部处理逻辑是当第一个CompletableFuture处理没有完成时会合并成一个CompletableFuture,如果处理完成，第二个future会紧接上一个CompletableFuture进行处理。</p>
 <p>第一个CompletableFuture 的处理结果是第二个future需要的输入参数。</p>
-<h5 id="结合消费类"><a href="#结合消费类" class="headerlink" title="结合消费类"></a>结合消费类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic12.png" srcset="/img/loading.gif" class>
+<h5 id="结合消费类"><a href="#结合消费类" class="headerlink" title="结合消费类"></a>结合消费类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic12.png" srcset="/img/loading.gif" class>
 
 <p>需要上一步的处理返回值，并且other代表的CompletionStage 有返回值之后，利用这两个返回值，进行消费</p>
-<h5 id="运行后执行类"><a href="#运行后执行类" class="headerlink" title="运行后执行类"></a>运行后执行类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic13.png" srcset="/img/loading.gif" class>
+<h5 id="运行后执行类"><a href="#运行后执行类" class="headerlink" title="运行后执行类"></a>运行后执行类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic13.png" srcset="/img/loading.gif" class>
 
 <p>不关心这两个CompletionStage的结果，只关心这两个CompletionStage都执行完毕，之后再进行操作（Runnable）。</p>
-<h5 id="取最快转换类"><a href="#取最快转换类" class="headerlink" title="取最快转换类"></a>取最快转换类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic14.png" srcset="/img/loading.gif" class>
+<h5 id="取最快转换类"><a href="#取最快转换类" class="headerlink" title="取最快转换类"></a>取最快转换类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic14.png" srcset="/img/loading.gif" class>
 
 <p>两个CompletionStage，谁计算的快，我就用那个CompletionStage的结果进行下一步的转化操作。现实开发场景中，总会碰到有两种渠道完成同一个事情，所以就可以调用这个方法，找一个最快的结果进行处理。</p>
-<h5 id="取最快消费类"><a href="#取最快消费类" class="headerlink" title="取最快消费类"></a>取最快消费类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic15.png" srcset="/img/loading.gif" class>
+<h5 id="取最快消费类"><a href="#取最快消费类" class="headerlink" title="取最快消费类"></a>取最快消费类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic15.png" srcset="/img/loading.gif" class>
 
 <p>两个CompletionStage，谁计算的快，我就用那个CompletionStage的结果进行下一步的消费操作。</p>
-<h5 id="取最快运行后执行类"><a href="#取最快运行后执行类" class="headerlink" title="取最快运行后执行类"></a>取最快运行后执行类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic16.png" srcset="/img/loading.gif" class>
+<h5 id="取最快运行后执行类"><a href="#取最快运行后执行类" class="headerlink" title="取最快运行后执行类"></a>取最快运行后执行类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic16.png" srcset="/img/loading.gif" class>
 
 <p>两个CompletionStage，任何一个完成了都会执行下一步的操作（Runnable）。</p>
-<h5 id="异常补偿类"><a href="#异常补偿类" class="headerlink" title="异常补偿类"></a>异常补偿类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic17.png" srcset="/img/loading.gif" class>
+<h5 id="异常补偿类"><a href="#异常补偿类" class="headerlink" title="异常补偿类"></a>异常补偿类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic17.png" srcset="/img/loading.gif" class>
 
 <p>当运行时出现了异常，可以通过exceptionally进行补偿。</p>
-<h5 id="运行后记录结果类"><a href="#运行后记录结果类" class="headerlink" title="运行后记录结果类"></a>运行后记录结果类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic18.png" srcset="/img/loading.gif" class>
+<h5 id="运行后记录结果类"><a href="#运行后记录结果类" class="headerlink" title="运行后记录结果类"></a>运行后记录结果类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic18.png" srcset="/img/loading.gif" class>
 
 <p>action执行完毕后它的结果返回原始的CompletableFuture的计算结果或者返回异常。所以不会对结果产生任何的作用。</p>
-<h5 id="运行后处理结果类"><a href="#运行后处理结果类" class="headerlink" title="运行后处理结果类"></a>运行后处理结果类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic19.png" srcset="/img/loading.gif" class>
+<h5 id="运行后处理结果类"><a href="#运行后处理结果类" class="headerlink" title="运行后处理结果类"></a>运行后处理结果类</h5><img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic19.png" srcset="/img/loading.gif" class>
 
 <p>运行完成时，对结果的处理。这里的完成时有两种情况，一种是正常执行，返回值。另外一种是遇到异常抛出造成程序的中断。</p>
 <h2 id="Lambda表达式"><a href="#Lambda表达式" class="headerlink" title="Lambda表达式"></a>Lambda表达式</h2><p>在语法上，Lambda表达式包含三个部分，参数列表，箭头，主体，比如：</p>
@@ -329,7 +329,7 @@
 <h3 id="传统队列问题"><a href="#传统队列问题" class="headerlink" title="传统队列问题"></a>传统队列问题</h3><p>在JDK中，Java内部的队列BlockQueue的各种实现，仔细分析可以得知，队列的底层数据结构一般分成三种：数组、链表和堆，堆这里是为了实现带有优先级特性的队列暂且不考虑。 </p>
 <p>在稳定性和性能要求特别高的系统中，为了防止生产者速度过快，导致内存溢出，只能选择有界队列；同时，为了减少Java的垃圾回收对系统性能的影响，会尽量选择 Array格式的数据结构。这样筛选下来，符合条件的队列就只有ArrayBlockingQueue。但是ArrayBlockingQueue是通过<strong>加锁</strong>的方式保证线程安全，而且ArrayBlockingQueue还存在<strong>伪共享</strong>问题，这两个问题严重影响了性能。</p>
 <p>ArrayBlockingQueue的这个伪共享问题存在于哪里呢，分析下核心的部分源码，其中最核心的三个成员变量为</p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic20.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic20.png" srcset="/img/loading.gif" class>
 
 <p>是在ArrayBlockingQueue的核心enqueue和dequeue方法中经常会用到的，这三个变量很容易放到同一个缓存行中，进而产生伪共享问题。</p>
 <h3 id="高性能的原理"><a href="#高性能的原理" class="headerlink" title="高性能的原理"></a>高性能的原理</h3><ol>
@@ -341,7 +341,7 @@
 </li>
 </ol>
 <p>环形数组结构是整个Disruptor的核心所在。 </p>
-<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic21.png" srcset="/img/loading.gif" class>
+<img src="/2020/03/04/java8%E6%96%B0%E5%A2%9E%E7%9A%84%E7%89%B9%E6%80%A7/pic21.png" srcset="/img/loading.gif" class>
 
 <p>首先因为是数组，所以要比链表快，而且根据我们对上面缓存行的解释知道，数组中的一个元素加载，相邻的数组元素也是会被预加载的，因此在这样的结构中，cpu无需时不时去主存加载数组中的下一个元素。而且，你可以为数组预先分配内存，使得数组对象一直存在（除非程序终止）。这就意味着不需要花大量的时间用于垃圾回收。此外，不像链表那样，需要为每一个添加到其上面的对象创造节点对象—对应的，当删除节点时，需要执行相应的内存清理操作。环形数组中的元素采用覆盖方式，避免了jvm的GC。 </p>
 <p>其次结构作为环形，数组的大小为2的n次方，这样元素定位可以通过位运算效率会更高，这个跟一致性哈希中的环形策略有点像。在disruptor中，这个牛逼的环形结构就是RingBuffer，既然是数组，那么就有大小，而且这个大小必须是2的n次方</p>

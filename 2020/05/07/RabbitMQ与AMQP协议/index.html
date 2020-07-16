@@ -186,7 +186,7 @@
 <p><strong>信道</strong></p>
 <p>道是生产者/消费者与RabbitMQ通信的渠道。信道是建立在TCP连接上的虚拟连接，RabbitMQ在一条TCP上可能会建立成百上千个信道来进行多个线程处理，这个TCP被多个线程共享，每个线程对应一个信道，信道在RabbitMQ都有唯一的ID，保证了信道私有性，及被唯一的线程使用。</p>
 <p>系统为每个线程开辟一个TCP是非常消耗性能，每秒成百上千的建立销毁TCP会严重消耗系统。所以RabbitMQ选择建立多个信道（建立在tcp的虚拟连接）来连接。从技术上讲，这被称之为“多路复用”，对于执行多个任务的多线程或者异步应用程序来说，它非常有用。</p>
-<h3 id="AMQP在RabbitMQ中的实现"><a href="#AMQP在RabbitMQ中的实现" class="headerlink" title="AMQP在RabbitMQ中的实现"></a>AMQP在RabbitMQ中的实现</h3><img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic1.png" srcset="/img/loading.gif" class>
+<h3 id="AMQP在RabbitMQ中的实现"><a href="#AMQP在RabbitMQ中的实现" class="headerlink" title="AMQP在RabbitMQ中的实现"></a>AMQP在RabbitMQ中的实现</h3><img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic1.png" srcset="/img/loading.gif" class>
 
 <p>包括的要素：</p>
 <ul>
@@ -214,19 +214,19 @@
 </li>
 </ul>
 <h2 id="RabbitMQ中的概念"><a href="#RabbitMQ中的概念" class="headerlink" title="RabbitMQ中的概念"></a>RabbitMQ中的概念</h2><h3 id="虚拟主机"><a href="#虚拟主机" class="headerlink" title="虚拟主机"></a>虚拟主机</h3><p>虚拟消息服务器（vhost）本质上就是一个mini版的mq服务器，有自己的队列、交换器和绑定以及自己的权限机制。Vhost提供了逻辑上的分离，可以将众多客户端进行区分，避免队列和交换器的命名冲突。Vhost必须在连接时指定，rabbitmq包含缺省vhost：“/”，通过缺省用户和口令guest进行访问。</p>
-<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic2.png" srcset="/img/loading.gif" class>
+<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic2.png" srcset="/img/loading.gif" class>
 
 <p>如上图中的others交换器，连接时的地址为：<code>localhost:8888/other</code></p>
 <p>rabbitmq里创建用户，必须要被指派给至少一个vhost，并且只能访问被指派内的队列、交换器和绑定。Vhost必须通过rabbitmq的管理控制工具创建。</p>
 <h4 id="交换器类型"><a href="#交换器类型" class="headerlink" title="交换器类型"></a>交换器类型</h4><p>共有四种： <strong>direct</strong>、<strong>fanout</strong>、<strong>topic</strong>、<strong>headers</strong>，其中<strong>headers</strong>（几乎和 <strong>direct</strong> 一样）不实用，可以忽略。</p>
 <h4 id="Direct"><a href="#Direct" class="headerlink" title="Direct"></a>Direct</h4><p>路由键完全匹配消息被投递到的队列，direct交换器是默认交换器。声明一个队列时，会自动绑定到默认交换器，并且以队列名称作为路由键。</p>
-<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic3.png" srcset="/img/loading.gif" class>
+<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic3.png" srcset="/img/loading.gif" class>
 
 <h4 id="Fanout"><a href="#Fanout" class="headerlink" title="Fanout"></a>Fanout</h4><p>消息广播到绑定的队列，不管队列绑定了什么路由键，消息经过交换器时会投递到每个队列。</p>
-<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic4.png" srcset="/img/loading.gif" class>
+<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic4.png" srcset="/img/loading.gif" class>
 
 <h4 id="Topic"><a href="#Topic" class="headerlink" title="Topic"></a>Topic</h4><p>通过使用“*”和“#”通配符进行处理，使来自不同源头的消息到达同一个队列，”.”将路由键分为了几个标识符，“*”匹配1个，“#”匹配一个或多个。</p>
-<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic5.png" srcset="/img/loading.gif" class>
+<img src="/2020/05/07/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/pic5.png" srcset="/img/loading.gif" class>
 
 
             </div>
