@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>类文件结构 - zgcheng&#39;s blog</title>
+  <title>GC日志分析工具 - zgcheng&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期二, 七月 14日 2020, 5:38 下午
+                  星期二, 七月 14日 2020, 10:04 上午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    1.3k 字
+                    1.9k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      5 分钟
+                      6 分钟
                   </span>
                 
 
@@ -176,318 +176,146 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期二, 七月 14日 2020, 7:05 晚上</p>
+                class="note note-warning">本文最后更新于：星期四, 七月 16日 2020, 3:13 下午</p>
             
             <div class="markdown-body">
-              <h3 id="字节码"><a href="#字节码" class="headerlink" title="字节码"></a>字节码</h3><p>通过winhex软件打开class文件如下：</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic1.png" srcset="/img/loading.gif" class>
+              <h3 id="GC日志输出参数"><a href="#GC日志输出参数" class="headerlink" title="GC日志输出参数"></a>GC日志输出参数</h3><pre><code>-XX:+PrintGC 输出GC日志
+-XX:+PrintGCDetails 输出GC的详细日志
+-XX:+PrintGCTimeStamps 输出GC的时间戳（以基准时间的形式） 
+-XX:+PrintGCDateStamps 输出GC的时间戳（以日期的形式，如 2013-05- 04T21:53:59.234+0800） 
+-XX:+PrintHeapAtGC 在进行GC的前后打印出堆的信息 
+-Xloggc:../logs/gc.log 日志文件的输出路径</code></pre><h3 id="GC-Easy可视化工具"><a href="#GC-Easy可视化工具" class="headerlink" title="GC Easy可视化工具"></a>GC Easy可视化工具</h3><p>GC Easy是一款在线的可视化工具，易用、功能强大，地址：<a href="http://gceasy.io/" target="_blank" rel="noopener">http://gceasy.io/</a></p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic1.png" srcset="/img/loading.gif" class>
 
-<h4 id="字节码表"><a href="#字节码表" class="headerlink" title="字节码表"></a>字节码表</h4><p>class文件只有两种数据类型：</p>
+<p>上传后，点击Analyze按钮，即可查看报告。</p>
+<h4 id="JVM内存统计"><a href="#JVM内存统计" class="headerlink" title="JVM内存统计"></a>JVM内存统计</h4><img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic2.png" srcset="/img/loading.gif" class>
+
+<p>上图中的年轻代与老年代在高峰时，可用空间基本都占满了，说明内存空间不足，需要调整内存大小。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic5.png" srcset="/img/loading.gif" class>
+
+<p>调整内存区域后，基本符合需求</p>
+<h4 id="关键指标"><a href="#关键指标" class="headerlink" title="关键指标"></a>关键指标</h4><img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic6.png" srcset="/img/loading.gif" class>
+
+<p>关键指标中，吞吐量为98.694%，gc平均停顿时间为8.19ms，最大停顿时间为180ms。</p>
+<p>可以看出，在初始状态时，吞吐量并不高，最大停顿时间较长，平均停顿时间表现不错。</p>
+<h4 id="图表"><a href="#图表" class="headerlink" title="图表"></a>图表</h4><img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic3.png" srcset="/img/loading.gif" class>
+
+<p>在图表中可以看出，gc之后堆内存的使用基本是在60m ~ 80m之间。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic7.png" srcset="/img/loading.gif" class>
+
+<p>在图表中可以看出，gc之前的堆内存的使用在高峰时，将占用到80m ~ 120m之间。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic8.png" srcset="/img/loading.gif" class>
+
+<p>在gc持续时间统计中，可以看出full gc的时间要远高于young gc的时间，在调优时应当尽量的减少full gc。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic9.png" srcset="/img/loading.gif" class>
+
+<p>在清理垃圾的统计中，可以看出gc清理的垃圾基本维持在40m左右，最多的一次是发生在full gc，可以推断此次是内存即将耗尽，发生了full gc，释放了大量的内存空间，这可能是之前由于年轻代空间不足，年轻代对象有部分进入到老年代，在此次full gc时被清理了。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic10.png" srcset="/img/loading.gif" class>
+
+<p>从年轻代的gc情况来看，gc之前与gc之后差较大，说明垃圾对象在年轻代被清理的比较多，就是说临时性的对象居多。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic11.png" srcset="/img/loading.gif" class>
+
+<p>从老年代的gc情况来看，gc之前与之后的差并不大，说明老年代的垃圾对象并不是很多。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic12.png" srcset="/img/loading.gif" class>
+
+<p>Meta Space空间充足，基本没有变化，占用空间40m左右。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic13.png" srcset="/img/loading.gif" class>
+
+<p>从该图中看出，晋升到老年代的对象与可以分配对象相比，非常的少，也说明了上面我们看到的，对象主要集中在young区。</p>
+<h4 id="GC统计"><a href="#GC统计" class="headerlink" title="GC统计"></a>GC统计</h4><img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic4.png" srcset="/img/loading.gif" class>
+
 <ul>
-<li>无符号数<ul>
-<li>无符号数可以用来描述数字、索引引用、数量值或按照utf-8编码构成的字符串值。</li>
-<li>其中无符号数属于基本的数据类型，以u1、u2、u4、u8来分别代表1个字节、2个字节、4个字节和8个字节。</li>
+<li>Minor GC清理掉的垃圾对象合计24.13gb，说明产生的临时对象非常的多</li>
+<li>Minor GC的执行间隔为636ms，说明发生gc的行为是比较频繁的</li>
+<li>Full GC发生了10次，较为频繁</li>
+<li>Full GC的平均持续时间为90ms，时间较长</li>
+<li>GC的暂停次数为690次，暂停次数将影响到服务的响应时间</li>
+</ul>
+<h4 id="对象统计"><a href="#对象统计" class="headerlink" title="对象统计"></a>对象统计</h4><img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic14.png" srcset="/img/loading.gif" class>
+
+<p>在对象的统计中，可以看出对象的平均生成率：57.85m/s，平均的晋升率：610kb/s。</p>
+<h4 id="调优建议"><a href="#调优建议" class="headerlink" title="调优建议"></a>调优建议</h4><ul>
+<li><p>生产环境的JVM一定要进行参数设定，不能全部默认上生产。</p>
+</li>
+<li><p>对于参数的设定，不能拍脑袋，需要通过实际并发情况或压力测试得出结论。</p>
+</li>
+<li><p>对于内存中对象临时存在居多的情况，将年轻代调大一些。如果是G1或ZGC，不需要设定。</p>
+</li>
+<li><p>仔细分析gc easy给出的报告，从中分析原因，找出问题。</p>
+</li>
+<li><p>对于低延迟的应用建议使用G1或ZGC垃圾收集器。</p>
+</li>
+<li><p>不要将焦点全部聚焦jvm参数上，影响性能的因素有很多，比如：操作系统、tomcat本身的参数等。</p>
+</li>
+</ul>
+<h3 id="PerfMa"><a href="#PerfMa" class="headerlink" title="PerfMa"></a>PerfMa</h3><p>PerfMa提供了JVM参数分析、线程分析、堆内存分析功能，界面美观，功能强大，我们在做jvm调优时，可以作为一个辅助工具。官网：<a href="https://www.perfma.com/" target="_blank" rel="noopener">https://www.perfma.com/</a></p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic16.png" srcset="/img/loading.gif" class>
+
+<h4 id="XXFox"><a href="#XXFox" class="headerlink" title="XXFox"></a>XXFox</h4><p>XXFox是Java虚拟机参数分析工具，可以对JVM参数进行查询、检查、优化等。</p>
+<p>参数优化：</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic17.png" srcset="/img/loading.gif" class>
+
+<p>参数生成：</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic18.png" srcset="/img/loading.gif" class>
+
+<h4 id="XSheepdog"><a href="#XSheepdog" class="headerlink" title="XSheepdog"></a>XSheepdog</h4><p>XSheepdog是Java线程Dump分析工具，通过jstack生成线程的dump文件，进行分析。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic19.png" srcset="/img/loading.gif" class>
+
+<h4 id="XElephant"><a href="#XElephant" class="headerlink" title="XElephant"></a>XElephant</h4><p>XElephant是Java内存Dump分析工具。</p>
+<p>获取内存 Dump 文件的命令：<code>jmap -dump:format=b,file=[生成的文件名] [进程号]</code></p>
+<p>生成 Dump 文件后，就可以通过控制台 &gt; Java内存Dump分析 ，选择合适的途径上传到服务器进行分析。</p>
+<img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic20.png" srcset="/img/loading.gif" class>
+
+<h3 id="高并发系统下的调优思路"><a href="#高并发系统下的调优思路" class="headerlink" title="高并发系统下的调优思路"></a>高并发系统下的调优思路</h3><img src="/2020/07/14/JVM-GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/pic21.png" srcset="/img/loading.gif" class>
+
+<ul>
+<li><p>百亿流量的电商网站，一般日活跃用户可能在1亿左右，大促期间的参与人较平常会增加很多，比如5亿左右。</p>
+</li>
+<li><p>电商系统的业务线非常多，大促期间压力最大的属订单、支付业务，我们聚焦到订单系统。</p>
+</li>
+<li><p>假设，部署了订单系统的微服务数量为100，每台机器4核8G内存。</p>
+</li>
+<li><p>一般情况下，电商网站的付费转化率为10%左右，所以，1亿的活跃用户会产生1000w订单。</p>
+<ul>
+<li>一天24小时，以12小时下单时间计算，每小时产生83w订单，每秒钟产生230左右个订单。</li>
+<li>平均到100台机器，每台机器2~3个订单/秒，可以说毫无压力。</li>
 </ul>
 </li>
-<li>表<ul>
-<li>表是由多个无符号数或其他表构成的复合数据结构。</li>
-<li>所有的表都以“_info”结尾，由于表没有固定长度，所以通常会在其前面加上个数说明。</li>
+<li><p>大促期间，转化量会提升，假设提升到50%左右，所以，5亿活跃用户会产生2.5亿订单。</p>
+<ul>
+<li>大促期间的用户下单与平常的有所不同，这里我们假设，一天下单时间以20小时计算，前1小时，下单30%，其它时间段产生70%的订单。</li>
+<li>前一小时产生30%订单，也就是7千500万订单，每秒钟将会产生20833个订单，分摊到100台服务器，每台服务器208个/秒订单的产生。</li>
+<li>其它时间段产生70%的订单，也就是1亿7千5百万个订单，每小时产生920万订单，每秒产生2558个订单，分摊到100台机器，每天机器26个/秒订单的产生。</li>
+</ul>
+</li>
+<li><p>通过上面的分析，一般情况和大促的非集中时间段，产生的订单量较少，每台机器的压力并不大，所以我们只需要关注大促开始的1小时的压力即可。</p>
+</li>
+<li><p>假设每个订单对象的大小为1KB，考虑到每个订单的产生会有复杂的业务流程，我们将订单对象大小扩大100倍，也就是，每产生一个订单对象，会占用100KB的内存空间。</p>
+</li>
+<li><p>也就是说，在大促期间，前一小时，每秒钟占用的内存空间为：100KB * 208 = 20800KB 也就是20M左右空间。</p>
+</li>
+<li><p>每台机器的内存是8G，除去操作系统、监控等内存开销，配置到jvm虚拟机的堆内存空间为6G。</p>
+</li>
+<li><p>考虑到订单对象在内存中创建后，会很快被持久化到数据库，随后就会GC回收，所以属于短暂性存活对象，尽可能的让其待在年轻代，避免过多的对象进入老年代，从而导致Full GC。 </p>
+</li>
+<li><p>在JDK8中，建议使用G1垃圾收集器，下面是给出的jvm主要参数建议：</p>
+<ul>
+<li><p><code>-XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -Xmx6G - XX:MetaspaceSize=128m -XX:MaxGCPauseMillis=100 - XX:G1NewSizePercent=50 -XX:G1MaxNewSizePercent=80</code></p>
+</li>
+<li><p>-XX:G1NewSizePercent</p>
+</li>
+<li><p>设置要用作年轻代大小最小值的堆百分比。默认值是 Java 堆的 5%。（实验性质参数）</p>
+</li>
+<li><p>-XX:G1MaxNewSizePercent</p>
+<ul>
+<li>设置要用作年轻代大小最大值的堆大小百分比。默认值是 Java 堆的 60%。（实验性质参数）</li>
+</ul>
+</li>
+<li><p>该参数仅供参考，需根据实际环境配置</p>
+</li>
 </ul>
 </li>
 </ul>
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>名称</th>
-<th>说明</th>
-<th>长度</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>u4</td>
-<td>magic</td>
-<td>魔数，识别Class文件格式</td>
-<td>4个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>minor_version</td>
-<td>副版本号</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>major_version</td>
-<td>主版本号</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>constant_pool_count</td>
-<td>常量池计算器</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>cp_info</td>
-<td>constant_pool</td>
-<td>常量池</td>
-<td>n个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>access_flflags</td>
-<td>访问标志</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>this_class</td>
-<td>类索引</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>super_class</td>
-<td>父类索引</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>interfaces_count</td>
-<td>接口计数器</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>interfaces</td>
-<td>接口索引集合</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>fields_count</td>
-<td>字段个数</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>field_info</td>
-<td>fields</td>
-<td>字段集合</td>
-<td>n个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>methods_count</td>
-<td>方法计数器</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>method_info</td>
-<td>methods</td>
-<td>方法集合</td>
-<td>n个字节</td>
-</tr>
-<tr>
-<td>u2</td>
-<td>attributes_count</td>
-<td>附加属性计数器</td>
-<td>2个字节</td>
-</tr>
-<tr>
-<td>attribute_info</td>
-<td>attributes</td>
-<td>附加属性集合</td>
-<td>n个字节</td>
-</tr>
-</tbody></table>
-<h4 id="魔数"><a href="#魔数" class="headerlink" title="魔数"></a>魔数</h4><p>在class文件中，前4个字节就是魔数，如下：</p>
-<p>魔数是用来区分文件类型的一种标识，0XCAFEBABE （咖啡豆/咖啡宝贝）表示就是class文件，之所以不使用文件后缀名区别就是后缀名比较容易篡改。</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic2.png" srcset="/img/loading.gif" class>
-
-<h4 id="版本号"><a href="#版本号" class="headerlink" title="版本号"></a>版本号</h4><p>魔数后面的4位就是版本号了，同样也是4个字节，其中前2个字节表示副版本号，后2个字节表示主版本号。</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic3.png" srcset="/img/loading.gif" class>
-
-<p>前面两个字节是0x0000,也就是其值为0; 后面两个字节是0x0034,也就是其值为52； 所以上面的代码就是52.0版本来编译的，也就是jdk1.8.0。</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic4.png" srcset="/img/loading.gif" class>
-
-<h3 id="常量池"><a href="#常量池" class="headerlink" title="常量池"></a>常量池</h3><p>版本号后就是常量池</p>
-<h4 id="容量计数器"><a href="#容量计数器" class="headerlink" title="容量计数器"></a>容量计数器</h4><img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic5.png" srcset="/img/loading.gif" class>
-
-<p>前面两个字节是0x0000,也就是其值为0; 后面两个字节是0x0034,也就是其值为52； 所以上面的代码就是52.0版本来编译的，也就是jdk1.8.0。</p>
-<blockquote>
-<p>与Java中语言习惯不同，这个容量计数是从1而不是0开始的，在Class文件格式规范制定之时，设计者将第0项常量空出来是有特殊考虑的，这样做的目的在于，如果后面某些指向常量池的索引值的数据在特定情况下需要表达“不引用任何一个常量池项目”的含义，可以把索引值设置为0来表示。</p>
-</blockquote>
-<h4 id="常量类型和结构"><a href="#常量类型和结构" class="headerlink" title="常量类型和结构"></a>常量类型和结构</h4><p>常量池中的每一项都是一个表，其项目类型共有14种，如下表格所示：</p>
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>标志</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>CONSTANT_utf8_info</td>
-<td>1</td>
-<td>UTF-8编码的字符串</td>
-</tr>
-<tr>
-<td>CONSTANT_Integer_info</td>
-<td>3</td>
-<td>整形字面量</td>
-</tr>
-<tr>
-<td>CONSTANT_Float_info</td>
-<td>4</td>
-<td>浮点型字面量</td>
-</tr>
-<tr>
-<td>CONSTANT_Long_info</td>
-<td>5</td>
-<td>长整型字面量</td>
-</tr>
-<tr>
-<td>CONSTANT_Double_info</td>
-<td>6</td>
-<td>双精度浮点型字面量</td>
-</tr>
-<tr>
-<td>CONSTANT_Class_info</td>
-<td>7</td>
-<td>类或接口的符号引用</td>
-</tr>
-<tr>
-<td>CONSTANT_String_info</td>
-<td>8</td>
-<td>字符串类型字面量</td>
-</tr>
-<tr>
-<td>CONSTANT_Fieldref_info</td>
-<td>9</td>
-<td>字段的符号引用</td>
-</tr>
-<tr>
-<td>CONSTANT_Methodref_info</td>
-<td>10</td>
-<td>类中方法的符号引用</td>
-</tr>
-<tr>
-<td>CONSTANT_InterfaceMethodref_info</td>
-<td>11</td>
-<td>接口中方法的符号引用</td>
-</tr>
-<tr>
-<td>CONSTANT_NameAndType_info</td>
-<td>12</td>
-<td>字段或方法的符号引用</td>
-</tr>
-<tr>
-<td>CONSTANT_MethodHandle_info</td>
-<td>15</td>
-<td>表示方法句柄</td>
-</tr>
-<tr>
-<td>CONSTANT_MothodType_info</td>
-<td>16</td>
-<td>标志方法类型</td>
-</tr>
-<tr>
-<td>CONSTANT_InvokeDynamic_info</td>
-<td>18</td>
-<td>表示一个动态方法调用点</td>
-</tr>
-</tbody></table>
-<p>这14种类型的结构各不相同，如下表格所示：</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic6.png" srcset="/img/loading.gif" class>
-
-<blockquote>
-<p>注：此表格的类型的单位不对，不是bit，应该是byte(字节)。</p>
-</blockquote>
-<p>从上面的表格可以看到，虽然每一项的结构都各不相同，但是他们有个共同点，就是每一项的第一个字节都是一个标志位，标识这一项是哪种类型的常量。</p>
-<h4 id="第一个常量"><a href="#第一个常量" class="headerlink" title="第一个常量"></a>第一个常量</h4><img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic7.png" srcset="/img/loading.gif" class>
-
-<p>可以看到，第一个常量的值为10，对应到表中的标志位，找到常量为 CONSTANT_Methodref_info（类中方法的符号引用），它的结构为：</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic8.png" srcset="/img/loading.gif" class>
-
-<p>第一个索引值为：0X0009，也就是9，指向常量池中第9项的索引。</p>
-<p>第二个索引值为：0X001E，也就是30，指向常量池中第30项的索引。</p>
-<h4 id="第二个常量"><a href="#第二个常量" class="headerlink" title="第二个常量"></a>第二个常量</h4><img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic9.png" srcset="/img/loading.gif" class>
-
-<p>可以看到，第一个常量的值为9，对应到表中的标志位，找到常量为 CONSTANT_Fieldref_info（字段的符号引用），它的结构为：</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic10.png" srcset="/img/loading.gif" class>
-
-<p>后面的4个字节都是它的内容，记录着2个索引值：</p>
-<img src="/2020/07/14/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic11.png" srcset="/img/loading.gif" class>
-
-<p>第一个索引值为：0X0004，也就是4，指向常量池中第4项的索引。</p>
-<p>第二个索引值为：0X001F，也就是31，指向常量池中第31项的索引。</p>
-<h3 id="描述符"><a href="#描述符" class="headerlink" title="描述符"></a>描述符</h3><h4 id="字段描述符"><a href="#字段描述符" class="headerlink" title="字段描述符"></a>字段描述符</h4><p>官网：<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2" target="_blank" rel="noopener">https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2</a></p>
-<table>
-<thead>
-<tr>
-<th>FieldType term</th>
-<th>Type</th>
-<th>Interpretation</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>B</td>
-<td>byte</td>
-<td>signed byte</td>
-</tr>
-<tr>
-<td>C</td>
-<td>char</td>
-<td>Unicode character code point in the Basic Multilingual Plane, encoded with UTF-16</td>
-</tr>
-<tr>
-<td>D</td>
-<td>double</td>
-<td>double-precision flfloating-point value</td>
-</tr>
-<tr>
-<td>E</td>
-<td>float</td>
-<td>single-precision flfloating-point value</td>
-</tr>
-<tr>
-<td>F</td>
-<td>int</td>
-<td>integer</td>
-</tr>
-<tr>
-<td>J</td>
-<td>long</td>
-<td>long integer</td>
-</tr>
-<tr>
-<td>LClassName</td>
-<td>reference</td>
-<td>an instance of class <em>ClassName</em></td>
-</tr>
-<tr>
-<td>S</td>
-<td>short</td>
-<td>signed short</td>
-</tr>
-<tr>
-<td>Z</td>
-<td>boolean</td>
-<td>true or false</td>
-</tr>
-<tr>
-<td>[</td>
-<td>reference</td>
-<td>one array dimension</td>
-</tr>
-</tbody></table>
-<h4 id="方法描述符"><a href="#方法描述符" class="headerlink" title="方法描述符"></a>方法描述符</h4><p>官网：<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3" target="_blank" rel="noopener">https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3</a></p>
-<p>示例：</p>
-<p>The method descriptor for the method:</p>
-<pre><code class="java">Object m(int i, double d, Thread t) {...}</code></pre>
-<p>is</p>
-<pre><code class="java">(IDLjava/lang/Thread;)Ljava/lang/Object;</code></pre>
 
             </div>
             <hr>
@@ -521,9 +349,9 @@
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/07/14/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/">
+                      <a href="/2020/07/14/JVM-%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">类加载机制</span>
+                        <span class="hidden-mobile">类文件结构</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -531,8 +359,8 @@
                   <div class="post-next col-6">
                     
                     
-                      <a href="/2020/07/14/GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/">
-                        <span class="hidden-mobile">GC日志分析工具</span>
+                      <a href="/2020/07/13/JVM-%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/">
+                        <span class="hidden-mobile">JVM的垃圾收集</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -752,7 +580,7 @@
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "类文件结构&nbsp;",
+        "GC日志分析工具&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
