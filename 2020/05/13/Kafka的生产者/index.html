@@ -179,9 +179,9 @@
                 class="note note-warning">本文最后更新于：星期四, 五月 14日 2020, 3:23 下午</p>
             
             <div class="markdown-body">
-              <h2 id="Kafka整体的工作流程"><a href="#Kafka整体的工作流程" class="headerlink" title="Kafka整体的工作流程"></a>Kafka整体的工作流程</h2><img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic4.png" srcset="/img/loading.gif" class="">
+              <h2 id="Kafka整体的工作流程"><a href="#Kafka整体的工作流程" class="headerlink" title="Kafka整体的工作流程"></a>Kafka整体的工作流程</h2><img src="/.top//05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic4.png" srcset="/img/loading.gif" class>
 
-<h2 id="生产者的工作流程"><a href="#生产者的工作流程" class="headerlink" title="生产者的工作流程"></a>生产者的工作流程</h2><img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic1.png" srcset="/img/loading.gif" class="">
+<h2 id="生产者的工作流程"><a href="#生产者的工作流程" class="headerlink" title="生产者的工作流程"></a>生产者的工作流程</h2><img src="/.top//05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic1.png" srcset="/img/loading.gif" class>
 
 <p>首先需要创建一个ProducerRecord对象，ProducerRecord对象包含目标主题和要发送的内容，还可以指定键或分区。在发送ProducerRecord对象时，生产者要先把键和值对象通过序列化器转换为字节数组，然后发送到分区器。</p>
 <p>如果在ProducerRecord对象里指定了分区，分区器会直接返回指定的分区。如果没有指定分区，分区器会根据ProducerRecord对象的键来选择一个分区。选择好分区后，这条记录被添加到一个记录批次中（双端队列，尾部写入），这个批次的所有消息会被发送到相同的主题和分区上。有一个独立的线程负责把这些记录批次发送到相应的broker上。</p>
@@ -363,12 +363,12 @@
 </ul>
 <p>一般来说，就记住acks、batch.size、linger.ms、max.request.size就行了，因为这4个参数重要些，其他参数一般没有太大必要调整。</p>
 <h2 id="消息的顺序保证"><a href="#消息的顺序保证" class="headerlink" title="消息的顺序保证"></a>消息的顺序保证</h2><p>Kafka可以保证同一个分区里的消息是有序的。也就是说，发送消息时，主题只有且只有一个分区，同时生产者按照一定的顺序发送消息，broker就会按照这个顺序把它们写入分区，消费者也会按照同样的顺序读取它们。在某些情况下，顺序是非常重要的。例如，往一个账户存入100元再取出来，这个与先取钱再存钱是截然不同的，不过，有些场景对顺序不是很敏感。</p>
-<img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic2.png" srcset="/img/loading.gif" class="">
+<img src="/.top//05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic2.png" srcset="/img/loading.gif" class>
 
 <p>如果把retires设为非零整数，同时把max.in.flight.requests.per.connection设为比1大的数，那么，如果第一个批次消息写入失败，而第二个批次写入成功，broker会重试写入第一个批次。如果此时第一个批次也写入成功，那么两个批次的顺序就反过来了。</p>
 <p>一般来说，如果某些场景要求消息是有序的，那么消息是否写入成功也是很关键的，所以不建议把retires设为0，因为不重试的话消息可能会因为连接关闭等原因导致丢失。可以将max.in.flight.request.per.connection设为1，这样在生产者尝试发送第一批消息时，就不会有其他的消息发送给broker。不过这样会严重影响生产者的吞吐量，所以只有在对消息的顺序有严格要求的情况下才能这么做。</p>
 <h2 id="序列化"><a href="#序列化" class="headerlink" title="序列化"></a>序列化</h2><p>Kafka官方推荐的序列化器为Apache Avro。Avro会使用一个JSON文件作为schema来描述数据，Avro在读写时会用到这个schema，可以把这个schema内嵌在数据文件中。这样，不管数据格式如何变动，消费者都知道如何处理数据。但是内嵌的消息，自带格式，会导致消息的大小不必要的增大，消耗了资源。我们可以使用schema注册表机制，将所有写入的数据用到的schema保存在注册表中，然后在消息中引用schema的标识符，而读取的数据的消费者程序使用这个标识符从注册表中拉取schema来反序列化记录。注意：Kafka本身并不提供schema注册表，需要借助第三方，现在已经有很多的开源实现，比如ConfluentSchemaRegistry，可以从GitHub上获取。如何使用参考如下网址：<a href="https://cloud.tencent.com/developer/article/1336568" target="_blank" rel="noopener">https://cloud.tencent.com/developer/article/1336568</a></p>
-<img src="/2020/05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic3.png" srcset="/img/loading.gif" class="">
+<img src="/.top//05/13/Kafka%E7%9A%84%E7%94%9F%E4%BA%A7%E8%80%85/pic3.png" srcset="/img/loading.gif" class>
 
 <p>不过一般除非使用Kafka需要关联的团队比较大，敏捷开发团队才会使用，一般的团队用不上。对于一般的情况使用JSON足够了。</p>
 <h2 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h2><p>在ProducerRecord对象中包含了目标主题，键和值，Kafka的消息都是一个个的键值对。键可以设置为默认的null。键主要用来决定消息被写往主题的哪个分区，或者作为消息的附加消息。如果键值为null，并且使用默认的分区器，分区器使用轮询算法将消息均衡地分布到各个分区上。如果键不为空，并且使用默认的分区器，Kafka对键进行散列（Kafka自定义的散列算法，具体算法原理不知），然后根据散列值把消息映射到特定的分区上。很明显，同一个键总是被映射到同一个分区。但是只有不改变主题分区数量的情况下，键和分区之间的映射才能保持不变，一旦增加了新的分区，就无法保证了，所以如果要使用键来映射分区，那就要在创建主题的时候把分区规划好，而且永远不要增加新分区。</p>

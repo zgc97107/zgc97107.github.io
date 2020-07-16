@@ -199,46 +199,46 @@
 <li><p>自动清除已完成和过期任务。因为要提供进度查询，系统需要在内存中维护每个任务的进度信息以供查询，但是这种查询又是有时间限制的，一个任务完成一段时间后，就不再提供进度查询了，则就需要我们自动清除已完成和过期任务，用定时轮询吗？</p>
 </li>
 </ol>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic1.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic1.png" srcset="/img/loading.gif" class>
 
 <h3 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h3><ol>
 <li><p>框架使用者业务方法的执行结果共有三种，成功：按预想的流程出了结果；失败：按预想的流程没出结果；异常：没按预想的流程抛出了预料之外的错误。因此我们定义了一个枚举，表示这三种情况。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic2.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic2.png" srcset="/img/loading.gif" class>
 
 <p>业务方法的返回值有很多种可能，基本类型、系统定义的对象类型、框架使用者自定义的对象类型都是存在的，所以需要用泛型来说表示这个结果。如果方法执行失败了，还需要告诉用户或者框架使用者失败的原因，还需要再定义一个任务的执行结束后的返回值类。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic3.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic3.png" srcset="/img/loading.gif" class>
 </li>
 <li><p>定义执行业务方法的接口，框架就只执行这个方法，框架的使用者都应该来实现这个接口，由于用户业务的数据多样性，方法的参数也应该用泛型。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic4.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic4.png" srcset="/img/loading.gif" class>
 </li>
 <li><p>提供一种封装机制，让框架使用者可以将用户在前端提交的工作（JOB）提交给这个封装机制，当用户的需要查询进度的时候，也从这个封装机制中取得，同时封装机制内部也要负责清除已完成任务。</p>
 <p>在这个封装机制里我们定义了一个类JobInfo，抽象了对用户工作（JOB）的封装，一个工作可以包含多个子任务（TASK），这个JobInfo中就包括了这个工作的相关信息，比如工作名，用以区分框架中唯一的工作，也可以避免重复提交，也方便查询时快速定位工作，除了工作名以外，工作中任务（TASK）的列表，工作中任务的处理器都在其中定义。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic5.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic5.png" srcset="/img/loading.gif" class>
 
 <p>同时JobInfo还有相当多的关于这个工作的方法，比如查询工作进度，查询每个任务的处理结果，记录每个任务的处理结果等等</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic6.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic6.png" srcset="/img/loading.gif" class>
 
 <p>负责清除已完成任务，我们则交给CheckJobProcesser类来完成，定时轮询的机制不够优雅，因此我们选用了DelayQueue来实现这个功能</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic7.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic7.png" srcset="/img/loading.gif" class>
 
 <p>并且在其中定义了清除已完成任务的Runnable和相关的工作线程。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic8.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic8.png" srcset="/img/loading.gif" class>
 </li>
 <li><p>框架的主体类则是PendingJobPool，这也是框架使用者主要使用的类。这个类主要负责调度，例如工作（JOB）和任务（TASK）的提交，任务（TASK）的保存，任务（TASK）的并发执行，工作进度的查询接口和任务执行情况的查询等等。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic9.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic9.png" srcset="/img/loading.gif" class>
 
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic10.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic10.png" srcset="/img/loading.gif" class>
 
 </li>
 </ol>
-<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic11.png" srcset="/img/loading.gif" class="">
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic11.png" srcset="/img/loading.gif" class>
 
 <p>如果需要spring集成的话，某些单例化的部分就不需要了。</p>
 <h2 id="项目优化"><a href="#项目优化" class="headerlink" title="项目优化"></a>项目优化</h2><h3 id="项目背景和问题"><a href="#项目背景和问题" class="headerlink" title="项目背景和问题"></a>项目背景和问题</h3><p>这个项目来自为电信教育系统设计开发的一套自适应的考试学习系统，面向的用户主要是职业学院的的老师和学生以及短时间脱产学习的在职人员。什么叫自适应呢？就是当时提出一种教育理念，对学员的学习要求经常考试进行检查，学员的成绩出来以后，老师会要求系统根据每个学员的考卷上错误的题目从容量为10万左右的题库中抽取题目，为每个学员生成一套各自个性化的考后复习和练习的离线练习册。所以，每次考完试，特别是比较大型的考试后，要求生成的离线文档数量是比较多的，一个考试2000多人，就要求生成2000多份文档。当时我们在做这个项目的时候，因为时间紧，人员少，很快做出第一版就上线运营了。</p>
 <p>当然，大家可以想到，问题是很多的，但是反应最大，用户最不满意的就是这个离线文档生成的功能，用户最不满意的点：离线文档生成的速度非常慢，慢到什么程度呢？一份离线文档的生成平均时长在50~55秒左右，遇到成绩不好的学生，文档内容多的，生成甚至需要3分钟，大家可以算一下，2000人，平均55秒，全部生成完，需要2000*55=110000秒，大约是30个小时。</p>
 <p>为什么如此之慢？这跟离线文档的生成机制密切相关，对于每一个题目要从保存题库的数据库中找到需要的题目，单个题目的表现形式如图，数据库中存储则采用类html形式保存，对于每个题目而言，解析题目文本，找到需要下载的图片，每道题目都含有大量或大型的图片需要下载，等到文档中所有题目图片下载到本地完成后，整个文档才能继续进行处理。</p>
 <h3 id="分析和改进"><a href="#分析和改进" class="headerlink" title="分析和改进"></a>分析和改进</h3><p>第一版的实现，服务器在接收到老师的请求后，就会把批量生成请求分解为一个个单独的任务，然后串行的完成。</p>
-<img src="/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic12.png" srcset="/img/loading.gif" class="">
+<img src="/.top//02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/pic12.png" srcset="/img/loading.gif" class>
 
 <p>于是在第二版的实现上，首先我们做了个服务拆分，将生成离线文档的功能拆了出来成为了单独的服务，对外提供RPC接口，在WEB服务器接收到了老师们提出的批量生成离线文档的要求以后，将请求拆分后再一一调用离线文档生成RPC服务，这个RPC服务在实现的时候有一个缓冲的机制，会将收到的请求进行缓存，然后迅速返回一个结果给调用者，告诉调用者已经收到了请求，这样WEB服务器也可以很快的对用户的请求进行应答。</p>
 <p>所以我们有了第一次改进，参见cn.enjoyedu.ch8b. RpcServiceWebV1</p>

@@ -179,14 +179,14 @@
                 class="note note-warning">本文最后更新于：星期四, 五月 14日 2020, 6:26 晚上</p>
             
             <div class="markdown-body">
-              <h2 id="消费者的工作流程"><a href="#消费者的工作流程" class="headerlink" title="消费者的工作流程"></a>消费者的工作流程</h2><img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic3.png" srcset="/img/loading.gif" class="">
+              <h2 id="消费者的工作流程"><a href="#消费者的工作流程" class="headerlink" title="消费者的工作流程"></a>消费者的工作流程</h2><img src="/.top//05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic3.png" srcset="/img/loading.gif" class>
 
 <h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="消费者"><a href="#消费者" class="headerlink" title="消费者"></a>消费者</h3><p>消费者的含义，与一般消息中间件中消费者的概念相同。在高并发的情况下，生产者产生消息的速度是远大于消费者消费的速度，单个消费者很可能会 负担不起，此时有必要对消费者进行横向伸缩，于是我们可以使用多个消费者从同一个主题读取消息，对消息进行分流。</p>
 <h3 id="消费者群组"><a href="#消费者群组" class="headerlink" title="消费者群组"></a>消费者群组</h3><p>Kafka里的消费者从属于消费者群组，一个群组里的消费者订阅的都是同一个主题，每个消费者接收主题一部分分区的消息。</p>
-<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic1.png" srcset="/img/loading.gif" class="">
+<img src="/.top//05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic1.png" srcset="/img/loading.gif" class>
 
 <p>往消费者群组里增加消费者是进行横向伸缩能力的主要方式。所以我们有必要为主题设定合适规模的分区，在负载均衡的时候可以加入更多的消费者。但是要记住，如果群组里消费者数量超过了主题的分区数量，多出来的消费者是没有用处的。</p>
-<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic2.png" srcset="/img/loading.gif" class="">
+<img src="/.top//05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic2.png" srcset="/img/loading.gif" class>
 
 <p>如果是多个应用程序，需要从同一个主题中读取数据，只要保证每个应用程序有自己的消费者群组就行了。</p>
 <h2 id="消费者的消费方式"><a href="#消费者的消费方式" class="headerlink" title="消费者的消费方式"></a>消费者的消费方式</h2><p>kafka的消费者并不是线程安全的，所以在多线程的环境下，使用KafkaConsumer的实例时需要保证每个消费者线程拥有自己的KafkaConsumer实例。</p>
@@ -282,13 +282,13 @@
 <h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="多线程安全问题"><a href="#多线程安全问题" class="headerlink" title="多线程安全问题"></a>多线程安全问题</h3><p>KafkaConsumer的实现不是线程安全的，所以我们在多线程的环境下，使用KafkaConsumer的实例要小心，必须保证每个消费数据的线程拥有自己的KafkaConsumer实例。</p>
 <h3 id="群组协调"><a href="#群组协调" class="headerlink" title="群组协调"></a>群组协调</h3><p>消费者要加入群组时，会向群组协调器发送一个JoinGroup请求，第一个加入群组的消费者成为群主，群主会获得群组的成员列表，并负责给每一个 消费者分配分区。分配完毕后，群组把分配情况发送给群组协调器，协调器再把这些信息发送给所有的消费者，每个消费者只能看到自己的分配信息， 只有群主知道群组里所有消费者的分配信息，这个过程在每次再均衡时都会发生。</p>
 <h3 id="分区再均衡"><a href="#分区再均衡" class="headerlink" title="分区再均衡"></a>分区再均衡</h3><p>当消费者群组里的消费者发生变化，或者主题里的分区发生了变化，都会导致再均衡现象的发生。Kafka中存在着消费者对分区所有权的关系，这样无论是消费者变化，比如增加了消费者，新消费者会读取原本由其他消费者读取的分区，消费者减少，原本由它负责的分区要由其他消费者来读取，增加了分区，哪个消费者来读取这个新增的分区，这些行为，都会导致分区所有权的变化，这种变化就被称为再均衡。</p>
-<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic4.png" srcset="/img/loading.gif" class="">
+<img src="/.top//05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic4.png" srcset="/img/loading.gif" class>
 
 <p>再均衡对Kafka很重要，这是消费者群组带来高可用性和伸缩性的关键所在。不过一般情况下，尽量减少再均衡，因为再均衡期间，消费者是无法读取消息的，会造成整个群组一小段时间的不可用（STW）。</p>
 <p>消费者通过向称为群组协调器的broker（不同的群组有不同的协调器）发送心跳来维持它和群组的从属关系以及对分区的所有权关系。如果消费者长时间不发送心跳，群组协调器认为它已经死亡，就会触发一次再均衡。在0.10.1及以后的版本中，心跳由单独的线程负责，相关的控制参数为max.poll.interval.ms。</p>
 <h3 id="提交和偏移量"><a href="#提交和偏移量" class="headerlink" title="提交和偏移量"></a>提交和偏移量</h3><p>当我们调用poll()方法的时候，broker返回的是生产者写入Kafka但是还没有被消费者读取过的记录，消费者可以使用Kafka来追踪消息在分区里的位置，我们称之为偏移量。消费者更新自己读取到哪个消息的操作，我们称之为提交。</p>
 <p>消费者会往一个叫做_consumer_offset的特殊主题发送一个消息，里面会包括每个分区的偏移量。发生了再均衡之后，消费者可能会被分配新的分区，为了能够继续工作，消费者需要读取每个分区最后一次提交的偏移量，然后从指定的地方，继续做处理。这时可能会导致两个问题：</p>
-<img src="/2020/05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic5.png" srcset="/img/loading.gif" class="" title="">
+<img src="/.top//05/14/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic5.png" srcset="/img/loading.gif" class title="">
 
 <ul>
 <li>如果提交的偏移量小于消费者实际处理的最后一个消息的偏移量，处于两个偏移量之间的消息会被重复处理。</li>
