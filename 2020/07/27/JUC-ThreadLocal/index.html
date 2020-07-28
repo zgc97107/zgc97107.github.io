@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    866 字
+                    872 字
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期一, 七月 27日 2020, 7:46 晚上</p>
+                class="note note-warning">本文最后更新于：星期二, 七月 28日 2020, 7:11 晚上</p>
             
             <div class="markdown-body">
               <h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><p>ThreadLocal类并不是用来解决多线程环境下的共享变量问题，而是用来提供线程内部的共享变量。在多线程环境下，可以保证各个线程之间的变量互相隔离、相互独立。</p>
@@ -210,7 +210,7 @@ public class ThreadLocalDemo implements Runnable {
 <h3 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h3><img src="/2020/07/27/JUC-ThreadLocal/pic1.png" srcset="/img/loading.gif" class>
 
 <p>ThreadLocal中有一个ThreadLocalMap对象，ThreadLocalMap是ThreadLocal的静态内部类，存储的对象为Entry类型的数组，Entry类型的key为ThreadLocal对象，value为ThreadLocal对象的值，ThreadLocal的get方法会获取当前Thread，然后调用getMap()获取当前Thread的ThreadLocalMap，再从ThreadLocalMap中通过ThreadLocal找到对应的值。</p>
-<h4 id="内存泄露分析"><a href="#内存泄露分析" class="headerlink" title="内存泄露分析"></a>内存泄露分析</h4><p>Thread维护的ThreadLocalMap中的Entry的key使用的是ThreadLocal的的弱引用 ，如果的ThreadLocal强引用指向使用完成，Entry中的key以及ThreadLocal实例会被gc回收，但由于线程中依然存有ThreadLocalMap的强引用，Entry会继续存在，其中的value会依然存在，这就有可能造成内存泄漏。只有当前线程结束以后，ThreadLocalMap强引用断开才会被GC回收。</p>
+<h4 id="内存泄露分析"><a href="#内存泄露分析" class="headerlink" title="内存泄露分析"></a>内存泄露分析</h4><p>线程中维护的ThreadLocalMap中的Entry对key的引用是弱引用，如果外部对ThreadLocal实例的强引用失效，Entry中的key以及ThreadLocal实例会被gc回收，但value会依然存在，因为线程中依然存有ThreadLocalMap的强引用，Entry会继续存在，所以value也会存在，这就有可能造成内存泄漏。只有当前线程结束以后，ThreadLocalMap强引用断开才会被GC回收。</p>
 <p>jdk对此提供了相应的补偿机制，ThreadLocal的get()，set()有可能会去调用expungeStaleEntry()，replaceStaleEntry()方法去清除key为null（ThreadLocal为null）的value值。但最好还是在使用完threadLocal变量后，手动调用它的remove()方法清除数据。</p>
 <p>如果对key的引用为强引用的话，set()，get()方法中对Model的释放就一定不会触发，必然会造成内存泄漏。</p>
 <h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>当多个线程的ThreadLocalMap的value保存的是同一个对象实例的引用时，线程通过这个引用对对象实例做修改，也同样会影响了其他线程中引用的这个对象实例。显然要避免ThreadLocal线程不安全就应该让每个线程中的ThreadLocal都应该持有一个新的对象。</p>
@@ -246,6 +246,12 @@ public class ThreadLocalDemo implements Runnable {
                 <div class="post-prevnext row">
                   <div class="post-prev col-6">
                     
+                    
+                      <a href="/2020/07/27/JUC-ConcuttrentHashMap/">
+                        <i class="fa fa-chevron-left"></i>
+                        <span class="hidden-mobile">并发容器</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </div>
                   <div class="post-next col-6">
