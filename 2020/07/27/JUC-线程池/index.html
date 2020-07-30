@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    2.5k 字
+                    3.4k 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      9 分钟
+                      12 分钟
                   </span>
                 
 
@@ -176,7 +176,7 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期一, 七月 27日 2020, 5:20 下午</p>
+                class="note note-warning">本文最后更新于：星期四, 七月 30日 2020, 8:00 晚上</p>
             
             <div class="markdown-body">
               <h3 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h3><h4 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h4><h5 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h5><img src="/2020/07/27/JUC-%E7%BA%BF%E7%A8%8B%E6%B1%A0/pic1.png" srcset="/img/loading.gif" class>
@@ -383,7 +383,7 @@ private Runnable getTask() {
 <li>线程池中线程的状态：TIMED_WAITING、RUNNABLE、WAITING。</li>
 <li>核心线程与非核心线程：两者并没有区别，只有在addWorker()中进行线程数判断时，区分核心线程数或最大线程数。在getTask()内部，并没有针对性的区分当前work是否是核心线程或者类似的标记。只要判断works数量超出core，就会调用poll()，否则take()。</li>
 </ul>
-<h4 id="构造函数中的参数含义"><a href="#构造函数中的参数含义" class="headerlink" title="构造函数中的参数含义"></a>构造函数中的参数含义</h4><p>public ThreadPoolExecutor(int <strong>corePoolSize</strong>,int <strong>maximumPoolSize</strong>,long <strong>keepAliveTime</strong>,TimeUnit <strong>unit</strong>,BlockingQueue&lt;Runnable&gt; <strong>workQueue</strong>,ThreadFactory <strong>threadFactory</strong>,RejectedExecutionHandler <strong>handler</strong>)</p>
+<h4 id="构造函数参数含义"><a href="#构造函数参数含义" class="headerlink" title="构造函数参数含义"></a>构造函数参数含义</h4><p>public ThreadPoolExecutor(int <strong>corePoolSize</strong>,int <strong>maximumPoolSize</strong>,long <strong>keepAliveTime</strong>,TimeUnit <strong>unit</strong>,BlockingQueue&lt;Runnable&gt; <strong>workQueue</strong>,ThreadFactory <strong>threadFactory</strong>,RejectedExecutionHandler <strong>handler</strong>)</p>
 <ul>
 <li><p><strong>corePoolSize</strong>：线程池中的核心线程数。当提交一个任务时，线程池创建一个新线程执行任务，直到当前线程数等于corePoolSize；如果当前线程数已经达到corePoolSize，继续提交的任务会被保存到阻塞队列中，等待被执行；如果执行了线程池的prestartAllCoreThreads()方法，线程池会提前创建并启动所有核心线程。</p>
 </li>
@@ -412,6 +412,30 @@ private Runnable getTask() {
 <li>DiscardPolicy：直接丢弃任务；</li>
 </ol>
 <p>当然也可以根据应用场景实现RejectedExecutionHandler接口，自定义饱和策略，如记录日志或持久化存储不能处理的任务。</p>
+</li>
+</ul>
+<h4 id="参数设置建议"><a href="#参数设置建议" class="headerlink" title="参数设置建议"></a>参数设置建议</h4><ul>
+<li><p>corePoolSize</p>
+<p>基本线程数，一旦有任务进来，在core范围内会立刻创建线程进入工作。所以这个值应该参考业务并发量在绝大多数时间内的并发情况。同时分析任务的特性。</p>
+<p>高并发，执行时间短的，要尽可能小的线程数，如配置CPU个数+1，减少线程上下文的切换。因为它不怎么占时间，让少量线程快跑干活。</p>
+<p>并发不高、任务执行时间长的要分开看：如果时间都花在了IO上，那就调大CPU，如配置两倍CPU个数+1。不能让CPU闲下来，线程多了并行处理更快。如果时间都花在了运算上，运算的任务还很重，本身就很占cpu，那尽量减少cpu，减少切换时间。参考第一条</p>
+<p>如果高并发，执行时间还很长<em>……</em></p>
+</li>
+<li><p>workQueue</p>
+<p>任务队列，用于传输和保存等待执行任务的阻塞队列。这个需要根据业务可接受的等待时间。是一个需要权衡时间还是空间的地方，如果机器cpu资源紧张，jvm内存够大，同时任务又不是那么紧迫，减少coresize，加大这里。如果cpu不是问题，对内存比较敏感比较害怕内存溢出，同时任务又要求快点响应。那么减少这里。</p>
+</li>
+<li><p>maximumPoolSize</p>
+<p>线程池最大数量，这个值和队列要搭配使用，如果采用了无界队列，那很大程度上，这个参数没有意义。同时要注意，队列盛满，同时达到max的时候，再来的任务可能会丢失（下面的handler会讲）。</p>
+<p>任务波动较大，同时任务波峰来的时候，实时性要求比较高。也就是来的很突然并且都是着急的。那么调小队列，加大这里。如果任务不那么着急，可以慢慢做，那就扔队列吧。队列与max是一个权衡。队列空间换时间，多花内存少占cpu，轻视任务紧迫度。max舍得cpu线程开销，少占内存，给任务最快的响应。</p>
+</li>
+<li><p>keepaliveTime</p>
+<p>线程存活保持时间，超出该时间后，线程会从max下降到core。如果不缺cpu，同时任务来的时间没法琢磨，波峰波谷的间隔比较短。经常性的来一波。那么实当的延长销毁时间，避免频繁创建和销毁线程带来的开销。如果任务波峰出现后，很长一段时间不再出现，间隔比较久，那么要适当调小该值，让闲着不干活的线程尽快销毁，不要占据资源。</p>
+</li>
+<li><p>threadFactory（自定义展示实例）</p>
+<p>线程工厂，用于创建新线程。threadFactory创建的线程也是采用new Thread()方式，threadFactory创建的线程名都具有统一的风格：pool-m-thread-n（m为线程池的编号，n为线程池内的线程编号）。如果需要定义线程的某些属性，如个性化的线程名，可以在这里动手。一般不需要折腾它。</p>
+</li>
+<li><p>handler</p>
+<p>线程饱和策略，当线程池和队列都满了，再加入线程会执行此策略。默认不处理的话会扔出异常，打进日志。这个与任务处理的数据重要程度有关。如果数据是可丢弃的，那不需要额外处理。如果数据极其重要，那需要在这里采取措施防止数据丢失，如扔消息队列或者至少详细打入日志文件可追踪。</p>
 </li>
 </ul>
 <h4 id="Executors工具"><a href="#Executors工具" class="headerlink" title="Executors工具"></a>Executors工具</h4><p>线程池构造函数比较多，为了方便使用，提供了一个Executors工具类</p>
