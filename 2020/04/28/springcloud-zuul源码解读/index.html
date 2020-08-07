@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>actuator源码解读 - 🍎🍊&#39;s blog</title>
+  <title>Zuul源码解读 - 🍎🍊&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期二, 四月 28日 2020, 4:11 下午
+                  星期二, 四月 28日 2020, 12:55 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    531 字
+                    748 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      2 分钟
+                      4 分钟
                   </span>
                 
 
@@ -176,107 +176,189 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期二, 四月 28日 2020, 6:12 晚上</p>
+                class="note note-warning">本文最后更新于：星期五, 八月 7日 2020, 4:03 下午</p>
             
             <div class="markdown-body">
-              <h2 id="actuator源码解读"><a href="#actuator源码解读" class="headerlink" title="actuator源码解读"></a>actuator源码解读</h2><p>actuator的spring.factories中会注册很多带有@Endpoin注解的类。</p>
-<p>通过spring.factories引入的ManagementContextAutoConfiguration中有一个EnableSameManagementContextConfiguration类。</p>
-<pre><code class="java">@Configuration(proxyBeanMethods = false)
-@EnableManagementContext(ManagementContextType.SAME)
-static class EnableSameManagementContextConfiguration {
-
-}</code></pre>
-<p>这个类的@EnableManagementContext会引入ManagementContextConfigurationImportSelector类</p>
-<pre><code class="java">@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Import(ManagementContextConfigurationImportSelector.class)
-@interface EnableManagementContext {</code></pre>
-<p>ManagementContextConfigurationImportSelector类会引入spring.factories中ManagementContextConfiguration类型的所有类</p>
-<pre><code class="java">protected List&lt;String&gt; loadFactoryNames() {
-   return SpringFactoriesLoader.loadFactoryNames(ManagementContextConfiguration.class, this.classLoader);
-}</code></pre>
-<p>这里我们只关注WebMvcEndpointManagementContextConfiguration</p>
-<p>WebMvcEndpointManagementContextConfiguration类中会调用getEndpoints()方法获取到带有@Endpoint注解的对象，然后创建WebMvcEndpointHandlerMapping映射关系对象。</p>
+              <h2 id="接口调用过程"><a href="#接口调用过程" class="headerlink" title="接口调用过程"></a>接口调用过程</h2><p>ZuulServerAutoConfiguration类也是由spi引入的，该类中会创建ZuulController、ZuulHandlerMapping以及ZuullServlet对象。</p>
 <pre><code class="java">@Bean
-@ConditionalOnMissingBean
-public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpointsSupplier webEndpointsSupplier,
-      ServletEndpointsSupplier servletEndpointsSupplier, ControllerEndpointsSupplier controllerEndpointsSupplier,
-      EndpointMediaTypes endpointMediaTypes, CorsEndpointProperties corsProperties,
-      WebEndpointProperties webEndpointProperties, Environment environment) {
-   List&lt;ExposableEndpoint&lt;?&gt;&gt; allEndpoints = new ArrayList&lt;&gt;();
-   Collection&lt;ExposableWebEndpoint&gt; webEndpoints = webEndpointsSupplier.getEndpoints();
-   allEndpoints.addAll(webEndpoints);
-   allEndpoints.addAll(servletEndpointsSupplier.getEndpoints());
-   allEndpoints.addAll(controllerEndpointsSupplier.getEndpoints());
-   String basePath = webEndpointProperties.getBasePath();
-   EndpointMapping endpointMapping = new EndpointMapping(basePath);
-   boolean shouldRegisterLinksMapping = StringUtils.hasText(basePath)
-         || ManagementPortType.get(environment).equals(ManagementPortType.DIFFERENT);
-   return new WebMvcEndpointHandlerMapping(endpointMapping, webEndpoints, endpointMediaTypes,
-         corsProperties.toCorsConfiguration(), new EndpointLinksResolver(allEndpoints, basePath),
-         shouldRegisterLinksMapping);
+public ZuulController zuulController() {
+   return new ZuulController();
 }</code></pre>
-<p>getEndpoints()最终回调用到EndpointDiscoverer的createEndpointBeans()方法，该方法会拿到有@Endpoint注解的所有的类，然后返回对应的Endpoint。</p>
-<pre><code class="java">private Collection&lt;EndpointBean&gt; createEndpointBeans() {
-   Map&lt;EndpointId, EndpointBean&gt; byId = new LinkedHashMap&lt;&gt;();
-   String[] beanNames = BeanFactoryUtils.beanNamesForAnnotationIncludingAncestors(this.applicationContext,
-         Endpoint.class);
-   for (String beanName : beanNames) {
-      if (!ScopedProxyUtils.isScopedTarget(beanName)) {
-         EndpointBean endpointBean = createEndpointBean(beanName);
-         EndpointBean previous = byId.putIfAbsent(endpointBean.getId(), endpointBean);
-         Assert.state(previous == null, () -&gt; &quot;Found two endpoints with the id &#39;&quot; + endpointBean.getId() + &quot;&#39;: &#39;&quot;
-               + endpointBean.getBeanName() + &quot;&#39; and &#39;&quot; + previous.getBeanName() + &quot;&#39;&quot;);
-      }
+<p>ZuulController实现了controller，所有的请求都会走handleRequest()方法。</p>
+<pre><code class="java">public ModelAndView handleRequest(HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
+   try {
+      // We don&#39;t care about the other features of the base class, just want to
+      // handle the request
+      return super.handleRequestInternal(request, response);
    }
-   return byId.values();
-}</code></pre>
-<p>WebMvcEndpointHandlerMapping的父类AbstractHandlerMethodMapping实现了InitializingBean接口，spring会在实例化完成后调用其afterPropertiesSet()方法</p>
-<pre><code class="java">public void afterPropertiesSet() {
-   initHandlerMethods();
-}</code></pre>
-<p>afterPropertiesSet()方法回到用到子类AbstractWebMvcEndpointHandlerMapping中的initHandlerMethods()方法。</p>
-<pre><code class="java">protected void initHandlerMethods() {
-   for (ExposableWebEndpoint endpoint : this.endpoints) {
-      for (WebOperation operation : endpoint.getOperations()) {
-         registerMappingForOperation(endpoint, operation);
-      }
-   }
-   if (this.shouldRegisterLinksMapping) {
-      registerLinksMapping();
+   finally {
+      // @see com.netflix.zuul.context.ContextLifecycleFilter.doFilter
+      RequestContext.getCurrentContext().unset();
    }
 }</code></pre>
-<p>initHandlerMethods()方法会调用到registerMappingForOperation()方法，将所有的endpoint绑定到OperationHandler类</p>
-<pre><code class="java">private void registerMappingForOperation(ExposableWebEndpoint endpoint, WebOperation operation) {
-   WebOperationRequestPredicate predicate = operation.getRequestPredicate();
-   String path = predicate.getPath();
-   String matchAllRemainingPathSegmentsVariable = predicate.getMatchAllRemainingPathSegmentsVariable();
-   if (matchAllRemainingPathSegmentsVariable != null) {
-      path = path.replace(&quot;{*&quot; + matchAllRemainingPathSegmentsVariable + &quot;}&quot;, &quot;**&quot;);
-   }
-   ServletWebOperation servletWebOperation = wrapServletWebOperation(endpoint, operation,
-         new ServletWebOperationAdapter(operation));
-   registerMapping(createRequestMappingInfo(predicate, path), new OperationHandler(servletWebOperation),
-         this.handleMethod);
+<p>handleRequest()方法会调用handleRequestInternal()方法，handleRequestInternal()方法会调用到ZuullServlet中的service()方法。</p>
+<pre><code class="java">protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    Assert.state(this.servletInstance != null, &quot;No Servlet instance&quot;);
+    this.servletInstance.service(request, response);
+    return null;
 }</code></pre>
-<p>OperationHandler类，所有的请求都会进入其handle()方法，handle()方法最终会调用到通过spring.factories中的创建的带有@Endpoint注解的实例。</p>
-<pre><code class="java">private final class OperationHandler {
+<p>ZuulServlet中的service()方法，service()方法中涉及到pre、route、post、error过滤器的调用。</p>
+<pre><code class="java">public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException {
+    try {
+        this.init((HttpServletRequest)servletRequest, (HttpServletResponse)servletResponse);
+        RequestContext context = RequestContext.getCurrentContext();
+        context.setZuulEngineRan();
 
-   private final ServletWebOperation operation;
+        try {
+            this.preRoute();
+        } catch (ZuulException var13) {
+            this.error(var13);
+            this.postRoute();
+            return;
+        }
 
-   OperationHandler(ServletWebOperation operation) {
-      this.operation = operation;
+        try {
+            this.route();
+        } catch (ZuulException var12) {
+            this.error(var12);
+            this.postRoute();
+            return;
+        }
+
+        try {
+            this.postRoute();
+        } catch (ZuulException var11) {
+            this.error(var11);
+        }
+    } catch (Throwable var14) {
+        this.error(new ZuulException(var14, 500, &quot;UNHANDLED_EXCEPTION_&quot; + var14.getClass().getName()));
+    } finally {
+        RequestContext.getCurrentContext().unset();
+    }
+}</code></pre>
+<p>preRoute()方法，该方法最终会调用到FilterProcessor的runFilters()方法。该方法会获取到所有对应的过滤器，然后排序，再通过processZuulFilter()方法调用。</p>
+<pre><code class="java">public Object runFilters(String sType) throws Throwable {
+    if (RequestContext.getCurrentContext().debugRouting()) {
+        Debug.addRoutingDebug(&quot;Invoking {&quot; + sType + &quot;} type filters&quot;);
+    }
+    boolean bResult = false;
+    List&lt;ZuulFilter&gt; list = FilterLoader.getInstance().getFiltersByType(sType);
+    if (list != null) {
+        for (int i = 0; i &lt; list.size(); i++) {
+            ZuulFilter zuulFilter = list.get(i);
+            Object result = processZuulFilter(zuulFilter);
+            if (result != null &amp;&amp; result instanceof Boolean) {
+                bResult |= ((Boolean) result);
+            }
+        }
+    }
+    return bResult;
+}</code></pre>
+<p>processZuulFilter()方法</p>
+<pre><code class="java">public Object processZuulFilter(ZuulFilter filter) throws ZuulException {
+
+    RequestContext ctx = RequestContext.getCurrentContext();
+    boolean bDebug = ctx.debugRouting();
+    final String metricPrefix = &quot;zuul.filter-&quot;;
+    long execTime = 0;
+    String filterName = &quot;&quot;;
+    try {
+        long ltime = System.currentTimeMillis();
+        filterName = filter.getClass().getSimpleName();
+
+        RequestContext copy = null;
+        Object o = null;
+        Throwable t = null;
+
+        if (bDebug) {
+            Debug.addRoutingDebug(&quot;Filter &quot; + filter.filterType() + &quot; &quot; + filter.filterOrder() + &quot; &quot; + filterName);
+            copy = ctx.copy();
+        }
+
+        ZuulFilterResult result = filter.runFilter();
+        ExecutionStatus s = result.getStatus();
+        execTime = System.currentTimeMillis() - ltime;
+
+        switch (s) {
+            case FAILED:
+                t = result.getException();
+                ctx.addFilterExecutionSummary(filterName, ExecutionStatus.FAILED.name(), execTime);
+                break;
+            case SUCCESS:
+                o = result.getResult();
+                ctx.addFilterExecutionSummary(filterName, ExecutionStatus.SUCCESS.name(), execTime);
+                if (bDebug) {
+                    Debug.addRoutingDebug(&quot;Filter {&quot; + filterName + &quot; TYPE:&quot; + filter.filterType() + &quot; ORDER:&quot; + filter.filterOrder() + &quot;} Execution time = &quot; + execTime + &quot;ms&quot;);
+                    Debug.compareContextState(filterName, copy);
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (t != null) throw t;
+
+        usageNotifier.notify(filter, s);
+        return o;
+
+    } catch (Throwable e) {
+        if (bDebug) {
+            Debug.addRoutingDebug(&quot;Running Filter failed &quot; + filterName + &quot; type:&quot; + filter.filterType() + &quot; order:&quot; + filter.filterOrder() + &quot; &quot; + e.getMessage());
+        }
+        usageNotifier.notify(filter, ExecutionStatus.FAILED);
+        if (e instanceof ZuulException) {
+            throw (ZuulException) e;
+        } else {
+            ZuulException ex = new ZuulException(e, &quot;Filter threw Exception&quot;, 500, filter.filterType() + &quot;:&quot; + filterName);
+            ctx.addFilterExecutionSummary(filterName, ExecutionStatus.FAILED.name(), execTime);
+            throw ex;
+        }
+    }
+}</code></pre>
+<h2 id="过滤器解析"><a href="#过滤器解析" class="headerlink" title="过滤器解析"></a>过滤器解析</h2><p>spring.factories中还会引入ZuulProxyAutoConfiguration类，该类中会完成路由过滤器的注册</p>
+<pre><code class="java">// route filters
+@Bean
+@ConditionalOnMissingBean(RibbonRoutingFilter.class)
+public RibbonRoutingFilter ribbonRoutingFilter(ProxyRequestHelper helper,
+      RibbonCommandFactory&lt;?&gt; ribbonCommandFactory) {
+   RibbonRoutingFilter filter = new RibbonRoutingFilter(helper, ribbonCommandFactory,
+         this.requestCustomizers);
+   return filter;
+}</code></pre>
+<p>RibbonRoutingFilter中的run()方法</p>
+<pre><code class="java">@Override
+public Object run() {
+   RequestContext context = RequestContext.getCurrentContext();
+   this.helper.addIgnoredHeaders();
+   try {
+      RibbonCommandContext commandContext = buildCommandContext(context);
+      ClientHttpResponse response = forward(commandContext);
+      setResponse(response);
+      return response;
    }
-
-   @ResponseBody
-   Object handle(HttpServletRequest request, @RequestBody(required = false) Map&lt;String, String&gt; body) {
-      return this.operation.handle(request, body);
+   catch (ZuulException ex) {
+      throw new ZuulRuntimeException(ex);
    }
+   catch (Exception ex) {
+      throw new ZuulRuntimeException(ex);
+   }
+}</code></pre>
+<p>forward()方法会被run()方法调用。该方法会通过ribbonCommandFactory.create()方法获取到RibbonCommand对象，然后调用hystrix中的execute()方法。</p>
+<pre><code class="java">protected ClientHttpResponse forward(RibbonCommandContext context) throws Exception {
+   Map&lt;String, Object&gt; info = this.helper.debug(context.getMethod(),
+         context.getUri(), context.getHeaders(), context.getParams(),
+         context.getRequestEntity());
 
-   @Override
-   public String toString() {
-      return this.operation.toString();
+   RibbonCommand command = this.ribbonCommandFactory.create(context);
+   try {
+      ClientHttpResponse response = command.execute();
+      this.helper.appendDebug(info, response.getRawStatusCode(),
+            response.getHeaders());
+      return response;
+   }
+   catch (HystrixRuntimeException ex) {
+      return handleException(info, ex);
    }
 
 }</code></pre>
@@ -289,7 +371,7 @@ public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpoint
                   <span>
                 <i class="iconfont icon-inbox"></i>
                     
-                      <a class="hover-with-bg" href="/blog/categories/springcloud/">springcloud</a>
+                      <a class="hover-with-bg" href="/blog/categories/SpringCloud%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">SpringCloud源码解析</a>
                       &nbsp;
                     
                   </span>&nbsp;&nbsp;
@@ -298,11 +380,11 @@ public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpoint
                   <span>
                 <i class="iconfont icon-tag"></i>
                     
-                      <a class="hover-with-bg" href="/blog/tags/actuator/">actuator</a>
-                    
                       <a class="hover-with-bg" href="/blog/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
                     
                       <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/feign/">feign</a>
                     
                   </span>
                 
@@ -315,9 +397,9 @@ public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpoint
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/04/28/redis%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D/">
+                      <a href="/blog/2020/04/28/springcloud-config%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">redis的基本介绍</span>
+                        <span class="hidden-mobile">config源码解读</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -325,8 +407,8 @@ public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpoint
                   <div class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/04/28/config%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
-                        <span class="hidden-mobile">config源码解读</span>
+                      <a href="/blog/2020/04/28/springcloud-feign%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">Feign源码解读</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -546,7 +628,7 @@ public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpoint
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "actuator源码解读&nbsp;",
+        "Zuul源码解读&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,

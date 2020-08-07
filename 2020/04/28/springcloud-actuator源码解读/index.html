@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>原子操作 - 🍎🍊&#39;s blog</title>
+  <title>actuator源码解读 - 🍎🍊&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -124,7 +124,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期一, 七月 27日 2020, 7:14 晚上
+                  星期二, 四月 28日 2020, 4:11 下午
                 </p>
               
 
@@ -133,7 +133,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    1.9k 字
+                    531 字
                   </span>
                 
 
@@ -141,7 +141,7 @@
                   
                   <span class="post-meta">
                       <i class="far fa-clock"></i>
-                      7 分钟
+                      2 分钟
                   </span>
                 
 
@@ -176,147 +176,110 @@
           <div class="post-content mx-auto" id="post">
             
               <p
-                class="note note-warning">本文最后更新于：星期一, 七月 27日 2020, 7:29 晚上</p>
+                class="note note-warning">本文最后更新于：星期五, 八月 7日 2020, 4:05 下午</p>
             
             <div class="markdown-body">
-              <h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><p>原子（atom）本意是“不能被进一步分割的最小粒子”，而原子操作（atomic operation）意为”不可被中断的一个或一系列操作” ，不会被线程调度机制打断的操作，这种操作一旦开始，就一直运行到结束。类比于数据库事务，redis的multi。</p>
-<h3 id="CAS"><a href="#CAS" class="headerlink" title="CAS"></a>CAS</h3><p>Compare And Set（或Compare And Swap），翻译过来就是比较并替换，CAS是利用CPU的多处理能力，实现硬件层面的阻塞，再加上volatile变量的特性即可实现基于原子操作的线程安全。当前的处理器基本都支持CAS指令，只不过每个厂家所实现的算法并不一样。每一个CAS操作过程都包含三个运算符：一个内存地址V，一个期望的值A和一个新值B，操作的时候如果这个地址上存放的值等于这个期望的值A，则将地址上的值赋为新值B，否则将循环这个指令直到成功为止。</p>
-<h3 id="原子操作的三大问题"><a href="#原子操作的三大问题" class="headerlink" title="原子操作的三大问题"></a>原子操作的三大问题</h3><h4 id="ABA问题"><a href="#ABA问题" class="headerlink" title="ABA问题"></a>ABA问题</h4><p>CAS在更新值的时候，需要检查值有没有发生变化，如果没有发生变化则更新，但是如果一个值原来是A，变成了B，又变成了A，那么使用CAS进行检查时会发现它的值没有发生变化，但是实际上却变化了。</p>
-<p>ABA问题的解决思路就是使用版本号。在变量前面追加上版本号，每次变量更新的时候把版本号加1，那么A→B→A就会变成1A→2B→3A。</p>
-<h4 id="循环时间长开销大"><a href="#循环时间长开销大" class="headerlink" title="循环时间长开销大"></a>循环时间长开销大</h4><p>多个线程争夺同一个资源时，如果自旋一直不成功，将会一直占用CPU。</p>
-<p>解决方法：破坏掉死循环，当超过一定时间或者一定次数时退出。或者使用JDK8新增的LongAddr和ConcurrentHashMap类似的方法，当多个线程竞争时将粒度变小，将一个变量拆分为多个变量，达到多个线程访问多个资源的效果，最后再调用sum把它合起来。</p>
-<h4 id="只能保证一个共享变量的原子操作"><a href="#只能保证一个共享变量的原子操作" class="headerlink" title="只能保证一个共享变量的原子操作"></a>只能保证一个共享变量的原子操作</h4><p>CAS指令同时刻只能保证对一个地址的操作是原子的，当同时刻对一个共享变量执行操作时，我们可以使用循环CAS的方式来保证原子操作，但是对多个共享变量操作时，循环CAS就无法使用，这个时候就可以用锁。还有一个取巧的办法，就是把多个共享变量合并成一个共享变量或者封装为对象来操作。比如，有两个共享变量i＝2，j=a，合并一下ij=2a，然后用CAS来操作ij。从Java 1.5开始，JDK提供了AtomicReference类来保证引用对象之间的原子性，就可以把多个变量放在一个对象里来进行CAS操作。</p>
-<h3 id="基于CAS的原子操作类"><a href="#基于CAS的原子操作类" class="headerlink" title="基于CAS的原子操作类"></a>基于CAS的原子操作类</h3><h4 id="基本类型"><a href="#基本类型" class="headerlink" title="基本类型"></a>基本类型</h4><ul>
-<li><p>AtomicBoolean：以原子更新的方式更新boolean； </p>
-</li>
-<li><p>AtomicInteger：以原子更新的方式更新Integer;</p>
-</li>
-<li><p>AtomicLong：以原子更新的方式更新Long；</p>
-</li>
-</ul>
-<h4 id="引用类型"><a href="#引用类型" class="headerlink" title="引用类型"></a>引用类型</h4><ul>
-<li><p>AtomicReference ： 原子更新引用类型</p>
-</li>
-<li><p>AtomicReferenceFieldUpdater ：原子更新引用类型的字段</p>
-</li>
-<li><p>AtomicMarkableReference ： 原子更新带有标志位的引用类型</p>
-</li>
-</ul>
-<h4 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h4><ul>
-<li><p>AtomicIntegerArray：原子更新整型数组里的元素。</p>
-</li>
-<li><p>AtomicLongArray：原子更新长整型数组里的元素。</p>
-</li>
-<li><p>AtomicReferenceArray：原子更新引用类型数组里的元素。</p>
-</li>
-</ul>
-<h4 id="字段"><a href="#字段" class="headerlink" title="字段"></a>字段</h4><ul>
-<li><p>AtomicIntegerFieldUpdater：原子更新整型的字段的更新器。</p>
-</li>
-<li><p>AtomicLongFieldUpdater：原子更新长整型字段的更新器。</p>
-</li>
-<li><p>AtomicStampedReference：原子更新带有版本号的引用类型。</p>
-</li>
-</ul>
-<h3 id="相关方法"><a href="#相关方法" class="headerlink" title="相关方法"></a>相关方法</h3><h4 id="更新基本类型"><a href="#更新基本类型" class="headerlink" title="更新基本类型"></a>更新基本类型</h4><p><strong>AtomicInteger</strong></p>
-<ul>
-<li><p>int addAndGet(int delta)：以原子方式将输入的数值与实例中的值相加，并返回结果。</p>
-</li>
-<li><p>Int  (int delta)：返回实例中的值之后，以原子操作与输入的值相加。</p>
-</li>
-<li><p>int getAndIncrement()：返回实例中的值之后以原子方式加1</p>
-</li>
-<li><p>int incrementAndGet()：以原子操作将实例中的值加1之后返回</p>
-</li>
-<li><p>int getAndDecrement()：返回实例中的值之后以原子方式减1</p>
-</li>
-<li><p>int decrementAndGet()：以原子操作将实例中的值减1之后返回</p>
-</li>
-<li><p>int getAndSet(int newValue)：返回实例中的值之后以原子方式设置为newValue的值。</p>
-</li>
-<li><p>boolean compareAndSet(int expect，int update)：如果实例中的值等于expect值，则以原子方式设置为update的值。</p>
-</li>
-</ul>
-<h4 id="更新数组类型"><a href="#更新数组类型" class="headerlink" title="更新数组类型"></a>更新数组类型</h4><p><strong>AtomicIntegerArray</strong></p>
-<p>主要是提供原子的方式更新数组里的整型，其常用方法如下。</p>
-<ul>
-<li><p>int addAndGet(int i，int delta)：以原子方式将输入值与实例中索引i的元素相加后返回。</p>
-</li>
-<li><p>boolean compareAndSet(int i，int expect，int update)：如果实例中索引i的元素等于预期值，则以原子方式将实例中索引i的元素设置成update值。</p>
-</li>
-<li><p>int getAndAccumulate(int i, int x,IntBinaryOperator accumulatorFunction)：将实例中索引i的元素返回之后以原子方式设置为accumulatorFunction中的操作返回的值，accumulatorFunction的left为原始值，left为传入的值。</p>
-</li>
-</ul>
-<p>需要注意的是，AtomicIntegerArray中存储的数组是复制之后的原数组，当使用AtomicIntegerArray对内部的数组元素进行修改时，不会影响原数组。</p>
-<h4 id="更新引用类型"><a href="#更新引用类型" class="headerlink" title="更新引用类型"></a>更新引用类型</h4><p>原子更新基本类型的AtomicInteger，只能更新一个变量，如果要原子更新多个变量，就需要使用这个原子更新引用类型提供的类。Atomic包提供了以下3个类。</p>
-<p><strong>AtomicReference</strong></p>
-<p>原子更新引用类型（不能解决ABA问题）。</p>
-<ul>
-<li>boolean compareAndSet(V expect，V update)：如果实例中对象等于预期值，则以原子方式将实例中对象替换为输入的对象</li>
-</ul>
-<p><strong>AtomicMarkableReference</strong></p>
-<p>可以解决ABA问题，  可以记录更新过程中有没有变化</p>
-<ul>
-<li>AtomicMarkableReference(V initialRef, boolean initialMark)：initialRef（要关联的对象），initialMark（版本戳）</li>
-</ul>
-<p>AtomicStampedReference利用版本戳的形式记录了每次改变以后的版本号，版本戳为boolean类型，可以记录值是否被修改过。</p>
-<p><strong>AtomicStampedReference</strong></p>
-<p>能够解决ABA问题，并且可以记录变化次数</p>
-<ul>
-<li>AtpmicStampedReference(V initialRef,int initialStamp)：构造函数，initialRef（要关联的对象），initialStamp（版本戳）</li>
-<li>V getStamp()：获取当前版本号</li>
-<li>V getReference()：获取当前对象</li>
-<li>boolean compareAndSet(V   expectedReference,V   newReference,int expectedStamp,int newStamp) ：更新当前对象及版本号</li>
-</ul>
-<p>AtomicStampedReference跟AtomicMarkableReference差不多， AtomicStampedReference是使用int类型的值作为版本戳，AtomicMarkableReference使用boolean mark作为版本戳。 </p>
-<h4 id="原子更新字段类"><a href="#原子更新字段类" class="headerlink" title="原子更新字段类"></a>原子更新字段类</h4><p>如果需原子地更新某个类里的某个字段时，就需要使用原子更新字段类，Atomic包提供了以下3个类进行原子字段更新。</p>
-<ul>
-<li><p>AtomicIntegerFieldUpdater：原子更新整型的字段的更新器。</p>
-</li>
-<li><p>AtomicLongFieldUpdater：原子更新长整型字段的更新器。</p>
-</li>
-<li><p>AtomicReferenceFieldUpdater：原子更新引用类型里的字段。</p>
-</li>
-</ul>
-<p>要想原子地更新字段类需要两步。第一步，因为原子更新字段类都是抽象类，每次使用的时候必须使用静态方法newUpdater()创建一个更新器，并且需要设置想要更新的类和属性。第二步，更新类的字段（属性）必须使用public volatile修饰符。</p>
-<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>使用atomic要注意原子性的边界，把握不好会起不到应有的效果，原子性被破坏。</p>
-<pre><code class="java">package com.itheima;
+              <h2 id="actuator源码解读"><a href="#actuator源码解读" class="headerlink" title="actuator源码解读"></a>actuator源码解读</h2><p>actuator的spring.factories中会注册很多带有@Endpoin注解的类。</p>
+<p>通过spring.factories引入的ManagementContextAutoConfiguration中有一个EnableSameManagementContextConfiguration类。</p>
+<pre><code class="java">@Configuration(proxyBeanMethods = false)
+@EnableManagementContext(ManagementContextType.SAME)
+static class EnableSameManagementContextConfiguration {
 
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class BadAtomic {
-    AtomicInteger i = new AtomicInteger(0);
-    static int j = 0;
-
-    public void badInc() {
-        int k = i.incrementAndGet();
-        try {
-            Thread.currentThread().sleep(new Random().nextInt(100));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        j = k;
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        BadAtomic atomic = new BadAtomic();
-        for (int i = 0; i &lt; 10; i++) {
-            new Thread(() -&gt; {
-                atomic.badInc();
-            }).start();
-        }
-        Thread.sleep(3000);
-        System.out.println(atomic.j);
-    }
 }</code></pre>
-<p>结果分析：</p>
-<ul>
-<li><p>每次都不一样，总之不是10</p>
-</li>
-<li><p>在badInc上加synchronized，问题解决</p>
-</li>
-</ul>
+<p>这个类的@EnableManagementContext会引入ManagementContextConfigurationImportSelector类</p>
+<pre><code class="java">@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Import(ManagementContextConfigurationImportSelector.class)
+@interface EnableManagementContext {</code></pre>
+<p>ManagementContextConfigurationImportSelector类会引入spring.factories中ManagementContextConfiguration类型的所有类</p>
+<pre><code class="java">protected List&lt;String&gt; loadFactoryNames() {
+   return SpringFactoriesLoader.loadFactoryNames(ManagementContextConfiguration.class, this.classLoader);
+}</code></pre>
+<p>这里我们只关注WebMvcEndpointManagementContextConfiguration</p>
+<p>WebMvcEndpointManagementContextConfiguration类中会调用getEndpoints()方法获取到带有@Endpoint注解的对象，然后创建WebMvcEndpointHandlerMapping映射关系对象。</p>
+<pre><code class="java">@Bean
+@ConditionalOnMissingBean
+public WebMvcEndpointHandlerMapping webEndpointServletHandlerMapping(WebEndpointsSupplier webEndpointsSupplier,
+      ServletEndpointsSupplier servletEndpointsSupplier, ControllerEndpointsSupplier controllerEndpointsSupplier,
+      EndpointMediaTypes endpointMediaTypes, CorsEndpointProperties corsProperties,
+      WebEndpointProperties webEndpointProperties, Environment environment) {
+   List&lt;ExposableEndpoint&lt;?&gt;&gt; allEndpoints = new ArrayList&lt;&gt;();
+   Collection&lt;ExposableWebEndpoint&gt; webEndpoints = webEndpointsSupplier.getEndpoints();
+   allEndpoints.addAll(webEndpoints);
+   allEndpoints.addAll(servletEndpointsSupplier.getEndpoints());
+   allEndpoints.addAll(controllerEndpointsSupplier.getEndpoints());
+   String basePath = webEndpointProperties.getBasePath();
+   EndpointMapping endpointMapping = new EndpointMapping(basePath);
+   boolean shouldRegisterLinksMapping = StringUtils.hasText(basePath)
+         || ManagementPortType.get(environment).equals(ManagementPortType.DIFFERENT);
+   return new WebMvcEndpointHandlerMapping(endpointMapping, webEndpoints, endpointMediaTypes,
+         corsProperties.toCorsConfiguration(), new EndpointLinksResolver(allEndpoints, basePath),
+         shouldRegisterLinksMapping);
+}</code></pre>
+<p>getEndpoints()最终回调用到EndpointDiscoverer的createEndpointBeans()方法，该方法会拿到有@Endpoint注解的所有的类，然后返回对应的Endpoint。</p>
+<pre><code class="java">private Collection&lt;EndpointBean&gt; createEndpointBeans() {
+   Map&lt;EndpointId, EndpointBean&gt; byId = new LinkedHashMap&lt;&gt;();
+   String[] beanNames = BeanFactoryUtils.beanNamesForAnnotationIncludingAncestors(this.applicationContext,
+         Endpoint.class);
+   for (String beanName : beanNames) {
+      if (!ScopedProxyUtils.isScopedTarget(beanName)) {
+         EndpointBean endpointBean = createEndpointBean(beanName);
+         EndpointBean previous = byId.putIfAbsent(endpointBean.getId(), endpointBean);
+         Assert.state(previous == null, () -&gt; &quot;Found two endpoints with the id &#39;&quot; + endpointBean.getId() + &quot;&#39;: &#39;&quot;
+               + endpointBean.getBeanName() + &quot;&#39; and &#39;&quot; + previous.getBeanName() + &quot;&#39;&quot;);
+      }
+   }
+   return byId.values();
+}</code></pre>
+<p>WebMvcEndpointHandlerMapping的父类AbstractHandlerMethodMapping实现了InitializingBean接口，spring会在实例化完成后调用其afterPropertiesSet()方法</p>
+<pre><code class="java">public void afterPropertiesSet() {
+   initHandlerMethods();
+}</code></pre>
+<p>afterPropertiesSet()方法回到用到子类AbstractWebMvcEndpointHandlerMapping中的initHandlerMethods()方法。</p>
+<pre><code class="java">protected void initHandlerMethods() {
+   for (ExposableWebEndpoint endpoint : this.endpoints) {
+      for (WebOperation operation : endpoint.getOperations()) {
+         registerMappingForOperation(endpoint, operation);
+      }
+   }
+   if (this.shouldRegisterLinksMapping) {
+      registerLinksMapping();
+   }
+}</code></pre>
+<p>initHandlerMethods()方法会调用到registerMappingForOperation()方法，将所有的endpoint绑定到OperationHandler类</p>
+<pre><code class="java">private void registerMappingForOperation(ExposableWebEndpoint endpoint, WebOperation operation) {
+   WebOperationRequestPredicate predicate = operation.getRequestPredicate();
+   String path = predicate.getPath();
+   String matchAllRemainingPathSegmentsVariable = predicate.getMatchAllRemainingPathSegmentsVariable();
+   if (matchAllRemainingPathSegmentsVariable != null) {
+      path = path.replace(&quot;{*&quot; + matchAllRemainingPathSegmentsVariable + &quot;}&quot;, &quot;**&quot;);
+   }
+   ServletWebOperation servletWebOperation = wrapServletWebOperation(endpoint, operation,
+         new ServletWebOperationAdapter(operation));
+   registerMapping(createRequestMappingInfo(predicate, path), new OperationHandler(servletWebOperation),
+         this.handleMethod);
+}</code></pre>
+<p>OperationHandler类，所有的请求都会进入其handle()方法，handle()方法最终会调用到通过spring.factories中的创建的带有@Endpoint注解的实例。</p>
+<pre><code class="java">private final class OperationHandler {
+
+   private final ServletWebOperation operation;
+
+   OperationHandler(ServletWebOperation operation) {
+      this.operation = operation;
+   }
+
+   @ResponseBody
+   Object handle(HttpServletRequest request, @RequestBody(required = false) Map&lt;String, String&gt; body) {
+      return this.operation.handle(request, body);
+   }
+
+   @Override
+   public String toString() {
+      return this.operation.toString();
+   }
+
+}</code></pre>
 
             </div>
             <hr>
@@ -326,7 +289,7 @@ public class BadAtomic {
                   <span>
                 <i class="iconfont icon-inbox"></i>
                     
-                      <a class="hover-with-bg" href="/blog/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a>
+                      <a class="hover-with-bg" href="/blog/categories/SpringCloud%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">SpringCloud源码解读</a>
                       &nbsp;
                     
                   </span>&nbsp;&nbsp;
@@ -335,9 +298,11 @@ public class BadAtomic {
                   <span>
                 <i class="iconfont icon-tag"></i>
                     
-                      <a class="hover-with-bg" href="/blog/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a>
+                      <a class="hover-with-bg" href="/blog/tags/actuator/">actuator</a>
                     
-                      <a class="hover-with-bg" href="/blog/tags/JUC/">JUC</a>
+                      <a class="hover-with-bg" href="/blog/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
                     
                   </span>
                 
@@ -350,9 +315,9 @@ public class BadAtomic {
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/07/27/JUC-ThreadLocal/">
+                      <a href="/blog/2020/04/28/redis%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D/">
                         <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">ThreadLocal</span>
+                        <span class="hidden-mobile">redis的基本介绍</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -360,8 +325,8 @@ public class BadAtomic {
                   <div class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/07/27/JUC-%E9%94%81/">
-                        <span class="hidden-mobile">锁</span>
+                      <a href="/blog/2020/04/28/springcloud-config%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">config源码解读</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -581,7 +546,7 @@ public class BadAtomic {
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "原子操作&nbsp;",
+        "actuator源码解读&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
