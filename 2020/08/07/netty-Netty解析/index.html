@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Netty解析 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
+<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link  rel="stylesheet" href="/blog/lib/prettify/tomorrow-night-eighties.min.css" />
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+
+  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+<!-- 自定义样式保持在最底部 -->
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/blog/">首页</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/blog/archives/">归档</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/blog/categories/">分类</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/blog/tags/">标签</a>
+          </li>
+        
+          
+          
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/blog/about">关于</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="view intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+                <p class="mt-3 post-meta">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                  星期五, 八月 7日 2020, 5:04 下午
+                </p>
+              
+
+              <p class="mt-1">
+                
+                  
+                  <span class="post-meta">
+                    <i class="far fa-chart-bar"></i>
+                    6.3k 字
+                  </span>
+                
+
+                
+                  
+                  <span class="post-meta">
+                      <i class="far fa-clock"></i>
+                      25 分钟
+                  </span>
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
+                    <i class="far fa-eye" aria-hidden="true"></i>
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5 z-depth-3" id="board">
+          <div class="post-content mx-auto" id="post">
+            
+              <p
+                class="note note-warning">本文最后更新于：星期五, 八月 7日 2020, 6:33 晚上</p>
+            
+            <div class="markdown-body">
+              <h3 id="Java中的IO模型"><a href="#Java中的IO模型" class="headerlink" title="Java中的IO模型"></a>Java中的IO模型</h3><p>在JDK1.4之前，基于Java所有的socket通信都采⽤了同步阻塞模型（BIO），这种模型性能低下，当时⼤型的服务均采⽤C或C++开发，因为它们可以直接使⽤操作系统提供的异步IO或者AIO，使得性能得到⼤幅提升。</p>
+<p>2002年，JDK1.4发布，新增了java.nio包，提供了许多异步IO开发的API和类库。新增的NIO，极⼤的促进了基于Java的异步⾮阻塞的发展和应⽤。</p>
+<p>2011年，JDK7发布，将原有的NIO进⾏了升级，称为NIO2.0，其中也对AIO进⾏了⽀持。</p>
+<h4 id="BIO模型"><a href="#BIO模型" class="headerlink" title="BIO模型"></a>BIO模型</h4><p>java中的BIO是blocking I/O的简称，它是同步阻塞型IO，其相关的类和接⼝在java.io下。BIO模型简单来讲，就是服务端为每⼀个请求都分配⼀个线程进⾏处理，如下：</p>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>示例</p>
+<pre><code class="java">package org.example.bio;
+
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class BIOServer {
+    public static void main(String[] args) throws Exception {
+        ServerSocket serverSocket = new ServerSocket(6666);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        while (true) {
+            System.out.println(&quot;等待客户端连接。。。。&quot;);
+            Socket socket = serverSocket.accept(); //阻塞
+            executorService.execute(() -&gt; {
+                try {
+                    InputStream inputStream = socket.getInputStream(); //阻塞
+                    byte[] bytes = new byte[1024];
+                    while (true) {
+                        int length = inputStream.read(bytes);
+                        if (length == -1) {
+                            break;
+                        }
+                        System.out.println(new String(bytes, 0, length, StandardCharsets.UTF_8));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+}</code></pre>
+<p>这种模式存在的问题：</p>
+<ul>
+<li>客户端的并发数与后端的线程数成1:1的⽐例，线程的创建、销毁是⾮常消耗系统资源的，随着并发量增⼤，服务端性能将显著下降，甚⾄会发⽣线程堆栈溢出等错误。</li>
+<li>当连接创建后，如果该线程没有操作时，会进⾏阻塞操作，这样极⼤的浪费了服务器资源。</li>
+</ul>
+<h4 id="NIO模型"><a href="#NIO模型" class="headerlink" title="NIO模型"></a>NIO模型</h4><p>NIO，称之为New IO 或是 non-block IO （⾮阻塞IO），这两种说法都可以，其实称之为⾮阻塞IO更恰当⼀些。</p>
+<p>NIO相关的代码都放在了java.nio包下，其三⼤核⼼组件：<strong>Buffer</strong>（缓冲区）、<strong>Channel</strong>（通道）、<strong>Selector</strong>（选择器<strong>/</strong>多路复⽤器）</p>
+<ul>
+<li><p>Buffer</p>
+<p>在NIO中，所有的读写操作都是基于缓冲区完成的，底层是通过数组实现的，常⽤的缓冲区是ByteBuffer，每⼀种java基本类型都有对应的缓冲区对象（除了Boolean类型），如：CharBuffer、IntBuffer、LongBuffer等。</p>
+</li>
+<li><p>Channel</p>
+<p>在BIO中是基于Stream实现，⽽在NIO中是基于通道实现，与流不同的是，通道是双向的，既可以读也可以写。</p>
+</li>
+<li><p>Selector</p>
+<p>Selector是多路复⽤器，它会不断的轮询注册在其上的Channel，如果某个Channel上发⽣读或写事件，这个Channel就处于就绪状态，会被Selector轮询出来，然后通过SelectionKey获取就绪Channel的集合，进⾏IO的读写操作。</p>
+</li>
+</ul>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>可以看出，NIO模型要优于BIO模型，主要是：</p>
+<ul>
+<li><p>通过多路复⽤器就可以实现⼀个线程处理多个通道，避免了多线程之间的上下⽂切换导致系统开销过⼤。</p>
+</li>
+<li><p>NIO⽆需为每⼀个连接开⼀个线程处理，并且只有通道真正有有事件时，才进⾏读写操作，这样⼤⼤的减少了系统开销。</p>
+</li>
+</ul>
+<p>示例代码：</p>
+<pre><code class="java">import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.Set;
+
+public class SelectorDemo {
+    /**
+     * 注册事件
+     * @return
+     */
+    private Selector getSelector() throws Exception {
+        //获取selector对象
+        Selector selector = Selector.open();
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.configureBlocking(false); //⾮阻塞
+        //获取通道并且绑定端⼝
+        ServerSocket socket = serverSocketChannel.socket();
+        socket.bind(new InetSocketAddress(6677));
+        //注册感兴趣的事件
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        return selector;
+    }
+
+    public void listen() throws Exception {
+        Selector selector = this.getSelector();
+        while (true) {
+            selector.select(); //该⽅法会阻塞，直到⾄少有⼀个事件的发⽣
+            Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();
+            Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();
+            while (iterator.hasNext()) {
+                SelectionKey selectionKey = iterator.next();
+                process(selectionKey, selector);
+                iterator.remove();
+            }
+        }
+    }
+
+    private void process(SelectionKey key, Selector selector) throws Exception {
+        if (key.isAcceptable()) { //新连接请求
+            ServerSocketChannel server = (ServerSocketChannel) key.channel();
+            SocketChannel channel = server.accept();
+            channel.configureBlocking(false); //⾮阻塞
+            channel.register(selector, SelectionKey.OP_READ);
+        } else if (key.isReadable()) { //读数据
+            SocketChannel channel = (SocketChannel) key.channel();
+            ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+            channel.read(byteBuffer);
+            System.out.println(&quot;form 客户端 &quot; + new String(byteBuffer.array(),
+                    0, byteBuffer.position()));
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        new SelectorDemo().listen();
+    }
+}</code></pre>
+<h4 id="AIO模型"><a href="#AIO模型" class="headerlink" title="AIO模型"></a>AIO模型</h4><p>在NIO中，Selector多路复⽤器在做轮询时，如果没有事件发⽣，也会进⾏阻塞，如何能把这个阻塞也优化掉呢？那么AIO就在这样的背景下诞⽣了。</p>
+<p>AIO是asynchronous I/O的简称，是异步IO，该异步IO是需要依赖于操作系统底层的异步IO实现。</p>
+<p>AIO的基本流程是：⽤户线程通过系统调⽤，告知kernel内核启动某个IO操作，⽤户线程返回。kernel内核在整个IO操作（包括数据准备、数据复制）完成后，通知⽤户程序，⽤户执⾏后续的业务操作。</p>
+<blockquote>
+<p>kernel的数据准备</p>
+<p>将数据从⽹络物理设备（⽹卡）读取到内核缓冲区。</p>
+<p>kernel的数据复制</p>
+<p>将数据从内核缓冲区拷⻉到⽤户程序空间的缓冲区。</p>
+</blockquote>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>⽬前AIO模型存在的不⾜：</p>
+<ul>
+<li><p>需要完成事件的注册与传递，这⾥边需要底层操作系统提供⼤量的⽀持，去做⼤量的⼯作。</p>
+</li>
+<li><p>Windows 系统下通过 IOCP 实现了真正的异步 I/O。但是，就⽬前的业界形式来说，Windows 系统，很少作为百万级以上或者说⾼并发应⽤的服务器操作系统来使⽤。</p>
+</li>
+<li><p>⽽在 Linux 系统下，异步IO模型在2.6版本才引⼊，⽬前并不完善。所以，这也是在 Linux 下，实现⾼并发⽹络编程时都是以 NIO 多路复⽤模型模式为主。</p>
+</li>
+</ul>
+<h3 id="Reactor线程模型"><a href="#Reactor线程模型" class="headerlink" title="Reactor线程模型"></a>Reactor线程模型</h3><p>Reactor线程模型不是Java专属，也不是Netty专属，它其实是⼀种并发编程模型，是⼀种思想，具有指导意义。⽐如，Netty就是结合了NIO的特点，应⽤了Reactor线程模型所实现的。</p>
+<p>Reactor模型中定义的三种⻆⾊：</p>
+<ul>
+<li><p>Reactor：负责监听和分配事件，将I/O事件分派给对应的Handler。新的事件包含连接建⽴就绪、读就绪、写就绪等。</p>
+</li>
+<li><p>Acceptor：处理客户端新连接，并分派请求到处理器链中。</p>
+</li>
+<li><p>Handler：将⾃身与事件绑定，执⾏⾮阻塞读/写任务，完成channel的读⼊，完成处理业务逻辑后，负责将结果写出channel。</p>
+</li>
+</ul>
+<p>常⻅的Reactor线程模型有三种，如下：</p>
+<ul>
+<li><p>Reactor单线程模型 </p>
+</li>
+<li><p>Reactor多线程模型</p>
+</li>
+<li><p>主从Reactor多线程模型</p>
+</li>
+</ul>
+<h4 id="单Reactor单线程模型"><a href="#单Reactor单线程模型" class="headerlink" title="单Reactor单线程模型"></a>单Reactor单线程模型</h4><img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li><p>Reactor充当多路复⽤器⻆⾊，监听多路连接的请求，由单线程完成</p>
+</li>
+<li><p>Reactor收到客户端发来的请求时，如果是新建连接通过Acceptor完成，其他的请求由Handler完成。</p>
+</li>
+<li><p>Handler完成业务逻辑的处理，基本的流程是：Read –&gt; 业务处理 –&gt; Send 。</p>
+</li>
+</ul>
+<p>这种模型的优缺点：</p>
+<ul>
+<li><p>优点</p>
+<ul>
+<li>结构简单，由单线程完成，没有多线程、进程通信等问题。</li>
+<li>适合⽤在⼀些业务逻辑⽐较简单、对于性能要求不⾼的应⽤场景。</li>
+</ul>
+</li>
+<li><p>缺点</p>
+<ul>
+<li>由于是单线程操作，不能充分发挥多核CPU的性能。</li>
+<li>当Reactor线程负载过重之后，处理速度将变慢，这会导致⼤量客户端连接超时，超时之后往往会进⾏重发，这更加重Reactor线程的负载，最终会导致⼤量消息积压和处理超时，成为系统的性能瓶颈。</li>
+<li>可靠性差，如果该线程进⼊死循环或意外终⽌，就会导致整个通信系统不可⽤，容易造成单点故障。</li>
+</ul>
+</li>
+</ul>
+<h4 id="单Reactor多线程模型"><a href="#单Reactor多线程模型" class="headerlink" title="单Reactor多线程模型"></a>单Reactor多线程模型</h4><img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>说明：</p>
+<ul>
+<li><p>在Reactor多线程模型相⽐较单线程模型⽽⾔，不同点在于，Handler不会处理业务逻辑，只是负责响应⽤户请求，真正的业务逻辑，在另外的线程中完成。</p>
+</li>
+<li><p>这样可以降低Reactor的性能开销，充分利⽤CPU资源，从⽽更专注的做事件分发⼯作了，提升整个应⽤的吞吐。</p>
+</li>
+</ul>
+<p>但是这个模型存在的问题：</p>
+<ul>
+<li><p>多线程数据共享和访问⽐较复杂。如果⼦线程完成业务处理后，把结果传递给主线程Reactor进⾏发送，就会涉及共享数据的互斥和保护机制。</p>
+</li>
+<li><p>Reactor承担所有事件的监听和响应，只在主线程中运⾏，可能会存在性能问题。例如并发百万客户端连接，或者服务端需要对客户端握⼿进⾏安全认证，但是认证本身⾮常损耗性能。</p>
+</li>
+</ul>
+<p>为了解决性能问题，产⽣了第三种主从Reactor多线程模型。</p>
+<h4 id="主从Reactor多线程模型"><a href="#主从Reactor多线程模型" class="headerlink" title="主从Reactor多线程模型"></a>主从Reactor多线程模型</h4><img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>在主从模型中，将Reactor分成2部分：</p>
+<ul>
+<li><p>MainReactor负责监听server socket，⽤来处理⽹络IO连接建⽴操作，将建⽴的socketChannel指定注册给SubReactor。</p>
+</li>
+<li><p>SubReactor主要完成和建⽴起来的socket的数据交互和事件业务处理操作。</p>
+</li>
+</ul>
+<p>该模型的优点：</p>
+<ul>
+<li><p>响应快，不必为单个同步事件所阻塞，虽然Reactor本身依然是同步的。</p>
+</li>
+<li><p>可扩展性强，可以⽅便地通过增加SubReactor实例个数来充分利⽤CPU资源。</p>
+</li>
+<li><p>可复⽤性⾼，Reactor模型本身与具体事件处理逻辑⽆关，具有很⾼的复⽤性。</p>
+</li>
+</ul>
+<h4 id="Netty模型"><a href="#Netty模型" class="headerlink" title="Netty模型"></a>Netty模型</h4><p>Netty模型是基于Reactor模型实现的，对于以上三种模型都有⾮常好的⽀持，也⾮常的灵活，⼀般情况，在服务端会采⽤主从架构模型，基本示意图如下：</p>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>说明：</p>
+<ul>
+<li><p>在Netty模型中，负责处理新连接事件的是BossGroup，负责处理其他事件的是WorkGroup。Group就是线程池的概念。</p>
+</li>
+<li><p>NioEventLoop表示⼀个不断循环的执⾏处理任务的线程，⽤于监听绑定在其上的读/写事件。</p>
+</li>
+<li><p>通过Pipeline（管道）执⾏业务逻辑的处理，Pipeline中会有多个ChannelHandler，真正的业务逻辑是在ChannelHandler中完成的。</p>
+</li>
+</ul>
+<h3 id="Netty核⼼组件"><a href="#Netty核⼼组件" class="headerlink" title="Netty核⼼组件"></a>Netty核⼼组件</h3><h4 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h4><p>Channel可以理解为是socket连接，在客户端与服务端连接的时候就会建⽴⼀个Channel，它负责基本的IO操作，⽐如：bind()、connect()，read()，write() 等。</p>
+<p>Netty 的 Channel 接⼝所提供的 API，⼤⼤地降低了直接使⽤ Socket 类的复杂性。</p>
+<p>不同协议、不同的阻塞类型的连接都有不同的 Channel 类型与之对应，常⽤的 Channel 类型:</p>
+<ul>
+<li><p>NioSocketChannel，NIO的客户端 TCP Socket 连接。</p>
+</li>
+<li><p>NioServerSocketChannel，NIO的服务器端 TCP Socket 连接。</p>
+</li>
+<li><p>NioDatagramChannel，UDP 连接。</p>
+</li>
+<li><p>NioSctpChannel，客户端 Sctp 连接。</p>
+</li>
+<li><p>NioSctpServerChannel，Sctp 服务器端连接，这些通道涵盖了 UDP 和 TCP ⽹络 IO 以及⽂件IO。</p>
+</li>
+</ul>
+<h4 id="EventLoop、EventLoopGroup"><a href="#EventLoop、EventLoopGroup" class="headerlink" title="EventLoop、EventLoopGroup"></a>EventLoop、EventLoopGroup</h4><p>有了 Channel 连接服务，连接之间可以消息流动。如果服务器发出的消息称作“出站”消息，服务器接受的消息称作“⼊站”消息。那么消息的“出站”/“⼊站”就会产⽣事件（Event）。</p>
+<p>例如：连接已激活；数据读取；⽤户事件；异常事件；打开链接；关闭链接等等。</p>
+<p>有了事件，就需要⼀个机制去监控和协调事件，这个机制（组件）就是EventLoop。 </p>
+<p>在 Netty 中每个 Channel 都会被分配到⼀个 EventLoop。⼀个 EventLoop 可以服务于多个 Channel。每个 EventLoop 会占⽤⼀个 Thread，同时这个 Thread 会处理 EventLoop 上⾯发⽣的所有 IO 操作和事件。</p>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>EventLoopGroup 是⽤来⽣成 EventLoop 的，在前⾯的例⼦中，第⼀⾏代码就是 new NioEventLoopGroup();</p>
+<pre><code class="java">// 主线程，不处理任何业务逻辑，只是接收客户的连接请求
+EventLoopGroup boss = new NioEventLoopGroup(1);
+// ⼯作线程，线程数默认是：cpu*2
+EventLoopGroup worker = new NioEventLoopGroup();</code></pre>
+<p>如果没有指定线程数⼤⼩，默认线程数为：cpu核数*2，源码如下：</p>
+<pre><code class="java">static {
+    DEFAULT_EVENT_LOOP_THREADS = Math.max(1, SystemPropertyUtil.getInt(
+        &quot;io.netty.eventLoopThreads&quot;, NettyRuntime.availableProcessors()* 2)); //可⽤cpu核数 * 2
+    if (logger.isDebugEnabled()) {
+        logger.debug(&quot;-Dio.netty.eventLoopThreads: {}&quot;,
+            DEFAULT_EVENT_LOOP_THREADS);
+     }
+}</code></pre>
+<p>关系为：</p>
+<ul>
+<li><p>⼀个 EventLoopGroup 包含⼀个或者多个 EventLoop;</p>
+</li>
+<li><p>⼀个 EventLoop 在它的⽣命周期内只和⼀个 Thread 绑定;</p>
+</li>
+<li><p>所有由 EventLoop 处理的 I/O 事件都将在它专有的 Thread 上被处理;</p>
+</li>
+<li><p>⼀个 Channel 在它的⽣命周期内只注册于⼀个 EventLoop;</p>
+</li>
+<li><p>⼀个 EventLoop 可能会被分配给⼀个或多个 Channel。</p>
+</li>
+</ul>
+<h4 id="ChannelHandler"><a href="#ChannelHandler" class="headerlink" title="ChannelHandler"></a>ChannelHandler</h4><p>ChannelHandler对使⽤者⽽⾔，可以说是最重要的组件了，因为对于数据的⼊站和出站的业务逻辑的编写都是在ChannelHandler中完成的。</p>
+<p>在前⾯的例⼦中，MyChannelHandler就是实现了channelRead⽅法，获取到客户端传来的数据。</p>
+<p>对于数据的出站和⼊站，有着不同的ChannelHandler类型与之对应：</p>
+<ul>
+<li><p>ChannelInboundHandler ⼊站事件处理器</p>
+</li>
+<li><p>ChannelOutBoundHandler 出站事件处理器</p>
+</li>
+</ul>
+<p>接⼝继承关系如下：</p>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>ChannelHandlerAdapter提供了⼀些⽅法的默认实现，可减少⽤户对于ChannelHandler的编写。</p>
+<blockquote>
+<p>ChannelInboundHandlerAdapter 与 SimpleChannelInboundHandler的区别：</p>
+<ul>
+<li><p>在服务端编写ChannelHandler时继承的是ChannelInboundHandlerAdapter</p>
+</li>
+<li><p>在客户端编写ChannelHandler时继承的是SimpleChannelInboundHandler</p>
+</li>
+<li><p>两者的区别在于，前者不会释放消息数据的引⽤，⽽后者会释放消息数据的引⽤。</p>
+</li>
+</ul>
+</blockquote>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="ChannelPipeline"><a href="#ChannelPipeline" class="headerlink" title="ChannelPipeline"></a>ChannelPipeline</h4><p>在Channel的数据传递过程中，对应着有很多的业务逻辑需要处理，⽐如：编码解码处理、读写操作等，那么对于每种业务逻辑实现都需要有个ChannelHandler完成，也就意味着，⼀个Channel对应着多个ChannelHandler，多个ChannelHandler如何去管理它们，它们的执⾏顺序⼜该是怎么样的，这就需要ChannelPipeline进⾏管理了。</p>
+<p>⼀个Channel包含了⼀个ChannelPipeline，⽽ChannelPipeline中维护了⼀个ChannelHandler的列表。</p>
+<p>ChannelHandler与Channel和ChannelPipeline之间的映射关系，由ChannelHandlerContext进⾏维护。</p>
+<p>它们关系如下：</p>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>ChannelHandler按照加⼊的顺序会组成⼀个双向链表，⼊站事件从链表的head往后传递到最后⼀个ChannelHandler，出站事件从链表的tail向前传递，直到最后⼀个ChannelHandler，两种类型的ChannelHandler相互不会影响。</p>
+<h4 id="Bootstrap"><a href="#Bootstrap" class="headerlink" title="Bootstrap"></a>Bootstrap</h4><p>Bootstrap是引导的意思，它的作⽤是配置整个Netty程序，将各个组件都串起来，最后绑定端⼝、启动Netty服务。</p>
+<p>Netty中提供了2种类型的引导类，⼀种⽤于客户端(Bootstrap)，⽽另⼀种(ServerBootstrap)⽤于服务器。</p>
+<p>它们的区别在于：</p>
+<ul>
+<li>ServerBootstrap 将绑定到⼀个端⼝，因为服务器必须要监听连接，⽽ Bootstrap 则是由想要连接到远程节点的客户端应⽤程序所使⽤的。</li>
+<li>引导⼀个客户端只需要⼀个EventLoopGroup，但是⼀个ServerBootstrap则需要两个。<ul>
+<li>因为服务器需要两组不同的 Channel</li>
+<li>第⼀组将只包含⼀个 ServerChannel，代表服务器⾃身的已绑定到某个本地端⼝的正在监听的套接字。</li>
+<li>第⼆组将包含所有已创建的⽤来处理传⼊客户端连接。</li>
+</ul>
+</li>
+</ul>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic12.png" srcset="/blog/img/loading.gif" class>
+
+<p>与ServerChannel相关联的EventLoopGroup 将分配⼀个负责为传⼊连接请求创建 Channel 的 EventLoop。⼀旦连接被接受，第⼆个 EventLoopGroup 就会给它的 Channel 分配⼀个 EventLoop。</p>
+<h4 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h4><p>Future提供了⼀种在操作完成时通知应⽤程序的⽅式。这个对象可以看作是⼀个异步操作的结果的占位符，它将在未来的某个时刻完成，并提供对其结果的访问。</p>
+<p>JDK 预置了 interface java.util.concurrent.Future，但是其所提供的实现，只允许⼿动检查对应的操作是否已经完成，或者⼀直阻塞直到它完成。这是⾮常繁琐的，所以 Netty 提供了它⾃⼰的实现——ChannelFuture，⽤于在执⾏异步操作的时候使⽤。</p>
+<ul>
+<li><p>ChannelFuture提供了⼏种额外的⽅法，这些⽅法使得我们能够注册⼀个或者多个ChannelFutureListener实例。</p>
+</li>
+<li><p>监听器的回调⽅法operationComplete()，将会在对应的 操作完成时被调⽤ 。然后监听器可以判断该操作是成功地完成了还是出错了。</p>
+</li>
+<li><p>每个 Netty 的出站 I/O 操作都将返回⼀个 ChannelFuture，也就是说，它们都不会阻塞。 所以说，Netty完全是异步和事件驱动的。</p>
+</li>
+</ul>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic13.png" srcset="/blog/img/loading.gif" class>
+
+<p>上图是 serverBootstrap.bind(port) ⽅法底层的逻辑实现。</p>
+<h4 id="关系图"><a href="#关系图" class="headerlink" title="关系图"></a>关系图</h4><img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic14.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="详解ByteBuf"><a href="#详解ByteBuf" class="headerlink" title="详解ByteBuf"></a>详解ByteBuf</h3><h4 id="⼯作原理"><a href="#⼯作原理" class="headerlink" title="⼯作原理"></a>⼯作原理</h4><p>Java NIO 提供了ByteBuffer 作为它 的字节容器，但是这个类使⽤起来过于复杂，⽽且也有些繁琐。Netty 的 ByteBuffer 替代品是 ByteBuf，⼀个强⼤的实现，既解决了JDK API 的局限性， ⼜为⽹络应⽤程序的开发者提供了更好的API。</p>
+<p>从结构上来说，ByteBuf 由⼀串字节数组构成。数组中每个字节⽤来存放信息。</p>
+<p>ByteBuf 提供了两个索引，⼀个⽤于读取数据，⼀个⽤于写⼊数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置。</p>
+<p>当从 ByteBuf 读取时，它的 readerIndex（读索引）将会根据读取的字节数递增。</p>
+<p>同样，当写 ByteBuf 时，它的 writerIndex（写索引） 也会根据写⼊的字节数进⾏递增。</p>
+<pre><code class="sh">+-------------------+------------------+------------------+
+| discardable bytes | readable bytes | writable bytes |
+| | (CONTENT) | |
++-------------------+------------------+------------------+
+| | | |
+0 &lt;= readerIndex &lt;= writerIndex &lt;= capacity
+#discardable bytes -- 可丢弃的字节空间
+#readable bytes -- 可读的字节空间
+#writable bytes --可写的字节空间
+#capacity -- 最⼤的容量</code></pre>
+<p>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
+<h4 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h4><h5 id="读取操作"><a href="#读取操作" class="headerlink" title="读取操作"></a>读取操作</h5><pre><code class="java">package cn.itcast.myrpc.test;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+
+public class TestByteBuf01 {
+    public static void main(String[] args) {
+        //构造
+        ByteBuf byteBuf = Unpooled.copiedBuffer(&quot;hello world&quot;,
+                CharsetUtil.UTF_8);
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+        while (byteBuf.isReadable()) { //⽅法⼀：内部通过移动readerIndex进⾏读取
+            System.out.println((char) byteBuf.readByte());
+        }
+        //⽅法⼆：通过下标直接读取
+        for (int i = 0; i &lt; byteBuf.readableBytes(); i++) {
+            System.out.println((char) byteBuf.getByte(i));
+        }
+        //⽅法三：转化为byte[]进⾏读取
+        byte[] bytes = byteBuf.array();
+        for (byte b : bytes) {
+            System.out.println((char) b);
+        }
+    }
+}</code></pre>
+<h5 id="写入操作"><a href="#写入操作" class="headerlink" title="写入操作"></a>写入操作</h5><pre><code class="java">package cn.itcast.myrpc.test;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+
+public class TestByteBuf02 {
+    public static void main(String[] args) {
+        //构造空的字节缓冲区，初始⼤⼩为10，最⼤为20
+        ByteBuf byteBuf = Unpooled.buffer(10, 20);
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+        for (int i = 0; i &lt; 5; i++) {
+            byteBuf.writeInt(i); //写⼊int类型，⼀个int占4个字节
+        }
+        System.out.println(&quot;ok&quot;);
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+        while (byteBuf.isReadable()) {
+            System.out.println(byteBuf.readInt());
+        }
+    }
+}</code></pre>
+<h5 id="丢弃已读字节"><a href="#丢弃已读字节" class="headerlink" title="丢弃已读字节"></a>丢弃已读字节</h5><pre><code class="sh">#通过discardReadBytes()⽅可以将已经读取的数据进⾏丢弃处理，就可以回收已经读取的字节空间
+BEFORE discardReadBytes()
++-------------------+------------------+------------------+
+| discardable bytes | readable bytes | writable bytes |
++-------------------+------------------+------------------+
+| | | |
+0 &lt;= readerIndex &lt;= writerIndex &lt;= capacity
+AFTER discardReadBytes()
++------------------+--------------------------------------+
+| readable bytes | writable bytes (got more space) |
++------------------+--------------------------------------+
+| | |
+readerIndex (0) &lt;= writerIndex (decreased)</code></pre>
+<pre><code class="java">package cn.itcast.myrpc.test;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+
+public class TestByteBuf03 {
+    public static void main(String[] args) {
+        ByteBuf byteBuf = Unpooled.copiedBuffer(&quot;hello world&quot;,
+                CharsetUtil.UTF_8);
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+        while (byteBuf.isReadable()) {
+            System.out.println((char) byteBuf.readByte());
+        }
+        byteBuf.discardReadBytes(); //丢弃已读的字节空间
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+    }
+}</code></pre>
+<h5 id="clear"><a href="#clear" class="headerlink" title="clear()"></a>clear()</h5><pre><code class="sh">#通过clear() 重置readerIndex 、 writerIndex 为0，需要注意的是，重置并没有删除真正的内容
+BEFORE clear()
++-------------------+------------------+------------------+
+| discardable bytes | readable bytes | writable bytes |
++-------------------+------------------+------------------+
+| | | |
+0 &lt;= readerIndex &lt;= writerIndex &lt;= capacity
+AFTER clear()
++---------------------------------------------------------+
+| writable bytes (got more space) |
++---------------------------------------------------------+
+| |
+0 = readerIndex = writerIndex &lt;= capacity</code></pre>
+<pre><code class="java">package cn.itcast.myrpc.test;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+
+public class TestByteBuf04 {
+    public static void main(String[] args) {
+        ByteBuf byteBuf = Unpooled.copiedBuffer(&quot;hello world&quot;,
+                CharsetUtil.UTF_8);
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+        byteBuf.clear(); //重置readerIndex 、 writerIndex 为0
+        System.out.println(&quot;byteBuf的容量为：&quot; + byteBuf.capacity());
+        System.out.println(&quot;byteBuf的可读容量为：&quot; + byteBuf.readableBytes());
+        System.out.println(&quot;byteBuf的可写容量为：&quot; + byteBuf.writableBytes());
+    }
+}</code></pre>
+<h4 id="ByteBuf-使⽤模式"><a href="#ByteBuf-使⽤模式" class="headerlink" title="ByteBuf 使⽤模式"></a>ByteBuf 使⽤模式</h4><p>根据存放缓冲区的不同分为三类：</p>
+<ul>
+<li><p>堆缓冲区（<strong>HeapByteBuf</strong>），内存的分配和回收速度⽐较快，可以被JVM⾃动回收，缺点是，如果进⾏socket的IO读写，需要额外做⼀次内存复制，将堆内存对应的缓冲区复制到内核Channel中，性能会有⼀定程度的下降。</p>
+<p>由于在堆上被 JVM 管理，在不被使⽤时可以快速释放。可以通过 ByteBuf.array() 来获取 byte[] 数据。</p>
+</li>
+<li><p>直接缓冲区（<strong>DirectByteBuf</strong>），⾮堆内存，它在对外进⾏内存分配，相⽐堆内存，它的分配和回收速度会慢⼀些，但是将它写⼊或从Socket Channel中读取时，由于减少了⼀次内存拷⻉，速度⽐堆内存块。</p>
+</li>
+<li><p>复合缓冲区，顾名思义就是将上述两类缓冲区聚合在⼀起。Netty 提供了⼀个 CompsiteByteBuf，可以将堆缓冲区和直接缓冲区的数据放在⼀起，让使⽤更加⽅便。</p>
+</li>
+</ul>
+<pre><code class="java">//默认使⽤的是DirectByteBuf，如果需要使⽤HeapByteBuf模式，则需要进⾏系统参数的设置
+System.setProperty(&quot;io.netty.noUnsafe&quot;, &quot;true&quot;); //netty中IO操作都是基于Unsafe完
+成的
+//ByteBuf 的分配要设置为⾮池化，否则不能切换到堆缓冲器模式
+serverBootstrap.childOption(ChannelOption.ALLOCATOR,
+UnpooledByteBufAllocator.DEFAULT);</code></pre>
+<h4 id="ByteBuf-的分配"><a href="#ByteBuf-的分配" class="headerlink" title="ByteBuf 的分配"></a>ByteBuf 的分配</h4><p>Netty 提供了两种 ByteBufAllocator 的实现，分别是：</p>
+<ul>
+<li><p><strong>PooledByteBufAllocator</strong>，实现了 ByteBuf 的对象的池化，提⾼性能减少并最⼤限度地减少内存碎⽚。</p>
+</li>
+<li><p><strong>UnpooledByteBufAllocator</strong>，没有实现对象的池化，每次会⽣成新的对象实例。</p>
+</li>
+</ul>
+<pre><code class="java">//通过ChannelHandlerContext获取ByteBufAllocator实例
+ctx.alloc();
+//通过channel也可以获取
+channel.alloc();
+//Netty默认使⽤了PooledByteBufAllocator
+//可以在引导类中设置⾮池化模式
+serverBootstrap.childOption(ChannelOption.ALLOCATOR,
+UnpooledByteBufAllocator.DEFAULT);
+//或通过系统参数设置
+System.setProperty(&quot;io.netty.allocator.type&quot;, &quot;pooled&quot;);
+System.setProperty(&quot;io.netty.allocator.type&quot;, &quot;unpooled&quot;);</code></pre>
+<h4 id="ByteBuf-的释放"><a href="#ByteBuf-的释放" class="headerlink" title="ByteBuf 的释放"></a>ByteBuf 的释放</h4><p>ByteBuf如果采⽤的是堆缓冲区模式的话，可以由GC回收，但是如果采⽤的是直接缓冲区，就不受GC的管理，就得⼿动释放，否则会发⽣内存泄露。</p>
+<p>关于ByteBuf的释放，分为⼿动释放与⾃动释放。</p>
+<h5 id="⼿动释放"><a href="#⼿动释放" class="headerlink" title="⼿动释放"></a>⼿动释放</h5><p>⼿动释放，就是在使⽤完成后，调⽤ReferenceCountUtil.release(byteBuf); 进⾏释放。</p>
+<p>通过release⽅法减去 byteBuf 的使⽤计数，Netty 会⾃动回收 byteBuf 。</p>
+<p>示例：</p>
+<pre><code class="java">    /**
+     * 获取客户端发来的数据
+     *
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws
+            Exception {
+        ByteBuf byteBuf = (ByteBuf) msg;
+        String msgStr = byteBuf.toString(CharsetUtil.UTF_8);
+        System.out.println(&quot;客户端发来数据：&quot; + msgStr);
+        //释放资源
+        ReferenceCountUtil.release(byteBuf);
+    }</code></pre>
+<p>⼿动释放可以达到⽬的，但是这种⽅式会⽐较繁琐，如果⼀旦忘记释放就可能会造成内存泄露。</p>
+<h5 id="⾃动释放"><a href="#⾃动释放" class="headerlink" title="⾃动释放"></a>⾃动释放</h5><p>⾃动释放有三种⽅式，分别是：⼊站的TailHandler、继承SimpleChannelInboundHandler、HeadHandler的出站释放。</p>
+<p><strong>TailHandler</strong></p>
+<p>Netty的ChannelPipleline的流⽔线的末端是TailHandler，默认情况下如果每个⼊站处理器Handler都把消息往下传，TailHandler会释放掉ReferenceCounted类型的消息。</p>
+<pre><code class="java">    /**
+     * 获取客户端发来的数据
+     *
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws
+            Exception {
+        ByteBuf byteBuf = (ByteBuf) msg;
+        String msgStr = byteBuf.toString(CharsetUtil.UTF_8);
+        System.out.println(&quot;客户端发来数据：&quot; + msgStr);
+        //向客户端发送数据
+        ctx.writeAndFlush(Unpooled.copiedBuffer(&quot;ok&quot;, CharsetUtil.UTF_8));
+        ctx.fireChannelRead(msg); //将ByteBuf向下传递
+    }</code></pre>
+<p>在DefaultChannelPipeline中的TailContext内部类会在最后执⾏：</p>
+<pre><code class="java">    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        onUnhandledInboundMessage(ctx, msg);
+    }
+
+    //最后会执⾏
+    protected void onUnhandledInboundMessage(Object msg) {
+        try {
+            logger.debug(
+                    &quot;Discarded inbound message {} that reached at the tail of the
+                    pipeline.&quot; +
+                    &quot;Please check your pipeline configuration.&quot;, msg);
+        } finally {
+            ReferenceCountUtil.release(msg); //释放资源
+        }
+    }</code></pre>
+<p>需要注意的是，如果没有进⾏向下传递，那么在TailHandler中是不会进⾏释放操作的。</p>
+<p><strong>SimpleChannelInboundHandler</strong></p>
+<p>当ChannelHandler继承了SimpleChannelInboundHandler后，在SimpleChannelInboundHandler的channelRead()⽅法中，将会进⾏资源的释放，我们的业务代码也需要写⼊到channelRead0()中。</p>
+<pre><code class="java">    //SimpleChannelInboundHandler中的channelRead()
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws
+            Exception {
+        boolean release = true;
+        try {
+            if (acceptInboundMessage(msg)) {
+                @SuppressWarnings(&quot;unchecked&quot;) I imsg = (I) msg;
+                channelRead0(ctx, imsg);
+            } else {
+                release = false;
+                ctx.fireChannelRead(msg);
+            }
+        } finally {
+            if (autoRelease &amp;&amp; release) {
+                ReferenceCountUtil.release(msg); //在这⾥释放
+            }
+        }
+    }</code></pre>
+<p>使用</p>
+<pre><code class="java">package cn.itcast.myrpc.client.handler;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
+
+public class MyClientHandler extends SimpleChannelInboundHandler&lt;ByteBuf&gt; {
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws
+            Exception {
+        System.out.println(&quot;接收到服务端的消息：&quot; +
+                msg.toString(CharsetUtil.UTF_8));
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        // 向服务端发送数据
+        String msg = &quot;hello&quot;;
+        ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+            throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}</code></pre>
+<p><strong>HeadHandler</strong></p>
+<p>出站处理流程中，申请分配到的 ByteBuf，通过 HeadHandler 完成⾃动释放。</p>
+<p>出站处理⽤到的 Bytebuf 缓冲区，⼀般是要发送的消息，通常由应⽤所申请。在出站流程开始的时候，通过调⽤ ctx.writeAndFlush(msg)，Bytebuf 缓冲区开始进⼊出站处理的 pipeline 流⽔线 。</p>
+<p>在每⼀个出站Handler中的处理完成后，最后消息会来到出站的最后⼀棒 HeadHandler，再经过⼀轮复杂的调⽤，在flush完成后终将被release掉。</p>
+<p>示例：</p>
+<pre><code class="java">package cn.itcast.myrpc.client.handler;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
+
+public class MyClientHandler extends SimpleChannelInboundHandler&lt;ByteBuf&gt; {
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws
+            Exception {
+        System.out.println(&quot;接收到服务端的消息：&quot; +
+                msg.toString(CharsetUtil.UTF_8));
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        // 向服务端发送数据
+        String msg = &quot;hello&quot;;
+        ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+            throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}</code></pre>
+<p>执⾏⽅法调⽤链：</p>
+<img src="/blog/2020/08/07/netty-Netty%E8%A7%A3%E6%9E%90/pic15.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li><p>⼊站处理流程中，如果对原消息不做处理，调⽤ ctx.fireChannelRead(msg) 把原消息往下传，由流⽔线最后⼀棒 TailHandler 完成⾃动释放。</p>
+</li>
+<li><p>如果截断了⼊站处理流⽔线，则可以继承 SimpleChannelInboundHandler ，完成⼊站ByteBuf ⾃动释放。</p>
+</li>
+<li><p>出站处理过程中，申请分配到的 ByteBuf，通过 HeadHandler 完成⾃动释放。</p>
+</li>
+<li><p>⼊站处理中，如果将原消息转化为新的消息并调⽤ ctx.fireChannelRead(newMsg)往下传，那必须把原消息release掉;</p>
+</li>
+<li><p>⼊站处理中，如果已经不再调⽤ ctx.fireChannelRead(msg) 传递任何消息，也没有继承SimpleChannelInboundHandler 完成⾃动释放，那更要把原消息release掉;</p>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <p>
+                
+                  <span>
+                <i class="iconfont icon-inbox"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Netty/">Netty</a>
+                      &nbsp;
+                    
+                  </span>&nbsp;&nbsp;
+                
+                
+                  <span>
+                <i class="iconfont icon-tag"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/netty/">netty</a>
+                    
+                  </span>
+                
+              </p>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <div class="post-prev col-6">
+                    
+                    
+                  </div>
+                  <div class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/07/netty-Netty%E5%85%A5%E9%97%A8/">
+                        <span class="hidden-mobile">Netty入门</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="fa fa-chevron-right"></i>
+                      </a>
+                    
+                  </div>
+                </div>
+              
+            </div>
+
+              
+                <!-- Comments -->
+                <div class="comments" id="comments">
+                  
+                  
+
+                </div>
+              
+          </div>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc-start"></div>
+<div id="toc">
+  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    </div>
+    
+  <div>
+    
+      <!-- 不蒜子统计PV -->
+      
+      <span id="busuanzi_container_site_pv" style="display: none">
+      总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    </span>
+    
+    
+      <!-- 不蒜子统计UV -->
+      
+      <span id="busuanzi_container_site_uv" style="display: none">
+      总访客数 <span id="busuanzi_value_site_uv"></span> 人
+    </span>
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/blog/js/main.js" ></script>
+
+
+  <script  src="/blog/js/lazyload.js" ></script>
+
+
+
+  
+  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var navHeight = $('#navbar').height();
+      var toc = $('#toc');
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+      var tocLimMax = 2 * boardTop + boardCtn.height();
+
+      $(window).scroll(function () {
+        var tocLimMin = $('#toc-start').offset().top - navHeight;
+        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
+
+        if (tocLimMin <= scroH && scroH <= tocLimMax) {
+          toc.css({
+            'display': 'block',
+            'position': 'fixed',
+            'top': navHeight,
+          });
+        } else if (scroH <= tocLimMin) {
+          toc.css({
+            'position': '',
+            'top': '',
+          });
+        } else if (scroH > tocLimMax) {
+          toc.css('display', 'none');
+        }
+      });
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '.post-content',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc > p').css('visibility', 'visible');
+      }
+      var offset = boardCtn.css('margin-right')
+      $('#toc-ctn').css({
+        'right': offset
+      })
+    });
+  </script>
+
+
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/blog/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Netty解析&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    var path = "/blog/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+</body>
+</html>
