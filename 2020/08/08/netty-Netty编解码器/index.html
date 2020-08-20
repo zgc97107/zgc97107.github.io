@@ -1,0 +1,1329 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Netty编解码器 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+  <div class="mt-3 post-meta">
+    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+    <time datetime="2020-08-08 17:55" pubdate>
+      2020年8月8日 下午
+    </time>
+  </div>
+
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      59
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">Netty编解码器</h1>
+            
+            <div class="markdown-body" id="post-body">
+              <h3 id="编解码器"><a href="#编解码器" class="headerlink" title="编解码器"></a>编解码器</h3><p>⽹络中进行数据传输时，⽆论发送的数据是什么格式（int、String、Long等）都会以字节流的⽅式进⾏传递，客户端将原来的数据转化为字节，称之为编码（encode），服务端将字节形式转化为原来的格式，称之为解码（decode），编解码统称为codec。</p>
+<h4 id="解码器"><a href="#解码器" class="headerlink" title="解码器"></a>解码器</h4><p>解码器是负责⼊站的数据操作，那么解码器也⼀定实现了ChannelInboundHandler接⼝，所以编解码器本质上也是ChannelHandler。</p>
+<p>Netty中提供了ByteToMessageDecoder的抽象实现，⾃定义解码器只需要继承该类，实现decode()即可。Netty也提供了⼀些常⽤的解码器实现，基本都是开箱即⽤的。⽐如：</p>
+<ul>
+<li><p>RedisDecoder 基于Redis协议的解码器</p>
+</li>
+<li><p>XmlDecoder 基于XML格式的解码器</p>
+</li>
+<li><p>JsonObjectDecoder 基于json数据格式的解码器</p>
+</li>
+<li><p>HttpObjectDecoder 基于http协议的解码器</p>
+</li>
+</ul>
+<p>Netty也提供了MessageToMessageDecoder，将⼀种格式转化为另⼀种格式的解码器，也提供了⼀些实现：</p>
+<ul>
+<li><p>StringDecoder 将接收到ByteBuf转化为字符串</p>
+</li>
+<li><p>ByteArrayDecoder 将接收到ByteBuf转化字节数组</p>
+</li>
+<li><p>Base64Decoder 将由ByteBuf或US-ASCII字符串编码的Base64解码为ByteBuf。</p>
+</li>
+</ul>
+<p>示例</p>
+<p>将传⼊的字节流转化为Integer类型。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.ByteToMessageDecoder;
+
+<span class="hljs-keyword">import</span> java.util.List;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ByteToIntegerDecoder</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ByteToMessageDecoder</span> </span>&#123;
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> ctx 上下⽂</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> in  输⼊的ByteBuf消息数据</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> out 转化后输出的容器</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@throws</span> Exception</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">decode</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf in, List&lt;Object&gt;</span></span>
+<span class="hljs-function"><span class="hljs-params">            out)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-keyword">if</span> (in.readableBytes() &gt;= <span class="hljs-number">4</span>) &#123; <span class="hljs-comment">//int类型占⽤4个字节，所以需要判断是否存在有4个字节，再进⾏读取</span>
+            out.add(in.readInt()); <span class="hljs-comment">//读取到int类型数据，放⼊到输出，完成数据类型的转化</span>
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>在Handler中使⽤：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
+
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInboundHandlerAdapter;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ServerHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ChannelInboundHandlerAdapter</span> </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead</span><span class="hljs-params">(ChannelHandlerContext ctx, Object msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        Integer i = (Integer) msg; <span class="hljs-comment">//这⾥可以直接拿到Integer类型的数据</span>
+        System.out.println(<span class="hljs-string">"服务端接收到的消息为："</span> + i);
+    &#125;
+&#125;</code></pre>
+
+<p>在pipeline中添加解码器：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+   ch.pipeline()
+           .addLast(<span class="hljs-keyword">new</span> ByteToIntegerDecoder())
+           .addLast(<span class="hljs-keyword">new</span> ServerHandler());
+&#125;</code></pre>
+
+<h4 id="编码器"><a href="#编码器" class="headerlink" title="编码器"></a>编码器</h4><p>编码器与解码器是相反的操作，将原有的格式转化为字节的过程，在Netty中提供了MessageToByteEncoder的抽象实现，它实现了ChannelOutboundHandler接⼝，本质上也是ChannelHandler。</p>
+<p>⼀些实现类：</p>
+<ul>
+<li><p>ObjectEncoder 将对象（需要实现Serializable接⼝）编码为字节流</p>
+</li>
+<li><p>SocksMessageEncoder 将SocksMessage编码为字节流</p>
+</li>
+<li><p>HAProxyMessageEncoder 将HAProxyMessage编码成字节流</p>
+</li>
+</ul>
+<p>Netty也提供了MessageToMessageEncoder，将⼀种格式转化为另⼀种格式的编码器，也提供了⼀些实现：</p>
+<ul>
+<li><p>RedisEncoder 将Redis协议的对象进⾏编码</p>
+</li>
+<li><p>StringEncoder 将字符串进⾏编码操作</p>
+</li>
+<li><p>Base64Encoder 将Base64字符串进⾏编码操作</p>
+</li>
+</ul>
+<p>示例</p>
+<p>将Integer类型编码为字节进⾏传递。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.MessageToByteEncoder;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">IntegerToByteEncoder</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">MessageToByteEncoder</span>&lt;<span class="hljs-title">Integer</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">encode</span><span class="hljs-params">(ChannelHandlerContext ctx, Integer msg, ByteBuf out)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        out.writeInt(msg);
+    &#125;
+&#125;</code></pre>
+
+<p>在Handler直接输出数字即可：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ClientHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">ByteBuf</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        System.out.println(<span class="hljs-string">"接收到服务端的消息："</span> +
+                msg.toString(CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        ctx.writeAndFlush(<span class="hljs-number">123</span>);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext ctx, Throwable cause)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        cause.printStackTrace();
+        ctx.close();
+    &#125;
+&#125;</code></pre>
+
+<p>在pipeline中添加编码器：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+    ch.pipeline().addLast(<span class="hljs-keyword">new</span> IntegerToByteEncoder());
+    ch.pipeline().addLast(<span class="hljs-keyword">new</span> ClientHandler());
+&#125;</code></pre>
+
+<h4 id="案例：开发http服务器"><a href="#案例：开发http服务器" class="headerlink" title="案例：开发http服务器"></a>案例：开发<strong>http</strong>服务器</h4><p>在Netty中提供了http的解码器，我们通过该解码器进⾏http服务器的开发。</p>
+<p>Server：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
+
+<span class="hljs-keyword">import</span> io.netty.bootstrap.ServerBootstrap;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelFuture;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInitializer;
+<span class="hljs-keyword">import</span> io.netty.channel.EventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.SocketChannel;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.nio.NioServerSocketChannel;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.HttpObjectAggregator;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.HttpRequestDecoder;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.HttpResponseEncoder;
+<span class="hljs-keyword">import</span> io.netty.handler.stream.ChunkedWriteHandler;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NettyHttpServer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">// 主线程，不处理任何业务逻辑，只是接收客户的连接请求</span>
+        EventLoopGroup boss = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">1</span>);
+        <span class="hljs-comment">// ⼯作线程，线程数默认是：cpu*2</span>
+        EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">// 服务器启动类</span>
+            ServerBootstrap serverBootstrap = <span class="hljs-keyword">new</span> ServerBootstrap();
+            serverBootstrap.group(boss, worker);
+            <span class="hljs-comment">//配置server通道</span>
+            serverBootstrap.channel(NioServerSocketChannel<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+            serverBootstrap.childHandler(<span class="hljs-keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;
+                    () &#123;
+                <span class="hljs-meta">@Override</span>
+                <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+                    ch.pipeline()
+                            .addLast(<span class="hljs-keyword">new</span> HttpRequestDecoder()) <span class="hljs-comment">//http请求的解码器</span>
+                    <span class="hljs-comment">//将http请求中的uri以及请求体聚合成⼀个完整的</span>
+                    FullHttpRequest对象
+                            .addLast(<span class="hljs-keyword">new</span> HttpObjectAggregator(<span class="hljs-number">1024</span> * <span class="hljs-number">128</span>))
+                            .addLast(<span class="hljs-keyword">new</span> HttpResponseEncoder()) <span class="hljs-comment">//http响应的编码</span>
+                    器
+                            .addLast(<span class="hljs-keyword">new</span> ChunkedWriteHandler()) <span class="hljs-comment">//⽀持异步的⼤⽂</span>
+                    件传输，防⽌内存溢出
+                            .addLast(<span class="hljs-keyword">new</span> ServerHandler());
+                &#125;
+            &#125;); <span class="hljs-comment">//worker线程的处理器</span>
+            ChannelFuture future = serverBootstrap.bind(<span class="hljs-number">8080</span>).sync();
+            System.out.println(<span class="hljs-string">"服务器启动完成。。。。。"</span>);
+            <span class="hljs-comment">//等待服务端监听端⼝关闭</span>
+            future.channel().closeFuture().sync();
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-comment">//优雅关闭</span>
+            boss.shutdownGracefully();
+            worker.shutdownGracefully();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>ServerHandler：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.http;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelFutureListener;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInboundHandlerAdapter;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.*;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">import</span> java.util.Map;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ServerHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">FullHttpRequest</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, FullHttpRequest</span></span>
+<span class="hljs-function"><span class="hljs-params">            request)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">//解析FullHttpRequest，得到请求参数</span>
+        Map&lt;String, String&gt; paramMap = <span class="hljs-keyword">new</span> RequestParser(request).parse();
+        String name = paramMap.get(<span class="hljs-string">"name"</span>);
+        <span class="hljs-comment">//构造响应对象</span>
+        FullHttpResponse httpResponse = <span class="hljs-keyword">new</span>
+                DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE,
+                <span class="hljs-string">"text/html;charset=utf-8"</span>);
+        StringBuilder sb = <span class="hljs-keyword">new</span> StringBuilder();
+        sb.append(<span class="hljs-string">"&lt;h1&gt;"</span>);
+        sb.append(<span class="hljs-string">"你好，"</span> + name);
+        sb.append(<span class="hljs-string">"&lt;/h1&gt;"</span>);
+        httpResponse.content().writeBytes(Unpooled.copiedBuffer(sb,
+                CharsetUtil.UTF_8));
+        ctx.writeAndFlush(httpResponse)
+                .addListener(ChannelFutureListener.CLOSE); <span class="hljs-comment">//操作完成后，将channel关闭</span>
+    &#125;
+&#125;</code></pre>
+
+<p>RequestParser：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.http;
+
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.FullHttpRequest;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.HttpMethod;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.QueryStringDecoder;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.multipart.Attribute;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.http.multipart.InterfaceHttpData;
+
+<span class="hljs-keyword">import</span> java.io.IOException;
+<span class="hljs-keyword">import</span> java.util.HashMap;
+<span class="hljs-keyword">import</span> java.util.List;
+<span class="hljs-keyword">import</span> java.util.Map;
+
+<span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * HTTP请求参数解析器, ⽀持GET, POST</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RequestParser</span> </span>&#123;
+    <span class="hljs-keyword">private</span> FullHttpRequest fullReq;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 构造⼀个解析器</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> req</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">RequestParser</span><span class="hljs-params">(FullHttpRequest req)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.fullReq = req;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 解析请求参数</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span> 包含所有请求参数的键值对, 如果没有参数, 则返回空Map</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@throws</span> IOException</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Map&lt;String, String&gt; <span class="hljs-title">parse</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        HttpMethod method = fullReq.method();
+        Map&lt;String, String&gt; parmMap = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+        <span class="hljs-keyword">if</span> (HttpMethod.GET == method) &#123;
+            <span class="hljs-comment">// 是GET请求</span>
+            QueryStringDecoder decoder = <span class="hljs-keyword">new</span> QueryStringDecoder(fullReq.uri());
+            decoder.parameters().entrySet().forEach(entry -&gt; &#123;
+                <span class="hljs-comment">// entry.getValue()是⼀个List, 只取第⼀个元素</span>
+                parmMap.put(entry.getKey(), entry.getValue().get(<span class="hljs-number">0</span>));
+            &#125;);
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HttpMethod.POST == method) &#123;
+            <span class="hljs-comment">// 是POST请求</span>
+            HttpPostRequestDecoder decoder = <span class="hljs-keyword">new</span>
+                    HttpPostRequestDecoder(fullReq);
+            decoder.offer(fullReq);
+            List&lt;InterfaceHttpData&gt; parmList = decoder.getBodyHttpDatas();
+            <span class="hljs-keyword">for</span> (InterfaceHttpData parm : parmList) &#123;
+                Attribute data = (Attribute) parm;
+                parmMap.put(data.getName(), data.getValue());
+            &#125;
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">// 不⽀持其它⽅法</span>
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">"不⽀持其它⽅法"</span>); <span class="hljs-comment">// 这是个⾃定义的异常, 可删掉这⼀⾏</span>
+        &#125;
+        <span class="hljs-keyword">return</span> parmMap;
+    &#125;
+&#125;</code></pre>
+
+<h4 id="对象的编解码"><a href="#对象的编解码" class="headerlink" title="对象的编解码"></a>对象的编解码</h4><p>对于JavaBean对象，Netty也⽀持了Object对象的编解码，其实也就是对象的序列化，要求java对象需要java.io.Serializable接⼝。</p>
+<p>定义javabean对象：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.obj;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">java</span>.<span class="hljs-title">io</span>.<span class="hljs-title">Serializable</span> </span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> serialVersionUID = -<span class="hljs-number">89217070354741790L</span>;
+    <span class="hljs-keyword">private</span> Long id;
+    <span class="hljs-keyword">private</span> String name;
+    <span class="hljs-keyword">private</span> Integer age;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Long <span class="hljs-title">getId</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setId</span><span class="hljs-params">(Long id)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.id = id;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getName</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> name;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setName</span><span class="hljs-params">(String name)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.name = name;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">getAge</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> age;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setAge</span><span class="hljs-params">(Integer age)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.age = age;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">toString</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-string">"User&#123;"</span> +
+                <span class="hljs-string">"id="</span> + id +
+                <span class="hljs-string">", name='"</span> + name + <span class="hljs-string">'\''</span> +
+                <span class="hljs-string">", age="</span> + age +
+                <span class="hljs-string">'&#125;'</span>;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h5><p>NettyObjectServer：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.obj;
+
+<span class="hljs-keyword">import</span> com.ryhx.drools.test.ServerHandler;
+<span class="hljs-keyword">import</span> io.netty.bootstrap.ServerBootstrap;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelFuture;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInitializer;
+<span class="hljs-keyword">import</span> io.netty.channel.EventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.SocketChannel;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.nio.NioServerSocketChannel;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.serialization.ClassResolvers;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.serialization.ObjectDecoder;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NettyObjectServer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">// 主线程，不处理任何业务逻辑，只是接收客户的连接请求</span>
+        EventLoopGroup boss = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">1</span>);
+        <span class="hljs-comment">// ⼯作线程，线程数默认是：cpu*2</span>
+        EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">// 服务器启动类</span>
+            ServerBootstrap serverBootstrap = <span class="hljs-keyword">new</span> ServerBootstrap();
+            serverBootstrap.group(boss, worker);
+            <span class="hljs-comment">//配置server通道</span>
+            serverBootstrap.channel(NioServerSocketChannel<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+            serverBootstrap.childHandler(<span class="hljs-keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;
+                <span class="hljs-meta">@Override</span>
+                <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+                    ch.pipeline()
+                            .addLast(<span class="hljs-keyword">new</span>
+                                    ObjectDecoder(ClassResolvers.weakCachingResolver(<span class="hljs-keyword">this</span>.getClass().getClassLoader
+                                    ())))
+                            .addLast(<span class="hljs-keyword">new</span> ServerHandler());
+                &#125;
+            &#125;); 
+            <span class="hljs-comment">//worker线程的处理器</span>
+            ChannelFuture future = serverBootstrap.bind(<span class="hljs-number">6677</span>).sync();
+            System.out.println(<span class="hljs-string">"服务器启动完成。。。。。"</span>);
+            <span class="hljs-comment">//等待服务端监听端⼝关闭</span>
+            future.channel().closeFuture().sync();
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-comment">//优雅关闭</span>
+            boss.shutdownGracefully();
+            worker.shutdownGracefully();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>ServerHandler：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.obj;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ServerHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">User</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, User user)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        <span class="hljs-comment">//获取到user对象</span>
+        System.out.println(user);
+        ctx.writeAndFlush(Unpooled.copiedBuffer(<span class="hljs-string">"ok"</span>, CharsetUtil.UTF_8));
+    &#125;
+&#125;</code></pre>
+
+<h5 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h5><p>NettyObjectClient：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.obj;
+
+<span class="hljs-keyword">import</span> com.ryhx.drools.test.ClientHandler;
+<span class="hljs-keyword">import</span> io.netty.bootstrap.Bootstrap;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelFuture;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInitializer;
+<span class="hljs-keyword">import</span> io.netty.channel.EventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.SocketChannel;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.nio.NioSocketChannel;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.serialization.ObjectEncoder;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NettyObjectClient</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">// 服务器启动类</span>
+            Bootstrap bootstrap = <span class="hljs-keyword">new</span> Bootstrap();
+            bootstrap.group(worker);
+            bootstrap.channel(NioSocketChannel<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+            bootstrap.handler(<span class="hljs-keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;
+                <span class="hljs-meta">@Override</span>
+                <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+                    ch.pipeline().addLast(<span class="hljs-keyword">new</span> ObjectEncoder());
+                    ch.pipeline().addLast(<span class="hljs-keyword">new</span> ClientHandler());
+                &#125;
+            &#125;);
+            ChannelFuture future = bootstrap.connect(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">6677</span>).sync();
+            future.channel().closeFuture().sync();
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            worker.shutdownGracefully();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>ClientHandler：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.obj;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ClientHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">ByteBuf</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        System.out.println(<span class="hljs-string">"接收到服务端的消息："</span> +
+                msg.toString(CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        User user = <span class="hljs-keyword">new</span> User();
+        user.setId(<span class="hljs-number">1L</span>);
+        user.setName(<span class="hljs-string">"张三"</span>);
+        user.setAge(<span class="hljs-number">20</span>);
+        ctx.writeAndFlush(user);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext ctx, Throwable cause)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        cause.printStackTrace();
+        ctx.close();
+    &#125;
+&#125;</code></pre>
+
+<h4 id="Hessian编解码"><a href="#Hessian编解码" class="headerlink" title="Hessian编解码"></a><strong>Hessian</strong>编解码</h4><p>JDK序列化使⽤是⽐较⽅便，但是它的性能较差，序列化后的字节⼤⼩也⽐较⼤，所以⼀般在项⽬中不会使⽤⾃带的序列化，⽽是会采⽤第三⽅的序列化框架。</p>
+<p>导⼊Hessian依赖：</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.caucho<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>hessian<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>4.0.63<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>User对象：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">User</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">java</span>.<span class="hljs-title">io</span>.<span class="hljs-title">Serializable</span> </span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> serialVersionUID = -<span class="hljs-number">8200798627910162221L</span>;
+    <span class="hljs-keyword">private</span> Long id;
+    <span class="hljs-keyword">private</span> String name;
+    <span class="hljs-keyword">private</span> Integer age;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Long <span class="hljs-title">getId</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setId</span><span class="hljs-params">(Long id)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.id = id;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getName</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> name;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setName</span><span class="hljs-params">(String name)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.name = name;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">getAge</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> age;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setAge</span><span class="hljs-params">(Integer age)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.age = age;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">toString</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-string">"User&#123;"</span> +
+                <span class="hljs-string">"id="</span> + id +
+                <span class="hljs-string">", name='"</span> + name + <span class="hljs-string">'\''</span> +
+                <span class="hljs-string">", age="</span> + age +
+                <span class="hljs-string">'&#125;'</span>;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="编解码器-1"><a href="#编解码器-1" class="headerlink" title="编解码器"></a>编解码器</h5><p>Hessian序列化⼯具类：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian.codec;
+
+<span class="hljs-keyword">import</span> com.caucho.hessian.io.HessianInput;
+<span class="hljs-keyword">import</span> com.caucho.hessian.io.HessianOutput;
+
+<span class="hljs-keyword">import</span> java.io.ByteArrayInputStream;
+<span class="hljs-keyword">import</span> java.io.ByteArrayOutputStream;
+<span class="hljs-keyword">import</span> java.io.IOException;
+
+<span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * Hessian序列化⼯具类</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HessianSerializer</span> </span>&#123;
+    <span class="hljs-keyword">public</span> &lt;T&gt; <span class="hljs-keyword">byte</span>[] serialize(T obj) &#123;
+        ByteArrayOutputStream os = <span class="hljs-keyword">new</span> ByteArrayOutputStream();
+        HessianOutput ho = <span class="hljs-keyword">new</span> HessianOutput(os);
+        <span class="hljs-keyword">try</span> &#123;
+            ho.writeObject(obj);
+            ho.flush();
+            <span class="hljs-keyword">return</span> os.toByteArray();
+        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-keyword">try</span> &#123;
+                ho.close();
+            &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+            &#125;
+            <span class="hljs-keyword">try</span> &#123;
+                os.close();
+            &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-keyword">public</span> &lt;T&gt; <span class="hljs-function">Object <span class="hljs-title">deserialize</span><span class="hljs-params">(<span class="hljs-keyword">byte</span>[] bytes, Class&lt;T&gt; clazz)</span> </span>&#123;
+        ByteArrayInputStream is = <span class="hljs-keyword">new</span> ByteArrayInputStream(bytes);
+        HessianInput hi = <span class="hljs-keyword">new</span> HessianInput(is);
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-keyword">return</span> (T) hi.readObject(clazz);
+        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-keyword">try</span> &#123;
+                hi.close();
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+            &#125;
+            <span class="hljs-keyword">try</span> &#123;
+                is.close();
+            &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>编码器：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian.codec;
+
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.User;
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.MessageToByteEncoder;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HessianEncoder</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">MessageToByteEncoder</span>&lt;<span class="hljs-title">User</span>&gt; </span>&#123;
+    <span class="hljs-keyword">private</span> HessianSerializer hessianSerializer = <span class="hljs-keyword">new</span> HessianSerializer();
+
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">encode</span><span class="hljs-params">(ChannelHandlerContext ctx, User msg, ByteBuf out)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-keyword">byte</span>[] bytes = hessianSerializer.serialize(msg);
+        out.writeBytes(bytes);
+    &#125;
+&#125;</code></pre>
+
+<p>解码器：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian.codec;
+
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.User;
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.ByteToMessageDecoder;
+
+<span class="hljs-keyword">import</span> java.util.List;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HessianDecoder</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ByteToMessageDecoder</span> </span>&#123;
+    <span class="hljs-keyword">private</span> HessianSerializer hessianSerializer = <span class="hljs-keyword">new</span> HessianSerializer();
+
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">decode</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf in, List&lt;Object&gt;</span></span>
+<span class="hljs-function"><span class="hljs-params">            out)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">//复制⼀份ByteBuf数据，轻复制，⾮完全拷⻉</span>
+        <span class="hljs-comment">//避免出现异常：did not read anything but decoded a message</span>
+        <span class="hljs-comment">//Netty检测没有读取任何字节就会抛出该异常</span>
+        ByteBuf in2 = in.retainedDuplicate();
+        <span class="hljs-keyword">byte</span>[] dst;
+        <span class="hljs-keyword">if</span> (in2.hasArray()) &#123;
+            <span class="hljs-comment">//堆缓冲区模式</span>
+            dst = in2.array();
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            dst = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[in2.readableBytes()];
+            in2.getBytes(in2.readerIndex(), dst);
+        &#125;
+        in.skipBytes(in.readableBytes());
+        <span class="hljs-comment">//跳过所有的字节，表示已经读取过了</span>
+        Object obj = hessianSerializer.deserialize(dst, User<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+        <span class="hljs-comment">//反序列化</span>
+        out.add(obj);
+    &#125;
+&#125;</code></pre>
+
+<h5 id="服务端-1"><a href="#服务端-1" class="headerlink" title="服务端"></a>服务端</h5><pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian;
+
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.codec.HessianDecoder;
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.handler.ServerHandler;
+<span class="hljs-keyword">import</span> io.netty.bootstrap.ServerBootstrap;
+<span class="hljs-keyword">import</span> io.netty.buffer.UnpooledByteBufAllocator;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelFuture;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInitializer;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelOption;
+<span class="hljs-keyword">import</span> io.netty.channel.EventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.SocketChannel;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.nio.NioServerSocketChannel;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NettyHessianServer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">// System.setProperty("io.netty.noUnsafe", "true");</span>
+        <span class="hljs-comment">// 主线程，不处理任何业务逻辑，只是接收客户的连接请求</span>
+        EventLoopGroup boss = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">1</span>);
+        <span class="hljs-comment">// ⼯作线程，线程数默认是：cpu*2</span>
+        EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">// 服务器启动类</span>
+            ServerBootstrap serverBootstrap = <span class="hljs-keyword">new</span> ServerBootstrap();
+            serverBootstrap.group(boss, worker);
+            <span class="hljs-comment">//配置server通道</span>
+            serverBootstrap.channel(NioServerSocketChannel<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+            serverBootstrap.childHandler(<span class="hljs-keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;
+                    () &#123;
+                <span class="hljs-meta">@Override</span>
+                <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+                    ch.pipeline()
+                            .addLast(<span class="hljs-keyword">new</span> HessianDecoder())
+                            .addLast(<span class="hljs-keyword">new</span> ServerHandler());
+                &#125;
+            &#125;);
+            <span class="hljs-comment">//worker线程的处理器</span>
+            <span class="hljs-comment">// serverBootstrap.childOption(ChannelOption.ALLOCATOR,</span>
+            UnpooledByteBufAllocator.DEFAULT);
+            ChannelFuture future = serverBootstrap.bind(<span class="hljs-number">6677</span>).sync();
+            System.out.println(<span class="hljs-string">"服务器启动完成。。。。。"</span>);
+            <span class="hljs-comment">//等待服务端监听端⼝关闭</span>
+            future.channel().closeFuture().sync();
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-comment">//优雅关闭</span>
+            boss.shutdownGracefully();
+            worker.shutdownGracefully();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian.handler;
+
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.User;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ServerHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">User</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, User user)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        <span class="hljs-comment">//获取到user对象</span>
+        System.out.println(user);
+        ctx.writeAndFlush(Unpooled.copiedBuffer(<span class="hljs-string">"ok"</span>, CharsetUtil.UTF_8));
+    &#125;
+&#125;</code></pre>
+
+<h5 id="客户端-1"><a href="#客户端-1" class="headerlink" title="客户端"></a>客户端</h5><pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian;
+
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.codec.HessianEncoder;
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.handler.ClientHandler;
+<span class="hljs-keyword">import</span> io.netty.bootstrap.Bootstrap;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelFuture;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelInitializer;
+<span class="hljs-keyword">import</span> io.netty.channel.EventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.SocketChannel;
+<span class="hljs-keyword">import</span> io.netty.channel.socket.nio.NioSocketChannel;
+<span class="hljs-keyword">import</span> io.netty.handler.codec.serialization.ObjectEncoder;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NettyHessianClient</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">// 服务器启动类</span>
+            Bootstrap bootstrap = <span class="hljs-keyword">new</span> Bootstrap();
+            bootstrap.group(worker);
+            bootstrap.channel(NioSocketChannel<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+            bootstrap.handler(<span class="hljs-keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;
+                <span class="hljs-meta">@Override</span>
+                <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+                    ch.pipeline().addLast(<span class="hljs-keyword">new</span> HessianEncoder());
+                    ch.pipeline().addLast(<span class="hljs-keyword">new</span> ClientHandler());
+                &#125;
+            &#125;);
+            ChannelFuture future = bootstrap.connect(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">6677</span>).sync();
+            future.channel().closeFuture().sync();
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            worker.shutdownGracefully();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.netty.codec.hessian.handler;
+
+<span class="hljs-keyword">import</span> cn.itcast.netty.coder.hessian.User;
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ClientHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">ByteBuf</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        System.out.println(<span class="hljs-string">"接收到服务端的消息："</span> +
+                msg.toString(CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        User user = <span class="hljs-keyword">new</span> User();
+        user.setId(<span class="hljs-number">1L</span>);
+        user.setName(<span class="hljs-string">"张三"</span>);
+        user.setAge(<span class="hljs-number">20</span>);
+        ctx.writeAndFlush(user);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext ctx, Throwable cause)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        cause.printStackTrace();
+        ctx.close();
+    &#125;
+&#125;</code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Netty/">Netty</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/Netty/">Netty</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/08/netty-TCP%E6%8B%86%E5%8C%85%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">TCP拆包粘包问题</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/07/netty-Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/">
+                        <span class="hidden-mobile">Netty结构解析</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div>
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/blog/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Netty编解码器&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    var path = "/blog/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

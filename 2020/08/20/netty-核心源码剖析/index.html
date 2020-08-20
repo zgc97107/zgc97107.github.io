@@ -1,0 +1,804 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>netty-核心源码剖析 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+  <div class="mt-3 post-meta">
+    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+    <time datetime="2020-08-20 16:18" pubdate>
+      2020年8月20日 下午
+    </time>
+  </div>
+
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.6k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      21
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">netty-核心源码剖析</h1>
+            
+            <div class="markdown-body" id="post-body">
+              <h3 id="服务端启动过程"><a href="#服务端启动过程" class="headerlink" title="服务端启动过程"></a>服务端启动过程</h3><h4 id="创建服务端Channel"><a href="#创建服务端Channel" class="headerlink" title="创建服务端Channel"></a>创建服务端Channel</h4><p>主要流程：</p>
+<ul>
+<li><p>ServerBootstrap对象的bind()⽅法，也是⼊⼝⽅法</p>
+</li>
+<li><p>AbstractBootstrap中的initAndRegister()进⾏创建Channel</p>
+<ul>
+<li>创建Channel的⼯作由ReflectiveChannelFactory反射类中的newChannel()⽅法完成。</li>
+</ul>
+</li>
+<li><p>NioServerSocketChannel中的构造⽅法中，通过jdk nio底层的SelectorProvider打开ServerSocketChannel。</p>
+</li>
+<li><p>在AbstractNioChannel的构造⽅法中，设置channel为⾮阻塞：ch.configureBlocking(false);</p>
+</li>
+<li><p>通过的AbstractChannel的构造⽅法，创建了id、unsafe、pipeline内容。</p>
+</li>
+<li><p>通过NioServerSocketChannelConfig获取tcp底层的⼀些参数</p>
+</li>
+</ul>
+<h4 id="初始化服务端Channel"><a href="#初始化服务端Channel" class="headerlink" title="初始化服务端Channel"></a>初始化服务端Channel</h4><p>主流程：</p>
+<ul>
+<li><p>AbstractBootstrap中的initAndRegister()进⾏初始化channel，代码：init(channel);</p>
+</li>
+<li><p>在ServerBootstrap中的init()⽅法设置channelOptions以及Attributes。</p>
+</li>
+<li><p>紧接着，将⽤户⾃定义参数、属性保存到局部变量currentChildOptions、currentChildAttrs，以供后⾯使⽤</p>
+</li>
+<li><p>如果设置了serverBootstrap.handler()的话，会加⼊到pipeline中。</p>
+</li>
+<li><p>添加连接器ServerBootstrapAcceptor，有新连接加⼊后，将⾃定义的childHandler加⼊到连接的pipeline中：</p>
+<pre><code class="hljs java">ch.eventLoop().execute(<span class="hljs-keyword">new</span> Runnable() &#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+        pipeline.addLast(<span class="hljs-keyword">new</span> ChannelHandler[]&#123;<span class="hljs-keyword">new</span> ServerBootstrap.ServerBootstrapAcceptor(ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs)&#125;);
+    &#125;
+&#125;);</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-meta">@SuppressWarnings</span>(<span class="hljs-string">"unchecked"</span>)
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead</span><span class="hljs-params">(ChannelHandlerContext ctx, Object msg)</span> </span>&#123;
+    <span class="hljs-comment">//当客户端有连接时才会执⾏</span>
+    <span class="hljs-keyword">final</span> Channel child = (Channel) msg;
+    child.pipeline().addLast(childHandler);
+    <span class="hljs-comment">//将⾃定义的childHandler加⼊到连接的pipeline中</span>
+    setChannelOptions(child, childOptions, logger);
+    setAttributes(child, childAttrs);
+    <span class="hljs-keyword">try</span> &#123;
+        childGroup.register(child).addListener(<span class="hljs-keyword">new</span> ChannelFutureListener()
+        &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">operationComplete</span><span class="hljs-params">(ChannelFuture future)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">                    Exception </span>&#123;
+                <span class="hljs-keyword">if</span> (!future.isSuccess()) &#123;
+                    forceClose(child, future.cause());
+                &#125;
+            &#125;
+        &#125;);
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        forceClose(child, t);
+    &#125;
+&#125;</code></pre>
+
+</li>
+</ul>
+<h4 id="注册selector"><a href="#注册selector" class="headerlink" title="注册selector"></a>注册selector</h4><p>主要流程：</p>
+<ul>
+<li><p>initAndRegister()⽅法中的ChannelFuture regFuture = config().group().register(channel); 进⾏注册</p>
+</li>
+<li><p>在io.netty.channel.AbstractChannel.AbstractUnsafe#register()中完成实际的注册</p>
+<ul>
+<li><p>AbstractChannel.this.eventLoop = eventLoop; 进⾏eventLoop的赋值操作，后续的IO事件⼯作将在由该eventLoop执⾏。</p>
+</li>
+<li><p>调⽤register0(promise)中的doRegister()进⾏实际的注册</p>
+<ul>
+<li><p>io.netty.channel.nio.AbstractNioChannel#doRegister进⾏了⽅法实现</p>
+<pre><code class="hljs java"><span class="hljs-comment">//通过jdk底层进⾏注册多路复⽤器</span>
+<span class="hljs-comment">//javaChannel() --前⾯创建的channel</span>
+<span class="hljs-comment">//eventLoop().unwrappedSelector() -- 获取selector</span>
+<span class="hljs-comment">//注册感兴趣的事件为0，表明没有感兴趣的事件，后⾯会进⾏重新注册事件</span>
+<span class="hljs-comment">//将this对象以attachment的形式注册到selector，⽅便后⾯拿到当前对象的内容</span>
+selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), <span class="hljs-number">0</span>, <span class="hljs-keyword">this</span>);</code></pre>
+
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="绑定端⼝"><a href="#绑定端⼝" class="headerlink" title="绑定端⼝"></a>绑定端⼝</h4><p>主要流程：</p>
+<ul>
+<li><p>⼊⼝在io.netty.bootstrap.AbstractBootstrap#doBind0()，启动⼀个线程进⾏执⾏绑定端⼝操作调⽤io.netty.channel.AbstractChannelHandlerContext#bind(java.net.SocketAddress,</p>
+</li>
+<li><p>io.netty.channel.ChannelPromise)⽅法，再次启动线程执⾏</p>
+</li>
+<li><p>最终调⽤io.netty.channel.socket.nio.NioServerSocketChannel#doBind()⽅法进⾏绑定操作</p>
+<pre><code class="hljs java"><span class="hljs-comment">//通过jdk底层的channel进⾏绑定</span>
+<span class="hljs-meta">@SuppressJava</span>6Requirement(
+    reason = <span class="hljs-string">"Usage guarded by java version check"</span>
+)
+<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doBind</span><span class="hljs-params">(SocketAddress localAddress)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+    <span class="hljs-keyword">if</span> (PlatformDependent.javaVersion() &gt;= <span class="hljs-number">7</span>) &#123;
+        <span class="hljs-keyword">this</span>.javaChannel().bind(localAddress, <span class="hljs-keyword">this</span>.config.getBacklog());
+    &#125; <span class="hljs-keyword">else</span> &#123;
+        <span class="hljs-keyword">this</span>.javaChannel().socket().bind(localAddress, <span class="hljs-keyword">this</span>.config.getBacklog());
+    &#125;
+
+&#125;</code></pre>
+</li>
+<li><p>什么时候进⾏更新selector的主从事件？</p>
+<ul>
+<li><p>最终在io.netty.channel.nio.AbstractNioChannel#doBeginRead()⽅法中完成的</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doBeginRead</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+    <span class="hljs-comment">// Channel.read() or ChannelHandlerContext.read() was called</span>
+    <span class="hljs-keyword">final</span> SelectionKey selectionKey = <span class="hljs-keyword">this</span>.selectionKey;
+    <span class="hljs-keyword">if</span> (!selectionKey.isValid()) &#123;
+        <span class="hljs-keyword">return</span>;
+    &#125;
+    readPending = <span class="hljs-keyword">true</span>;
+    <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> interestOps = selectionKey.interestOps();
+    <span class="hljs-keyword">if</span> ((interestOps &amp; readInterestOp) == <span class="hljs-number">0</span>) &#123;
+        selectionKey.interestOps(interestOps | readInterestOp); <span class="hljs-comment">//设置</span>
+        感兴趣的事件为OP_ACCEPT
+    &#125;
+&#125;
+
+<span class="hljs-comment">//在NioServerSocketChannel的构造⽅法中进⾏了赋值</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">NioServerSocketChannel</span><span class="hljs-params">(ServerSocketChannel channel)</span> </span>&#123;
+    <span class="hljs-keyword">super</span>(<span class="hljs-keyword">null</span>, channel, SelectionKey.OP_ACCEPT);
+    config = <span class="hljs-keyword">new</span> NioServerSocketChannelConfig(<span class="hljs-keyword">this</span>,
+            javaChannel().socket());
+&#125;</code></pre>
+
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="连接请求过程源码剖析"><a href="#连接请求过程源码剖析" class="headerlink" title="连接请求过程源码剖析"></a>连接请求过程源码剖析</h3><h4 id="新连接的接⼊"><a href="#新连接的接⼊" class="headerlink" title="新连接的接⼊"></a>新连接的接⼊</h4><p>主要流程：</p>
+<ul>
+<li><p>⼊⼝在io.netty.channel.nio.NioEventLoop#processSelectedKey(java.nio.channels.SelectionKey,io.netty.channel.nio.AbstractNioChannel)中</p>
+<ul>
+<li><p>进⼊NioMessageUnsafe的read()⽅法</p>
+</li>
+<li><p>调⽤io.netty.channel.socket.nio.NioServerSocketChannel#doReadMessages() ⽅法，创建jdk底层的channel，封装成NioSocketChannel添加到List容器中</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">int</span> <span class="hljs-title">doReadMessages</span><span class="hljs-params">(List&lt;Object&gt; buf)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+    SocketChannel ch = SocketUtils.accept(<span class="hljs-keyword">this</span>.javaChannel());
+
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-keyword">if</span> (ch != <span class="hljs-keyword">null</span>) &#123;
+            buf.add(<span class="hljs-keyword">new</span> NioSocketChannel(<span class="hljs-keyword">this</span>, ch));
+            <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;
+        &#125;
+    &#125; <span class="hljs-keyword">catch</span> (Throwable var6) &#123;
+        logger.warn(<span class="hljs-string">"Failed to create a new channel from an accepted socket."</span>, var6);
+
+        <span class="hljs-keyword">try</span> &#123;
+            ch.close();
+        &#125; <span class="hljs-keyword">catch</span> (Throwable var5) &#123;
+            logger.warn(<span class="hljs-string">"Failed to close a socket."</span>, var5);
+        &#125;
+    &#125;
+
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+&#125;</code></pre>
+</li>
+</ul>
+</li>
+<li><p>创建NioSocketChannel对象</p>
+<ul>
+<li><p>new NioSocketChannel(this, ch)，通过new的⽅式进⾏创建</p>
+<ul>
+<li><p>调⽤super的构造⽅法</p>
+<ul>
+<li>传⼊SelectionKey.OP_READ事件标识</li>
+<li>创建id、unsafe、pipeline对象</li>
+<li>设置⾮阻塞 ch.configureBlocking(false);</li>
+</ul>
+</li>
+<li><p>创建NioSocketChannelConfig对象</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="注册读事件"><a href="#注册读事件" class="headerlink" title="注册读事件"></a>注册读事件</h4><ul>
+<li><p>在io.netty.channel.nio.AbstractNioMessageChannel.NioMessageUnsafe中的：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; localRead; ++i) &#123;
+    AbstractNioMessageChannel.<span class="hljs-keyword">this</span>.readPending = <span class="hljs-keyword">false</span>;
+    pipeline.fireChannelRead(<span class="hljs-keyword">this</span>.readBuf.get(i));
+&#125;</code></pre>
+</li>
+<li><p>在io.netty.channel.AbstractChannelHandlerContext#invokeChannelRead(java.lang.Object)⽅法中:</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invokeChannelRead</span><span class="hljs-params">(Object msg)</span> </span>&#123;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.invokeHandler()) &#123;
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">//执⾏channelRead，需要注意的是，第⼀次执⾏是HeadHandler，第⼆次是ServerBootstrapAcceptor</span>
+            <span class="hljs-comment">//通过ServerBootstrapAcceptor进⼊和 新连接接⼊的 注册selector相同的逻辑进⾏注册以及事件绑定</span>
+            ((ChannelInboundHandler)<span class="hljs-keyword">this</span>.handler()).channelRead(<span class="hljs-keyword">this</span>, msg);
+        &#125; <span class="hljs-keyword">catch</span> (Throwable var3) &#123;
+            <span class="hljs-keyword">this</span>.invokeExceptionCaught(var3);
+        &#125;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+        <span class="hljs-keyword">this</span>.fireChannelRead(msg);
+    &#125;
+
+&#125;</code></pre>
+
+</li>
+</ul>
+<h3 id="优化建议"><a href="#优化建议" class="headerlink" title="优化建议"></a>优化建议</h3><h4 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h4><p>Netty的零拷⻉主要体现在三个⽅⾯：</p>
+<ul>
+<li><p>Bytebuf 使⽤的是⽤池化的Direct Buffer类型使⽤的堆外内存，不需要进⾏字节缓冲区的⼆次拷⻉，如果使⽤堆内存，JVM会先拷⻉到堆内，再写⼊Socket，就多了⼀次拷⻉。</p>
+</li>
+<li><p>CompositeByteBuf将多个ByteBuf封装成⼀个ByteBuf，在添加ByteBuf时不需要进程拷⻉。</p>
+</li>
+<li><p>Netty的⽂件传输类DefaultFileRegion的transferTo⽅法将⽂件发送到⽬标channel中，不需要进⾏循环拷⻉，提升了性能。</p>
+</li>
+</ul>
+<h4 id="使⽤EventLoop的任务调度"><a href="#使⽤EventLoop的任务调度" class="headerlink" title="使⽤EventLoop的任务调度"></a>使⽤EventLoop的任务调度</h4><p>在EventLoop的⽀持线程外使⽤channel：</p>
+<pre><code class="hljs java">channel.eventLoop().execute(<span class="hljs-keyword">new</span> Runnable() &#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+        channel.writeAndFlush(data);
+    &#125;
+&#125;);</code></pre>
+
+<p>⽽不是直接使⽤channel.writeAndFlush(data)；</p>
+<p>前者会直接放⼊channel所对应的EventLoop的执⾏队列，⽽后者会导致线程的切换。</p>
+<blockquote>
+<p>在writeAndFlush的底层，如果没有通过eventLoop执⾏的话，就会重新启动新的线程执⾏。</p>
+</blockquote>
+<h4 id="减少ChannelPipline的调⽤⻓度"><a href="#减少ChannelPipline的调⽤⻓度" class="headerlink" title="减少ChannelPipline的调⽤⻓度"></a>减少ChannelPipline的调⽤⻓度</h4><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">YourHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ChannelInboundHandlerAdapter</span> </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> </span>&#123;
+        <span class="hljs-comment">// BAD (most of the times)</span>
+        ctx.channel().writeAndFlush(msg);
+        <span class="hljs-comment">// GOOD</span>
+        ctx.writeAndFlush(msg);
+    &#125;
+&#125;</code></pre>
+
+<p>前者是将msg从整个ChannelPipline中⾛⼀遍，所有的handler都要经过，⽽后者是从当前handler⼀直到pipline的尾部，调⽤更短。</p>
+<h4 id="减少ChannelHandler的创建"><a href="#减少ChannelHandler的创建" class="headerlink" title="减少ChannelHandler的创建"></a>减少ChannelHandler的创建</h4><p>如果channelhandler是⽆状态的（即不需要保存任何状态参数），那么使⽤Sharable注解，并在bootstrap时只创建⼀个实例，减少GC。否则每次连接都会new出handler对象。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@ChannelHandler</span>.Shareable
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StatelessHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ChannelInboundHandlerAdapter</span> </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> </span>&#123;&#125;
+&#125;
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyInitializer</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ChannelInitializer</span>&lt;<span class="hljs-title">Channel</span>&gt; </span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> ChannelHandler INSTANCE = <span class="hljs-keyword">new</span> StatelessHandler();
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initChannel</span><span class="hljs-params">(Channel ch)</span> </span>&#123;
+        ch.pipeline().addLast(INSTANCE);
+    &#125;
+&#125;</code></pre>
+
+<p>同时需要注意ByteToMessageDecoder之类的编解码器是有状态的，不能使⽤Sharable注解。</p>
+<h4 id="⼀些配置参数的设置"><a href="#⼀些配置参数的设置" class="headerlink" title="⼀些配置参数的设置"></a>⼀些配置参数的设置</h4><p>ServerBootstrap启动时，通常bossGroup只需要设置为1即可，因为ServerSocketChannel在初始化阶段，只会注册到某⼀个eventLoop上，⽽这个eventLoop只会有⼀个线程在运⾏，所以没有必要设置为多线程。⽽ IO 线程，为了充分利⽤ CPU，同时考虑减少线上下⽂切换的开销，通常设置为 CPU 核数的两倍，这也是 Netty 提供的默认值。</p>
+<p>在对于响应时间有⾼要求的场景，使⽤.childOption(ChannelOption.TCP_NODELAY, true)和.option(ChannelOption.TCP_NODELAY, true)来禁⽤nagle算法，不等待，⽴即发送。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Netty/">Netty</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/Netty/">Netty</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">源码阅读</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/10/%E7%BD%91%E7%BB%9C-%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/">
+                        <span class="hidden-mobile">网络安全</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div>
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/blog/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "netty-核心源码剖析&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    var path = "/blog/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
