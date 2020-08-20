@@ -1,13 +1,13 @@
+
+
 <!DOCTYPE html>
-<html lang="zh-CN">
-
-
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
 
 
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
   <link rel="icon" type="image/png" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
@@ -19,26 +19,36 @@
   <meta name="keywords" content="">
   <title>redis+lua实现限流 - 🍎🍊&#39;s blog</title>
 
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
-<link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
-<link  rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.13.0/css/mdb.min.css" />
-<link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css" />
-
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
 
 
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
 
-  <link  rel="stylesheet" href="/blog/lib/prettify/tomorrow-night-eighties.min.css" />
+  
+    
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+
 
 <link  rel="stylesheet" href="/blog/css/main.css" />
-
-
-  <link defer rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
-
 
 <!-- 自定义样式保持在最底部 -->
 
 
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
 <meta name="generator" content="Hexo 4.2.1"></head>
 
 
@@ -63,46 +73,72 @@
           
           
           
-          <li class="nav-item">
-            <a class="nav-link" href="/blog/">首页</a>
-          </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
         
           
           
           
           
-          <li class="nav-item">
-            <a class="nav-link" href="/blog/archives/">归档</a>
-          </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
         
           
           
           
           
-          <li class="nav-item">
-            <a class="nav-link" href="/blog/categories/">分类</a>
-          </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
         
           
           
           
           
-          <li class="nav-item">
-            <a class="nav-link" href="/blog/tags/">标签</a>
-          </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
         
           
           
           
           
-          <li class="nav-item">
-            <a class="nav-link" href="/blog/about">关于</a>
-          </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
-                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
       </ul>
@@ -110,50 +146,50 @@
   </div>
 </nav>
 
-    <div class="view intro-2" id="background" parallax=true
+    <div class="banner intro-2" id="background" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
-        <div class="mask rgba-black-light flex-center">
-          <div class="container text-center white-text fadeInUp">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
             <span class="h2" id="subtitle">
               
             </span>
 
             
               
-                <p class="mt-3 post-meta">
-                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期三, 四月 29日 2020, 2:14 下午
-                </p>
-              
+  <div class="mt-3 post-meta">
+    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+    <time datetime="2020-04-29 14:14" pubdate>
+      2020年4月29日 下午
+    </time>
+  </div>
 
-              <p class="mt-1">
-                
-                  
-                  <span class="post-meta">
-                    <i class="far fa-chart-bar"></i>
-                    954 字
-                  </span>
-                
 
-                
-                  
-                  <span class="post-meta">
-                      <i class="far fa-clock"></i>
-                      3 分钟
-                  </span>
-                
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      952 字
+    </span>
+  
 
-                
-                  <!-- 不蒜子统计文章PV -->
-                  
-                  <span id="busuanzi_container_page_pv" class="post-meta" style="display: none">
-                    <i class="far fa-eye" aria-hidden="true"></i>
-                    <span id="busuanzi_value_page_pv"></span> 次
-                  </span>
-                
-              </p>
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      12
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
             
           </div>
 
@@ -172,13 +208,12 @@
     <div class="d-none d-lg-block col-lg-2"></div>
     <div class="col-lg-8 nopadding-md">
       <div class="container nopadding-md" id="board-ctn">
-        <div class="py-5 z-depth-3" id="board">
-          <div class="post-content mx-auto" id="post">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">redis+lua实现限流</h1>
             
-              <p
-                class="note note-warning">本文最后更新于：星期三, 四月 29日 2020, 3:32 下午</p>
-            
-            <div class="markdown-body">
+            <div class="markdown-body" id="post-body">
               <h2 id="lua语言介绍"><a href="#lua语言介绍" class="headerlink" title="lua语言介绍"></a>lua语言介绍</h2><p>LUA脚本语言是C开发的，类似存储过程，使用LUA脚本的好处：</p>
 <ul>
 <li>减少网络开销，在Lua脚本中可以把多个命令放在同一个脚本中运行。</li>
@@ -186,14 +221,16 @@
 <li>复用性，客户端发送的脚本会永远存储在redis中，这意味着其他客户端可以复用这一脚本来完成同样的逻辑。</li>
 </ul>
 <h2 id="Lua在linux中的安装"><a href="#Lua在linux中的安装" class="headerlink" title="Lua在linux中的安装"></a>Lua在linux中的安装</h2><p>到官网下载lua的tar.gz的源码包</p>
-<pre><code class="sh">wget http://www.lua.org/ftp/lua-5.3.5.tar.gz
+<pre><code class="hljs sh">wget http://www.lua.org/ftp/lua-5.3.5.tar.gz
 tar -zxvf lua-5.3.0.tar.gz
-cd lua-5.2.0
+<span class="hljs-built_in">cd</span> lua-5.2.0
 make linux
 make install</code></pre>
+
 <p>如果报错，说找不到readline/readline.h, 可以通过yum命令安装</p>
-<pre><code class="sh">yum -y install libtermcap-devel ncurses-devel libevent-devel readline-devel
+<pre><code class="hljs sh">yum -y install libtermcap-devel ncurses-devel libevent-devel readline-devel
 make linux  / make install</code></pre>
+
 <p>最后，直接输入 lua命令即可进入lua的控制台</p>
 <h2 id="lua基本语法"><a href="#lua基本语法" class="headerlink" title="lua基本语法"></a>lua基本语法</h2><ul>
 <li>单行注释  –</li>
@@ -302,111 +339,104 @@ make linux  / make install</code></pre>
 <p>限制时间窗口内的平均速率：如Guava的RateLimiter、nginx的limit_req模块，限制每秒平均速率</p>
 <p>其它限制：如限制远程接口调用速率、限制MQ的消费速率</p>
 <h2 id="java-redis实现限流"><a href="#java-redis实现限流" class="headerlink" title="java+redis实现限流"></a>java+redis实现限流</h2><p>实现某个ip在一定时间之内在time之内，只能访问limit次</p>
-<pre><code class="java">private boolean accessLimit(String ip,int limit,Jedis jedis){
-  boolean result=true;
-  String key=&quot;rate.limit&quot; + ip;
-  if(jedis.exist(key)){
-    long afterValue = jedis.incr(key);
-    if(afterValue &gt; limit){
-      return false;
-    }
-  }eles{
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">accessLimit</span><span class="hljs-params">(String ip,<span class="hljs-keyword">int</span> limit,Jedis jedis)</span></span>&#123;
+  <span class="hljs-keyword">boolean</span> result=<span class="hljs-keyword">true</span>;
+  String key=<span class="hljs-string">"rate.limit"</span> + ip;
+  <span class="hljs-keyword">if</span>(jedis.exist(key))&#123;
+    <span class="hljs-keyword">long</span> afterValue = jedis.incr(key);
+    <span class="hljs-keyword">if</span>(afterValue &gt; limit)&#123;
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+    &#125;
+  &#125;eles&#123;
     Transaction transaction = jedis.multi();
     transaction.incr(key);
     transaction.expire(key,time);
     transaction.exec();
-  }
-  return result;
-}</code></pre>
+  &#125;
+  <span class="hljs-keyword">return</span> result;
+&#125;</code></pre>
+
 <p>但这种实现方式使用的redis的事务是弱事务不支持回滚，并不能完全保证操作的原子性，当多线程操作同一个key时可能会出现竞态问题。</p>
 <h2 id="redis-lua实现限流"><a href="#redis-lua实现限流" class="headerlink" title="redis+lua实现限流"></a>redis+lua实现限流</h2>
 
 <p>lua脚本</p>
-<pre><code class="lua">local key =  KEYS[1]
-local limit = tonumber(ARGV[1])
-local expire_time = ARGV[2]
+<pre><code class="hljs lua"><span class="hljs-keyword">local</span> key =  KEYS[<span class="hljs-number">1</span>]
+<span class="hljs-keyword">local</span> limit = <span class="hljs-built_in">tonumber</span>(ARGV[<span class="hljs-number">1</span>])
+<span class="hljs-keyword">local</span> expire_time = ARGV[<span class="hljs-number">2</span>]
 
-local is_exists = redis.call(&quot;EXISTS&quot;, key)
-if is_exists == 1 then
-    if redis.call(&quot;INCR&quot;, key) &gt; limit then
-        return 0
-    else
-        return 1
-    end
-else
-    redis.call(&quot;SET&quot;, key, 1)
-    redis.call(&quot;EXPIRE&quot;, key, expire_time)
-    return 1
-end</code></pre>
+<span class="hljs-keyword">local</span> is_exists = redis.call(<span class="hljs-string">"EXISTS"</span>, key)
+<span class="hljs-keyword">if</span> is_exists == <span class="hljs-number">1</span> <span class="hljs-keyword">then</span>
+    <span class="hljs-keyword">if</span> redis.call(<span class="hljs-string">"INCR"</span>, key) &gt; limit <span class="hljs-keyword">then</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+    <span class="hljs-keyword">else</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>
+    <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">else</span>
+    redis.call(<span class="hljs-string">"SET"</span>, key, <span class="hljs-number">1</span>)
+    redis.call(<span class="hljs-string">"EXPIRE"</span>, key, expire_time)
+    <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>
+<span class="hljs-keyword">end</span></code></pre>
+
 
             </div>
             <hr>
             <div>
-              <p>
+              <div class="post-metas mb-3">
                 
-                  <span>
-                <i class="iconfont icon-inbox"></i>
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
                     
                       <a class="hover-with-bg" href="/blog/categories/redis/">redis</a>
-                      &nbsp;
                     
-                  </span>&nbsp;&nbsp;
+                  </div>
                 
                 
-                  <span>
-                <i class="iconfont icon-tag"></i>
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
                     
                       <a class="hover-with-bg" href="/blog/tags/redis/">redis</a>
                     
-                  </span>
+                  </div>
                 
-              </p>
+              </div>
               
-                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
               
               
                 <div class="post-prevnext row">
-                  <div class="post-prev col-6">
+                  <article class="post-prev col-6">
                     
                     
                       <a href="/blog/2020/04/29/redis-lua%E5%AE%9E%E7%8E%B0%E6%8A%A2%E7%BA%A2%E5%8C%85/">
-                        <i class="fa fa-chevron-left"></i>
+                        <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">redis+lua实现抢红包</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
-                  </div>
-                  <div class="post-next col-6">
+                  </article>
+                  <article class="post-next col-6">
                     
                     
                       <a href="/blog/2020/04/29/redis%E5%B8%B8%E8%A7%81%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1/">
                         <span class="hidden-mobile">redis常见场景设计</span>
                         <span class="visible-mobile">下一篇</span>
-                        <i class="fa fa-chevron-right"></i>
+                        <i class="iconfont icon-arrowright"></i>
                       </a>
                     
-                  </div>
+                  </article>
                 </div>
               
             </div>
 
-              
-                <!-- Comments -->
-                <div class="comments" id="comments">
-                  
-                  
-
-                </div>
-              
-          </div>
+            
+          </article>
         </div>
       </div>
     </div>
     
       <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
-        <div id="toc-start"></div>
-<div id="toc">
-  <p class="h5"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
   <div id="tocbot"></div>
 </div>
 
@@ -422,8 +452,8 @@ end</code></pre>
   </main>
 
   
-    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
-      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
     </a>
   
 
@@ -458,25 +488,33 @@ end</code></pre>
   <footer class="mt-5">
   <div class="text-center py-3">
     <div>
-      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
       <i class="iconfont icon-love"></i>
-      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
     </div>
     
-  <div>
+  <div class="statistics">
     
-      <!-- 不蒜子统计PV -->
+    
+
+    
       
-      <span id="busuanzi_container_site_pv" style="display: none">
-      总访问量 <span id="busuanzi_value_site_pv"></span> 次
-    </span>
-    
-    
-      <!-- 不蒜子统计UV -->
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
       
-      <span id="busuanzi_container_site_uv" style="display: none">
-      总访客数 <span id="busuanzi_value_site_uv"></span> 人
-    </span>
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
     
   </div>
 
@@ -489,68 +527,16 @@ end</code></pre>
 
 <!-- SCRIPTS -->
 <script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
-<script  src="https://cdn.staticfile.org/popper.js/1.16.1/umd/popper.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
-<script  src="https://cdn.staticfile.org/mdbootstrap/4.13.0/js/mdb.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/main.js" ></script>
 
-
-  <script  src="/blog/js/lazyload.js" ></script>
-
+<!-- Plugins -->
 
 
   
-  <script  src="https://cdn.staticfile.org/tocbot/4.10.0/tocbot.min.js" ></script>
-  <script>
-    $(document).ready(function () {
-      var navHeight = $('#navbar').height();
-      var toc = $('#toc');
-      var boardCtn = $('#board-ctn');
-      var boardTop = boardCtn.offset().top;
-      var tocLimMax = 2 * boardTop + boardCtn.height();
-
-      $(window).scroll(function () {
-        var tocLimMin = $('#toc-start').offset().top - navHeight;
-        var scroH = document.body.scrollTop + document.documentElement.scrollTop;
-
-        if (tocLimMin <= scroH && scroH <= tocLimMax) {
-          toc.css({
-            'display': 'block',
-            'position': 'fixed',
-            'top': navHeight,
-          });
-        } else if (scroH <= tocLimMin) {
-          toc.css({
-            'position': '',
-            'top': '',
-          });
-        } else if (scroH > tocLimMax) {
-          toc.css('display', 'none');
-        }
-      });
-      tocbot.init({
-        tocSelector: '#tocbot',
-        contentSelector: '.post-content',
-        headingSelector: 'h1,h2,h3,h4,h5,h6',
-        linkClass: 'tocbot-link',
-        activeLinkClass: 'tocbot-active-link',
-        listClass: 'tocbot-list',
-        isCollapsedClass: 'tocbot-is-collapsed',
-        collapsibleClass: 'tocbot-is-collapsible',
-        scrollSmooth: true,
-        headingsOffset: -boardTop
-      });
-      if ($('.toc-list-item').length > 0) {
-        $('#toc > p').css('visibility', 'visible');
-      }
-      var offset = boardCtn.css('margin-right')
-      $('#toc-ctn').css({
-        'right': offset
-      })
-    });
-  </script>
-
-
+    <script  src="/blog/js/lazyload.js" ></script>
+  
 
 
 
@@ -559,38 +545,35 @@ end</code></pre>
 
 
 
-  <script defer src="https://cdn.staticfile.org/smoothscroll/1.4.10/SmoothScroll.min.js" ></script>
-
-
-
   <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
 
 
 
 
-<!-- Plugins -->
 
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-
-
-  <script  src="https://cdn.staticfile.org/prettify/188.0.0/prettify.min.js" ></script>
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
   <script>
     $(document).ready(function () {
-      $('pre').addClass('prettyprint  linenums');
-      prettyPrint();
-    })
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
   </script>
 
 
@@ -637,24 +620,28 @@ end</code></pre>
     var path = "/blog/local-search.xml";
     var inputArea = document.querySelector("#local-search-input");
     inputArea.onclick = function () {
-      getSearchFile(path);
+      searchFunc(path, 'local-search-input', 'local-search-result');
       this.onclick = null
     }
   </script>
 
 
 
-  <script defer src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
   <script>
-    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
       function () {
-        var element = document.createElement("a");
-        $(element).attr("data-fancybox", "images");
-        $(element).attr("href", $(this).attr("src"));
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
         $(this).wrap(element);
       }
     );
   </script>
+
+
 
 
 
@@ -709,6 +696,12 @@ end</code></pre>
       ;
     </script>
   
+
+
+
+
+
+
 
 
 
