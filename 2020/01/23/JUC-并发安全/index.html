@@ -1,0 +1,1067 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>并发安全 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+  <div class="mt-3 post-meta">
+    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+    <time datetime="2020-01-23 10:19" pubdate>
+      2020年1月23日 上午
+    </time>
+  </div>
+
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5.9k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      70
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">并发安全</h1>
+            
+            <div class="markdown-body" id="post-body">
+              <h2 id="线程安全性"><a href="#线程安全性" class="headerlink" title="线程安全性"></a>线程安全性</h2><p>在《Java并发编程实战》中，定义如下：</p>
+<p>类是线程安全是指当多个线程访问某个类时，不管线程将如何交替执行，调用代码中不需要增加任何额外保证安全性的代码，这个类也能始终表现出正确的行为。</p>
+<h2 id="线程封闭"><a href="#线程封闭" class="headerlink" title="线程封闭"></a>线程封闭</h2><p>实现安全的并发是一件困难的事情，所以很多时候我们都想躲避并发。避免并发最简单的方法就是线程封闭。</p>
+<p>线程封闭就是把对象封装到一个线程里，只有这一个线程能看到此对象。那么这个对象就算不是线程安全的也不会出现任何安全问题。</p>
+<h3 id="ad-hoc线程封闭"><a href="#ad-hoc线程封闭" class="headerlink" title="ad-hoc线程封闭"></a>ad-hoc线程封闭</h3><p>Ad-hoc线程封闭是完全靠开发者控制的线程封闭，但没有任何一种语言特性能够将对象封闭到线程上，所以Ad-hoc线程封闭对开发的要求比较苛刻，非常脆弱，应该尽量避免使用。</p>
+<h3 id="栈封闭"><a href="#栈封闭" class="headerlink" title="栈封闭"></a>栈封闭</h3><p>栈封闭是我们编程当中遇到的最多的线程封闭，栈封闭简单的说就是局部变量。当多个线程访问一个方法时，方法中的局部变量都会被线程在栈中重新创建，也就不会出现并发问题。全局变量一般是放在堆中，容易引起并发问题。在开发过程中应该尽量使用局部变量，避免使用全局变量。ThreadLocal本质上是每个线程内部都有一个value副本，相当于将value的副本封闭在栈中，所以使用ThreadLocal不会引发线程安全问题。</p>
+<h3 id="无状态的类"><a href="#无状态的类" class="headerlink" title="无状态的类"></a>无状态的类</h3><p>成员变量被称为类的状态，没有任何成员变量的类，就是无状态的类，这种类一定是线程安全的。</p>
+<p>即使这个类的方法参数中使用了对象，也是线程安全的，比如：</p>
+<img src="/blog/2020/01/23/JUC-%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>因为多线程下的使用，虽然user这个对象的实例会出现问题，但是它并不被StatelessClass这个类的对象实例所持有，所以Stateless这个类还是线程安全的。如果要避免在使用过程中出现问题的话，可以在user类中实现线程安全。</p>
+<h3 id="让类不可变"><a href="#让类不可变" class="headerlink" title="让类不可变"></a>让类不可变</h3><p>让状态不可变，两种方式：</p>
+<ol>
+<li><p>使用final关键字：为该类的所有成员变量都应该加上final关键字。如果成员变量是一个对象时，这个对象所对应的类也应该是不可变类，才能保证整个类是不可变的。</p>
+</li>
+<li><p>不提供任何可供修改成员变量的地方，同时成员变量也不作为方法的返回值。</p>
+</li>
+</ol>
+<p>注意：反射不属于正常使用方式，不在考虑范围内。如果类的成员变量中有对象，final关键字是保证引用不可变，并不能保证对应的实例不可变。在多线程下，对象在堆上的实例是有可能被多个线程同时修改的，没有正确处理的情况下，对象实例在堆中的数据是不可预知的，这就牵涉到了如何安全的发布对象这个问题。</p>
+<h3 id="volatile"><a href="#volatile" class="headerlink" title="volatile"></a>volatile</h3><p>只能保证类的可见性，并不能保证类的线程安全性。适合一个线程写，多个线程读的情景。</p>
+<h3 id="加锁和CAS"><a href="#加锁和CAS" class="headerlink" title="加锁和CAS"></a>加锁和CAS</h3><p>是最常使用的保证线程安全的手段，包括使用<strong>synchronized</strong>关键字、显式锁、原子变量，或者修改数据时使用CAS机制等。</p>
+<h3 id="安全的发布"><a href="#安全的发布" class="headerlink" title="安全的发布"></a>安全的发布</h3><p>类中持有的成员变量如果是基本类型，可以直接发布出去，此时发布出去的其实是这个变量的一个副本。</p>
+<p>如果类中持有的成员变量是对象的引用，这个成员对象不是线程安全的，通过get等方法发布出去，会造成这个成员对象本身持有的数据在多线程下不正确的修改，从而造成整个类线程不安全的问题。</p>
+<pre><code class="hljs arduino"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 不安全的发布</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UnSafePublish</span> &#123;</span>
+   <span class="hljs-keyword">private</span> List&lt;Integer&gt; <span class="hljs-built_in">list</span> = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-number">3</span>);
+   
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">UnSafePublish</span><span class="hljs-params">()</span> </span>&#123;
+       <span class="hljs-built_in">list</span>.add(<span class="hljs-number">1</span>);
+       <span class="hljs-built_in">list</span>.add(<span class="hljs-number">2</span>);
+       <span class="hljs-built_in">list</span>.add(<span class="hljs-number">3</span>);
+    &#125;
+   
+   <span class="hljs-function"><span class="hljs-keyword">public</span> List <span class="hljs-title">getList</span><span class="hljs-params">()</span> </span>&#123;
+      <span class="hljs-keyword">return</span> <span class="hljs-built_in">list</span>;
+   &#125;
+
+   <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">String</span>[] args)</span> </span>&#123;
+      UnSafePublish unSafePublish = <span class="hljs-keyword">new</span> UnSafePublish();
+      List&lt;Integer&gt; <span class="hljs-built_in">list</span> = unSafePublish.getList();
+      System.out.<span class="hljs-built_in">println</span>(<span class="hljs-built_in">list</span>);
+      <span class="hljs-built_in">list</span>.add(<span class="hljs-number">4</span>);
+      System.out.<span class="hljs-built_in">println</span>(<span class="hljs-built_in">list</span>);
+      System.out.<span class="hljs-built_in">println</span>(unSafePublish.getList());
+   &#125;
+&#125;</code></pre>
+
+<p>将list发布出去后，外部线程就可以修改这个list，如果有多个线程同时修改就会出现不安全的情况，所以在发布这对象出去的时，就应该用线程安全的方式包装这个对象。</p>
+<pre><code class="hljs arduino"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 安全的发布</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SafePublishToo</span> &#123;</span>
+    <span class="hljs-keyword">private</span> List&lt;Integer&gt; <span class="hljs-built_in">list</span>
+            = Collections.synchronizedList(<span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-number">3</span>));
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SafePublishToo</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-built_in">list</span>.add(<span class="hljs-number">1</span>);
+        <span class="hljs-built_in">list</span>.add(<span class="hljs-number">2</span>);
+        <span class="hljs-built_in">list</span>.add(<span class="hljs-number">3</span>);
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> List <span class="hljs-title">getList</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">list</span>;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">String</span>[] args)</span> </span>&#123;
+        SafePublishToo safePublishToo = <span class="hljs-keyword">new</span> SafePublishToo();
+        List&lt;Integer&gt; <span class="hljs-built_in">list</span> = safePublishToo.getList();
+        System.out.<span class="hljs-built_in">println</span>(<span class="hljs-built_in">list</span>);
+        <span class="hljs-built_in">list</span>.add(<span class="hljs-number">4</span>);
+        System.out.<span class="hljs-built_in">println</span>(<span class="hljs-built_in">list</span>);
+        System.out.<span class="hljs-built_in">println</span>(safePublishToo.getList());
+    &#125;
+&#125;</code></pre>
+
+<p>将list用Collections.synchronizedList()进行包装以后，无论多少线程使用这个list，就都是线程安全的了。</p>
+<p>对于我们自己使用或者声明的类，JDK自然没有提供这种包装类的办法，但是我们可以仿造这种模式或者委托给线程安全的类。</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 仿Collections对容器的包装，将内部成员对象进行线程安全包装</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SoftPublicUser</span> </span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> UserVo user;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> UserVo <span class="hljs-title">getUser</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> user;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SoftPublicUser</span><span class="hljs-params">(UserVo user)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.user = <span class="hljs-keyword">new</span> SynUser(user);
+    &#125;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SynUser</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">UserVo</span></span>&#123;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> UserVo userVo;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Object lock = <span class="hljs-keyword">new</span> Object();
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SynUser</span><span class="hljs-params">(UserVo userVo)</span> </span>&#123;
+            <span class="hljs-keyword">this</span>.userVo = userVo;
+        &#125;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getAge</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">synchronized</span> (lock)&#123;
+                System.out.println(<span class="hljs-string">"lock success"</span>);
+                <span class="hljs-keyword">return</span> userVo.getAge();
+            &#125;
+        &#125;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setAge</span><span class="hljs-params">(<span class="hljs-keyword">int</span> age)</span> </span>&#123;
+            <span class="hljs-keyword">synchronized</span> (lock)&#123;
+                userVo.setAge(age);
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>如果为final类，则可以采用委托的方式，将一些方法委托给一个线程安全的类。</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 类说明：委托给线程安全的类来做</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SafePublicFinalUser</span> </span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> SynFinalUser user;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> SynFinalUser <span class="hljs-title">getUser</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> user;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SafePublicFinalUser</span><span class="hljs-params">(FinalUserVo user)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.user = <span class="hljs-keyword">new</span> SynFinalUser(user);
+    &#125;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SynFinalUser</span></span>&#123;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> FinalUserVo userVo;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Object lock = <span class="hljs-keyword">new</span> Object();
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">SynFinalUser</span><span class="hljs-params">(FinalUserVo userVo)</span> </span>&#123;
+            <span class="hljs-keyword">this</span>.userVo = userVo;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getAge</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">synchronized</span> (lock)&#123;
+                <span class="hljs-keyword">return</span> userVo.getAge();
+            &#125;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setAge</span><span class="hljs-params">(<span class="hljs-keyword">int</span> age)</span> </span>&#123;
+            <span class="hljs-keyword">synchronized</span> (lock)&#123;
+                userVo.setAge(age);
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>对这种通过get等方法发布出去的对象，最根本的解决办法还是应该在实现上就考虑到线程安全问题。</p>
+<h3 id="TheadLocal"><a href="#TheadLocal" class="headerlink" title="TheadLocal"></a>TheadLocal</h3><p>ThreadLocal是实现线程封闭的最好方法。ThreadLocal为每个线程都创建一个ThreadLocalMap，Map的key是ThreadLoacl对象，Map的值就是我们要封闭的对象。每个线程中的ThreadLocalMap互不影响，避免了多个线程操作同一个对象的情况。</p>
+<h3 id="Servlet辨析"><a href="#Servlet辨析" class="headerlink" title="Servlet辨析"></a>Servlet辨析</h3><p>servlet其实不是线程安全的类，由于很少有对Servlet中成员变量的写操作的需求，一般情况下并不会引发线程安全问题，但是一旦有多线程下写servlet中的成员变量，就很容易产生线程安全问题。</p>
+<p>servlet会为每个单独的请求创建单独的线程，即请求自始至终只有一个线程在处理，避免了并发读写的问题。</p>
+<p>spring容器并没有使用ConcurrentHashMap而是使用了普通的Map，在初始化时通过Sync关键字来保证线程安全。这样做主要是因为spring只在初始化时进行放入Map的操作，之后的使用都是获取，相对于使用ConcurrentHashMap性能会更高。</p>
+<h2 id="线程不安全引发的问题"><a href="#线程不安全引发的问题" class="headerlink" title="线程不安全引发的问题"></a>线程不安全引发的问题</h2><h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><h4 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h4><p>是指两个或两个以上的进程在执行过程中，由于竞争资源或者由于彼此通信而造成的一种阻塞的现象，若无外力作用，它们都将无法继续进行下去。此时称系统处于死锁状态或系统产生了死锁。</p>
+<p>死锁是必然发生在多操作者（M&gt;=2个）情况下，争夺多个资源（N&gt;=2个，且N&lt;=M）才会发生这种情况。很明显，单线程自然不会有死锁；单资源情况下线程之间只会产生激烈竞争，也不会产生死锁。同时，死锁还有一个重要的要求，争夺资源的顺序不同，如果争夺资源的顺序是一样的，也不会产生死锁。</p>
+<h4 id="学术化的定义"><a href="#学术化的定义" class="headerlink" title="学术化的定义"></a>学术化的定义</h4><p>死锁的发生必须具备以下四个必要条件。 </p>
+<ol>
+<li><p>互斥条件：指进程对所分配到的资源进行排它性使用，即在一段时间内某资源只由一个进程占用。如果此时还有其它进程请求资源，则请求者只能等待，直至占有资源的进程用毕释放。</p>
+</li>
+<li><p>请求和保持条件：指进程已经保持至少一个资源，但又提出了新的资源请求，而该资源已被其它进程占有，此时请求进程阻塞，但又对自己已获得的其它资源保持不放。</p>
+</li>
+<li><p>不剥夺条件：指进程已获得的资源，在未使用完之前，不能被剥夺，只能在使用完时由自己释放。</p>
+</li>
+<li><p>环路等待条件：指在发生死锁时，必然存在一个进程——资源的环形链，即进程集合{P0，P1，P2，···，Pn}中的P0正在等待一个P1占用的资源；P1正在等待P2占用的资源，……，Pn正在等待已被P0占用的资源。</p>
+</li>
+</ol>
+<p>理解了死锁的原因，尤其是产生死锁的四个必要条件，就可以最大可能地避免、预防和解除死锁。只要打破四个必要条件之一就能有效预防死锁的发生。</p>
+<ul>
+<li>打破互斥条件：改造独占性资源为虚拟资源，大部分资源已无法改造。</li>
+<li>打破不可抢占条件：当一进程占有一独占性资源后又申请一独占性资源而无法满足，则退出原占有的资源。</li>
+<li>打破占有且申请条件：采用资源预先分配策略，即进程运行前申请全部资源，满足则运行，不然就等待，这样就不会占有且申请。</li>
+<li>打破循环等待条件：实现资源有序分配策略，对所有设备实现分类编号，所有进程只能采用按序号递增的形式申请资源。</li>
+</ul>
+<p>避免死锁常见的算法有有序资源分配法、银行家算法。</p>
+<h4 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h4><p>数据库里多事务而且要同时操作多个表的情况下就可能产生死锁。所以数据库设计的时候就考虑到了检测死锁和从死锁中恢复的机制。比如oracle提供了检测和处理死锁的语句，而mysql也提供了“循环依赖检测的机制”</p>
+<img src="/blog/2020/01/23/JUC-%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8/pic6.png" srcset="/blog/img/loading.gif" class>
+
+
+
+<h5 id="简单顺序死锁"><a href="#简单顺序死锁" class="headerlink" title="简单顺序死锁"></a>简单顺序死锁</h5><pre><code class="hljs reasonml"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> *类说明：演示普通账户的死锁和解决</span>
+<span class="hljs-comment"> */</span>
+public <span class="hljs-keyword">class</span> NormalDeadLock &#123;
+    <span class="hljs-keyword">private</span> static Object valueFirst = <span class="hljs-keyword">new</span> <span class="hljs-constructor">Object()</span>;<span class="hljs-comment">//第一个锁</span>
+    <span class="hljs-keyword">private</span> static Object valueSecond = <span class="hljs-keyword">new</span> <span class="hljs-constructor">Object()</span>;<span class="hljs-comment">//第二个锁</span>
+
+    <span class="hljs-comment">//先拿第一个锁，再拿第二个锁</span>
+    <span class="hljs-keyword">private</span> static void fisrt<span class="hljs-constructor">ToSecond()</span> throws InterruptedException &#123;
+        String threadName = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>;
+        synchronized (valueFirst)&#123;
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(threadName+<span class="hljs-string">" get 1st"</span>);
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(<span class="hljs-number">100</span>);
+            synchronized (valueSecond)&#123;
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(threadName+<span class="hljs-string">" get 2nd"</span>);
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-comment">//先拿第二个锁，再拿第一个锁</span>
+    <span class="hljs-keyword">private</span> static void <span class="hljs-constructor">SecondToFisrt()</span> throws InterruptedException &#123;
+        String threadName = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>;
+        synchronized (valueFirst)&#123;
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(threadName+<span class="hljs-string">" get 2nd"</span>);
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(<span class="hljs-number">100</span>);
+            synchronized (valueSecond)&#123;
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(threadName+<span class="hljs-string">" get 1st"</span>);
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-keyword">private</span> static <span class="hljs-keyword">class</span> TestThread extends Thread&#123;
+
+        <span class="hljs-keyword">private</span> String name;
+
+        public <span class="hljs-constructor">TestThread(String <span class="hljs-params">name</span>)</span> &#123;
+            this.name = name;
+        &#125;
+
+        public void run<span class="hljs-literal">()</span>&#123;
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.set<span class="hljs-constructor">Name(<span class="hljs-params">name</span>)</span>;
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-constructor">SecondToFisrt()</span>;
+            &#125; catch (InterruptedException e) &#123;
+                e.print<span class="hljs-constructor">StackTrace()</span>;
+            &#125;
+        &#125;
+    &#125;
+
+    public static void main(String<span class="hljs-literal">[]</span> args) &#123;
+        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.set<span class="hljs-constructor">Name(<span class="hljs-string">"TestDeadLock"</span>)</span>;
+        TestThread testThread = <span class="hljs-keyword">new</span> <span class="hljs-constructor">TestThread(<span class="hljs-string">"SubTestThread"</span>)</span>;
+        testThread.start<span class="hljs-literal">()</span>;
+        <span class="hljs-keyword">try</span> &#123;
+            fisrt<span class="hljs-constructor">ToSecond()</span>;
+        &#125; catch (InterruptedException e) &#123;
+            e.print<span class="hljs-constructor">StackTrace()</span>;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="动态顺序死锁"><a href="#动态顺序死锁" class="headerlink" title="动态顺序死锁"></a>动态顺序死锁</h5><p>顾名思义也是和获取锁的顺序有关，但是比较隐蔽，不像简单顺序死锁，往往从代码一眼就看出获取锁的顺序不对。</p>
+<pre><code class="hljs reasonml"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> *类说明：不安全的转账动作的实现</span>
+<span class="hljs-comment"> */</span>
+public <span class="hljs-keyword">class</span> TrasnferAccount implements ITransfer &#123;
+    @Override
+    public void transfer(UserAccount from, UserAccount <span class="hljs-keyword">to</span>, <span class="hljs-built_in">int</span> amount)
+          throws InterruptedException &#123;
+        synchronized (from)&#123;
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>
+                  +<span class="hljs-string">" get"</span>+from.get<span class="hljs-constructor">Name()</span>);
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(<span class="hljs-number">100</span>);
+            synchronized (<span class="hljs-keyword">to</span>)&#123;
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>
+                      +<span class="hljs-string">" get"</span>+<span class="hljs-keyword">to</span>.get<span class="hljs-constructor">Name()</span>);
+                from.fly<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                <span class="hljs-keyword">to</span>.add<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<pre><code class="hljs arduino"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> *@author Mark老师   享学课堂 https://enjoy.ke.qq.com </span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> *类说明：模拟支付公司转账的动作</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PayCompany</span> &#123;</span>
+
+   <span class="hljs-comment">/*执行转账动作的线程*/</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TransferThread</span> <span class="hljs-title">extends</span> <span class="hljs-title">Thread</span>&#123;</span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">String</span> name;
+        <span class="hljs-keyword">private</span> UserAccount from;
+        <span class="hljs-keyword">private</span> UserAccount to;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> amount;
+        <span class="hljs-keyword">private</span> ITransfer <span class="hljs-built_in">transfer</span>;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">TransferThread</span><span class="hljs-params">(<span class="hljs-keyword">String</span> name, UserAccount from, UserAccount to,</span></span>
+<span class="hljs-function"><span class="hljs-params">                              <span class="hljs-keyword">int</span> amount, ITransfer <span class="hljs-built_in">transfer</span>)</span> </span>&#123;
+            <span class="hljs-keyword">this</span>.name = name;
+            <span class="hljs-keyword">this</span>.from = from;
+            <span class="hljs-keyword">this</span>.to = to;
+            <span class="hljs-keyword">this</span>.amount = amount;
+            <span class="hljs-keyword">this</span>.<span class="hljs-built_in">transfer</span> = <span class="hljs-built_in">transfer</span>;
+        &#125;
+
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span></span>&#123;
+            Thread.currentThread().setName(name);
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-built_in">transfer</span>.<span class="hljs-built_in">transfer</span>(from,to,amount);
+            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
+                e.printStackTrace();
+            &#125;
+        &#125;
+
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">String</span>[] args)</span> </span>&#123;
+        PayCompany payCompany = <span class="hljs-keyword">new</span> PayCompany();
+        UserAccount zhangsan = <span class="hljs-keyword">new</span> UserAccount(<span class="hljs-string">"zhangsan"</span>,<span class="hljs-number">20000</span>);
+        UserAccount lisi = <span class="hljs-keyword">new</span> UserAccount(<span class="hljs-string">"lisi"</span>,<span class="hljs-number">20000</span>);
+        ITransfer <span class="hljs-built_in">transfer</span> = <span class="hljs-keyword">new</span> SafeOperateToo();
+        TransferThread zhangsanToLisi = <span class="hljs-keyword">new</span> TransferThread(<span class="hljs-string">"zhangsanToLisi"</span>
+                ,zhangsan,lisi,<span class="hljs-number">2000</span>,<span class="hljs-built_in">transfer</span>);
+        TransferThread lisiToZhangsan = <span class="hljs-keyword">new</span> TransferThread(<span class="hljs-string">"lisiToZhangsan"</span>
+                ,lisi,zhangsan,<span class="hljs-number">4000</span>,<span class="hljs-built_in">transfer</span>);
+        zhangsanToLisi.start();
+        lisiToZhangsan.start();
+
+    &#125;
+&#125;</code></pre>
+
+<h4 id="危害"><a href="#危害" class="headerlink" title="危害"></a>危害</h4><p>时间不定，不是每次必现；一旦出现没有任何异常信息，只知道这个应用的所有业务越来越慢，最后停止服务，无法确定是哪个具体业务导致的问题；测试部门也无法复现，并发量不够。</p>
+<ol>
+<li>线程不工作了，但是整个程序还是活着的</li>
+<li>没有任何的异常信息可以供我们检查。</li>
+<li>一旦程序发生了发生了死锁，是没有任何的办法恢复的，只能重启程序，对生产平台的程序来说，这是个很严重的问题。</li>
+</ol>
+<h4 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h4><h5 id="定位"><a href="#定位" class="headerlink" title="定位"></a>定位</h5><p>通过<strong>jps</strong> 查询应用的id，再通过<strong>jstack[id]</strong> 查看应用的锁的持有情况</p>
+<img src="/blog/2020/01/23/JUC-%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/01/23/JUC-%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/01/23/JUC-%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="修正"><a href="#修正" class="headerlink" title="修正"></a>修正</h5><p>关键是保证拿锁的顺序一致</p>
+<p>两种解决方式：</p>
+<ol>
+<li>内部通过顺序比较，确定拿锁的顺序；</li>
+</ol>
+<pre><code class="hljs reasonml"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> *@author Mark老师   享学课堂 https://enjoy.ke.qq.com </span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> *类说明：不会产生死锁的安全转账</span>
+<span class="hljs-comment"> */</span>
+public <span class="hljs-keyword">class</span> SafeOperate implements ITransfer &#123;
+
+    <span class="hljs-keyword">private</span> static Object tieLock = <span class="hljs-keyword">new</span> <span class="hljs-constructor">Object()</span>;<span class="hljs-comment">//第三把锁</span>
+
+    @Override
+    public void transfer(UserAccount from, UserAccount <span class="hljs-keyword">to</span>, <span class="hljs-built_in">int</span> amount)
+            throws InterruptedException &#123;
+
+        <span class="hljs-built_in">int</span> fromHash = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>identity<span class="hljs-constructor">HashCode(<span class="hljs-params">from</span>)</span>;
+        <span class="hljs-built_in">int</span> toHash = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>identity<span class="hljs-constructor">HashCode(<span class="hljs-params">to</span>)</span>;
+
+        <span class="hljs-keyword">if</span>(fromHash&lt;toHash)&#123;
+            synchronized (from)&#123;
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>+<span class="hljs-string">" get "</span>+from.get<span class="hljs-constructor">Name()</span>);
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(<span class="hljs-number">100</span>);
+                synchronized (<span class="hljs-keyword">to</span>)&#123;
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>+<span class="hljs-string">" get "</span>+<span class="hljs-keyword">to</span>.get<span class="hljs-constructor">Name()</span>);
+                    from.fly<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                    <span class="hljs-keyword">to</span>.add<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(from);
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-keyword">to</span>);
+                &#125;
+            &#125;
+        &#125;<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(toHash&lt;fromHash)&#123;
+            synchronized (<span class="hljs-keyword">to</span>)&#123;
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>+<span class="hljs-string">" get"</span>+<span class="hljs-keyword">to</span>.get<span class="hljs-constructor">Name()</span>);
+                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(<span class="hljs-number">100</span>);
+                synchronized (from)&#123;
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>+<span class="hljs-string">" get"</span>+from.get<span class="hljs-constructor">Name()</span>);
+                    from.fly<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                    <span class="hljs-keyword">to</span>.add<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(from);
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-keyword">to</span>);
+                &#125;
+            &#125;
+        &#125;<span class="hljs-keyword">else</span>&#123;
+            synchronized (tieLock)&#123;
+                synchronized (from)&#123;
+                    synchronized (<span class="hljs-keyword">to</span>)&#123;
+                        from.fly<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                        <span class="hljs-keyword">to</span>.add<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                    &#125;
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<ol start="2">
+<li>采用尝试拿锁的机制。</li>
+</ol>
+<pre><code class="hljs reasonml"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * @author Mark老师   享学课堂 https://enjoy.ke.qq.com</span>
+<span class="hljs-comment"> * &lt;p&gt;</span>
+<span class="hljs-comment"> * 类说明：不会产生死锁的安全转账第二种方法</span>
+<span class="hljs-comment"> */</span>
+public <span class="hljs-keyword">class</span> SafeOperateToo implements ITransfer &#123;
+
+    @Override
+    public void transfer(UserAccount from, UserAccount <span class="hljs-keyword">to</span>, <span class="hljs-built_in">int</span> amount)
+            throws InterruptedException &#123;
+        Random r = <span class="hljs-keyword">new</span> <span class="hljs-constructor">Random()</span>;
+        <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) &#123;
+            <span class="hljs-keyword">if</span> (from.get<span class="hljs-constructor">Lock()</span>.<span class="hljs-keyword">try</span><span class="hljs-constructor">Lock()</span>) &#123;
+                <span class="hljs-keyword">try</span> &#123;
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>
+                            + <span class="hljs-string">" get"</span> + from.get<span class="hljs-constructor">Name()</span>);
+                    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">to</span>.get<span class="hljs-constructor">Lock()</span>.<span class="hljs-keyword">try</span><span class="hljs-constructor">Lock()</span>) &#123;
+                        <span class="hljs-keyword">try</span> &#123;
+                            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>.get<span class="hljs-constructor">Name()</span>
+                                    + <span class="hljs-string">" get"</span> + <span class="hljs-keyword">to</span>.get<span class="hljs-constructor">Name()</span>);
+                            from.fly<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                            <span class="hljs-keyword">to</span>.add<span class="hljs-constructor">Money(<span class="hljs-params">amount</span>)</span>;
+                            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(from);
+                            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-keyword">to</span>);
+                            break;
+                        &#125; finally &#123;
+                            <span class="hljs-keyword">to</span>.get<span class="hljs-constructor">Lock()</span>.unlock<span class="hljs-literal">()</span>;
+                        &#125;
+                    &#125;
+                &#125; finally &#123;
+                    from.get<span class="hljs-constructor">Lock()</span>.unlock<span class="hljs-literal">()</span>;
+                &#125;
+            &#125;
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(r.next<span class="hljs-constructor">Int(2)</span>);
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h3 id="活锁"><a href="#活锁" class="headerlink" title="活锁"></a>活锁</h3><p>两个线程在尝试拿锁的机制中，发生多个线程之间互相谦让，不断发生同一个线程总是拿到同一把锁，在尝试拿另一把锁时因为拿不到，而将本来已经持有的锁释放的过程。</p>
+<p>解决办法：每个线程休眠随机数，错开拿锁的时间。</p>
+<h3 id="线程饥饿"><a href="#线程饥饿" class="headerlink" title="线程饥饿"></a>线程饥饿</h3><p>低优先级的线程，总是拿不到执行时间</p>
+<h3 id="性能和思考"><a href="#性能和思考" class="headerlink" title="性能和思考"></a>性能和思考</h3><p>使用并发的目标是为了提高性能，引入多线程后，其实会引入额外的开销，如线程之间的协调、增加的上下文切换，线程的创建和销毁，线程的调度等等。过度的使用和不恰当的使用，会导致多线程程序甚至比单线程还要低。</p>
+<p>衡量应用的程序的性能：服务时间，延迟时间，吞吐量，可伸缩性等等，其中服务时间，延迟时间（多快），吞吐量（处理能力的指标，完成工作的多少）。多快和多少，完全独立，甚至是相互矛盾的。</p>
+<p>对服务器应用来说：多少（可伸缩性，吞吐量）这个方面比多快更受重视。</p>
+<p>我们做应用的时候：</p>
+<ol>
+<li><p>先保证程序正确，确实达不到要求的时候，再提高速度（黄金原则）。</p>
+</li>
+<li><p>一定要以测试为基准。</p>
+</li>
+</ol>
+<h4 id="线程引入的开销"><a href="#线程引入的开销" class="headerlink" title="线程引入的开销"></a>线程引入的开销</h4><h5 id="上下文切换"><a href="#上下文切换" class="headerlink" title="上下文切换"></a>上下文切换</h5><p>如果主线程是唯一的线程，那么它基本上不会被调度出去。另一方面,如果可运行的线程数大于CPU的数量,那么操作系统最终会将某个正在运行的线程调度出来，从而使其他线程能够使用CPU。这将导致一次上下文切换，在这个过程中将保存当前运行线程的执行上下文，并将新调度进来的线程的执行上下文设置为当前上下文。上下文切换有点像我们同时阅读几本书，在来回切换书本的同时我们需要记住每本书当前读到的页码。</p>
+<p>切换上下文需要一定的开销，而在线程调度过程中需要访问由操作系统和JVM共享的数据结构。由于应用程序、操作系统以及JVM都使用同一组CPU，所以在JVM和操作系统中消耗越多的CPU时钟周期，应用程序的可用CPU时钟周期就越少。而且上下文切换的开销并不只是包含JVM和操作系统的开销，由于当一个新的线程被切换进来时，它所需要的数据可能不在当前处理器的本地缓存，所以上下文切换也将导致一些缓存缺失，线程在首次调度运行时会更加缓慢。</p>
+<p>当线程由于等待某个发生竞争的锁而被阻塞时，JVM通常会将这个线程挂起，并允许它被交换出去。如果线程频繁地发生阻塞，那么它们将无法使用完整的调度时间片。在程序中发生越多的阻塞（包括阻塞IO、等待获取发生竞争的锁或者在条件变量上等待）与CPU密集型的程序就会发生越多的上下文切换，从而增加调度开销，降低吞吐量。</p>
+<p>上下文切换是计算密集型操作。也就是说，它需要相当可观的处理器时间。所以上下文切换对系统来说意味着消耗大量的 CPU 时间，而且可能是操作系统中时间消耗最大的操作。上下文切换的实际开销会随着平台的不同而变化，按照实际经验来看，在大多数通用的处理器中，上下文切换的开销相当于50~10000个时钟周期,也就是几微秒。</p>
+<p>UNIX系统的vmstat命令能报告上下文切换次数以及在内核中执行时间所占比例等信息。如果内核占用率较高（超过10%），那么通常表示调度活动发生得很频繁，这很可能是由IO或竞争锁导致的阻塞引起的。</p>
+<h5 id="内存同步"><a href="#内存同步" class="headerlink" title="内存同步"></a>内存同步</h5><p>同步操作的性能开销包括多个方面。在 synchronized和 volatile提供的可见性保证中可能会使用一些特殊指令，即内存栅栏( Memory Barrier)。</p>
+<p>内存栅栏可以刷新缓存，使缓存无效从而刷新硬件的写缓冲，以及停止执行管道。</p>
+<p>内存栅栏可能同样会对性能带来间接的影响，因为它们将抑制一些编译器优化操作。在内存栅栏中，大多数操作都是不能被重排序的。</p>
+<h5 id="阻塞"><a href="#阻塞" class="headerlink" title="阻塞"></a>阻塞</h5><p>引起阻塞的原因：包括阻塞IO，等待获取发生竞争的锁或者在条件变量上的等待等等。</p>
+<p>阻塞会导致线程挂起，挂起进程在操作系统中可以定义为暂时被淘汰出内存的进程，机器的资源是有限的，在资源不足的情况下，操作系统对在内存中的程序进行合理的安排，其中有的进程被暂时调离出内存，当条件允许的时候，会被操作系统再次调回内存，重新进入等待被执行的状态即就绪态。这个操作至少包括两次额外的上下文切换，还有相关的操作系统级的操作等等。</p>
+<h4 id="如何减少锁的竞争"><a href="#如何减少锁的竞争" class="headerlink" title="如何减少锁的竞争"></a>如何减少锁的竞争</h4><h5 id="减少锁的粒度"><a href="#减少锁的粒度" class="headerlink" title="减少锁的粒度"></a>减少锁的粒度</h5><p>使用锁的时候，锁所保护的对象是多个，当这些多个对象其实是独立变化的时候，不如用多个锁来一一保护这些对象。但是如果有同时要持有多个锁的业务方法，要注意避免发生死锁。</p>
+<h5 id="缩小锁的范围"><a href="#缩小锁的范围" class="headerlink" title="缩小锁的范围"></a>缩小锁的范围</h5><p>对锁的持有实现快进快出，尽量缩短持由锁的的时间。将一些与锁无关的代码移出锁的范围，特别是一些耗时，可能阻塞的操作</p>
+<h5 id="避免多余的锁"><a href="#避免多余的锁" class="headerlink" title="避免多余的锁"></a>避免多余的锁</h5><p>两次加锁之间的语句非常简单，导致加锁的时间比执行这些语句还长，这个时候应该进行锁粗化即扩大锁的范围。</p>
+<h5 id="锁分段"><a href="#锁分段" class="headerlink" title="锁分段"></a>锁分段</h5><p>ConcurrrentHashMap就是典型的锁分段。</p>
+<h5 id="替换独占锁"><a href="#替换独占锁" class="headerlink" title="替换独占锁"></a>替换独占锁</h5><p>在业务允许的情况下：</p>
+<ol>
+<li>使用读写锁，</li>
+<li>用自旋CAS</li>
+<li>使用系统的并发容器</li>
+</ol>
+<h2 id="线程安全的单例模式"><a href="#线程安全的单例模式" class="headerlink" title="线程安全的单例模式"></a>线程安全的单例模式</h2><h3 id="双重检查锁定"><a href="#双重检查锁定" class="headerlink" title="双重检查锁定"></a>双重检查锁定</h3><pre><code class="hljs reasonml"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 懒汉式-双重检查</span>
+<span class="hljs-comment"> */</span>
+public <span class="hljs-keyword">class</span> SingleDcl &#123;
+    <span class="hljs-keyword">private</span> volatile static SingleDcl singleDcl;
+    <span class="hljs-comment">//私有化</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-constructor">SingleDcl()</span>&#123;
+    &#125;
+
+    public static SingleDcl get<span class="hljs-constructor">Instance()</span>&#123;
+        <span class="hljs-keyword">if</span> (singleDcl<span class="hljs-operator"> == </span>null)&#123; <span class="hljs-comment">//第一次检查，不加锁</span>
+            <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>+<span class="hljs-string">" is null"</span>);
+            synchronized(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">SingleDcl</span>.</span></span><span class="hljs-keyword">class</span>)&#123; <span class="hljs-comment">//加锁</span>
+                <span class="hljs-keyword">if</span> (singleDcl<span class="hljs-operator"> == </span>null)&#123; <span class="hljs-comment">//第二次检查，加锁情况下</span>
+                    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>current<span class="hljs-constructor">Thread()</span>+<span class="hljs-string">" is null"</span>);
+                    singleDcl = <span class="hljs-keyword">new</span> <span class="hljs-constructor">SingleDcl()</span>;
+                &#125;
+            &#125;
+        &#125;
+        return singleDcl;
+    &#125;
+&#125;</code></pre>
+
+<p>仅仅是双重检查无法保证多线程下使用的安全性，因为在创建对象时为内存中分配空间、对象在内存空间的初始化、把这个内存空间的地址赋值给引用这三个步骤是可能被重新排序的，只要引用指向了内存空间的地址判断条件singleDc1==null就会不成立，而此时对象很可能还没有完成初始化，所以还需要加入volatile关键字保证指令不会被重排序。</p>
+<h3 id="饿汉式"><a href="#饿汉式" class="headerlink" title="饿汉式"></a>饿汉式</h3><pre><code class="hljs cpp"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 饿汉式</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SingleEHan</span> &#123;</span>
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-title">SingleEHan</span><span class="hljs-params">()</span></span>&#123;&#125;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> SingleEHan singleDcl = <span class="hljs-keyword">new</span> SingleEHan();
+
+&#125;</code></pre>
+
+<p>JVM对类的加载和类初始化，由虚拟机保证线程安全。多个线程同时加载一个类时会为其加锁保证只有一个类加载成功，所以饿汉式单例模式是线程安全的。</p>
+<h3 id="延迟初始化占位类模式"><a href="#延迟初始化占位类模式" class="headerlink" title="延迟初始化占位类模式"></a>延迟初始化占位类模式</h3><pre><code class="hljs smali">/**
+ * 懒汉式-延迟初始化占位类模式
+ */
+public class SingleInit &#123;
+   <span class="hljs-keyword"> private</span> SingleInit()&#123;&#125;
+
+   <span class="hljs-keyword"> private</span><span class="hljs-keyword"> static</span> class InstanceHolder&#123;
+       <span class="hljs-keyword"> private</span><span class="hljs-keyword"> static</span> SingleInit<span class="hljs-built_in"> instance </span>=<span class="hljs-built_in"> new </span>SingleInit();
+    &#125;
+
+   <span class="hljs-keyword"> public</span><span class="hljs-keyword"> static</span> SingleInit getInstance()&#123;
+       <span class="hljs-built_in"> return </span>InstanceHolder.instance;
+    &#125;
+
+&#125;</code></pre>
+
+<p>延迟初始化占位类模式其实也是利用JVM类加载的线程安全，在子类中完成实例的初始化，如果在其他地方没有对子类的引用，子类的初始化将只在首次获取实例时完成，以此来解决饿汉式单例模式资源占用的问题。延迟占位模式也可以用在多线程下实例域的延迟赋值。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8/">并发安全</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/02/02/%E5%AE%9E%E6%88%98%E9%A1%B9%E7%9B%AE/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">实战项目</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/01/10/tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <span class="hidden-mobile">Tomcat性能优化</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div>
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/blog/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "并发安全&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    var path = "/blog/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
