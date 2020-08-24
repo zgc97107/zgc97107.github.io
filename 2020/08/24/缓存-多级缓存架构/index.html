@@ -17,7 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
-  <title>redis常见场景设计 - 🍎🍊&#39;s blog</title>
+  <title>多级缓存架构 - 🍎🍊&#39;s blog</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
 
@@ -160,8 +160,8 @@
               
   <div class="mt-3 post-meta">
     <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-    <time datetime="2020-04-29 09:19" pubdate>
-      2020年4月29日 上午
+    <time datetime="2020-08-24 15:17" pubdate>
+      2020年8月24日 下午
     </time>
   </div>
 
@@ -171,7 +171,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      1.4k 字
+      1.3k 字
     </span>
   
 
@@ -181,7 +181,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      18
+      17
        分钟
     </span>
   
@@ -211,185 +211,196 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto" id="post">
             <!-- SEO header -->
-            <h1 style="display: none">redis常见场景设计</h1>
+            <h1 style="display: none">多级缓存架构</h1>
             
             <div class="markdown-body" id="post-body">
-              <h2 id="key设计的注意事项"><a href="#key设计的注意事项" class="headerlink" title="key设计的注意事项"></a>key设计的注意事项</h2><p>一般以业务功能模块或者表名为前缀，再加上唯一主键，中间以冒号分隔，比如购物车cart:001，表示1号用户的购物车。设计以简短、明了以主， 节约内存。</p>
-<h2 id="redis分布式锁"><a href="#redis分布式锁" class="headerlink" title="redis分布式锁"></a>redis分布式锁</h2><h4 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h4><p><code>SETNX {key} {value} ex|px {time}</code>指令可以将key的值设为value并指定一个失效时间，SETNX是SET if Not eXists(如果不存在，则 SET)的简写，如果key已经存在，则SETNX不会成功。</p>
-<p>在加锁时通过setnx向特定的key写入一个随机值，并同时设置失效时间，写值成功既加锁成功。</p>
-<p>注意：</p>
-<ul>
-<li>必须给锁设置一个失效时间， 避免死锁问题。</li>
-<li>加锁时必须写入一个随机字符串，用于解锁时避免锁的误删。</li>
-<li>整个过程必须是原子的。</li>
-</ul>
-<h4 id="解锁"><a href="#解锁" class="headerlink" title="解锁"></a>解锁</h4><p>解锁步骤为：</p>
+              <h3 id="多级缓存架构"><a href="#多级缓存架构" class="headerlink" title="多级缓存架构"></a>多级缓存架构</h3><p>任何项目中我们都有一些频繁的查询，而那些频繁的查询数据基本都是相同的，比如项目中查看用户个人信息，购物狂欢查询活动信息，这些功能点使用频率非常高，我们一般需要对他们做特殊处理。 </p>
+<p>我们以狂欢活动信息为例，当双十一的时候，很多人会去查看今天优惠活动有哪些，对这些活动信息我们可以采用多级缓存架构来抗住高并发。 </p>
+<h4 id="多级缓存架构对比"><a href="#多级缓存架构对比" class="headerlink" title="多级缓存架构对比"></a>多级缓存架构对比</h4><img src="/blog/2020/08/24/%E7%BC%93%E5%AD%98-%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98%E6%9E%B6%E6%9E%84/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>基于Java版的缓存架构实现流程如下： </p>
 <ol>
-<li>获取key上的值</li>
-<li>判断value中的随机字符串是否一致</li>
-<li>删除数据</li>
+<li><p>用户请求经过Nginx </p>
+</li>
+<li><p>Nginx检查是否有缓存，如果Nginx有缓存，直接响应用户数据 </p>
+</li>
+<li><p>Nginx如果没有缓存，则将请求路由给后端Java服务</p>
+</li>
+<li><p>Java服务查询Redis缓存，如果有数据，则将数据直接响应给Nginx，并将数据存入缓存，Nginx将数据响应给用户 </p>
+</li>
+<li><p>如果Redis没有缓存，则使用Java程序查询MySQL，并将数据存入到Reids，再将数据存入到Nginx中 </p>
+</li>
 </ol>
-<p>这三个步骤必须要保证原子性，所以要借助lua脚本执行。</p>
-<p>lua脚本：</p>
-<pre><code class="hljs java"><span class="hljs-keyword">if</span> redis.call(<span class="hljs-string">"get"</span>,KEYS[<span class="hljs-number">1</span>]) == ARGV[<span class="hljs-number">1</span>] then
-    <span class="hljs-keyword">return</span> redis.call(<span class="hljs-string">"del"</span>,KEYS[<span class="hljs-number">1</span>])
+<p>优点</p>
+<pre><code class="hljs angelscript"><span class="hljs-number">1</span>、采用了Nginx缓存，减少了数据加载的路径，从而提升站点数据加载效率
+<span class="hljs-number">2</span>、多级缓存有效防止了缓存击穿、缓存穿透问题</code></pre>
+
+<p>缺点</p>
+<pre><code class="hljs plain">Tomcat并发量偏低，导致缓存同步并发量失衡，缓存首次加载效率偏低，Tomcat 大规模集群占用资源高</code></pre>
+
+{% asset_img pic2.png %}
+
+<p>优点</p>
+<pre><code class="hljs angelscript"><span class="hljs-number">1</span>、采用了Nginx缓存，减少了数据加载的路径，从而提升站点数据加载效率 
+<span class="hljs-number">2</span>、多级缓存有效防止了缓存击穿、缓存穿透问题
+<span class="hljs-number">3</span>、使用了Nginx+Lua集成，无论是哪次缓存加载，效率都高
+<span class="hljs-number">4</span>、Nginx并发量高，Nginx+Lua集成，大幅提升了并发能力</code></pre>
+
+<h3 id="Nginx-Lua多级缓存实战"><a href="#Nginx-Lua多级缓存实战" class="headerlink" title="Nginx+Lua多级缓存实战"></a>Nginx+Lua多级缓存实战</h3><p>我们以双十一活动信息加载为例，通过多级缓存架构来加载双十一活动信息，双十一活动信息表结构如下： </p>
+<pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`activitt_info`</span> (
+  <span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,
+  <span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'活动名称'</span>,
+  <span class="hljs-string">`desc`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">3000</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">'活动介绍'</span>,
+  <span class="hljs-string">`starttime`</span> datetime <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+  <span class="hljs-string">`endtime`</span> datetime <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)
+) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> AUTO_INCREMENT=<span class="hljs-number">3</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8;</code></pre>
+
+<h4 id="链接MySQL封装"><a href="#链接MySQL封装" class="headerlink" title="链接MySQL封装"></a>链接MySQL封装</h4><p>创建一个lua脚本 mysql.lua ，用于提供根据SQL语句执行查询操作，代码如下：</p>
+<pre><code class="hljs lua"><span class="hljs-comment">-- 引入依赖库mysql</span>
+<span class="hljs-keyword">local</span> mysql = <span class="hljs-built_in">require</span> <span class="hljs-string">"resty.mysql"</span>
+
+<span class="hljs-comment">-- 配置数据库链接信息</span>
+<span class="hljs-keyword">local</span> props = &#123;
+    host = <span class="hljs-string">"127.0.0.1"</span>,
+    port = <span class="hljs-number">3306</span>,
+    database = <span class="hljs-string">"redpackage"</span>,
+    user = <span class="hljs-string">"root"</span>,
+    password = <span class="hljs-string">"123456"</span>
+&#125;
+
+<span class="hljs-comment">-- 创建一个对象</span>
+<span class="hljs-keyword">local</span> mysqlobj = &#123;&#125;
+
+<span class="hljs-comment">-- 根据SQL语句查询</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mysqlobj.query</span><span class="hljs-params">(sql)</span></span>
+    <span class="hljs-comment">-- 创建链接、设置超时时间、编码格式</span>
+    <span class="hljs-keyword">local</span> db = mysql:new();
+    db:set_timeout(<span class="hljs-number">10000</span>)
+    db:connect(props)
+    db:query(<span class="hljs-string">"SET NAMES utf8"</span>)
+
+    <span class="hljs-comment">-- 执行SQL语句</span>
+    <span class="hljs-keyword">local</span> result = db:mysqlobj.query(sql)
+
+    <span class="hljs-comment">-- 关闭连接</span>
+    db:<span class="hljs-built_in">close</span>()
+
+    <span class="hljs-comment">-- 返回结果集</span>
+    <span class="hljs-keyword">return</span> result
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">return</span> mysqlobj;</code></pre>
+
+<h4 id="链接Redis集群封装"><a href="#链接Redis集群封装" class="headerlink" title="链接Redis集群封装"></a>链接Redis集群封装</h4><p>我们需要安装 lua-resty-redis-cluster ,用该依赖库实现Redis集群的操作，这里提供github地址，大家下载后按操作配置即可，下载地址： <a href="https://github.com/cuiweixie/lua-resty-redis-cluster" target="_blank" rel="noopener">https://github.com/cuiweixie/lua-resty-redis-cluster</a> ，下载该文件配置后即可实现Redis集群操作。 </p>
+<p>接下来我们实现Redis集群操作，创建一个脚本 redis.lua ，脚本中实现Redis中数据的查询和添加操作，代码如下：</p>
+<pre><code class="hljs lua"><span class="hljs-comment">-- redis链接配置</span>
+<span class="hljs-keyword">local</span> <span class="hljs-built_in">config</span> = &#123;
+    name = <span class="hljs-string">"test"</span>,
+    serv_list = &#123;
+        &#123; ip = <span class="hljs-string">"192.168.211.141"</span>, port = <span class="hljs-number">7001</span> &#125;,
+        &#123; ip = <span class="hljs-string">"192.168.211.141"</span>, port = <span class="hljs-number">7002</span> &#125;,
+        &#123; ip = <span class="hljs-string">"192.168.211.141"</span>, port = <span class="hljs-number">7003</span> &#125;,
+        &#123; ip = <span class="hljs-string">"192.168.211.141"</span>, port = <span class="hljs-number">7004</span> &#125;,
+        &#123; ip = <span class="hljs-string">"192.168.211.141"</span>, port = <span class="hljs-number">7005</span> &#125;,
+        &#123; ip = <span class="hljs-string">"192.168.211.141"</span>, port = <span class="hljs-number">7006</span> &#125;
+    &#125;,
+    idle_timeout = <span class="hljs-number">1000</span>,
+    pool_size = <span class="hljs-number">10000</span>,
+&#125;
+
+<span class="hljs-comment">-- 引入redis集群配置</span>
+<span class="hljs-keyword">local</span> redis_cluster = <span class="hljs-built_in">require</span> <span class="hljs-string">"resty.rediscluster"</span>
+
+<span class="hljs-comment">-- 定义一个对象</span>
+<span class="hljs-keyword">local</span> lredis = &#123;&#125;
+
+<span class="hljs-comment">-- 根据key查询</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">lredis.get</span><span class="hljs-params">(key)</span></span>
+    <span class="hljs-comment">-- 创建链接</span>
+    <span class="hljs-keyword">local</span> red = redis_cluster:new(<span class="hljs-built_in">config</span>)
+    red:init_pipeline()
+
+    <span class="hljs-comment">-- 根据key获取数据</span>
+    red:get(key)
+    <span class="hljs-keyword">local</span> rresult = red:commit_pipeline()
+
+    <span class="hljs-comment">-- 关闭链接</span>
+    red:<span class="hljs-built_in">close</span>()
+
+    <span class="hljs-keyword">return</span> rresult
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-comment">-- 添加带过期的数据</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">lredis.set</span><span class="hljs-params">(key,value)</span></span>
+    <span class="hljs-comment">-- 创建链接</span>
+    <span class="hljs-keyword">local</span> red = redis_cluster:new(<span class="hljs-built_in">config</span>)
+    red:init_pipeline()
+
+    <span class="hljs-comment">-- 添加key，同时设置过期时间</span>
+    red:set(key,value)
+    <span class="hljs-keyword">local</span> rresult = red:commit_pipeline()
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">return</span> lredis</code></pre>
+
+<h4 id="多级缓存操作"><a href="#多级缓存操作" class="headerlink" title="多级缓存操作"></a>多级缓存操作</h4><p>配置创建Nginx缓存共享空间</p>
+<pre><code class="hljs abnf">lua_shared_dict act_cache <span class="hljs-number">128</span>m<span class="hljs-comment">;</span></code></pre>
+
+<p>创建多级缓存操作脚本 activity.lua ，代码如下： </p>
+<pre><code class="hljs java">ngx.header.content_type = <span class="hljs-string">"application/json;charset=utf8"</span>
+-- 引入依赖库
+local cjson = require(<span class="hljs-string">"cjson"</span>)
+local mysql = require(<span class="hljs-string">"mysql"</span>)
+local lrredis = require(<span class="hljs-string">"redis"</span>)
+
+-- 获取请求参数ID
+local id = ngx.req.get_uri_args()[<span class="hljs-string">"id"</span>];
+
+-- 加载本地缓存
+local cache_ngx = ngx.shared.act_cache;
+
+-- 组装本地缓存的key，并获取nginx本地缓存
+local ngx_key = <span class="hljs-string">'ngx_act_cache_'</span> .. id
+local actCache = cache_ngx:get(ngx_key)
+
+-- 如果nginx中没有缓存，则查询Redis集群缓存
+<span class="hljs-keyword">if</span> contentCache == <span class="hljs-string">""</span> or contentCache == nil then
+    -- 从Redis集群中加载数据
+    local redis_key = <span class="hljs-string">'redis_act_'</span> .. id
+    local result = lrredis.get(redis_key);
+
+    -- Redis中数据为空，查询数据库
+    <span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>] == nil or result[<span class="hljs-number">1</span>] == ngx.<span class="hljs-keyword">null</span> then
+        -- 组转SQL语句
+        local sql = <span class="hljs-string">"select * from activity_info where id = "</span> .. id
+        -- 执行查询
+        result = mysql.query(sql)
+        -- 数据不为空，则添加到Redis中
+        <span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>] == nil or result[<span class="hljs-number">1</span>] == ngx.<span class="hljs-keyword">null</span> then
+            ngx.say(<span class="hljs-string">"no data"</span>)
+        <span class="hljs-keyword">else</span>
+            -- 数据添加到Nginx缓存和Redis缓存
+            lrredis.set(redis_key, cjson.encode(result))
+            cache_ngx:set(ngx_key, cjson.encode(result), <span class="hljs-number">2</span> * <span class="hljs-number">60</span>)
+            ngx.say(result)
+        end
+    <span class="hljs-keyword">else</span>
+        -- 将数据添加到Nginx缓存中
+        cache_ngx:set(ngx_key, result, <span class="hljs-number">2</span> * <span class="hljs-number">60</span>)
+        -- 直接输出
+        ngx.say(result)
+    end
 <span class="hljs-keyword">else</span>
-    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+    -- 输出缓存数据
+    ngx.say(actCache)
 end</code></pre>
 
-<p>具体实现：</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Service</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedisLock</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Lock</span> </span>&#123;
-	
-	<span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String  KEY = <span class="hljs-string">"LOCK_KEY"</span>;
-	
-	<span class="hljs-meta">@Resource</span>
-	<span class="hljs-keyword">private</span> JedisConnectionFactory factory;
-
-	<span class="hljs-keyword">private</span> ThreadLocal&lt;String&gt; local = <span class="hljs-keyword">new</span> ThreadLocal&lt;&gt;();
-	
-	
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-comment">//阻塞式的加锁</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">lock</span><span class="hljs-params">()</span> </span>&#123;
-		<span class="hljs-comment">//1.尝试加锁</span>
-		<span class="hljs-keyword">if</span>(tryLock())&#123;
-			<span class="hljs-keyword">return</span>;
-		&#125;
-		<span class="hljs-comment">//2.加锁失败，当前任务休眠一段时间</span>
-		<span class="hljs-keyword">try</span> &#123;
-			Thread.sleep(<span class="hljs-number">10</span>);<span class="hljs-comment">//性能浪费</span>
-		&#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-			e.printStackTrace();
-		&#125;
-		<span class="hljs-comment">//3.递归调用，再次去抢锁</span>
-		lock();
-	&#125;
-
-
-
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-comment">//阻塞式加锁,使用setNx命令返回OK的加锁成功，并生产随机值</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">tryLock</span><span class="hljs-params">()</span> </span>&#123;
-		<span class="hljs-comment">//产生随机值，标识本次锁编号</span>
-		String uuid = UUID.randomUUID().toString();
-		Jedis jedis = (Jedis) factory.getConnection().getNativeConnection();
-
-		<span class="hljs-comment">/**</span>
-<span class="hljs-comment">		 * key:我们使用key来当锁</span>
-<span class="hljs-comment">		 * uuid:唯一标识，这个锁是我加的，属于我</span>
-<span class="hljs-comment">		 * NX：设入模式【SET_IF_NOT_EXIST】--仅当key不存在时，本语句的值才设入</span>
-<span class="hljs-comment">		 * PX：给key加有效期</span>
-<span class="hljs-comment">		 * 1000：有效时间为 1 秒</span>
-<span class="hljs-comment">		 */</span>
-		String ret = jedis.set(KEY, uuid,<span class="hljs-string">"NX"</span>,<span class="hljs-string">"PX"</span>,<span class="hljs-number">1000</span>);
-
-		<span class="hljs-comment">//设值成功--抢到了锁</span>
-		<span class="hljs-keyword">if</span>(<span class="hljs-string">"OK"</span>.equals(ret))&#123;
-			local.set(uuid);<span class="hljs-comment">//抢锁成功，把锁标识号记录入本线程--- Threadlocal</span>
-			<span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
-		&#125;
-
-		<span class="hljs-comment">//key值里面有了，我的uuid未能设入进去，抢锁失败</span>
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
-	&#125;
-
-	<span class="hljs-comment">//正确解锁方式</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">()</span> </span>&#123;
-		<span class="hljs-comment">//读取lua脚本</span>
-		String script = FileUtils.getScript(<span class="hljs-string">"unlock.lua"</span>);
-		<span class="hljs-comment">//获取redis的原始连接</span>
-		Jedis jedis = (Jedis) factory.getConnection().getNativeConnection();
-		<span class="hljs-comment">//通过原始连接连接redis执行lua脚本</span>
-		jedis.eval(script, Arrays.asList(KEY), Arrays.asList(local.get()));
-	&#125;
-
-	<span class="hljs-comment">//-----------------------------------------------</span>
-
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> Condition <span class="hljs-title">newCondition</span><span class="hljs-params">()</span> </span>&#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-	
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">tryLock</span><span class="hljs-params">(<span class="hljs-keyword">long</span> time, TimeUnit unit)</span></span>
-<span class="hljs-function">			<span class="hljs-keyword">throws</span> InterruptedException </span>&#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
-	&#125;
-
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">lockInterruptibly</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> InterruptedException </span>&#123;
-	&#125;
-
+<p>Nginx配置： </p>
+<pre><code class="hljs sh"><span class="hljs-comment">#活动查询</span>
+location /act &#123;
+	content_by_lua_file /usr/<span class="hljs-built_in">local</span>/openresty/nginx/lua/activity.lua;
 &#125;</code></pre>
-
-<h2 id="购物车"><a href="#购物车" class="headerlink" title="购物车"></a>购物车</h2><p>所需要的功能：</p>
-<ul>
-<li><p>全选功能：获取该用户的所有购物车商品</p>
-</li>
-<li><p>商品数量：购物车里商品的总数</p>
-</li>
-<li><p>删除：要能移除购物车里某个商品</p>
-</li>
-<li><p>增加或减少某个商品的数量</p>
-</li>
-</ul>
-<p>设计实现：以当前登录用户ID号做为key，商品ID号为field, 加入购物车数量为value。如<code>hmset cart:001 prod:01 1 prod:02 1</code>。</p>
-<h2 id="堆栈功能"><a href="#堆栈功能" class="headerlink" title="堆栈功能"></a>堆栈功能</h2><p>可以利用List实现堆、栈的先进后出，先进先出功能</p>
-<ul>
-<li>先进后出：存取操作都在队列左端或右端即可，如LPUSH+LPOP</li>
-<li>先进先出：存取操作的两端必须相反，如LPUSH + RPOP</li>
-</ul>
-<h2 id="阻塞队列"><a href="#阻塞队列" class="headerlink" title="阻塞队列"></a>阻塞队列</h2><img src="/blog/2020/04/29/redis%E5%B8%B8%E8%A7%81%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1/pic1.png" srcset="/blog/img/loading.gif" class>
-
-<p>阻塞队列可以使用BRPOP指令来实现，当队列中没有元素是会一直阻塞。</p>
-<h2 id="生成数据库主键标识"><a href="#生成数据库主键标识" class="headerlink" title="生成数据库主键标识"></a>生成数据库主键标识</h2><p>可以使用incr指令在入库前将对应的主键加1，但redis每秒支持的并发量是有上限的，这么做会对redis的性能有比较大的影响，这时可以通过incry指令一次获取多个主键标识，如<code>incrby serialNo 1000</code>获取1000个标识，放到系统中使用，使用完后再去获取。</p>
-<h2 id="文章列表"><a href="#文章列表" class="headerlink" title="文章列表"></a>文章列表</h2><p>发表文章时将文章ID加入list中，然后通过lrange指令获取，如</p>
-<ul>
-<li><p>XX发布一篇文章ID为999：<code>lpush mes:004 999</code></p>
-</li>
-<li><p>XXX也发布了一条消息ID为1000：<code>lpush mes:004 1000</code></p>
-</li>
-<li><p>获取文章列表实现如下：<code>lrange mes:004 0 5</code></p>
-</li>
-</ul>
-<h2 id="抽奖"><a href="#抽奖" class="headerlink" title="抽奖"></a>抽奖</h2><p>可以使用set实现，将所有参与者加入set中，然后用srandmember或者spop命令随机抽取，如：</p>
-<p>活动id为001，用户id为004</p>
-<ul>
-<li>当004参与抽奖时放入set集合：<code>sadd act:001 004</code></li>
-<li>抽取2名中奖者：<code>srandmember act:001 2</code>或<code>spop act:001 2</code>，spop会移除用户。</li>
-<li>查看有多少用户参加了本次抽奖：<code>smembers act:001</code></li>
-</ul>
-<h2 id="点赞"><a href="#点赞" class="headerlink" title="点赞"></a>点赞</h2><p>点赞的实现也可以借助set，如果有顺序要求可以使用zset</p>
-<p>如张三用户id为01</p>
-<ul>
-<li><p>张三对消息008点赞<code>sadd zan:008  userId:01</code></p>
-</li>
-<li><p>张三取消了对消息008的点赞<code>srem zan:008  userId:01</code></p>
-</li>
-<li><p>检查用户是否点过赞<code>sismember zan:008  userId:01</code></p>
-</li>
-<li><p>获取消息008所有的点赞用户列表<code>smembers zan:008</code></p>
-</li>
-<li><p>消息008的点赞数计算<code>scard zan:008</code></p>
-</li>
-</ul>
-<h2 id="关注"><a href="#关注" class="headerlink" title="关注"></a>关注</h2><ul>
-<li>user1关注的人：<code>sadd user1:care user2,user4,user5,user3</code></li>
-<li>user2关注的人：<code>sadd user2:care user1,user3,user6,user5</code></li>
-<li>user3关注的人：<code>sadd user3:care deer,user6,user5</code></li>
-<li>user1和user2共同关注的人，求交集：<code>sinter user1:care user2:care</code>, 计算结果为 {user3, user5}</li>
-<li>user1关注的人也关注user5，判断user5是否在关注的人的集合中存在：<code>sismember user2:care user5</code>，<code>sismember user3:care user5</code></li>
-<li>user1可能认识的人，也可以先并集后差集：<code>SDIFF user2:care user1:care</code>，结果为{user1.user6}</li>
-</ul>
-<h2 id="每日热搜"><a href="#每日热搜" class="headerlink" title="每日热搜"></a>每日热搜</h2><p>热搜功能可以使用zset来实现，以日期做为Key ：</p>
-<ul>
-<li>点击id为1的话题： <code>zincrby topic:20191022 1 topic:1</code></li>
-<li>展示今日前20排名：<code>zrevrange topic:20191022 0 20 withscores</code></li>
-<li>统计近3日点击数据：<code>zunionstore topic:20191022-20191020 3 topic:20191022 topic:20191021 topic:20191020</code></li>
-<li>展示近3日的排行前9名：<code>zrevrange topic:20191022-20191020 0 9 withscores</code></li>
-</ul>
-
             </div>
             <hr>
             <div>
@@ -398,7 +409,7 @@ end</code></pre>
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/blog/categories/redis/">redis</a>
+                      <a class="hover-with-bg" href="/blog/categories/%E7%BC%93%E5%AD%98/">缓存</a>
                     
                   </div>
                 
@@ -406,7 +417,7 @@ end</code></pre>
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/blog/tags/redis/">redis</a>
+                      <a class="hover-with-bg" href="/blog/tags/%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/">多级缓存架构设计</a>
                     
                   </div>
                 
@@ -419,9 +430,9 @@ end</code></pre>
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/04/29/redis-lua%E5%AE%9E%E7%8E%B0%E9%99%90%E6%B5%81/">
+                      <a href="/blog/2020/08/24/%E7%BC%93%E5%AD%98-%E7%BA%A2%E5%8C%85%E9%9B%A8%E6%A1%88%E4%BE%8B/">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">redis+lua实现限流</span>
+                        <span class="hidden-mobile">红包雨案例</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
@@ -429,8 +440,8 @@ end</code></pre>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/04/28/redis%E7%9A%84%E6%8C%87%E4%BB%A4/">
-                        <span class="hidden-mobile">redis的指令</span>
+                      <a href="/blog/2020/08/24/%E7%BC%93%E5%AD%98-Lua%E9%AB%98%E6%80%A7%E8%83%BD%E8%84%9A%E6%9C%AC%E8%AF%AD%E8%A8%80/">
+                        <span class="hidden-mobile">Lua高性能脚本语言</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
@@ -595,7 +606,7 @@ end</code></pre>
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "redis常见场景设计&nbsp;",
+        "多级缓存架构&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
