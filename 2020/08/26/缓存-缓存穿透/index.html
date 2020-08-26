@@ -1,0 +1,648 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>缓存穿透 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+  
+
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="container page-header text-center fade-in-up">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              
+  <div class="mt-3 post-meta">
+    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+    <time datetime="2020-08-26 16:46" pubdate>
+      2020年8月26日 下午
+    </time>
+  </div>
+
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      14
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto" id="post">
+            <!-- SEO header -->
+            <h1 style="display: none">缓存穿透</h1>
+            
+            <div class="markdown-body" id="post-body">
+              <h3 id="缓存穿透实战"><a href="#缓存穿透实战" class="headerlink" title="缓存穿透实战"></a>缓存穿透实战</h3><p>有些数据查询频率很高的时候，我们会将数据存入到缓存，用户每次查询直接查询缓存即可，从而提高用户访问数据的效率。</p>
+<p>比如获取用户为 lisi 的抢红包记录，此时如果每次查询数据库效率都很低，我们可以第1次从数据库查询 lisi 最近的前10条抢红包记录，然后将记录存入到Redis缓存，下次直接查询Redis缓存即可。</p>
+<p>每次用户抢红包，谁抢到了红包，我们会将抢到红包的用户信息按照抢红包的金额大小的前100名用户信息公示出去，这里也可以采用这种方式来做。</p>
+<p>当然，也不是所有数据都适合做缓存，需要根据数据特点来决定，如下图：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="缓存穿透介绍"><a href="#缓存穿透介绍" class="headerlink" title="缓存穿透介绍"></a>缓存穿透介绍</h4><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>上面查询最近红包记录提升用户访问效率，这种操作是一种正常操作，但也存在一些非正常操作，比如 wangwu 没有抢到红包，但用户恶意频繁去查询抢红包记录，此时Redis缓存中将一直没有数据，每次都会查询数据库，这种现象叫缓存穿透。</p>
+<p>缓存穿透该如何解决呢？我们提供这一种思路，如下图所示：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="穿透问题解决"><a href="#穿透问题解决" class="headerlink" title="穿透问题解决"></a>穿透问题解决</h4><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h4><p>防止缓存穿透，有多种方案，上面所实现的是一种最简单的方案，也有其他方案，比如布隆过滤器也是缓存穿透方案之一。布隆过滤器主要是解决<strong>大规模数据下不需要精确过滤</strong>的业务场景，如检查垃圾邮件地址，爬虫URL地址去重，解决缓存穿透问题等。</p>
+<p>布隆过滤器：在一个存在一定数量的集合中过滤一个对应的数据，判断该数据是否在该集合中。</p>
+<h5 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h5><p>布隆过滤器的巨大用处就是，能够迅速判断一个元素是否在一个集合中。因此他有如下三个使用场景: </p>
+<ol>
+<li><p>网页爬虫对URL的去重，避免爬取相同的URL地址</p>
+</li>
+<li><p>反垃圾邮件，从数十亿个垃圾邮件列表中判断某邮箱是否垃圾邮箱（同理，垃圾短信）</p>
+</li>
+<li><p>缓存穿透，将所有可能存在的数据缓存放到布隆过滤器中，当黑客访问不存在的缓存时迅速返回避免缓存及DB挂掉。</p>
+</li>
+</ol>
+<p>我们来谈谈布隆过滤器的原理</p>
+<p>其内部维护一个全为0的bit数组，需要说明的是，布隆过滤器有一个误判率的概念，误判率越低，则数组越长，所占空间越大。误判率越高则数组越小，所占的空间越小。</p>
+<p>假设，根据误判率，我们生成一个10位的bit数组，以及2个hash函数（(f_1,f_2)），如下图所示(生成的数组的位数和hash函数的数量，我们不用去关心是如何生成的，有数学论文进行过专业的证明)。</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>假设输入集合为((N_1,N_2)),经过计算(f_1(N_1))得到的数值得为2，(f_2(N_1))得到的数值为5，则将数组下标为2和下表为5的位置置为1，如下图所示</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>同理，经过计算(f_1(N_2))得到的数值得为3，(f_2(N_2))得到的数值为6，则将数组下标为3和下表为6的位置置为1，如下图所示</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>这个时候，我们有第三个数(N_3)，我们判断(N_3)在不在集合((N_1,N_2))中，就进行(f_1(N_3)，f_2(N_3))的计算</p>
+<ol>
+<li><p>若值恰巧都位于上图的红色位置中，我们则认为，(N_3)在集合((N_1,N_2))中 </p>
+</li>
+<li><p>若值有一个不位于上图的红色位置中，我们则认为，(N_3)不在集合((N_1,N_2))中</p>
+</li>
+</ol>
+<p>以上就是布隆过滤器的计算原理。</p>
+<h5 id="布隆过滤器案例"><a href="#布隆过滤器案例" class="headerlink" title="布隆过滤器案例"></a>布隆过滤器案例</h5><p>引入依赖包</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+	<span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.google.guava<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+	<span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>guava<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+	<span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>22.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>编写测试类</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BloomFilterTest</span> </span>&#123;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> size = <span class="hljs-number">1000000</span>;
+    <span class="hljs-comment">//Google的布隆过滤器</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> BloomFilter&lt;Integer&gt; bloomFilter = BloomFilter.create(Funnels.integerFunnel(), size, <span class="hljs-number">0.001</span>);
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        <span class="hljs-comment">//放一百万个key到布隆过滤器中 1000000</span>
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; size; i++) &#123;
+            bloomFilter.put(i);
+        &#125;
+
+        List&lt;Integer&gt; list = <span class="hljs-keyword">new</span> ArrayList&lt;Integer&gt;(<span class="hljs-number">1000</span>);
+        <span class="hljs-comment">//取10000个不在过滤器里的值，看看有多少个会被认为在过滤器里</span>
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = size + <span class="hljs-number">10000</span>; i &lt; size + <span class="hljs-number">20000</span>; i++) &#123;
+            <span class="hljs-keyword">if</span> (bloomFilter.mightContain(i)) &#123;
+                list.add(i);
+            &#125;
+        &#125;
+        System.out.println(<span class="hljs-string">"误判的数量："</span> + list.size());
+    &#125;
+&#125;</code></pre>
+
+<p>我们可以发现有330个被误判,误判的概率为0.03，源码中也有说明。</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>这里的误判概率是可以调整的，每次创建 BloomFilter 的时候，指定误判概率值即可，这个值必须大于0。</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h5><ol>
+<li><p>思路简单</p>
+</li>
+<li><p>保证一致性</p>
+</li>
+<li><p>性能强</p>
+</li>
+</ol>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ol>
+<li><p>代码复杂度增大</p>
+</li>
+<li><p>需要另外维护一个集合来存放缓存的Key </p>
+</li>
+<li><p>布隆过滤器不支持删值操作</p>
+</li>
+</ol>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E7%BC%93%E5%AD%98/">缓存</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/">缓存穿透</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/26/%E7%BC%93%E5%AD%98-%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">缓存击穿</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/26/%E7%BC%93%E5%AD%98-Nginx%E9%99%90%E6%B5%81/">
+                        <span class="hidden-mobile">Nginx限流</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div id="tocbot"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+  </main>
+
+  
+    <a id="scroll-top-button" href="#" role="button">
+      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  
+
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <div>
+      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
+      <i class="iconfont icon-love"></i>
+      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
+        <span>Fluid</span></a>
+    </div>
+    
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
+    
+  </div>
+
+
+    
+
+    
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/main.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+  <script  src="/blog/js/clipboard-use.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      var boardCtn = $('#board-ctn');
+      var boardTop = boardCtn.offset().top;
+
+      tocbot.init({
+        tocSelector: '#tocbot',
+        contentSelector: '#post-body',
+        headingSelector: 'h1,h2,h3,h4,h5,h6',
+        linkClass: 'tocbot-link',
+        activeLinkClass: 'tocbot-active-link',
+        listClass: 'tocbot-list',
+        isCollapsedClass: 'tocbot-is-collapsed',
+        collapsibleClass: 'tocbot-is-collapsible',
+        collapseDepth: 0,
+        scrollSmooth: true,
+        headingsOffset: -boardTop
+      });
+      if ($('.toc-list-item').length > 0) {
+        $('#toc').css('visibility', 'visible');
+      }
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "缓存穿透&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    var path = "/blog/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      searchFunc(path, 'local-search-input', 'local-search-result');
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+  <script>
+    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
+      function () {
+        var element = document.createElement('a');
+        $(element).attr('data-fancybox', 'images');
+        $(element).attr('href', $(this).attr('src'));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript">
+      //定义获取词语下标
+      var a_idx = 0;
+      jQuery(document).ready(function ($) {
+        //点击body时触发事件
+        $("body").click(function (e) {
+          //需要显示的词语
+          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
+          //设置词语给span标签
+          var $i = $("<span/>").text(a[a_idx]);
+          //下标等于原来下标+1  余 词语总数
+          a_idx = (a_idx + 1) % a.length;
+          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
+          //获取x和y的指针坐标
+          var x = e.pageX, y = e.pageY;
+          //在鼠标的指针的位置给$i定义的span标签添加css样式
+          $i.css({
+            "z-index": 999,
+            "top": y - 20,
+            "left": x,
+            "position": "absolute",
+            "font-weight": "bold",
+            "color": rand_color()
+          });
+          // 随机颜色
+          function rand_color() {
+            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
+          }
+          //在body添加这个标签
+          $("body").append($i);
+          //animate() 方法执行 CSS 属性集的自定义动画。
+          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
+          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
+          $i.animate({
+            //将原来的位置向上移动180
+            "top": y - 180,
+            "opacity": 0
+            //1500动画的速度
+          }, 1500, function () {
+            //时间到了自动删除
+            $i.remove();
+          });
+        });
+      })
+      ;
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
