@@ -171,7 +171,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      1.3k 字
+      1.7k 字
     </span>
   
 
@@ -181,7 +181,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      17
+      23
        分钟
     </span>
   
@@ -258,42 +258,51 @@
 ) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> AUTO_INCREMENT=<span class="hljs-number">3</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8;</code></pre>
 
 <h4 id="链接MySQL封装"><a href="#链接MySQL封装" class="headerlink" title="链接MySQL封装"></a>链接MySQL封装</h4><p>创建一个lua脚本 mysql.lua ，用于提供根据SQL语句执行查询操作，代码如下：</p>
-<pre><code class="hljs lua"><span class="hljs-comment">-- 引入依赖库mysql</span>
+<pre><code class="hljs lua"><span class="hljs-comment">--MySQL查询操作，封装成一个模块</span>
+<span class="hljs-comment">--Java操作MySqL</span>
+<span class="hljs-comment">--导入依赖包</span>
 <span class="hljs-keyword">local</span> mysql = <span class="hljs-built_in">require</span> <span class="hljs-string">"resty.mysql"</span>
 
-<span class="hljs-comment">-- 配置数据库链接信息</span>
+<span class="hljs-comment">--配置数据源链接</span>
 <span class="hljs-keyword">local</span> props = &#123;
-    host = <span class="hljs-string">"127.0.0.1"</span>,
+    host = <span class="hljs-string">"docker.for.mac.host.internal"</span>,
     port = <span class="hljs-number">3306</span>,
-    database = <span class="hljs-string">"redpackage"</span>,
+    database = <span class="hljs-string">"test"</span>,
     user = <span class="hljs-string">"root"</span>,
     password = <span class="hljs-string">"123456"</span>
 &#125;
 
-<span class="hljs-comment">-- 创建一个对象</span>
-<span class="hljs-keyword">local</span> mysqlobj = &#123;&#125;
+<span class="hljs-comment">--创建一个对象</span>
+<span class="hljs-keyword">local</span> mysqldb = &#123;&#125;
 
-<span class="hljs-comment">-- 根据SQL语句查询</span>
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mysqlobj.query</span><span class="hljs-params">(sql)</span></span>
-    <span class="hljs-comment">-- 创建链接、设置超时时间、编码格式</span>
-    <span class="hljs-keyword">local</span> db = mysql:new();
-    db:set_timeout(<span class="hljs-number">10000</span>)
-    db:connect(props)
-    db:query(<span class="hljs-string">"SET NAMES utf8"</span>)
 
-    <span class="hljs-comment">-- 执行SQL语句</span>
-    <span class="hljs-keyword">local</span> result = db:mysqlobj.query(sql)
+<span class="hljs-comment">--查询数据库</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mysqldb.query</span><span class="hljs-params">(sql)</span></span>
+	<span class="hljs-comment">--创建链接</span>
+	<span class="hljs-keyword">local</span> db = mysql:new()
+	<span class="hljs-comment">--设置超时时间</span>
+	db:set_timeout(<span class="hljs-number">10000</span>)
+	db:connect(props)
 
-    <span class="hljs-comment">-- 关闭连接</span>
-    db:<span class="hljs-built_in">close</span>()
+	<span class="hljs-comment">--配置编码格式</span>
+	db:query(<span class="hljs-string">"SET NAMES utf8"</span>)
 
-    <span class="hljs-comment">-- 返回结果集</span>
-    <span class="hljs-keyword">return</span> result
+	<span class="hljs-comment">--查询数据库 "select * from activity_info where id=1"</span>
+	<span class="hljs-keyword">local</span> result = db:query(sql)
+	
+	<span class="hljs-comment">--关闭链接</span>
+	db:<span class="hljs-built_in">close</span>()
+	<span class="hljs-comment">--返回结果集</span>
+	<span class="hljs-keyword">return</span> result
 <span class="hljs-keyword">end</span>
 
-<span class="hljs-keyword">return</span> mysqlobj;</code></pre>
+<span class="hljs-keyword">return</span> mysqldb</code></pre>
 
-<h4 id="链接Redis集群封装"><a href="#链接Redis集群封装" class="headerlink" title="链接Redis集群封装"></a>链接Redis集群封装</h4><p>我们需要安装 lua-resty-redis-cluster ,用该依赖库实现Redis集群的操作，这里提供github地址，大家下载后按操作配置即可，下载地址： <a href="https://github.com/cuiweixie/lua-resty-redis-cluster" target="_blank" rel="noopener">https://github.com/cuiweixie/lua-resty-redis-cluster</a> ，下载该文件配置后即可实现Redis集群操作。 </p>
+<h4 id="链接Redis集群封装"><a href="#链接Redis集群封装" class="headerlink" title="链接Redis集群封装"></a>链接Redis集群封装</h4><p>我们需要安装 lua-resty-redis-cluster ,用该依赖库实现Redis集群的操作，这里提供github地址，大家下载后按操作配置即可，下载地址： <a href="https://github.com/cuiweixie/lua-resty-redis-cluster" target="_blank" rel="noopener">https://github.com/cuiweixie/lua-resty-redis-cluster</a>     。</p>
+<p>下载完成后需要用到rediscluster.lua和redis_slot.c，复制包中的 redis_slot.c 到openresty安装目录的lualib下, rediscluster.lua 到lualib下的resty下，.c文件无法在Nginx配置文件中引入，需要编译成<strong>.so</strong>文件，编译命令</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#编译命令</span>
+gcc redis_slot.c -fPIC -shared -o libredis_slot.so</code></pre>
+
 <p>接下来我们实现Redis集群操作，创建一个脚本 redis.lua ，脚本中实现Redis中数据的查询和添加操作，代码如下：</p>
 <pre><code class="hljs lua"><span class="hljs-comment">-- redis链接配置</span>
 <span class="hljs-keyword">local</span> <span class="hljs-built_in">config</span> = &#123;
@@ -349,59 +358,121 @@
 <pre><code class="hljs abnf">lua_shared_dict act_cache <span class="hljs-number">128</span>m<span class="hljs-comment">;</span></code></pre>
 
 <p>创建多级缓存操作脚本 activity.lua ，代码如下： </p>
-<pre><code class="hljs java">ngx.header.content_type = <span class="hljs-string">"application/json;charset=utf8"</span>
--- 引入依赖库
-local cjson = require(<span class="hljs-string">"cjson"</span>)
-local mysql = require(<span class="hljs-string">"mysql"</span>)
-local lrredis = require(<span class="hljs-string">"redis"</span>)
+<pre><code class="hljs lua"><span class="hljs-comment">--多级缓存流程操作</span>
+<span class="hljs-comment">--1）Lua脚本查询Nginx缓存</span>
+<span class="hljs-comment">--2）Nginx如果没有缓存</span>
+<span class="hljs-comment">--2.1）Lua脚本查询Redis</span>
+<span class="hljs-comment">--2.1.1）Redis如果有数据，则将数据存入到Nginx缓存，并响应用户</span>
+<span class="hljs-comment">--2.1.2）Redis没有数据，Lua脚本查询MySQL</span>
+<span class="hljs-comment">--       MySQL有数据，则将数据存入到Redis、Nginx缓存[需要额外定义]，响应用户</span>
+<span class="hljs-comment">--3）Nginx如果有缓存，则直接将缓存响应给用户</span>
 
--- 获取请求参数ID
-local id = ngx.req.get_uri_args()[<span class="hljs-string">"id"</span>];
+<span class="hljs-comment">--响应数据为JSON类型</span>
+ngx.header.content_type=<span class="hljs-string">"application/json;charset=utf8"</span>
+<span class="hljs-comment">--引入依赖库</span>
+<span class="hljs-comment">--cjson：对象转JSON或者JSON转对象</span>
+<span class="hljs-keyword">local</span> cjson = <span class="hljs-built_in">require</span>(<span class="hljs-string">"cjson"</span>)
+<span class="hljs-keyword">local</span> mysql = <span class="hljs-built_in">require</span>(<span class="hljs-string">"mysql"</span>)
+<span class="hljs-keyword">local</span> lrredis = <span class="hljs-built_in">require</span>(<span class="hljs-string">"redis"</span>)
 
--- 加载本地缓存
-local cache_ngx = ngx.shared.act_cache;
+<span class="hljs-comment">--获取请求参数ID   http://192.168.211.141/act?id=1</span>
+<span class="hljs-keyword">local</span> id = ngx.req.get_uri_args()[<span class="hljs-string">"id"</span>];
 
--- 组装本地缓存的key，并获取nginx本地缓存
-local ngx_key = <span class="hljs-string">'ngx_act_cache_'</span> .. id
-local actCache = cache_ngx:get(ngx_key)
+<span class="hljs-comment">--加载本地缓存</span>
+<span class="hljs-keyword">local</span> cache_ngx = ngx.shared.act_cache;
 
--- 如果nginx中没有缓存，则查询Redis集群缓存
-<span class="hljs-keyword">if</span> contentCache == <span class="hljs-string">""</span> or contentCache == nil then
-    -- 从Redis集群中加载数据
-    local redis_key = <span class="hljs-string">'redis_act_'</span> .. id
-    local result = lrredis.get(redis_key);
+<span class="hljs-comment">--组装本地缓存的key,并获取nginx本地缓存</span>
+<span class="hljs-keyword">local</span> ngx_key = <span class="hljs-string">'ngx_act_cache_'</span>..id
+<span class="hljs-keyword">local</span> actCache = cache_ngx:get(ngx_key)
 
-    -- Redis中数据为空，查询数据库
-    <span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>] == nil or result[<span class="hljs-number">1</span>] == ngx.<span class="hljs-keyword">null</span> then
-        -- 组转SQL语句
-        local sql = <span class="hljs-string">"select * from activity_info where id = "</span> .. id
-        -- 执行查询
-        result = mysql.query(sql)
-        -- 数据不为空，则添加到Redis中
-        <span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>] == nil or result[<span class="hljs-number">1</span>] == ngx.<span class="hljs-keyword">null</span> then
-            ngx.say(<span class="hljs-string">"no data"</span>)
-        <span class="hljs-keyword">else</span>
-            -- 数据添加到Nginx缓存和Redis缓存
-            lrredis.set(redis_key, cjson.encode(result))
-            cache_ngx:set(ngx_key, cjson.encode(result), <span class="hljs-number">2</span> * <span class="hljs-number">60</span>)
-            ngx.say(result)
-        end
-    <span class="hljs-keyword">else</span>
-        -- 将数据添加到Nginx缓存中
-        cache_ngx:set(ngx_key, result, <span class="hljs-number">2</span> * <span class="hljs-number">60</span>)
-        -- 直接输出
-        ngx.say(result)
-    end
+<span class="hljs-comment">--如果nginx中没有缓存，则查询Redis集群缓存</span>
+<span class="hljs-keyword">if</span> actCache == <span class="hljs-string">""</span> <span class="hljs-keyword">or</span> actCache == <span class="hljs-literal">nil</span> <span class="hljs-keyword">then</span>
+	<span class="hljs-comment">--从Redis集群中加载数据</span>
+	<span class="hljs-keyword">local</span> redis_key = <span class="hljs-string">'redis_act_'</span>..id
+	<span class="hljs-keyword">local</span> result = lrredis.get(redis_key)
+	
+	<span class="hljs-comment">--Redis中数据为空，查询数据库</span>
+	<span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>]==<span class="hljs-literal">nil</span> <span class="hljs-keyword">or</span> result[<span class="hljs-number">1</span>]==ngx.null <span class="hljs-keyword">then</span>
+		<span class="hljs-comment">--组装SQL语句</span>
+		<span class="hljs-keyword">local</span> sql = <span class="hljs-string">"select * from activity_info where id ="</span>..id
+		<span class="hljs-comment">--执行查询</span>
+		result = mysql.query(sql)
+		<span class="hljs-comment">--数据不为空，则添加到Redis中</span>
+		<span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>]==<span class="hljs-literal">nil</span> <span class="hljs-keyword">or</span> result[<span class="hljs-number">1</span>]==ngx.null <span class="hljs-keyword">then</span>
+			ngx.say(<span class="hljs-string">"no data"</span>)
+		<span class="hljs-keyword">else</span>
+			<span class="hljs-comment">--数据添加到Nginx缓存和Redis缓存</span>
+			lrredis.set(redis_key,cjson.encode(result))
+			cache_ngx:set(ngx_key, cjson.encode(result), <span class="hljs-number">2</span>*<span class="hljs-number">60</span>);
+			ngx.say(cjson.encode(result))
+		<span class="hljs-keyword">end</span>
+	<span class="hljs-keyword">else</span>
+		<span class="hljs-comment">--将数据添加到Nginx缓存中</span>
+		cache_ngx:set(ngx_key, result, <span class="hljs-number">2</span>*<span class="hljs-number">60</span>);
+		<span class="hljs-comment">--直接输出</span>
+		ngx.say(result)
+	<span class="hljs-keyword">end</span>
 <span class="hljs-keyword">else</span>
-    -- 输出缓存数据
-    ngx.say(actCache)
-end</code></pre>
+	<span class="hljs-comment">--输出缓存数据</span>
+	ngx.say(actCache)
+<span class="hljs-keyword">end</span></code></pre>
 
 <p>Nginx配置： </p>
 <pre><code class="hljs sh"><span class="hljs-comment">#活动查询</span>
 location /act &#123;
 	content_by_lua_file /usr/<span class="hljs-built_in">local</span>/openresty/nginx/lua/activity.lua;
 &#125;</code></pre>
+
+<p>连接单机版reids</p>
+<pre><code class="hljs lua"><span class="hljs-keyword">local</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">close_redis</span><span class="hljs-params">(red)</span></span>  
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> red <span class="hljs-keyword">then</span>  
+        <span class="hljs-keyword">return</span>  
+    <span class="hljs-keyword">end</span>  
+  
+    <span class="hljs-keyword">local</span> pool_max_idle_time = <span class="hljs-number">10000</span> <span class="hljs-comment">--毫秒  </span>
+    <span class="hljs-keyword">local</span> pool_size = <span class="hljs-number">100</span> <span class="hljs-comment">--连接池大小  </span>
+    <span class="hljs-keyword">local</span> ok, err = red:set_keepalive(pool_max_idle_time, pool_size)  
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> ok <span class="hljs-keyword">then</span>  
+        ngx.say(<span class="hljs-string">"set keepalive error : "</span>, err)  
+    <span class="hljs-keyword">end</span>  
+<span class="hljs-keyword">end</span>    
+  
+<span class="hljs-keyword">local</span> redis = <span class="hljs-built_in">require</span>(<span class="hljs-string">"resty.redis"</span>)  
+  
+
+<span class="hljs-keyword">local</span> red = redis:new()  
+ 
+red:set_timeout(<span class="hljs-number">1000</span>)  
+
+<span class="hljs-keyword">local</span> ip = <span class="hljs-string">"127.0.0.1"</span>  
+<span class="hljs-keyword">local</span> port = <span class="hljs-number">6379</span>  
+<span class="hljs-keyword">local</span> ok, err = red:connect(ip, port)  
+<span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> ok <span class="hljs-keyword">then</span>  
+    ngx.say(<span class="hljs-string">"connect to redis error : "</span>, err)  
+    <span class="hljs-keyword">return</span> close_redis(red)  
+<span class="hljs-keyword">end</span>  
+ 
+ok, err = red:set(<span class="hljs-string">"msg"</span>, <span class="hljs-string">"hello world"</span>)  
+<span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> ok <span class="hljs-keyword">then</span>  
+    ngx.say(<span class="hljs-string">"set msg error : "</span>, err)  
+    <span class="hljs-keyword">return</span> close_redis(red)  
+<span class="hljs-keyword">end</span>  
+  
+
+<span class="hljs-keyword">local</span> resp, err = red:get(<span class="hljs-string">"msg"</span>)  
+<span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> resp <span class="hljs-keyword">then</span>  
+    ngx.say(<span class="hljs-string">"get msg error : "</span>, err)  
+    <span class="hljs-keyword">return</span> close_redis(red)  
+<span class="hljs-keyword">end</span>  
+
+<span class="hljs-keyword">if</span> resp == ngx.null <span class="hljs-keyword">then</span>  
+    resp = <span class="hljs-string">''</span>  
+<span class="hljs-keyword">end</span>  
+ngx.say(<span class="hljs-string">"msg : "</span>, resp)  
+  
+close_redis(red)</code></pre>
+
+
             </div>
             <hr>
             <div>
