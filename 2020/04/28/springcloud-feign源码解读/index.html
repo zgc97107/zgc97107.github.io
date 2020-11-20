@@ -19,7 +19,7 @@
   <meta name="keywords" content="">
   <title>Feign源码解读 - 🍎🍊&#39;s blog</title>
 
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
 
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
@@ -27,19 +27,25 @@
 
   
     
-    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
   
 
   
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
 
 
 <!-- 主题依赖的图标库，不要自行修改 -->
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
 
 
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
 
 
 <link  rel="stylesheet" href="/blog/css/main.css" />
@@ -47,9 +53,13 @@
 <!-- 自定义样式保持在最底部 -->
 
 
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
-<meta name="generator" content="Hexo 4.2.1"></head>
+<meta name="generator" content="Hexo 5.2.0"></head>
 
 
 <body>
@@ -57,7 +67,7 @@
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
-       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
 
     <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navbarSupportedContent"
@@ -151,27 +161,30 @@
            background-size: cover;">
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-          <div class="container page-header text-center fade-in-up">
-            <span class="h2" id="subtitle">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Feign源码解读">
               
             </span>
 
             
-              
-  <div class="mt-3 post-meta">
-    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-    <time datetime="2020-04-28 11:32" pubdate>
-      2020年4月28日 中午
-    </time>
-  </div>
-
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-28 11:32" pubdate>
+        2020年4月28日 中午
+      </time>
+    </span>
+  
+</div>
 
 <div class="mt-1">
   
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      2k 字
+      2.1k 字
     </span>
   
 
@@ -181,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      37
+      38
        分钟
     </span>
   
@@ -209,17 +222,17 @@
     <div class="col-lg-8 nopadding-md">
       <div class="container nopadding-md" id="board-ctn">
         <div class="py-5" id="board">
-          <article class="post-content mx-auto" id="post">
+          <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">Feign源码解读</h1>
             
-            <div class="markdown-body" id="post-body">
+            <div class="markdown-body">
               <h2 id="代理对象的生成"><a href="#代理对象的生成" class="headerlink" title="代理对象的生成"></a>代理对象的生成</h2><p>EnableFeignClients注解</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Retention</span>(RetentionPolicy.RUNTIME)
-<span class="hljs-meta">@Target</span>(&#123;ElementType.TYPE&#125;)
+<pre><code class="hljs java"><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
+<span class="hljs-meta">@Target(&#123;ElementType.TYPE&#125;)</span>
 <span class="hljs-meta">@Documented</span>
-<span class="hljs-meta">@Import</span>(&#123;FeignClientsRegistrar<span class="hljs-class">.<span class="hljs-keyword">class</span>&#125;)</span>
-<span class="hljs-class"><span class="hljs-title">public</span> @<span class="hljs-title">interface</span> <span class="hljs-title">EnableFeignClients</span> </span>&#123;</code></pre>
+<span class="hljs-meta">@Import(&#123;FeignClientsRegistrar.class&#125;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableFeignClients &#123;</code></pre>
 
 <p>FeignClientsRegistrar中registerFeignClients()会扫描@FeignClient注解的类，然后调用registerFeignClient()进行注册。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerFeignClients</span><span class="hljs-params">(AnnotationMetadata metadata,</span></span>
@@ -230,11 +243,11 @@
    Set&lt;String&gt; basePackages;
 
    Map&lt;String, Object&gt; attrs = metadata
-         .getAnnotationAttributes(EnableFeignClients<span class="hljs-class">.<span class="hljs-keyword">class</span>.<span class="hljs-title">getName</span>())</span>;
+         .getAnnotationAttributes(EnableFeignClients.class.getName());
    AnnotationTypeFilter annotationTypeFilter = <span class="hljs-keyword">new</span> AnnotationTypeFilter(
-         FeignClient<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+         FeignClient.class);
    <span class="hljs-keyword">final</span> Class&lt;?&gt;[] clients = attrs == <span class="hljs-keyword">null</span> ? <span class="hljs-keyword">null</span>
-         : (Class&lt;?&gt;[]) attrs.get(<span class="hljs-string">"clients"</span>);
+         : (Class&lt;?&gt;[]) attrs.get(<span class="hljs-string">&quot;clients&quot;</span>);
    <span class="hljs-keyword">if</span> (clients == <span class="hljs-keyword">null</span> || clients.length == <span class="hljs-number">0</span>) &#123;
       scanner.addIncludeFilter(annotationTypeFilter);
       basePackages = getBasePackages(metadata);
@@ -249,7 +262,7 @@
       AbstractClassTestingTypeFilter filter = <span class="hljs-keyword">new</span> AbstractClassTestingTypeFilter() &#123;
          <span class="hljs-meta">@Override</span>
          <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">match</span><span class="hljs-params">(ClassMetadata metadata)</span> </span>&#123;
-            String cleaned = metadata.getClassName().replaceAll(<span class="hljs-string">"\\$"</span>, <span class="hljs-string">"."</span>);
+            String cleaned = metadata.getClassName().replaceAll(<span class="hljs-string">&quot;\\$&quot;</span>, <span class="hljs-string">&quot;.&quot;</span>);
             <span class="hljs-keyword">return</span> clientClasses.contains(cleaned);
          &#125;
       &#125;;
@@ -266,15 +279,15 @@
             AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;
             AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();
             Assert.isTrue(annotationMetadata.isInterface(),
-                  <span class="hljs-string">"@FeignClient can only be specified on an interface"</span>);
+                  <span class="hljs-string">&quot;@FeignClient can only be specified on an interface&quot;</span>);
 
             Map&lt;String, Object&gt; attributes = annotationMetadata
                   .getAnnotationAttributes(
-                        FeignClient<span class="hljs-class">.<span class="hljs-keyword">class</span>.<span class="hljs-title">getCanonicalName</span>())</span>;
+                        FeignClient.class.getCanonicalName());
 
             String name = getClientName(attributes);
             registerClientConfiguration(registry, name,
-                  attributes.get(<span class="hljs-string">"configuration"</span>));
+                  attributes.get(<span class="hljs-string">&quot;configuration&quot;</span>));
 
             registerFeignClient(registry, annotationMetadata, attributes);
          &#125;
@@ -287,24 +300,24 @@
 <span class="hljs-function"><span class="hljs-params">      AnnotationMetadata annotationMetadata, Map&lt;String, Object&gt; attributes)</span> </span>&#123;
    String className = annotationMetadata.getClassName();
    BeanDefinitionBuilder definition = BeanDefinitionBuilder
-         .genericBeanDefinition(FeignClientFactoryBean<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+         .genericBeanDefinition(FeignClientFactoryBean.class);
    validate(attributes);
-   definition.addPropertyValue(<span class="hljs-string">"url"</span>, getUrl(attributes));
-   definition.addPropertyValue(<span class="hljs-string">"path"</span>, getPath(attributes));
+   definition.addPropertyValue(<span class="hljs-string">&quot;url&quot;</span>, getUrl(attributes));
+   definition.addPropertyValue(<span class="hljs-string">&quot;path&quot;</span>, getPath(attributes));
    String name = getName(attributes);
-   definition.addPropertyValue(<span class="hljs-string">"name"</span>, name);
+   definition.addPropertyValue(<span class="hljs-string">&quot;name&quot;</span>, name);
    String contextId = getContextId(attributes);
-   definition.addPropertyValue(<span class="hljs-string">"contextId"</span>, contextId);
-   definition.addPropertyValue(<span class="hljs-string">"type"</span>, className);
-   definition.addPropertyValue(<span class="hljs-string">"decode404"</span>, attributes.get(<span class="hljs-string">"decode404"</span>));
-   definition.addPropertyValue(<span class="hljs-string">"fallback"</span>, attributes.get(<span class="hljs-string">"fallback"</span>));
-   definition.addPropertyValue(<span class="hljs-string">"fallbackFactory"</span>, attributes.get(<span class="hljs-string">"fallbackFactory"</span>));
+   definition.addPropertyValue(<span class="hljs-string">&quot;contextId&quot;</span>, contextId);
+   definition.addPropertyValue(<span class="hljs-string">&quot;type&quot;</span>, className);
+   definition.addPropertyValue(<span class="hljs-string">&quot;decode404&quot;</span>, attributes.get(<span class="hljs-string">&quot;decode404&quot;</span>));
+   definition.addPropertyValue(<span class="hljs-string">&quot;fallback&quot;</span>, attributes.get(<span class="hljs-string">&quot;fallback&quot;</span>));
+   definition.addPropertyValue(<span class="hljs-string">&quot;fallbackFactory&quot;</span>, attributes.get(<span class="hljs-string">&quot;fallbackFactory&quot;</span>));
    definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
 
-   String alias = contextId + <span class="hljs-string">"FeignClient"</span>;
+   String alias = contextId + <span class="hljs-string">&quot;FeignClient&quot;</span>;
    AbstractBeanDefinition beanDefinition = definition.getBeanDefinition();
 
-   <span class="hljs-keyword">boolean</span> primary = (Boolean) attributes.get(<span class="hljs-string">"primary"</span>); <span class="hljs-comment">// has a default, won't be</span>
+   <span class="hljs-keyword">boolean</span> primary = (Boolean) attributes.get(<span class="hljs-string">&quot;primary&quot;</span>); <span class="hljs-comment">// has a default, won&#x27;t be</span>
                                              <span class="hljs-comment">// null</span>
 
    beanDefinition.setPrimary(primary);
@@ -327,12 +340,12 @@
 
 <p>该方法会获取调用地址，bean的名称，类型后调用loadBalance()方法创建实例。</p>
 <pre><code class="hljs java">&lt;T&gt; <span class="hljs-function">T <span class="hljs-title">getTarget</span><span class="hljs-params">()</span> </span>&#123;
-   FeignContext context = <span class="hljs-keyword">this</span>.applicationContext.getBean(FeignContext<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   FeignContext context = <span class="hljs-keyword">this</span>.applicationContext.getBean(FeignContext.class);
    Feign.Builder builder = feign(context);
 
    <span class="hljs-keyword">if</span> (!StringUtils.hasText(<span class="hljs-keyword">this</span>.url)) &#123;
-      <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.name.startsWith(<span class="hljs-string">"http"</span>)) &#123;
-         <span class="hljs-keyword">this</span>.url = <span class="hljs-string">"http://"</span> + <span class="hljs-keyword">this</span>.name;
+      <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.name.startsWith(<span class="hljs-string">&quot;http&quot;</span>)) &#123;
+         <span class="hljs-keyword">this</span>.url = <span class="hljs-string">&quot;http://&quot;</span> + <span class="hljs-keyword">this</span>.name;
       &#125;
       <span class="hljs-keyword">else</span> &#123;
          <span class="hljs-keyword">this</span>.url = <span class="hljs-keyword">this</span>.name;
@@ -341,11 +354,11 @@
       <span class="hljs-keyword">return</span> (T) loadBalance(builder, context,
             <span class="hljs-keyword">new</span> HardCodedTarget&lt;&gt;(<span class="hljs-keyword">this</span>.type, <span class="hljs-keyword">this</span>.name, <span class="hljs-keyword">this</span>.url));
    &#125;
-   <span class="hljs-keyword">if</span> (StringUtils.hasText(<span class="hljs-keyword">this</span>.url) &amp;&amp; !<span class="hljs-keyword">this</span>.url.startsWith(<span class="hljs-string">"http"</span>)) &#123;
-      <span class="hljs-keyword">this</span>.url = <span class="hljs-string">"http://"</span> + <span class="hljs-keyword">this</span>.url;
+   <span class="hljs-keyword">if</span> (StringUtils.hasText(<span class="hljs-keyword">this</span>.url) &amp;&amp; !<span class="hljs-keyword">this</span>.url.startsWith(<span class="hljs-string">&quot;http&quot;</span>)) &#123;
+      <span class="hljs-keyword">this</span>.url = <span class="hljs-string">&quot;http://&quot;</span> + <span class="hljs-keyword">this</span>.url;
    &#125;
    String url = <span class="hljs-keyword">this</span>.url + cleanPath();
-   Client client = getOptional(context, Client<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   Client client = getOptional(context, Client.class);
    <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;
       <span class="hljs-keyword">if</span> (client <span class="hljs-keyword">instanceof</span> LoadBalancerFeignClient) &#123;
          <span class="hljs-comment">// not load balancing because we have a url,</span>
@@ -359,7 +372,7 @@
       &#125;
       builder.client(client);
    &#125;
-   Targeter targeter = get(context, Targeter<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   Targeter targeter = get(context, Targeter.class);
    <span class="hljs-keyword">return</span> (T) targeter.target(<span class="hljs-keyword">this</span>, builder, context,
          <span class="hljs-keyword">new</span> HardCodedTarget&lt;&gt;(<span class="hljs-keyword">this</span>.type, <span class="hljs-keyword">this</span>.name, url));
 &#125;</code></pre>
@@ -367,15 +380,15 @@
 <p>loadBalance()方法调用到Feign类的target()方法</p>
 <pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">loadBalance</span><span class="hljs-params">(Feign.Builder builder, FeignContext context,</span></span>
 <span class="hljs-function"><span class="hljs-params">      HardCodedTarget&lt;T&gt; target)</span> </span>&#123;
-   Client client = getOptional(context, Client<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   Client client = getOptional(context, Client.class);
    <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;
       builder.client(client);
-      Targeter targeter = get(context, Targeter<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+      Targeter targeter = get(context, Targeter.class);
       <span class="hljs-keyword">return</span> targeter.target(<span class="hljs-keyword">this</span>, builder, context, target);
    &#125;
 
    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
-         <span class="hljs-string">"No Feign Client for loadBalancing defined. Did you forget to include spring-cloud-starter-netflix-ribbon?"</span>);
+         <span class="hljs-string">&quot;No Feign Client for loadBalancing defined. Did you forget to include spring-cloud-starter-netflix-ribbon?&quot;</span>);
 &#125;</code></pre>
 
 <p>target()方法会调用newInstance()方法生成代理对象。</p>
@@ -390,7 +403,7 @@
   List&lt;DefaultMethodHandler&gt; defaultMethodHandlers = <span class="hljs-keyword">new</span> LinkedList&lt;DefaultMethodHandler&gt;();
 
   <span class="hljs-keyword">for</span> (Method method : target.type().getMethods()) &#123;
-    <span class="hljs-keyword">if</span> (method.getDeclaringClass() == Object<span class="hljs-class">.<span class="hljs-keyword">class</span>) </span>&#123;
+    <span class="hljs-keyword">if</span> (method.getDeclaringClass() == Object.class) &#123;
       <span class="hljs-keyword">continue</span>;
     &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Util.isDefault(method)) &#123;
       DefaultMethodHandler handler = <span class="hljs-keyword">new</span> DefaultMethodHandler(method);
@@ -412,10 +425,10 @@
 
 <h2 id="代理对象的调用"><a href="#代理对象的调用" class="headerlink" title="代理对象的调用"></a>代理对象的调用</h2><p>Controller中获取到代理实例后，则会调用到HystrixInvocationHandler的invoke()方法，这里跟hystrix基本类似，最后会走到run()方法的钩子方法中</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object proxy, <span class="hljs-keyword">final</span> Method method, <span class="hljs-keyword">final</span> Object[] args)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-    <span class="hljs-keyword">if</span> (!<span class="hljs-string">"equals"</span>.equals(method.getName())) &#123;
-        <span class="hljs-keyword">if</span> (<span class="hljs-string">"hashCode"</span>.equals(method.getName())) &#123;
+    <span class="hljs-keyword">if</span> (!<span class="hljs-string">&quot;equals&quot;</span>.equals(method.getName())) &#123;
+        <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;hashCode&quot;</span>.equals(method.getName())) &#123;
             <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.hashCode();
-        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-string">"toString"</span>.equals(method.getName())) &#123;
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;toString&quot;</span>.equals(method.getName())) &#123;
             <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.toString();
         &#125; <span class="hljs-keyword">else</span> &#123;
             HystrixCommand&lt;Object&gt; hystrixCommand = <span class="hljs-keyword">new</span> HystrixCommand&lt;Object&gt;((Setter)<span class="hljs-keyword">this</span>.setterMethodMap.get(method)) &#123;
@@ -542,7 +555,7 @@
       response =
           logger.logAndRebufferResponse(metadata.configKey(), logLevel, response, elapsedTime);
     &#125;
-    <span class="hljs-keyword">if</span> (Response<span class="hljs-class">.<span class="hljs-keyword">class</span> </span>== metadata.returnType()) &#123;
+    <span class="hljs-keyword">if</span> (Response.class == metadata.returnType()) &#123;
       <span class="hljs-keyword">if</span> (response.body() == <span class="hljs-keyword">null</span>) &#123;
         <span class="hljs-keyword">return</span> response;
       &#125;
@@ -556,14 +569,14 @@
       <span class="hljs-keyword">return</span> response.toBuilder().body(bodyData).build();
     &#125;
     <span class="hljs-keyword">if</span> (response.status() &gt;= <span class="hljs-number">200</span> &amp;&amp; response.status() &lt; <span class="hljs-number">300</span>) &#123;
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">void</span><span class="hljs-class">.<span class="hljs-keyword">class</span> </span>== metadata.returnType()) &#123;
+      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">void</span>.class == metadata.returnType()) &#123;
         <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
       &#125; <span class="hljs-keyword">else</span> &#123;
         Object result = decode(response);
         shouldClose = closeAfterDecode;
         <span class="hljs-keyword">return</span> result;
       &#125;
-    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (decode404 &amp;&amp; response.status() == <span class="hljs-number">404</span> &amp;&amp; <span class="hljs-keyword">void</span><span class="hljs-class">.<span class="hljs-keyword">class</span> !</span>= metadata.returnType()) &#123;
+    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (decode404 &amp;&amp; response.status() == <span class="hljs-number">404</span> &amp;&amp; <span class="hljs-keyword">void</span>.class != metadata.returnType()) &#123;
       Object result = decode(response);
       shouldClose = closeAfterDecode;
       <span class="hljs-keyword">return</span> result;
@@ -614,7 +627,7 @@
    IClientConfig config = <span class="hljs-keyword">this</span>.factory.getClientConfig(clientName);
    ILoadBalancer lb = <span class="hljs-keyword">this</span>.factory.getLoadBalancer(clientName);
    ServerIntrospector serverIntrospector = <span class="hljs-keyword">this</span>.factory.getInstance(clientName,
-         ServerIntrospector<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+         ServerIntrospector.class);
    client = <span class="hljs-keyword">this</span>.loadBalancedRetryFactory != <span class="hljs-keyword">null</span>
          ? <span class="hljs-keyword">new</span> RetryableFeignLoadBalancer(lb, config, serverIntrospector,
                <span class="hljs-keyword">this</span>.loadBalancedRetryFactory)
@@ -698,7 +711,7 @@
                 
               </div>
               
-                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
               
               
                 <div class="post-prevnext row">
@@ -735,7 +748,7 @@
       <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
         <div id="toc">
   <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
-  <div id="tocbot"></div>
+  <div class="toc-body" id="toc-body"></div>
 </div>
 
       </div>
@@ -747,16 +760,15 @@
 
 
     
-  </main>
 
-  
-    <a id="scroll-top-button" href="#" role="button">
-      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-    </a>
-  
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
 
-  
-    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
      aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
     <div class="modal-content">
@@ -777,57 +789,44 @@
     </div>
   </div>
 </div>
-  
-
-  
-
-  
-
-  <footer class="mt-5">
-  <div class="text-center py-3">
-    <div>
-      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
-      <i class="iconfont icon-love"></i>
-      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
-        <span>Fluid</span></a>
-    </div>
-    
-  <div class="statistics">
-    
     
 
     
-      
-        <!-- 不蒜子统计PV -->
-        <span id="busuanzi_container_site_pv" style="display: none">
-            总访问量 
-            <span id="busuanzi_value_site_pv"></span>
-             次
-          </span>
-      
-      
-        <!-- 不蒜子统计UV -->
-        <span id="busuanzi_container_site_uv" style="display: none">
-            总访客数 
-            <span id="busuanzi_value_site_uv"></span>
-             人
-          </span>
-      
-    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
   </div>
+  
 
+  
 
-    
-
-    
-  </div>
+  
 </footer>
 
 <!-- SCRIPTS -->
-<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
-<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
 <script  src="/blog/js/debouncer.js" ></script>
-<script  src="/blog/js/main.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
 
 <!-- Plugins -->
 
@@ -838,105 +837,51 @@
 
 
 
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
   <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
-  <script  src="/blog/js/clipboard-use.js" ></script>
 
 
-
-  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
-
-
-
-
-
-  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
-  <script>
-    $(document).ready(function () {
-      var boardCtn = $('#board-ctn');
-      var boardTop = boardCtn.offset().top;
-
-      tocbot.init({
-        tocSelector: '#tocbot',
-        contentSelector: '#post-body',
-        headingSelector: 'h1,h2,h3,h4,h5,h6',
-        linkClass: 'tocbot-link',
-        activeLinkClass: 'tocbot-active-link',
-        listClass: 'tocbot-list',
-        isCollapsedClass: 'tocbot-is-collapsed',
-        collapsibleClass: 'tocbot-is-collapsible',
-        collapseDepth: 0,
-        scrollSmooth: true,
-        headingsOffset: -boardTop
-      });
-      if ($('.toc-list-item').length > 0) {
-        $('#toc').css('visibility', 'visible');
-      }
-    });
-  </script>
 
 
 
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
-    var typed = new Typed('#subtitle', {
-      strings: [
-        '  ',
-        "Feign源码解读&nbsp;",
-      ],
-      cursorChar: "_",
-      typeSpeed: 70,
-      loop: false,
-    });
-    typed.stop();
-    $(document).ready(function () {
-      $(".typed-cursor").addClass("h2");
-      typed.start();
-    });
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
-  <script>
-    anchors.options = {
-      placement: "right",
-      visible: "hover",
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
       
-    };
-    var el = "h1,h2,h3,h4,h5,h6".split(",");
-    var res = [];
-    for (item of el) {
-      res.push(".markdown-body > " + item)
-    }
-    anchors.add(res.join(", "))
+      typing(title)
+      
+    })(window, document);
   </script>
 
 
 
   <script  src="/blog/js/local-search.js" ></script>
   <script>
-    var path = "/blog/local-search.xml";
-    var inputArea = document.querySelector("#local-search-input");
-    inputArea.onclick = function () {
-      searchFunc(path, 'local-search-input', 'local-search-result');
-      this.onclick = null
-    }
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <script>
-    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
-      function () {
-        var element = document.createElement('a');
-        $(element).attr('data-fancybox', 'images');
-        $(element).attr('href', $(this).attr('src'));
-        $(this).wrap(element);
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
       }
-    );
+    })()
   </script>
 
 
@@ -945,55 +890,6 @@
 
 
 
-  
-  
-    <script type="text/javascript">
-      //定义获取词语下标
-      var a_idx = 0;
-      jQuery(document).ready(function ($) {
-        //点击body时触发事件
-        $("body").click(function (e) {
-          //需要显示的词语
-          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
-          //设置词语给span标签
-          var $i = $("<span/>").text(a[a_idx]);
-          //下标等于原来下标+1  余 词语总数
-          a_idx = (a_idx + 1) % a.length;
-          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
-          //获取x和y的指针坐标
-          var x = e.pageX, y = e.pageY;
-          //在鼠标的指针的位置给$i定义的span标签添加css样式
-          $i.css({
-            "z-index": 999,
-            "top": y - 20,
-            "left": x,
-            "position": "absolute",
-            "font-weight": "bold",
-            "color": rand_color()
-          });
-          // 随机颜色
-          function rand_color() {
-            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
-          }
-          //在body添加这个标签
-          $("body").append($i);
-          //animate() 方法执行 CSS 属性集的自定义动画。
-          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
-          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
-          $i.animate({
-            //将原来的位置向上移动180
-            "top": y - 180,
-            "opacity": 0
-            //1500动画的速度
-          }, 1500, function () {
-            //时间到了自动删除
-            $i.remove();
-          });
-        });
-      })
-      ;
-    </script>
-  
 
 
 
@@ -1002,9 +898,8 @@
 
 
 
-
-
-
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
 
 
 

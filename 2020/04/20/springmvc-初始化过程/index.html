@@ -19,7 +19,7 @@
   <meta name="keywords" content="">
   <title>SpringMVC的初始化过程 - 🍎🍊&#39;s blog</title>
 
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
 
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
@@ -27,19 +27,25 @@
 
   
     
-    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
   
 
   
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
 
 
 <!-- 主题依赖的图标库，不要自行修改 -->
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
 
 
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
 
 
 <link  rel="stylesheet" href="/blog/css/main.css" />
@@ -47,9 +53,13 @@
 <!-- 自定义样式保持在最底部 -->
 
 
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
-<meta name="generator" content="Hexo 4.2.1"></head>
+<meta name="generator" content="Hexo 5.2.0"></head>
 
 
 <body>
@@ -57,7 +67,7 @@
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
-       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
 
     <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navbarSupportedContent"
@@ -151,27 +161,30 @@
            background-size: cover;">
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-          <div class="container page-header text-center fade-in-up">
-            <span class="h2" id="subtitle">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="SpringMVC的初始化过程">
               
             </span>
 
             
-              
-  <div class="mt-3 post-meta">
-    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-    <time datetime="2020-04-20 20:10" pubdate>
-      2020年4月20日 晚上
-    </time>
-  </div>
-
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-20 20:10" pubdate>
+        2020年4月20日 晚上
+      </time>
+    </span>
+  
+</div>
 
 <div class="mt-1">
   
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      3.3k 字
+      3.4k 字
     </span>
   
 
@@ -181,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      49
+      51
        分钟
     </span>
   
@@ -209,21 +222,21 @@
     <div class="col-lg-8 nopadding-md">
       <div class="container nopadding-md" id="board-ctn">
         <div class="py-5" id="board">
-          <article class="post-content mx-auto" id="post">
+          <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">SpringMVC的初始化过程</h1>
             
-            <div class="markdown-body" id="post-body">
+            <div class="markdown-body">
               <h2 id="初始化入口"><a href="#初始化入口" class="headerlink" title="初始化入口"></a>初始化入口</h2><p>springmvc是基于servlet规范来完成的一个请求响应模块，也是spring中比较大的一个模块，现在已经支持零配置的方式整合，不再需要web.xml和springmvc.xml文件。</p>
 <h3 id="web-xml的替换"><a href="#web-xml的替换" class="headerlink" title="web.xml的替换"></a>web.xml的替换</h3><p>servlet规范中规定当servlet容器启动的时会加载META-INF/services/javax.servlet.ServletContainerInitializer文件中的类。这个类必须实现javax.servlet.ServletContainerInitializer接口，servlet容器在启动后会收集实现@HandlesTypes注解中的接口的实现类，然后传递给onStartup()方法。springmvc就是通过这个规范完成容器初始化。</p>
 <pre><code class="hljs xml">org.springframework.web.SpringServletContainerInitializer</code></pre>
 
 <p>spring中定义一个了WebApplicationInitializer接口，然后在onStartup()方法中通过反射调用onStart()方法。这里我们着重分析下这个接口的实现类AbstractContextLoaderInitializer跟AbstractDispatcherServletInitializer类。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@HandlesTypes</span>(WebApplicationInitializer<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>
-<span class="hljs-class"><span class="hljs-title">public</span> <span class="hljs-title">class</span> <span class="hljs-title">SpringServletContainerInitializer</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ServletContainerInitializer</span> </span>&#123;
+<pre><code class="hljs java"><span class="hljs-meta">@HandlesTypes(WebApplicationInitializer.class)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SpringServletContainerInitializer</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ServletContainerInitializer</span> </span>&#123;
 
 	<span class="hljs-meta">@Override</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onStartup</span><span class="hljs-params">(@Nullable Set&lt;Class&lt;?&gt;&gt; webAppInitializerClasses, ServletContext servletContext)</span></span>
+	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onStartup</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> Set&lt;Class&lt;?&gt;&gt; webAppInitializerClasses, ServletContext servletContext)</span></span>
 <span class="hljs-function">			<span class="hljs-keyword">throws</span> ServletException </span>&#123;
 
 		List&lt;WebApplicationInitializer&gt; initializers = <span class="hljs-keyword">new</span> LinkedList&lt;&gt;();
@@ -233,24 +246,24 @@
 				<span class="hljs-comment">// Be defensive: Some servlet containers provide us with invalid classes,</span>
 				<span class="hljs-comment">// no matter what @HandlesTypes says...</span>
 				<span class="hljs-keyword">if</span> (!waiClass.isInterface() &amp;&amp; !Modifier.isAbstract(waiClass.getModifiers()) &amp;&amp;
-						WebApplicationInitializer<span class="hljs-class">.<span class="hljs-keyword">class</span>.<span class="hljs-title">isAssignableFrom</span>(<span class="hljs-title">waiClass</span>)) </span>&#123;
+						WebApplicationInitializer.class.isAssignableFrom(waiClass)) &#123;
 					<span class="hljs-keyword">try</span> &#123;
 						initializers.add((WebApplicationInitializer)
 								ReflectionUtils.accessibleConstructor(waiClass).newInstance());
 					&#125;
 					<span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-						<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ServletException(<span class="hljs-string">"Failed to instantiate WebApplicationInitializer class"</span>, ex);
+						<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ServletException(<span class="hljs-string">&quot;Failed to instantiate WebApplicationInitializer class&quot;</span>, ex);
 					&#125;
 				&#125;
 			&#125;
 		&#125;
 
 		<span class="hljs-keyword">if</span> (initializers.isEmpty()) &#123;
-			servletContext.log(<span class="hljs-string">"No Spring WebApplicationInitializer types detected on classpath"</span>);
+			servletContext.log(<span class="hljs-string">&quot;No Spring WebApplicationInitializer types detected on classpath&quot;</span>);
 			<span class="hljs-keyword">return</span>;
 		&#125;
 
-		servletContext.log(initializers.size() + <span class="hljs-string">" Spring WebApplicationInitializers detected on classpath"</span>);
+		servletContext.log(initializers.size() + <span class="hljs-string">&quot; Spring WebApplicationInitializers detected on classpath&quot;</span>);
 		AnnotationAwareOrderComparator.sort(initializers);
 		<span class="hljs-keyword">for</span> (WebApplicationInitializer initializer : initializers) &#123;
 			initializer.onStartup(servletContext);
@@ -289,8 +302,8 @@
 			servletContext.addListener(listener);
 		&#125;
 		<span class="hljs-keyword">else</span> &#123;
-			logger.debug(<span class="hljs-string">"No ContextLoaderListener registered, as "</span> +
-					<span class="hljs-string">"createRootApplicationContext() did not return an application context"</span>);
+			logger.debug(<span class="hljs-string">&quot;No ContextLoaderListener registered, as &quot;</span> +
+					<span class="hljs-string">&quot;createRootApplicationContext() did not return an application context&quot;</span>);
 		&#125;
 	&#125;
 
@@ -364,7 +377,7 @@
 <h4 id="AbstractDispatcherServletInitializer类"><a href="#AbstractDispatcherServletInitializer类" class="headerlink" title="AbstractDispatcherServletInitializer类"></a>AbstractDispatcherServletInitializer类</h4><p>AbstractDispatcherServletInitializer的onStartup()方法中，会创建sprngmvc的上下文对象跟DispatcherServlet对象。Serlvet容器在启动时会调用DispatcherServlet的init()方法，该方法继承自父类HttpServletBean，init()方法最终会调用到springmvc上下文的refresh()方法。springmvc上下文对象初始化时会先获取spring的上下文对象，然后将其设置为父容器，之后getBean()操作中会优先从父容器中获取bean。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AbstractDispatcherServletInitializer</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractContextLoaderInitializer</span> </span>&#123;
 
-   <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_SERVLET_NAME = <span class="hljs-string">"dispatcher"</span>;
+   <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String DEFAULT_SERVLET_NAME = <span class="hljs-string">&quot;dispatcher&quot;</span>;
 
    <span class="hljs-meta">@Override</span>
    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onStartup</span><span class="hljs-params">(ServletContext servletContext)</span> <span class="hljs-keyword">throws</span> ServletException </span>&#123;
@@ -375,21 +388,21 @@
 
    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerDispatcherServlet</span><span class="hljs-params">(ServletContext servletContext)</span> </span>&#123;
       String servletName = getServletName();
-      Assert.hasLength(servletName, <span class="hljs-string">"getServletName() must not return null or empty"</span>);
+      Assert.hasLength(servletName, <span class="hljs-string">&quot;getServletName() must not return null or empty&quot;</span>);
 
       <span class="hljs-comment">//创建springmvc的上下文，注册了MvcContainer类</span>
       WebApplicationContext servletAppContext = createServletApplicationContext();
-      Assert.notNull(servletAppContext, <span class="hljs-string">"createServletApplicationContext() must not return null"</span>);
+      Assert.notNull(servletAppContext, <span class="hljs-string">&quot;createServletApplicationContext() must not return null&quot;</span>);
 
       <span class="hljs-comment">//创建DispatcherServlet</span>
       FrameworkServlet dispatcherServlet = createDispatcherServlet(servletAppContext);
-      Assert.notNull(dispatcherServlet, <span class="hljs-string">"createDispatcherServlet(WebApplicationContext) must not return null"</span>);
+      Assert.notNull(dispatcherServlet, <span class="hljs-string">&quot;createDispatcherServlet(WebApplicationContext) must not return null&quot;</span>);
       dispatcherServlet.setContextInitializers(getServletApplicationContextInitializers());
 
       ServletRegistration.Dynamic registration = servletContext.addServlet(servletName, dispatcherServlet);
       <span class="hljs-keyword">if</span> (registration == <span class="hljs-keyword">null</span>) &#123;
-         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">"Failed to register servlet with name '"</span> + servletName + <span class="hljs-string">"'. "</span> +
-               <span class="hljs-string">"Check if there is another servlet registered under the same name."</span>);
+         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Failed to register servlet with name &#x27;&quot;</span> + servletName + <span class="hljs-string">&quot;&#x27;. &quot;</span> +
+               <span class="hljs-string">&quot;Check if there is another servlet registered under the same name.&quot;</span>);
       &#125;
 
       <span class="hljs-comment">/*</span>
@@ -441,10 +454,10 @@
          <span class="hljs-keyword">int</span> counter = <span class="hljs-number">0</span>;
          <span class="hljs-keyword">while</span> (registration == <span class="hljs-keyword">null</span>) &#123;
             <span class="hljs-keyword">if</span> (counter == <span class="hljs-number">100</span>) &#123;
-               <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">"Failed to register filter with name '"</span> + filterName + <span class="hljs-string">"'. "</span> +
-                     <span class="hljs-string">"Check if there is another filter registered under the same name."</span>);
+               <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Failed to register filter with name &#x27;&quot;</span> + filterName + <span class="hljs-string">&quot;&#x27;. &quot;</span> +
+                     <span class="hljs-string">&quot;Check if there is another filter registered under the same name.&quot;</span>);
             &#125;
-            registration = servletContext.addFilter(filterName + <span class="hljs-string">"#"</span> + counter, filter);
+            registration = servletContext.addFilter(filterName + <span class="hljs-string">&quot;#&quot;</span> + counter, filter);
             counter++;
          &#125;
       &#125;
@@ -469,9 +482,9 @@
 &#125;</code></pre>
 
 <h3 id="springmvc-xml的替换"><a href="#springmvc-xml的替换" class="headerlink" title="springmvc.xml的替换"></a>springmvc.xml的替换</h3><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">mvc:annotation-driven</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">mvc:message-converters</span> <span class="hljs-attr">register-defaults</span>=<span class="hljs-string">"true"</span>&gt;</span>
-        <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"org.springframework.http.converter.StringHttpMessageConverter"</span>&gt;</span>
-            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"supportedMediaTypes"</span> <span class="hljs-attr">value</span> = <span class="hljs-string">"text/plain;charset=UTF-8"</span> /&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">mvc:message-converters</span> <span class="hljs-attr">register-defaults</span>=<span class="hljs-string">&quot;true&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.http.converter.StringHttpMessageConverter&quot;</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;supportedMediaTypes&quot;</span> <span class="hljs-attr">value</span> = <span class="hljs-string">&quot;text/plain;charset=UTF-8&quot;</span> /&gt;</span>
         <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
     <span class="hljs-tag">&lt;/<span class="hljs-name">mvc:message-converters</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">mvc:annotation-driven</span>&gt;</span></code></pre>
@@ -526,7 +539,7 @@
 
 <p>getInterceptors()方法</p>
 <p>该方法会调用子类DelegatingWebMvcConfiguration的addInterceptors()方法，该类中会通过依赖注入的方式获取到所有实现WebMvcConfigurer接口的类，然后调用其addInterceptors()方法把我们自己定义的Interceptor传递进去。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Autowired</span>(required = <span class="hljs-keyword">false</span>)
+<pre><code class="hljs java"><span class="hljs-meta">@Autowired(required = false)</span>
 <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setConfigurers</span><span class="hljs-params">(List&lt;WebMvcConfigurer&gt; configurers)</span> </span>&#123;
    <span class="hljs-keyword">if</span> (!CollectionUtils.isEmpty(configurers)) &#123;
       <span class="hljs-keyword">this</span>.configurers.addWebMvcConfigurers(configurers);
@@ -567,7 +580,7 @@
    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.detectAllHandlerMappings) &#123;
       <span class="hljs-comment">// Find all HandlerMappings in the ApplicationContext, including ancestor contexts.</span>
       Map&lt;String, HandlerMapping&gt; matchingBeans =
-            BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerMapping<span class="hljs-class">.<span class="hljs-keyword">class</span>, <span class="hljs-title">true</span>, <span class="hljs-title">false</span>)</span>;
+            BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerMapping.class, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>);
       <span class="hljs-keyword">if</span> (!matchingBeans.isEmpty()) &#123;
          <span class="hljs-keyword">this</span>.handlerMappings = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(matchingBeans.values());
          <span class="hljs-comment">// We keep HandlerMappings in sorted order.</span>
@@ -576,21 +589,21 @@
    &#125;
    <span class="hljs-keyword">else</span> &#123;
       <span class="hljs-keyword">try</span> &#123;
-         HandlerMapping hm = context.getBean(HANDLER_MAPPING_BEAN_NAME, HandlerMapping<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+         HandlerMapping hm = context.getBean(HANDLER_MAPPING_BEAN_NAME, HandlerMapping.class);
          <span class="hljs-keyword">this</span>.handlerMappings = Collections.singletonList(hm);
       &#125;
       <span class="hljs-keyword">catch</span> (NoSuchBeanDefinitionException ex) &#123;
-         <span class="hljs-comment">// Ignore, we'll add a default HandlerMapping later.</span>
+         <span class="hljs-comment">// Ignore, we&#x27;ll add a default HandlerMapping later.</span>
       &#125;
    &#125;
 
    <span class="hljs-comment">// Ensure we have at least one HandlerMapping, by registering</span>
    <span class="hljs-comment">// a default HandlerMapping if no other mappings are found.</span>
    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.handlerMappings == <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">this</span>.handlerMappings = getDefaultStrategies(context, HandlerMapping<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+      <span class="hljs-keyword">this</span>.handlerMappings = getDefaultStrategies(context, HandlerMapping.class);
       <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-         logger.trace(<span class="hljs-string">"No HandlerMappings declared for servlet '"</span> + getServletName() +
-               <span class="hljs-string">"': using default strategies from DispatcherServlet.properties"</span>);
+         logger.trace(<span class="hljs-string">&quot;No HandlerMappings declared for servlet &#x27;&quot;</span> + getServletName() +
+               <span class="hljs-string">&quot;&#x27;: using default strategies from DispatcherServlet.properties&quot;</span>);
       &#125;
    &#125;
 &#125;</code></pre>
@@ -612,9 +625,9 @@
       beanType = obtainApplicationContext().getType(beanName);
    &#125;
    <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-      <span class="hljs-comment">// An unresolvable bean type, probably from a lazy bean - let's ignore it.</span>
+      <span class="hljs-comment">// An unresolvable bean type, probably from a lazy bean - let&#x27;s ignore it.</span>
       <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-         logger.trace(<span class="hljs-string">"Could not resolve type for bean '"</span> + beanName + <span class="hljs-string">"'"</span>, ex);
+         logger.trace(<span class="hljs-string">&quot;Could not resolve type for bean &#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27;&quot;</span>, ex);
       &#125;
    &#125;
    <span class="hljs-comment">//如果类上面有@Controller注解或者@RequestMapping注解</span>
@@ -639,8 +652,8 @@
                   <span class="hljs-keyword">return</span> getMappingForMethod(method, userType);
                &#125;
                <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-                  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">"Invalid mapping on handler class ["</span> +
-                        userType.getName() + <span class="hljs-string">"]: "</span> + method, ex);
+                  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Invalid mapping on handler class [&quot;</span> +
+                        userType.getName() + <span class="hljs-string">&quot;]: &quot;</span> + method, ex);
                &#125;
             &#125;);
       <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
@@ -768,7 +781,7 @@
                 
               </div>
               
-                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
               
               
                 <div class="post-prevnext row">
@@ -805,7 +818,7 @@
       <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
         <div id="toc">
   <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
-  <div id="tocbot"></div>
+  <div class="toc-body" id="toc-body"></div>
 </div>
 
       </div>
@@ -817,16 +830,15 @@
 
 
     
-  </main>
 
-  
-    <a id="scroll-top-button" href="#" role="button">
-      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-    </a>
-  
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
 
-  
-    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
      aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
     <div class="modal-content">
@@ -847,57 +859,44 @@
     </div>
   </div>
 </div>
-  
-
-  
-
-  
-
-  <footer class="mt-5">
-  <div class="text-center py-3">
-    <div>
-      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
-      <i class="iconfont icon-love"></i>
-      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
-        <span>Fluid</span></a>
-    </div>
-    
-  <div class="statistics">
-    
     
 
     
-      
-        <!-- 不蒜子统计PV -->
-        <span id="busuanzi_container_site_pv" style="display: none">
-            总访问量 
-            <span id="busuanzi_value_site_pv"></span>
-             次
-          </span>
-      
-      
-        <!-- 不蒜子统计UV -->
-        <span id="busuanzi_container_site_uv" style="display: none">
-            总访客数 
-            <span id="busuanzi_value_site_uv"></span>
-             人
-          </span>
-      
-    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
   </div>
+  
 
+  
 
-    
-
-    
-  </div>
+  
 </footer>
 
 <!-- SCRIPTS -->
-<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
-<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
 <script  src="/blog/js/debouncer.js" ></script>
-<script  src="/blog/js/main.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
 
 <!-- Plugins -->
 
@@ -908,105 +907,51 @@
 
 
 
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
   <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
-  <script  src="/blog/js/clipboard-use.js" ></script>
 
 
-
-  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
-
-
-
-
-
-  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
-  <script>
-    $(document).ready(function () {
-      var boardCtn = $('#board-ctn');
-      var boardTop = boardCtn.offset().top;
-
-      tocbot.init({
-        tocSelector: '#tocbot',
-        contentSelector: '#post-body',
-        headingSelector: 'h1,h2,h3,h4,h5,h6',
-        linkClass: 'tocbot-link',
-        activeLinkClass: 'tocbot-active-link',
-        listClass: 'tocbot-list',
-        isCollapsedClass: 'tocbot-is-collapsed',
-        collapsibleClass: 'tocbot-is-collapsible',
-        collapseDepth: 0,
-        scrollSmooth: true,
-        headingsOffset: -boardTop
-      });
-      if ($('.toc-list-item').length > 0) {
-        $('#toc').css('visibility', 'visible');
-      }
-    });
-  </script>
 
 
 
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
-    var typed = new Typed('#subtitle', {
-      strings: [
-        '  ',
-        "SpringMVC的初始化过程&nbsp;",
-      ],
-      cursorChar: "_",
-      typeSpeed: 70,
-      loop: false,
-    });
-    typed.stop();
-    $(document).ready(function () {
-      $(".typed-cursor").addClass("h2");
-      typed.start();
-    });
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
-  <script>
-    anchors.options = {
-      placement: "right",
-      visible: "hover",
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
       
-    };
-    var el = "h1,h2,h3,h4,h5,h6".split(",");
-    var res = [];
-    for (item of el) {
-      res.push(".markdown-body > " + item)
-    }
-    anchors.add(res.join(", "))
+      typing(title)
+      
+    })(window, document);
   </script>
 
 
 
   <script  src="/blog/js/local-search.js" ></script>
   <script>
-    var path = "/blog/local-search.xml";
-    var inputArea = document.querySelector("#local-search-input");
-    inputArea.onclick = function () {
-      searchFunc(path, 'local-search-input', 'local-search-result');
-      this.onclick = null
-    }
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <script>
-    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
-      function () {
-        var element = document.createElement('a');
-        $(element).attr('data-fancybox', 'images');
-        $(element).attr('href', $(this).attr('src'));
-        $(this).wrap(element);
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
       }
-    );
+    })()
   </script>
 
 
@@ -1015,55 +960,6 @@
 
 
 
-  
-  
-    <script type="text/javascript">
-      //定义获取词语下标
-      var a_idx = 0;
-      jQuery(document).ready(function ($) {
-        //点击body时触发事件
-        $("body").click(function (e) {
-          //需要显示的词语
-          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
-          //设置词语给span标签
-          var $i = $("<span/>").text(a[a_idx]);
-          //下标等于原来下标+1  余 词语总数
-          a_idx = (a_idx + 1) % a.length;
-          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
-          //获取x和y的指针坐标
-          var x = e.pageX, y = e.pageY;
-          //在鼠标的指针的位置给$i定义的span标签添加css样式
-          $i.css({
-            "z-index": 999,
-            "top": y - 20,
-            "left": x,
-            "position": "absolute",
-            "font-weight": "bold",
-            "color": rand_color()
-          });
-          // 随机颜色
-          function rand_color() {
-            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
-          }
-          //在body添加这个标签
-          $("body").append($i);
-          //animate() 方法执行 CSS 属性集的自定义动画。
-          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
-          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
-          $i.animate({
-            //将原来的位置向上移动180
-            "top": y - 180,
-            "opacity": 0
-            //1500动画的速度
-          }, 1500, function () {
-            //时间到了自动删除
-            $i.remove();
-          });
-        });
-      })
-      ;
-    </script>
-  
 
 
 
@@ -1072,9 +968,8 @@
 
 
 
-
-
-
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
 
 
 

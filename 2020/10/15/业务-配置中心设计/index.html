@@ -1,0 +1,2362 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>配置中心设计 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="配置中心设计">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-10-15 16:01" pubdate>
+        2020年10月15日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      13.7k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      182
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">配置中心设计</h1>
+            
+            <div class="markdown-body">
+              <h3 id="配置中心简介"><a href="#配置中心简介" class="headerlink" title="配置中心简介"></a>配置中心简介</h3><p>配置中心就是用于统一管理项目中各种配置的平台，现在常见的配置中心几乎都支持动态加载、多环境配置和轨迹记录功能，可以减少因配置更迭而产生的工作。</p>
+<p>配置中心作用：</p>
+<ul>
+<li><p>动态加载配置 </p>
+<p>在早期的传统项目开发中，项目中的配置文件如jdbc.properties、config.properties、applicationContext.xml是与项目一起发布的，更新配置时不太灵活，通常需要重启项目。但目前的配置中心几乎都支持动态加载和热部署的方式，当配置变更时可以实现动态加载最新配置。 </p>
+</li>
+<li><p>多环境配置 </p>
+<p>在项目正式上线运行之前，会经过反复的测试。每个阶段的测试，所处的环境也是不一样的，如开发环境、测试环境、生产环境等等。对于每个环境，所需要的配置也是不一样的。比如数据库连接池，开发环境中可能只需要一个但其他环境显然是不行的。多数的配置中心都支持多环境配置，配合运维工具的使用，可以快速切换到不同环境下的配置。 </p>
+</li>
+<li><p>微服务架构统一管理配置 </p>
+<p>在微服务架构的项目中，每个服务都会有独立的配置文件。如果没有配置中心的话，如果需要 修改配置，需要在每个服务的配置中单独修改，会造成配置管理混乱。配置中心可以提供统一管理修改配置的方式，使管理配置变得简单清晰。 </p>
+</li>
+<li><p>配置更新轨迹</p>
+<p>多数的配置中心都有轨迹记录的功能，可以追溯配置变更的情况。可以在微服务运行出现异常情况时，能够追溯配置变更细节。 </p>
+</li>
+</ul>
+<h3 id="已有解决方案介绍"><a href="#已有解决方案介绍" class="headerlink" title="已有解决方案介绍"></a>已有解决方案介绍</h3><h4 id="Spring-Cloud-Config"><a href="#Spring-Cloud-Config" class="headerlink" title="Spring Cloud Config"></a>Spring Cloud Config</h4><p>Spring Cloud Config作为Spring Cloud的6大组件之一，可以极简的实现配置统一化管理。它并没有自己编写管理配置的功能，而是借助于git仓库来保存服务配置。通过和git仓库建立http协议接口，抓取仓库中的配置，实现配置更新。在更新应用端配置时，需要借助Cloud Bus消息总线机制。 </p>
+<p>架构图</p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="ctrip-apollo"><a href="#ctrip-apollo" class="headerlink" title="ctrip apollo"></a>ctrip apollo</h4><p>Apollo（阿波罗）是携程框架部门研发的分布式配置中心，能够集中化管理应用不同环境、不同集群的配置，配置修改后能够实时推送到应用端，并且具备规范的权限、流程治理等特性，适用于微服务配置管理场景。 </p>
+<p>服务端基于Spring Boot和Spring Cloud开发，打包后可以直接运行，不需要额外安装Tomcat等应用容器。 </p>
+<p>Apollo官网地址： <a target="_blank" rel="noopener" href="https://github.com/ctripcorp/apollo">https://github.com/ctripcorp/apollo</a></p>
+<p>架构图</p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="alibaba-nacos"><a href="#alibaba-nacos" class="headerlink" title="alibaba-nacos"></a>alibaba-nacos</h4><p>Nacos是阿里2018年开源的注册中心中间件，同时提供配置中心的功能</p>
+<p>官网地址：<a target="_blank" rel="noopener" href="https://nacos.io/zh-cn/docs/architecture.html">https://nacos.io/zh-cn/docs/architecture.html</a></p>
+<p>它的系统架构图如下：</p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="阿里云-ACM服务（diamond）"><a href="#阿里云-ACM服务（diamond）" class="headerlink" title="阿里云-ACM服务（diamond）"></a>阿里云-ACM服务（diamond）</h4><p>ACM，全称是Application Confifiguration Management，它是一款在分布式架构环境中对应用配置进行集中管理和推送的产品。凭借配置变更、配置推送、历史版本管理、灰度发布、配置变更审计等配置管理工具，ACM能帮助您集中管理所有应用环境中的配置，降低分布式系统中管理配置的成本，并降低因错误的配置变更造成可用性下降甚至发生故障的风险。 </p>
+<p>它的前身是淘宝内部的Diamond配置中心。官网地址如下： </p>
+<p><a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/59953.html?spm=a2c4g.11186623.6.542.6cad52e1PK0gFP">https://help.aliyun.com/document_detail/59953.html?spm=a2c4g.11186623.6.542.6cad52e1PK0gFP</a> </p>
+<p>在官网中，提供了它的系统架构图：</p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>阿里有两款配置中心产品，一款是nacos，一款是阿里云服务集成的ACM，在ACM的帮助文档中，官方给出了两款产品的差异： </p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="常用配置中心差异"><a href="#常用配置中心差异" class="headerlink" title="常用配置中心差异"></a>常用配置中心差异</h4><table>
+<thead>
+<tr>
+<th>对比项目/配置中心</th>
+<th>spring cloud config</th>
+<th>apollo</th>
+<th>nacos</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>开源时间</td>
+<td>2014.9</td>
+<td>2016.5</td>
+<td>2018.6</td>
+</tr>
+<tr>
+<td>配置实时推送</td>
+<td>支持（Spring Cloud Bus）</td>
+<td>支持（HTTP长轮询1s内）</td>
+<td>支持（HTTP长轮询1s内）</td>
+</tr>
+<tr>
+<td>版本管理</td>
+<td>支持（Git）</td>
+<td>自动管理</td>
+<td>自动管理</td>
+</tr>
+<tr>
+<td>配置回滚</td>
+<td>支持（Git）</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>灰度发布</td>
+<td>支持</td>
+<td>支持</td>
+<td>待支持</td>
+</tr>
+<tr>
+<td>权限管理</td>
+<td>支持</td>
+<td>支持</td>
+<td>待支持</td>
+</tr>
+<tr>
+<td>多集群多环境</td>
+<td>支持</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>监听查询</td>
+<td>支持</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>多语言</td>
+<td>只支持Java</td>
+<td>Go,C++,Python,Java,.net,OpenAPI</td>
+<td>Python,Java,Nodejs,OpenAPI</td>
+</tr>
+<tr>
+<td>分布式高可用最小集群数量</td>
+<td>Config-Server2+Git+MQ</td>
+<td>Config2+Admin3+Portal*2+Mysql=8</td>
+<td>Nacos*3+MySql=4</td>
+</tr>
+<tr>
+<td>配置格式校验</td>
+<td>不支持</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>通信协议</td>
+<td>HTTP和AMQP</td>
+<td>HTTP</td>
+<td>HTTP</td>
+</tr>
+<tr>
+<td>数据一致性</td>
+<td>Git保证数据一致Git保证数据一致Server从Git读取数据</td>
+<td>数据库模拟消息队列，Apollo定时读消息</td>
+<td>HTTP异步通知</td>
+</tr>
+<tr>
+<td>单机读（tps）</td>
+<td>7（限流所制）</td>
+<td>9000</td>
+<td>15000</td>
+</tr>
+<tr>
+<td>单机写（tps）</td>
+<td>5（限流所制）</td>
+<td>1100</td>
+<td>1800</td>
+</tr>
+<tr>
+<td>3节点读</td>
+<td>21（限流所制）</td>
+<td>27000</td>
+<td>45000</td>
+</tr>
+<tr>
+<td>3节点写</td>
+<td>5（限流所制）</td>
+<td>3300</td>
+<td>5600</td>
+</tr>
+</tbody></table>
+<h3 id="配置中心技术解决方案"><a href="#配置中心技术解决方案" class="headerlink" title="配置中心技术解决方案"></a>配置中心技术解决方案</h3><ul>
+<li><p>数据接入</p>
+<p>在数据接入中必不可少的一种方案就是API接入。通过提供API访问的方式，把本地配置上传到配置中心。除此之外，像ACM中提供的可视化配置方式也是比较简介清晰的接入方式。 </p>
+</li>
+<li><p>配置存储</p>
+<p>存储介质的选择，几个重要的问题必须考虑进去。第一是配置更新和获取的效率问题、第二是配置更新的同步问题、第三是配置中心的容灾。这里提供两套解决方案。第一套是Redis+Mysql+FastDFS，第二套HBase+Mysql+HDFS。Redis或者HBase作为缓存的解决方案，而MySQL数据库做持久化存储解决方案。FastDFS和HDFS的就是利用磁盘文件来实现容灾。当然，也可以像Spring Cloud Confifig一样，存储自己不实现，而是利用Git来实现配置存储。 </p>
+</li>
+<li><p>动态推送</p>
+<p>动态推送需要在配置更新后，通知到每个微服务，然后在不停服务的前提下加载最新的配置项。目前共有两种模式。</p>
+<ul>
+<li>推模式：即服务端更新完配置后，主动推送到各个业务微服务。但在http协议的模式下实现推模式比较困难，HTTP协议是一问一答的规则。必须现有发问，才能回答。要实现推模式就需要建立长轮询机制（Long-Looping），由客户端不停的向服务端请求：“配置有变化吗？”，当得到的答案是有变化时，更新配置。 </li>
+<li>拉模式：即客户端自己从服务端拉去最新配置。此种方式，可以由客户端在更新完配置后，主动向服务端发送一个请求，从而把服务端存储的最新配置拉去到本地微服务。</li>
+</ul>
+</li>
+<li><p>高并发读取配置</p>
+<p>可以MQ来接收请求，减少加载配置的并发访问量。 </p>
+</li>
+<li><p>更新轨迹</p>
+<p>可以选择MongoDB作为数据存储的解决方案。同时通过log4j记录日志的方式，把轨 迹定期同步到日志中。从而保证更新轨迹不缺失。 </p>
+</li>
+<li><p>运行监控</p>
+<p>在记录监控时，采用rancher作为容器部署工具，借助google的CAdvisor采集配置中心运行数据，由于CAdvisor是按照时间片来展示数据的，同时它不具备存储的功能，所以要配合InflfluxDB来使用，由InflfluxDB保存采集到的运行数据。最后，使用Grafana作为监控软件，监控采集到的数据。 </p>
+</li>
+</ul>
+<h3 id="黑马应用配置管理平台（HACM）简介"><a href="#黑马应用配置管理平台（HACM）简介" class="headerlink" title="黑马应用配置管理平台（HACM）简介"></a>黑马应用配置管理平台（HACM）简介</h3><h4 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h4><img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="需求说明"><a href="#需求说明" class="headerlink" title="需求说明"></a>需求说明</h4><p>黑马应用配置管理平台Heima Application Confifiguration Management（简称HACM）和其他管理系统没有本质区别，都是用于管理资源的，只是管理的资源类型不同。比如CRM，客户管理管理系统，它就是用于管理客户关系的。那么在HACM中，它管理的资源就是配置文件，只是这个配置文件不只是一个项目中的，而是公司所有基于微服务开发的项目配置文件统一放到此处管理。所以它的需求将会主要有以下几个方法。</p>
+<h5 id="配置管理功能"><a href="#配置管理功能" class="headerlink" title="配置管理功能"></a>配置管理功能</h5><p>配置文件的上传。旨在当我们已经有了配置文件之后，可以直接把配置文件上传到管理平台中。 </p>
+<p>配置文件的创建。当一个新的项目或者新的微服务，没有本地配置时，可以直接在平台创建配置文件。 </p>
+<p>配置项添加和修改。它指的是通过平台提供的可视化界面创建配置项或者修改配置项的值。 </p>
+<p>配置项的删除。它可以把配置文件中没用的配置项进行移除。 </p>
+<p>配置文件的移除。它是把整个配置文件从系统中移除。 </p>
+<h5 id="用户管理功能"><a href="#用户管理功能" class="headerlink" title="用户管理功能"></a>用户管理功能</h5><p>用户信息的增删改查操作。 </p>
+<p>用户的登录。 </p>
+<h5 id="权限控制"><a href="#权限控制" class="headerlink" title="权限控制"></a>权限控制</h5><p>根据用户级别进行权限控制。它指的是，非项目负责人，只能对自己负责项目中微服务的配置进行查看和管理。而项目负责人，则可以管理项目中所有微服务的配置。最后，项目组组长可以管理组中所有项目的配置。不提供更高级别可以管理公司所有项目的配置，因为这样不安全。</p>
+<h5 id="配置推送功能"><a href="#配置推送功能" class="headerlink" title="配置推送功能"></a>配置推送功能</h5><p>平台需要提供了两种解决方案。第一种是，当配置发生变更时，可以及时的把配置推送到客户端，可以采用轮询的方式模拟服务器的推模式。第二种是，客户端主动拉取配置，它的实现机制就是借鉴Spring Cloud Confifig的部分。 </p>
+<p>配置推送轨迹的记录。当配置发生变更后，需要把变更的配置记录起来。以便后续使用。例如：根据轨迹和运行日志分析哪些配置可以达到服务的稳定运行或者处理更多请求等等。 </p>
+<p>轨迹的同步。在我们记录了很长时间的轨迹之后，这些轨迹一值保存在数据库中会消耗很多数据库空间，所以我们需要定期清理轨迹。但是，清理的轨迹并不是代表就没用价值了。所以不是真正的把轨迹删掉，而是把它从数据库转移到另外的地方。我们这里采用定时任务调度，根据用户设定的时长，把轨迹数据写到日志文件中。 </p>
+<h4 id="数据库介绍"><a href="#数据库介绍" class="headerlink" title="数据库介绍"></a>数据库介绍</h4><h5 id="用户表"><a href="#用户表" class="headerlink" title="用户表"></a>用户表</h5><img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs sql"><span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span> acm_project_group
+(
+   <span class="hljs-keyword">id</span>                   <span class="hljs-built_in">varchar</span>(<span class="hljs-number">40</span>) <span class="hljs-keyword">not</span> <span class="hljs-literal">null</span>,
+   project_group_name   <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   project_manager_name <span class="hljs-built_in">varchar</span>(<span class="hljs-number">64</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   state                <span class="hljs-built_in">varchar</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   remark               <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   primary <span class="hljs-keyword">key</span> (<span class="hljs-keyword">id</span>)
+);
+
+<span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span> acm_user
+(
+   <span class="hljs-keyword">id</span>                   <span class="hljs-built_in">varchar</span>(<span class="hljs-number">40</span>) <span class="hljs-keyword">not</span> <span class="hljs-literal">null</span>,
+   user_name            <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   <span class="hljs-keyword">password</span>             <span class="hljs-built_in">varchar</span>(<span class="hljs-number">64</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   gender               <span class="hljs-built_in">varchar</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   age                  <span class="hljs-built_in">int</span>(<span class="hljs-number">2</span>),
+   birthday             <span class="hljs-built_in">date</span> <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   telephone            <span class="hljs-built_in">varchar</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   email                <span class="hljs-built_in">varchar</span>(<span class="hljs-number">60</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   degree               <span class="hljs-built_in">int</span>(<span class="hljs-number">2</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   state                <span class="hljs-built_in">varchar</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">comment</span> <span class="hljs-string">&#x27;1启用0停用&#x27;</span>,
+   remark               <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   project_group_id     <span class="hljs-built_in">varchar</span>(<span class="hljs-number">40</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   primary <span class="hljs-keyword">key</span> (<span class="hljs-keyword">id</span>)
+)
+<span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8;</code></pre>
+
+<h5 id="配置信息表"><a href="#配置信息表" class="headerlink" title="配置信息表"></a>配置信息表</h5><img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs sql"><span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span> acm_config_info
+(
+   <span class="hljs-keyword">id</span>                   <span class="hljs-built_in">varchar</span>(<span class="hljs-number">40</span>) <span class="hljs-keyword">not</span> <span class="hljs-literal">null</span>,
+   project_name         <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   env_name             <span class="hljs-built_in">varchar</span>(<span class="hljs-number">64</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   cluster_number       <span class="hljs-built_in">varchar</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span> ,
+   service_name         <span class="hljs-built_in">varchar</span>(<span class="hljs-number">255</span>) <span class="hljs-keyword">default</span> <span class="hljs-literal">NULL</span>,
+   config_detail        <span class="hljs-built_in">varchar</span>(<span class="hljs-number">4000</span>),
+   user_id              <span class="hljs-built_in">varchar</span>(<span class="hljs-number">40</span>),
+   project_group_id     <span class="hljs-built_in">varchar</span>(<span class="hljs-number">40</span>),
+   create_time          <span class="hljs-built_in">date</span>,
+   update_time          <span class="hljs-built_in">date</span>,
+   primary <span class="hljs-keyword">key</span> (<span class="hljs-keyword">id</span>)
+)</code></pre>
+
+<h4 id="配置存储解决方案"><a href="#配置存储解决方案" class="headerlink" title="配置存储解决方案"></a>配置存储解决方案</h4><h5 id="配置文件类型"><a href="#配置文件类型" class="headerlink" title="配置文件类型"></a>配置文件类型</h5><ul>
+<li><p><strong>xml</strong></p>
+<p>xml是非常悠久的一种格式，优势是有严格的语法要求，层次结构清晰，支持结构定义，配合约束使用时可以有效避免无效项配置。弊端是为了描述清楚几行配置，往往要写很多配套配置。例如：导入约束，编写标签，编写属性名称等等。同时，当编写不符合语法或者使用了非法字符时，项目无法正常启动。</p>
+</li>
+<li><p><strong>properties</strong></p>
+<p>properties结构简单，以键值对方式存储，但不足是，描述层级关系时它很不方便。目前很多框架都支持properties作为配置文件的格式。例如Spring、SpringBoot等。</p>
+</li>
+<li><p><strong>yaml</strong></p>
+<p>yaml也记做yml，百度百科解释如下：</p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic9.png" srcset="/blog/img/loading.gif" class>
+
+</li>
+</ul>
+<h5 id="存储格式分析"><a href="#存储格式分析" class="headerlink" title="存储格式分析"></a>存储格式分析</h5><ul>
+<li><p><strong>缓存</strong></p>
+<p>在进行缓存时，是只缓存配置文件中的内容，还是将配置文件的信息一起缓存。</p>
+<p>在考虑把整个对象存入Redis时，由于有些配置内容比较敏感，出于安全性的考虑，不建议直接存储json格式的配置内容，可以借助Kryo序列化将配置对象转成字节数组，再存入缓存。</p>
+</li>
+<li><p><strong>DFS</strong></p>
+<p>分布式文件系统DFS是用于解决当redis和mysql都出现问题时，平台可以利用它来容灾。那么存入DFS系统的方式和时机就是我们要分析的内容。</p>
+<p>在DFS分布式文件系统中，我们也要把ConfifigInfo全部的内容存入进去。其目的有二，一是当我们读取不到缓存和持久化数据时，分布式文件系统中的数据仍是完整的；二是当我们读取完数据之后，在缓存服务器和持久化数据库恢复后可以同步回去，此时也要求是完整数据。所以，我们要把整个ConfifigInfo存入，并且也是利用Kryo序列化成字节数组后存入。 </p>
+<p>存入时机</p>
+<table>
+<thead>
+<tr>
+<th>ConfigInfo的操作</th>
+<th>存入DFS的时机</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>上传完整配置信息 通</td>
+<td>通过消息队列异步存入</td>
+<td>判断是否已经有了此配置，没有直接存入，有的话替换。</td>
+</tr>
+<tr>
+<td>创建配置</td>
+<td>不存入</td>
+<td>因为此时没有任何配置项信息，所以不用存入DFS。</td>
+</tr>
+<tr>
+<td>添加配置项</td>
+<td>通过消息队列异步存入</td>
+<td>判断是否已经有了此配置，没有直接存入，有的话替换。</td>
+</tr>
+<tr>
+<td>更新配置项</td>
+<td>通过消息队列异步存入</td>
+<td>判断是否已经有了此配置，没有直接存入，有的话替换。</td>
+</tr>
+<tr>
+<td>删除配置项</td>
+<td>通过消息队列异步存入</td>
+<td>判断是否已经有了此配置，没有直接存入，有的话替换。</td>
+</tr>
+<tr>
+<td>删除整个配置</td>
+<td>通过消息队列异步删除</td>
+<td>直接删除。</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h4 id="缓存解决方案分析"><a href="#缓存解决方案分析" class="headerlink" title="缓存解决方案分析"></a>缓存解决方案分析</h4><p><strong>Redis</strong></p>
+<p>Redis是用C语言开发的一个开源的高性能键值对（key-value）的NoSQL数据库。它通过提供多种键值数据类型来适应不同场景下的存储需求，目前为止Redis支持的键值数据类型如下： </p>
+<ul>
+<li><p>字符串类型 </p>
+</li>
+<li><p>散列类型 </p>
+</li>
+<li><p>列表类型 </p>
+</li>
+<li><p>集合类型 </p>
+</li>
+</ul>
+<p>有序集合类型。它起源于2008年，当时意大利的一家创业公司Merzia推出了一款基于MySQL的网站实时统计系统LLOOGG，然而没过多久该公司的创始人 Salvatore Sanfilippo便对MySQL的性能感到失望，于是他决定亲自为LLOOGG量身定做一个数据库，并于2009年开发完成，这个数据库就是Redis。不过Salvatore Sanfilippo并不满足只将Redis用于LLOOGG这一款产品，而是希望更多的人使用它，于是在同一年Salvatore Sanfilippo将Redis开源发布，并开始和Redis的另一名主要的代码贡献者Pieter Noordhuis一起继续着Redis的开发，直到今天。 </p>
+<p>Salvatore Sanfilippo自己也没有想到，短短的几年时间，Redis就拥有了庞大的用户群体。Hacker News在2012年发布了一份数据库的使用情况调查，结果显示有近12%的公司在使用Redis。国内如新浪微博、街旁网、知乎网，国外如GitHub、Stack Overflflow、Flickr等都是Redis的用户。 </p>
+<p>VMware公司从2010年开始赞助Redis的开发， Salvatore Sanfilippo和Pieter Noordhuis也分别在3月和5月加入VMware，全职开发Redis。 </p>
+<p><strong>HBase</strong> </p>
+<p>HBase本身是不能称之为缓存的，它只是一种存储方案。</p>
+<p>它具有高可靠性、高性能、面向列、可伸缩的分布式存储系统等优势。它的写入速度非常快，但是读取速度是无法和Redis相提并论的。但是它和HDFS组合使用，可能在执行效率上不如Redis+FastDFS，但是在可靠性和伸缩性上却非常有优势。 </p>
+<p><strong>两者的区别</strong> </p>
+<ul>
+<li><p>读写性能： HBase写快读慢，HBase的读取时长通常是几毫秒，而Redis的读取时长通常是几十微秒。性能相差非常大。 </p>
+</li>
+<li><p>数据类型： HBase和Redis都支持KV类型。但是Redis支持List、Set等更丰富的类型。 </p>
+</li>
+<li><p>数据量： Redis支持的数据量通常受内存限制，而HBase没有这个限制，可以存储远超内存大小的数据。 </p>
+</li>
+<li><p>部署难易： HBase部署需要依赖hadoop、zookeeper等服务，而Redis的部署非常简单。 </p>
+</li>
+<li><p>数据可靠性： HBase采用WAL，先记录日志再写入数据，理论上不会丢失数据。而Redis采用的是异步复制数据，在failover时可能会丢失数据。 </p>
+</li>
+<li><p>应用场景：HBase适合做大数据的持久存储，而Redis比较适合做缓存。如果数据丢失是不能容忍的，那就用只能用HBase； 如果需要一个高性能的环境，而且能够容忍一定的数据丢失，那完全可以考虑使用Redis。 </p>
+</li>
+<li><p>两者的结合： HBase可以用来做数据的固化，也就是数据存储，做这个他非常合适。Redis适合做cache。可以用HBase+Redis实现数据仓库加缓存数据库，速度和扩展性都兼顾。 </p>
+</li>
+</ul>
+<p>综上所述，HBase虽然是基于key=value方式存储的NoSQL，但是在当前的缓存需求上并不适用，所以缓存解决方案中我们选择Redis作为最终方案。 </p>
+<h4 id="容灾解决方案分析"><a href="#容灾解决方案分析" class="headerlink" title="容灾解决方案分析"></a>容灾解决方案分析</h4><p><strong>FastDFS</strong></p>
+<p>FastDFS是阿里巴巴开源的一套轻量级，天生就是分布式设计的文件系统，FastDFS的源代码由C语言开发，目前可运行在Linux，FreeBSD，Unix等类操作系统上， 它的作者是余庆（happyfish100），官方地址在github上： <a target="_blank" rel="noopener" href="https://github.com/happyfish100%E3%80%82%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD%E5%8C%85%E6%8B%AC%EF%BC%9A%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%EF%BC%8C%E6%96%87%E4%BB%B6%E5%90%8C%E6%AD%A5%E5%92%8C%E6%96%87%E4%BB%B6%E8%AE%BF%E9%97%AE%EF%BC%8C%E4%BB%A5%E5%8F%8A%E9%AB%98%E5%AE%B9%E9%87%8F%E5%92%8C%E8%B4%9F%E8%BD%BD%E5%B9%B3%E8%A1%A1%E3%80%82%E4%B8%BB%E8%A6%81%E8%A7%A3%E5%86%B3%E4%BA%86%E6%B5%B7%E9%87%8F%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E9%97%AE%E9%A2%98%EF%BC%8C%E7%89%B9%E5%88%AB%E9%80%82%E5%90%88%E4%BB%A5%E4%B8%AD%E5%B0%8F%E6%96%87%E4%BB%B6%EF%BC%88%E5%BB%BA%E8%AE%AE%E8%8C%83%E5%9B%B4%EF%BC%9A4KB">https://github.com/happyfish100。主要功能包括：文件存储，文件同步和文件访问，以及高容量和负载平衡。主要解决了海量数据存储问题，特别适合以中小文件（建议范围：4KB</a> &lt; fifile_size &lt;500MB）为载体的在线服务。 </p>
+<p>FastDFS 系统有三个角色：跟踪服务器(Tracker Server)、存储服务器(Storage Server)和客户端(Client)。 </p>
+<ul>
+<li><p><strong>Tracker Server</strong>： </p>
+<p>跟踪服务器，主要做调度工作，起到均衡的作用；负责管理所有的 storage server和 group，每个 storage 在启动后会连接 Tracker，告知自己所属 group 等信息，并保持周期性心跳。 </p>
+</li>
+<li><p><strong>Storage Server</strong>： </p>
+<p>存储服务器，主要提供容量和备份服务；以 group 为单位，每个 group 内可以有多台 storage server，数据互为备份。</p>
+</li>
+<li><p><strong>Client</strong>客户端： </p>
+<p>上传下载数据的服务器，也就是我们自己的项目所部署在的服务器。 </p>
+</li>
+</ul>
+<p><strong>HDFS</strong> </p>
+<p>HDFS它的全称是：Hadoop 文件分发系统 ( Hadoop Distributed File System )。我们通常简称为HDFS。它是GFS的一种实现，类似于FAT32，NTFS，是一种文件格式，是底层的。它和HBase以及Hive都是Apache软件基金会推出的存储解决方案。只不过，Hive与HBase的数据一般都存储在HDFS上。Hadoop HDFS为他们提供了高可靠性的底层存储支持。 </p>
+<p>GFS（Google File System google公司研发的一种高可用，可扩展，可伸缩的分布式文件系统）在大数据领域，HDFS和HBase组成了生态系统的关键，它的容错率很高，即便是在系统崩溃的情况下，也能够在节点之间快速传输数据。 </p>
+<p>为什么有了HDFS后，还要推出HBase呢？它们的区别是，HDFS最适于执行批次分析。然而，它最大的缺点是无法执行实时分析，而实时分析是信息科技行业的标配。HBase能够处理大规模数据，但它不适于批次分析，却可以向Hadoop实时地调用数据。 </p>
+<p>他们两个虽然都可以处理结构、半结构和非结构数据。但是因为HDFS建立在旧的MapReduce框架上，所以它缺乏内存引擎，数据分析速度较慢。而HBase使用了内存引擎，大大提高了数据的读写速度。同时，HDFS执行的数据分析过程是透明的。HBase与之相反，因为其结构基于NoSQL，它通过在不同的关键字下进行排序而获取数据。 </p>
+<p>最后说一下Hive，它不支持更改数据的操作，它基于的是数据仓库，提供静态数据的动态查询。其使用类SQL语言，底层经过编译转为MapReduce程序，在Hadoop上运行，数据存储在HDFS上。 </p>
+<p>下图展示了他们之间的关系：</p>
+<img src="/blog/2020/10/15/%E4%B8%9A%E5%8A%A1-%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p><strong>两者的区别</strong> </p>
+<p>我们说完了Hadoop家族的成员，接下来总结一下这两个DFS。 </p>
+<p>首先说FastDFS，它是开源的，轻量级，单纯的文件存取，节点不具备运算功能。FastDFS并不是通用的文件系统，只能通过api来访问，文件标识分为两个部分：卷名和文件名，二者缺一不可。目前提供c,java,php客户端。 </p>
+<p>phtyon由第三方开发者提供。它的服务端有两个角色：跟踪器（tracker）和存储节点（storage）。它不支持FUSE（容灾），也没有提供可移植操作系统接口（POSIX）。 </p>
+<p>再来说HDFS，它也是开源的，且存储节点也是计算节点用以获得高效计算，是以低成本获得大数据（PB级）处理能力，主要解决并行计算中分布式存储数据的问题。同时，其单个数据文件通常很大，采用了分块（切分）存储的方式。它的移植性和熔断机制都是FastDFS所不具备的。 </p>
+<p>通过对比，我们发现在容灾解决方案上，显然简单易用，且基于API访问的FastDFS更适合目前的需求，而具有计算能力的HDFS在当前场景下，发挥不出它的优势。 </p>
+<h4 id="Redis-FastDFS的技术实现"><a href="#Redis-FastDFS的技术实现" class="headerlink" title="Redis+FastDFS的技术实现"></a>Redis+FastDFS的技术实现</h4><h5 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h5><p>redis安装</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#下载镜像</span>
+docker pull redis
+<span class="hljs-comment">#启动容器</span>
+docker run ‐di ‐‐name=redis ‐p 6379:6379 redis</code></pre>
+
+<p>FastDFS安装</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#下载镜像</span>
+docker pull morunchang/fastdfs
+<span class="hljs-comment">#安装tracker</span>
+docker run -d --name=tracker --net=host morunchang/fastdfs sh tracker.sh
+<span class="hljs-comment">#安装storage</span>
+docker run -d --name=storage --net=host -e TRACKER_IP=192.168.32.132:22122 -e GROUP_NAME=itheima morunchang/fastdfs sh storage.sh</code></pre>
+
+<p>修改Nignx配置</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#进入nignx：</span>
+docker <span class="hljs-built_in">exec</span> -it storage /bin/bash
+<span class="hljs-comment">#编辑配置文件：</span>
+vim /etc/nginx/conf/nginx.conf
+<span class="hljs-comment">#替换如下内容：		</span>
+location ~/M00 &#123;
+   <span class="hljs-comment"># 禁止缓存</span>
+   add_header Cache-Control no-store; 
+   <span class="hljs-comment">#只需要加入上面这一行，其他的都是已经存在的</span>
+   root /data/fast_data/data;
+   ngx_fastdfs_module;  
+&#125;
+<span class="hljs-comment">#重启容器：</span>
+docker restart storage</code></pre>
+
+<h5 id="Redis编码实现"><a href="#Redis编码实现" class="headerlink" title="Redis编码实现"></a>Redis编码实现</h5><p>pom</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--spring boot data redis坐标--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>缓存策略接口</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 缓存策略接口，里面提供的缓存方法</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">CacheStrategy</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 缓存操作的接口方法</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">saveCache</span><span class="hljs-params">(ConfigInfo configInfo)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据key获取缓存</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> key</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span> 存入缓存的json对象</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">ConfigInfo <span class="hljs-title">findCache</span><span class="hljs-params">(String key)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 删除指定缓存</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> key</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">removeCache</span><span class="hljs-params">(String key)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据规则获取缓存中所有的key</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> pattern</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">Set&lt;String&gt; <span class="hljs-title">keys</span><span class="hljs-params">(String pattern)</span></span>;
+&#125;</code></pre>
+
+<p>实现</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 基于Redis缓存的存储</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedisCacheStorage</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">CacheStrategy</span>, <span class="hljs-title">InitializingBean</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RedisTemplate redisTemplate;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 把配置信息缓存到redis</span>
+<span class="hljs-comment">     * 需要判断缓存中是否已经包含了指定key的配置信息</span>
+<span class="hljs-comment">     * 当包含时，先移除，再重新存入。</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">saveCache</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">//1.判断是否包含key的信息</span>
+            <span class="hljs-keyword">boolean</span> containsKey = redisTemplate.hasKey(configInfo.getId());
+            <span class="hljs-keyword">if</span> (containsKey) &#123;
+                <span class="hljs-comment">//2.如果redis中已经有此key的信息，则移除</span>
+                redisTemplate.delete(configInfo.getId());
+            &#125;
+            <span class="hljs-comment">//3.把配置信息存入redis  key是对象的唯一标识,value是</span>
+            redisTemplate.opsForValue().set(configInfo.getId(), KryoSerializeUtil.serialize(configInfo));
+        &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+            e.printStackTrace();
+        &#125;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据key，获取存入的配置信息</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> key</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> ConfigInfo <span class="hljs-title">findCache</span><span class="hljs-params">(String key)</span> </span>&#123;
+        <span class="hljs-comment">//1.取出redis中的配置信息字节数组</span>
+        <span class="hljs-keyword">byte</span>[] bytes = (<span class="hljs-keyword">byte</span>[])redisTemplate.opsForValue().get(key);
+        <span class="hljs-comment">//2.转成ConfigInfo对象，并返回。</span>
+        <span class="hljs-keyword">return</span> KryoSerializeUtil.unserialize(bytes,ConfigInfo.class);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据key，移除指定缓存</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> key</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">removeCache</span><span class="hljs-params">(String key)</span> </span>&#123;
+        redisTemplate.delete(key);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">afterPropertiesSet</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        redisTemplate.setKeySerializer(<span class="hljs-keyword">new</span> StringRedisSerializer());
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Set&lt;String&gt; <span class="hljs-title">keys</span><span class="hljs-params">(String pattern)</span> </span>&#123;
+        <span class="hljs-keyword">return</span> redisTemplate.keys(pattern);
+    &#125;
+&#125;</code></pre>
+
+<p>配置信息</p>
+<pre><code class="hljs yaml"><span class="hljs-attr">spring:</span>
+  <span class="hljs-attr">redis:</span>
+    <span class="hljs-attr">host:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.32</span><span class="hljs-number">.131</span></code></pre>
+
+<p>改造ConfigInfoService</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 基于redis,fastdfs和mysql的业务层实现</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigInfoService</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> CacheStrategy cacheStorageStrategy;
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigInfoDao configInfoDao;
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> IdWorkerUtil idWorkerUtil;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 保存配置信息，并存入redis缓存</span>
+<span class="hljs-comment">     * 处理容灾，存入FastDFS</span>
+<span class="hljs-comment">     * 记录轨迹</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">saveConfig</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//生成id</span>
+        String id = String.valueOf(idWorkerUtil.nextId());
+        <span class="hljs-comment">//给ConfigInfo的id赋值</span>
+        configInfo.setId(id);
+        <span class="hljs-comment">//填充时间</span>
+        configInfo.setCreateTime(<span class="hljs-keyword">new</span> Date());
+        configInfo.setUpdateTime(<span class="hljs-keyword">new</span> Date());
+        <span class="hljs-comment">//1.把配置存入mysql数据库中</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//2.同时把配置存入redis缓存中</span>
+        cacheStorageStrategy.saveCache(configInfo);
+        <span class="hljs-comment">//返回生成的id</span>
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据唯一标识，获取配置信息</span>
+<span class="hljs-comment">     * 如果缓存中没有，则从mysql中获取</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> ConfigInfo <span class="hljs-title">findConfig</span><span class="hljs-params">(String id)</span> </span>&#123;
+        <span class="hljs-comment">//1.根据id从缓存中获取配置</span>
+        ConfigInfo configInfo = cacheStorageStrategy.findCache(id);
+        <span class="hljs-comment">//2.判断缓存中是否有数据</span>
+        <span class="hljs-keyword">if</span>(configInfo != <span class="hljs-keyword">null</span>)&#123;
+            <span class="hljs-keyword">return</span> configInfo;
+        &#125;
+        <span class="hljs-keyword">try</span>&#123;
+            <span class="hljs-comment">//3.当缓存中没有时，从mysql数据库获取</span>
+            configInfo = configInfoDao.getOne(id);
+            <span class="hljs-comment">//4.当缓存中没有时，存入缓存</span>
+            <span class="hljs-keyword">if</span>(configInfo != <span class="hljs-keyword">null</span>)&#123;
+                cacheStorageStrategy.saveCache(configInfo);
+            &#125;
+        &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+            e.printStackTrace();
+        &#125;
+        <span class="hljs-keyword">return</span> configInfo;
+    &#125;
+  
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Page&lt;ConfigInfo&gt; <span class="hljs-title">findPage</span><span class="hljs-params">(ConfigInfo condition, <span class="hljs-keyword">int</span> page, <span class="hljs-keyword">int</span> size)</span> </span>&#123;
+        <span class="hljs-comment">//1.创建查询条件</span>
+        Specification&lt;ConfigInfo&gt; specification = <span class="hljs-keyword">this</span>.generatedCondition(condition);
+        <span class="hljs-comment">//2.创建分页查询对象</span>
+        Pageable pageable = PageRequest.of(page-<span class="hljs-number">1</span>,size);
+        <span class="hljs-comment">//3.返回查询结果</span>
+        <span class="hljs-keyword">return</span> configInfoDao.findAll(pageable);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 生成查询条件</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> condition</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">private</span> Specification&lt;ConfigInfo&gt; <span class="hljs-title">generatedCondition</span><span class="hljs-params">(ConfigInfo condition)</span></span>&#123;
+        <span class="hljs-keyword">return</span>  <span class="hljs-keyword">new</span> Specification&lt;ConfigInfo&gt;() &#123;
+            <span class="hljs-comment">/**</span>
+<span class="hljs-comment">             * 拼装条件</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@param</span> root    操作的实体封装</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@param</span> query   查询对象</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@param</span> cb      条件构建对象</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">             */</span>
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> Predicate <span class="hljs-title">toPredicate</span><span class="hljs-params">(Root&lt;ConfigInfo&gt; root, CriteriaQuery&lt;?&gt; query, CriteriaBuilder cb)</span> </span>&#123;
+                <span class="hljs-comment">//定义条件的集合</span>
+                List&lt;Predicate&gt; predicates = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
+                <span class="hljs-comment">//1.判断是否提供了项目组别</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getProjectGroup())) &#123;
+                    Predicate p1 = cb.equal(root.get(<span class="hljs-string">&quot;projectGroup&quot;</span>), condition.getProjectGroup());
+                    predicates.add(p1);
+                &#125;
+                <span class="hljs-comment">//2.判断是否提供了项目名称</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getProjectName()))&#123;
+                    Predicate p2 = cb.equal(root.get(<span class="hljs-string">&quot;projectName&quot;</span>),condition.getProjectName());
+                    predicates.add(p2);
+                &#125;
+                <span class="hljs-comment">//3.判断是否提供了环境名称</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getEnvName()))&#123;
+                    Predicate p3 = cb.equal(root.get(<span class="hljs-string">&quot;envName&quot;</span>),condition.getEnvName());
+                    predicates.add(p3);
+                &#125;
+                <span class="hljs-comment">//4.判断是否提供了集群id号</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getClusterNumber()))&#123;
+                    Predicate p3 = cb.equal(root.get(<span class="hljs-string">&quot;clusterNumber&quot;</span>),condition.getClusterNumber());
+                    predicates.add(p3);
+                &#125;
+                <span class="hljs-keyword">return</span> cb.and(predicates.toArray(<span class="hljs-keyword">new</span> Predicate[predicates.size()]));
+            &#125;
+        &#125;;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 把配置项存入mysql数据库中</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">createConfig</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//生成id</span>
+        String id = String.valueOf(idWorkerUtil.nextId());
+        <span class="hljs-comment">//给ConfigInfo的id赋值</span>
+        configInfo.setId(id);
+        configInfo.setProjectGroup(<span class="hljs-string">&quot;itheima&quot;</span>);
+        <span class="hljs-comment">//填充时间</span>
+        configInfo.setCreateTime(<span class="hljs-keyword">new</span> Date());
+        configInfo.setUpdateTime(<span class="hljs-keyword">new</span> Date());
+        <span class="hljs-comment">//设置配置详情为&#x27;&#x27;</span>
+        configInfo.setConfigDetail(<span class="hljs-string">&quot;&quot;</span>);
+        <span class="hljs-comment">//保存</span>
+        configInfoPersistence.save(configInfo);
+        <span class="hljs-comment">//返回生成的id</span>
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 添加配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configName</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configValue</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addConfig</span><span class="hljs-params">(String id, String configName, String configValue)</span> </span>&#123;
+        <span class="hljs-comment">//1.取出配置项</span>
+        ConfigInfo configInfo = configInfoPersistence.getOne(id);
+        <span class="hljs-comment">//2.把detail转成properties</span>
+        Properties properties = PropertiesUtil.toProperties(configInfo.getConfigDetail());
+        <span class="hljs-comment">//3.添加配置</span>
+        properties.put(configName,configValue);
+        <span class="hljs-comment">//4.转成json给configInfo赋值</span>
+        configInfo.setConfigDetail(PropertiesUtil.toJson(properties));<span class="hljs-comment">//由于是持久态对象，所以会更新</span>
+        <span class="hljs-comment">//5.也可以手动更新</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//6.清除缓存</span>
+        cacheStorageStrategy.removeCache(id);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 更新配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">updateConfig</span><span class="hljs-params">(ConfigInfo configInfo)</span></span>&#123;
+        ConfigInfo dbConfigInfo = configInfoPersistence.getOne(configInfo.getId());
+        dbConfigInfo.setConfigDetail(configInfo.getConfigDetail());
+        <span class="hljs-comment">//1.更新mysql中的配置</span>
+        configInfoDao.save(dbConfigInfo);<span class="hljs-comment">//更新和删除是一个方法</span>
+        <span class="hljs-comment">//2.清除redis中的缓存</span>
+        cacheStorageStrategy.removeCache(configInfo.getId());
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 移除指定配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configName</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">removeConfig</span><span class="hljs-params">(String id, String configName)</span> </span>&#123;
+        <span class="hljs-comment">//1.取出配置项</span>
+        ConfigInfo configInfo = configInfoPersistence.getOne(id);
+        <span class="hljs-comment">//2.把detail转成properties</span>
+        Properties properties = PropertiesUtil.toProperties(configInfo.getConfigDetail());
+        <span class="hljs-comment">//3.添加配置</span>
+        properties.remove(configName);
+        <span class="hljs-comment">//4.转成json给configInfo赋值</span>
+        configInfo.setConfigDetail(PropertiesUtil.toJson(properties));<span class="hljs-comment">//由于是持久态对象，所以会更新</span>
+        <span class="hljs-comment">//5.也可以手动更新</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//6.清除缓存</span>
+        cacheStorageStrategy.removeCache(id);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 移除整个配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">removeAll</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//1.根据id删除配置</span>
+        configInfoDao.delete(configInfo);
+        <span class="hljs-comment">//2.清除缓存</span>
+        cacheStorageStrategy.removeCache(configInfo.getId());
+    &#125;
+&#125;</code></pre>
+
+<h5 id="FastDFS编码实现"><a href="#FastDFS编码实现" class="headerlink" title="FastDFS编码实现"></a>FastDFS编码实现</h5><p>pom</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--fast dfs坐标--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.github.tobato<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>fastdfs-client<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.27.2<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>配置信息</p>
+<pre><code class="hljs yaml"><span class="hljs-comment">#分布式文件系统FastDFS配置</span>
+<span class="hljs-attr">fdfs:</span>
+  <span class="hljs-attr">so-timeout:</span> <span class="hljs-number">1500</span> <span class="hljs-comment">#socket连接超时时长</span>
+  <span class="hljs-attr">connect-timeout:</span> <span class="hljs-number">600</span> <span class="hljs-comment">#连接tracker服务器超时时长</span>
+  <span class="hljs-attr">reqHost:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.32</span><span class="hljs-number">.132</span> <span class="hljs-comment">#nginx访问地址</span>
+  <span class="hljs-attr">reqPort:</span> <span class="hljs-number">9033</span> <span class="hljs-comment">#nginx访问端口</span>
+  <span class="hljs-attr">tracker-list:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.32</span><span class="hljs-number">.132</span><span class="hljs-string">:22122</span> <span class="hljs-comment">#TrackerList参数,支持多个，我这里只有一个，如果有多个在下方加- x.x.x.x:port</span>
+
+  <span class="hljs-attr">pool:</span>
+    <span class="hljs-attr">jmx-enabled:</span> <span class="hljs-literal">false</span>
+  <span class="hljs-comment">#缩略图生成参数，后期可以作为图片上传功能</span>
+  <span class="hljs-attr">thumb-image:</span>
+    <span class="hljs-attr">width:</span> <span class="hljs-number">150</span>
+    <span class="hljs-attr">height:</span> <span class="hljs-number">150</span>
+  <span class="hljs-attr">file:</span>
+    <span class="hljs-attr">suffix:</span> <span class="hljs-string">yml</span></code></pre>
+
+<p>注解配置</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 配置中心服务端自动配种导入</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Import(FdfsClientConfig.class)</span> <span class="hljs-comment">// 导入FastDFS-Client组件</span>
+<span class="hljs-meta">@EnableMBeanExport(registration = RegistrationPolicy.IGNORE_EXISTING)</span> <span class="hljs-comment">// 解决jmx重复注册bean的问题</span>
+<span class="hljs-comment">//@ComponentScan(&#123;&quot;com.itheima&quot;&#125;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigServerAutoImport</span> </span>&#123;
+
+    <span class="hljs-meta">@Bean</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> IdWorkerUtil <span class="hljs-title">createIdWorkerUtil</span><span class="hljs-params">()</span></span>&#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> IdWorkerUtil(<span class="hljs-number">1</span>,<span class="hljs-number">1</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>容灾策略接口</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 容灾机制的策略接口</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">DisasterToleranceStrategy</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 存入dfs</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">saveDfs</span><span class="hljs-params">(ConfigInfo configInfo)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 从dfs中移除</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">removeDfs</span><span class="hljs-params">(String id)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据id从dfs中获取配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">ConfigInfo <span class="hljs-title">findDfs</span><span class="hljs-params">(String id)</span></span>;
+&#125;</code></pre>
+
+<p>容灾实现</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * FastDFS的容灾实现</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@Conditional(FastDFSCondition.class)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FastDFSDisasterTolerance</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DisasterToleranceStrategy</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> FastFileStorageClient fastFileStorageClient;
+
+    <span class="hljs-meta">@Value(&quot;$&#123;fdfs.file.suffix&#125;&quot;)</span>
+    <span class="hljs-keyword">private</span> String suffix;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RedisTemplate redisTemplate;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String PREFIXKEY = <span class="hljs-string">&quot;fastdfs_&quot;</span>;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String SPLITKEY = <span class="hljs-string">&quot;_heimaconfig_&quot;</span>;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">saveDfs</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        InputStream in = <span class="hljs-keyword">null</span>;
+        <span class="hljs-keyword">try</span>&#123;
+            <span class="hljs-comment">//判断是否已经在fastdfs中保存过了，如果保存过，应该删除</span>
+            <span class="hljs-keyword">this</span>.removeDfs(configInfo.getId());
+            <span class="hljs-comment">//把configInfo读入到字节数组输入流中</span>
+            in = <span class="hljs-keyword">new</span> ByteArrayInputStream(KryoSerializeUtil.serialize(configInfo));
+            <span class="hljs-comment">//把流的大小转成Long类型</span>
+            Long fileSize = <span class="hljs-keyword">new</span> Long(in.available());
+            <span class="hljs-comment">//上传文件</span>
+            StorePath storePath = fastFileStorageClient.uploadFile(in,fileSize,suffix,<span class="hljs-keyword">null</span>);
+            <span class="hljs-comment">//把返回的结果存入redis中</span>
+            redisTemplate.opsForValue().set(PREFIXKEY.concat(configInfo.getId()),storePath.getGroup()+SPLITKEY+storePath.getPath());
+            System.out.println(storePath);
+        &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+            e.printStackTrace();
+        &#125;<span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-comment">//释放流资源</span>
+            <span class="hljs-keyword">if</span>(in != <span class="hljs-keyword">null</span>)&#123;
+                <span class="hljs-keyword">try</span> &#123;
+                    in.close();
+                &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+                    e.printStackTrace();
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">removeDfs</span><span class="hljs-params">(String id)</span> </span>&#123;
+        <span class="hljs-comment">//1.根据id，组装redis中的key</span>
+        String key = PREFIXKEY.concat(id);
+        <span class="hljs-comment">//2.使用key前往redis获取信息</span>
+        String value = (String)redisTemplate.opsForValue().get(key);
+        <span class="hljs-comment">//3.判断value是否有值</span>
+        <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(value))&#123;
+            <span class="hljs-comment">//4.分隔value</span>
+            String group = value.split(SPLITKEY)[<span class="hljs-number">0</span>];
+            String path = value.split(SPLITKEY)[<span class="hljs-number">1</span>];
+            <span class="hljs-comment">//5.删除文件</span>
+            fastFileStorageClient.deleteFile(group,path);
+        &#125;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> ConfigInfo <span class="hljs-title">findDfs</span><span class="hljs-params">(String id)</span> </span>&#123;
+        <span class="hljs-comment">//定义返回值</span>
+        ConfigInfo configInfo = <span class="hljs-keyword">null</span>;
+        <span class="hljs-comment">//1.根据id，组装redis中的key</span>
+        String key = PREFIXKEY.concat(id);
+        <span class="hljs-comment">//2.使用key前往redis获取信息</span>
+        String value = (String)redisTemplate.opsForValue().get(key);
+        <span class="hljs-comment">//3.判断value是否有值</span>
+        <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(value))&#123;
+            <span class="hljs-comment">//4.分隔value</span>
+            String group = value.split(SPLITKEY)[<span class="hljs-number">0</span>];
+            String path = value.split(SPLITKEY)[<span class="hljs-number">1</span>];
+            <span class="hljs-comment">//5.获取文件字节数组</span>
+            <span class="hljs-keyword">byte</span>[] bytes = fastFileStorageClient.downloadFile(group,path,<span class="hljs-keyword">new</span> DownloadByteArray());
+            <span class="hljs-comment">//6.把它转换成ConfigInfo对象</span>
+            <span class="hljs-keyword">if</span>(bytes.length &gt; <span class="hljs-number">0</span>) &#123;
+                configInfo = KryoSerializeUtil.unserialize(bytes, ConfigInfo.class);
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> configInfo;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="异步消息处理容灾"><a href="#异步消息处理容灾" class="headerlink" title="异步消息处理容灾"></a>异步消息处理容灾</h5><p>安装RabbitMQ</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#下载：</span>
+docker pull rabbitmq:management
+<span class="hljs-comment">#安装：</span>
+docker run -di --name=rabbitmq -p 5671:5671 -p 5672:5672 -p 15671:15671 -p 15672:15672 -p 25672:25672 -p 4369:4369 rabbitmq:management</code></pre>
+
+<p>application.yml中添加</p>
+<pre><code class="hljs yaml"><span class="hljs-attr">spring:</span>
+  <span class="hljs-attr">rabbitmq:</span>
+    <span class="hljs-attr">host:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.32</span><span class="hljs-number">.132</span></code></pre>
+
+<p>编写监听器</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@RabbitListener(queues = &quot;synchronizationdfs&quot;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SynchronizationDFSListener</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> DisasterToleranceStrategy disasterToleranceStrategy;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 处理监听方法</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> map</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@RabbitHandler</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">synchronizationDFS</span><span class="hljs-params">(Map&lt;String,Object&gt; map)</span></span>&#123;
+        <span class="hljs-comment">//1.取出map中的数据</span>
+        String operated = (String)map.get(<span class="hljs-string">&quot;operated&quot;</span>);
+        ConfigInfo configInfo = (ConfigInfo)map.get(<span class="hljs-string">&quot;data&quot;</span>);
+        <span class="hljs-comment">//2.判断是什么操作</span>
+        <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;change&quot;</span>.equalsIgnoreCase(operated))&#123;
+            <span class="hljs-comment">//保存（先删除，再保存的）</span>
+            disasterToleranceStrategy.saveDfs(configInfo);
+        &#125;<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;del&quot;</span>.equalsIgnoreCase(operated))&#123;
+            <span class="hljs-comment">//删除</span>
+            disasterToleranceStrategy.removeDfs(configInfo.getId());
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>改造ConfigInfoService中的查找与存储逻辑</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 基于redis,fastdfs和mysql的业务层实现</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigInfoService</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> CacheStrategy cacheStorageStrategy;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> DisasterToleranceStrategy disasterToleranceStrategy;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigInfoDao configInfoDao;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> IdWorkerUtil idWorkerUtil;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RabbitTemplate rabbitTemplate;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 保存配置信息，并存入redis缓存</span>
+<span class="hljs-comment">     * 处理容灾，存入FastDFS</span>
+<span class="hljs-comment">     * 记录轨迹</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">saveConfig</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//生成id</span>
+        String id = String.valueOf(idWorkerUtil.nextId());
+        <span class="hljs-comment">//给ConfigInfo的id赋值</span>
+        configInfo.setId(id);
+        <span class="hljs-comment">//填充时间</span>
+        configInfo.setCreateTime(<span class="hljs-keyword">new</span> Date());
+        configInfo.setUpdateTime(<span class="hljs-keyword">new</span> Date());
+        <span class="hljs-comment">//1.把配置存入mysql数据库中</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//2.同时把配置存入redis缓存中</span>
+        cacheStorageStrategy.saveCache(configInfo);
+        <span class="hljs-comment">//3.容灾机制：存入dfs中（fastdfs）</span>
+        <span class="hljs-comment">//disasterToleranceStrategy.saveDfs(configInfo);</span>
+        <span class="hljs-comment">//7.同步dfs</span>
+        Map&lt;String,Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+        map.put(<span class="hljs-string">&quot;configInfo&quot;</span>,configInfo);
+        map.put(<span class="hljs-string">&quot;operated&quot;</span>,<span class="hljs-string">&quot;change&quot;</span>);
+        rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;synchronizationdfs&quot;</span>,map);
+        <span class="hljs-comment">//4.记录轨迹</span>
+        locosStrategy.saveLocos(configInfo);
+        <span class="hljs-comment">//返回生成的id</span>
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据唯一标识，获取配置信息</span>
+<span class="hljs-comment">     * 如果缓存中没有，则从mysql中获取</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> ConfigInfo <span class="hljs-title">findConfig</span><span class="hljs-params">(String id)</span> </span>&#123;
+        <span class="hljs-comment">//1.根据id从缓存中获取配置</span>
+        ConfigInfo configInfo = cacheStorageStrategy.findCache(id);
+        <span class="hljs-comment">//2.判断缓存中是否有数据</span>
+        <span class="hljs-keyword">if</span>(configInfo != <span class="hljs-keyword">null</span>)&#123;
+            <span class="hljs-keyword">return</span> configInfo;
+        &#125;
+        <span class="hljs-keyword">try</span>&#123;
+            <span class="hljs-comment">//3.当缓存中没有时，从mysql数据库获取</span>
+            configInfo = configInfoDao.getOne(id);
+            <span class="hljs-comment">//4.当缓存中没有时，存入缓存</span>
+            <span class="hljs-keyword">if</span>(configInfo != <span class="hljs-keyword">null</span>)&#123;
+                cacheStorageStrategy.saveCache(configInfo);
+            &#125;
+        &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+            <span class="hljs-comment">//4.当mysql获取配置抛异常时，启动容灾机制，从文件系统中获取（如果mysql中没有数据，并不是需要启动容灾机制）</span>
+            configInfo = disasterToleranceStrategy.findDfs(id);
+        &#125;
+        <span class="hljs-keyword">return</span> configInfo;
+    &#125;
+
+
+
+
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Page&lt;ConfigInfo&gt; <span class="hljs-title">findPage</span><span class="hljs-params">(ConfigInfo condition, <span class="hljs-keyword">int</span> page, <span class="hljs-keyword">int</span> size)</span> </span>&#123;
+        <span class="hljs-comment">//1.创建查询条件</span>
+        Specification&lt;ConfigInfo&gt; specification = <span class="hljs-keyword">this</span>.generatedCondition(condition);
+        <span class="hljs-comment">//2.创建分页查询对象</span>
+        Pageable pageable = PageRequest.of(page-<span class="hljs-number">1</span>,size);
+        <span class="hljs-comment">//3.返回查询结果</span>
+        <span class="hljs-keyword">return</span> configInfoDao.findAll(pageable);
+    &#125;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 生成查询条件</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> condition</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">private</span> Specification&lt;ConfigInfo&gt; <span class="hljs-title">generatedCondition</span><span class="hljs-params">(ConfigInfo condition)</span></span>&#123;
+        <span class="hljs-keyword">return</span>  <span class="hljs-keyword">new</span> Specification&lt;ConfigInfo&gt;() &#123;
+            <span class="hljs-comment">/**</span>
+<span class="hljs-comment">             * 拼装条件</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@param</span> root    操作的实体封装</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@param</span> query   查询对象</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@param</span> cb      条件构建对象</span>
+<span class="hljs-comment">             * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">             */</span>
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> Predicate <span class="hljs-title">toPredicate</span><span class="hljs-params">(Root&lt;ConfigInfo&gt; root, CriteriaQuery&lt;?&gt; query, CriteriaBuilder cb)</span> </span>&#123;
+                <span class="hljs-comment">//定义条件的集合</span>
+                List&lt;Predicate&gt; predicates = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
+
+                <span class="hljs-comment">//1.判断是否提供了项目组别</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getProjectGroup())) &#123;
+                    Predicate p1 = cb.equal(root.get(<span class="hljs-string">&quot;projectGroup&quot;</span>), condition.getProjectGroup());
+                    predicates.add(p1);
+                &#125;
+                <span class="hljs-comment">//2.判断是否提供了项目名称</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getProjectName()))&#123;
+                    Predicate p2 = cb.equal(root.get(<span class="hljs-string">&quot;projectName&quot;</span>),condition.getProjectName());
+                    predicates.add(p2);
+                &#125;
+                <span class="hljs-comment">//3.判断是否提供了环境名称</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getEnvName()))&#123;
+                    Predicate p3 = cb.equal(root.get(<span class="hljs-string">&quot;envName&quot;</span>),condition.getEnvName());
+                    predicates.add(p3);
+                &#125;
+                <span class="hljs-comment">//4.判断是否提供了集群id号</span>
+                <span class="hljs-keyword">if</span>(!StringUtils.isEmpty(condition.getClusterNumber()))&#123;
+                    Predicate p3 = cb.equal(root.get(<span class="hljs-string">&quot;clusterNumber&quot;</span>),condition.getClusterNumber());
+                    predicates.add(p3);
+                &#125;
+
+                <span class="hljs-keyword">return</span> cb.and(predicates.toArray(<span class="hljs-keyword">new</span> Predicate[predicates.size()]));
+            &#125;
+        &#125;;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 把配置项存入mysql数据库中</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">createConfig</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//生成id</span>
+        String id = String.valueOf(idWorkerUtil.nextId());
+        <span class="hljs-comment">//给ConfigInfo的id赋值</span>
+        configInfo.setId(id);
+        configInfo.setProjectGroup(<span class="hljs-string">&quot;itheima&quot;</span>);
+        <span class="hljs-comment">//填充时间</span>
+        configInfo.setCreateTime(<span class="hljs-keyword">new</span> Date());
+        configInfo.setUpdateTime(<span class="hljs-keyword">new</span> Date());
+        <span class="hljs-comment">//设置配置详情为&#x27;&#x27;</span>
+        configInfo.setConfigDetail(<span class="hljs-string">&quot;&quot;</span>);
+        <span class="hljs-comment">//保存</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//返回生成的id</span>
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 添加配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configName</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configValue</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addConfig</span><span class="hljs-params">(String id, String configName, String configValue)</span> </span>&#123;
+        <span class="hljs-comment">//1.取出配置项</span>
+        ConfigInfo configInfo = configInfoPersistence.getOne(id);
+        <span class="hljs-comment">//2.把detail转成properties</span>
+        Properties properties = PropertiesUtil.toProperties(configInfo.getConfigDetail());
+        <span class="hljs-comment">//3.添加配置</span>
+        properties.put(configName,configValue);
+        <span class="hljs-comment">//4.转成json给configInfo赋值</span>
+        configInfo.setConfigDetail(PropertiesUtil.toJson(properties));<span class="hljs-comment">//由于是持久态对象，所以会更新</span>
+        <span class="hljs-comment">//5.也可以手动更新</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//6.清除缓存</span>
+        cacheStorageStrategy.removeCache(id);
+        <span class="hljs-comment">//7.同步dfs</span>
+        Map&lt;String,Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+        map.put(<span class="hljs-string">&quot;configInfo&quot;</span>,configInfo);
+        map.put(<span class="hljs-string">&quot;operated&quot;</span>,<span class="hljs-string">&quot;change&quot;</span>);
+        rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;synchronizationdfs&quot;</span>,map);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 更新配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">updateConfig</span><span class="hljs-params">(ConfigInfo configInfo)</span></span>&#123;
+        ConfigInfo dbConfigInfo = configInfoPersistence.getOne(configInfo.getId());
+        dbConfigInfo.setConfigDetail(configInfo.getConfigDetail());
+        <span class="hljs-comment">//1.更新mysql中的配置</span>
+        configInfoDao.save(dbConfigInfo);<span class="hljs-comment">//更新和删除是一个方法</span>
+        <span class="hljs-comment">//2.清除redis中的缓存</span>
+        cacheStorageStrategy.removeCache(configInfo.getId());
+        <span class="hljs-comment">//7.同步dfs</span>
+        Map&lt;String,Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+        map.put(<span class="hljs-string">&quot;configInfo&quot;</span>,dbConfigInfo);
+        map.put(<span class="hljs-string">&quot;operated&quot;</span>,<span class="hljs-string">&quot;change&quot;</span>);
+        rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;synchronizationdfs&quot;</span>,map);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 移除指定配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configName</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">removeConfig</span><span class="hljs-params">(String id, String configName)</span> </span>&#123;
+        <span class="hljs-comment">//1.取出配置项</span>
+        ConfigInfo configInfo = configInfoPersistence.getOne(id);
+        <span class="hljs-comment">//2.把detail转成properties</span>
+        Properties properties = PropertiesUtil.toProperties(configInfo.getConfigDetail());
+        <span class="hljs-comment">//3.添加配置</span>
+        properties.remove(configName);
+        <span class="hljs-comment">//4.转成json给configInfo赋值</span>
+        configInfo.setConfigDetail(PropertiesUtil.toJson(properties));<span class="hljs-comment">//由于是持久态对象，所以会更新</span>
+        <span class="hljs-comment">//5.也可以手动更新</span>
+        configInfoDao.save(configInfo);
+        <span class="hljs-comment">//6.清除缓存</span>
+        cacheStorageStrategy.removeCache(id);
+        <span class="hljs-comment">//7.同步dfs</span>
+        Map&lt;String,Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+        map.put(<span class="hljs-string">&quot;configInfo&quot;</span>,configInfo);
+        map.put(<span class="hljs-string">&quot;operated&quot;</span>,<span class="hljs-string">&quot;change&quot;</span>);
+        rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;synchronizationdfs&quot;</span>,map);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 移除整个配置</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">removeAll</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//1.根据id删除配置</span>
+        configInfoDao.delete(configInfo);
+        <span class="hljs-comment">//2.清除缓存</span>
+        cacheStorageStrategy.removeCache(configInfo.getId());
+        <span class="hljs-comment">//3.删除文件的操作写入消息</span>
+        Map&lt;String,Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+        map.put(<span class="hljs-string">&quot;configInfo&quot;</span>,configInfo);
+        map.put(<span class="hljs-string">&quot;operated&quot;</span>,<span class="hljs-string">&quot;del&quot;</span>);
+        rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;synchronizationdfs&quot;</span>,map);
+    &#125;
+&#125;</code></pre>
+
+<h4 id="扩展动态配置缓存和容灾的实现方案"><a href="#扩展动态配置缓存和容灾的实现方案" class="headerlink" title="扩展动态配置缓存和容灾的实现方案"></a>扩展动态配置缓存和容灾的实现方案</h4><p>conditional注解</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 作用：</span>
+<span class="hljs-comment"> *	 它的作用是根据条件选择注入的bean对象。</span>
+<span class="hljs-comment"> **/</span>
+<span class="hljs-meta">@Target(&#123;ElementType.TYPE, ElementType.METHOD&#125;)</span>
+<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
+<span class="hljs-meta">@Documented</span>
+<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> Conditional &#123;
+
+	<span class="hljs-comment">/**</span>
+<span class="hljs-comment">	 * 属性：</span>
+<span class="hljs-comment">	 *	 用于提供一个Condition接口的实现类，实现类中需要编写具体代码实现注入的条件。</span>
+<span class="hljs-comment">	 */</span>
+	Class&lt;? extends Condition&gt;[] value();
+&#125;</code></pre>
+
+<p>配置文件</p>
+<pre><code class="hljs yaml"><span class="hljs-comment">#顶头开始写起</span>
+<span class="hljs-attr">service:</span>
+  <span class="hljs-attr">disaster:</span>
+    <span class="hljs-attr">tolerance:</span> <span class="hljs-string">FastDFS</span>
+  <span class="hljs-attr">cache:</span> <span class="hljs-string">redis</span></code></pre>
+
+<p>redis的conditino实现</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedisCondition</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Condition</span> </span>&#123;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">matches</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;
+        Environment environment = context.getEnvironment();
+        String cacheService = environment.getProperty(<span class="hljs-string">&quot;service.cache&quot;</span>);
+        <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;redis&quot;</span>.equalsIgnoreCase(cacheService))&#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+        &#125;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+    &#125;
+&#125;</code></pre>
+
+<p>FastDFS的Condition实现</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FastDFSCondition</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Condition</span> </span>&#123;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">matches</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;
+        Environment environment = context.getEnvironment();
+        String cacheService = environment.getProperty(<span class="hljs-string">&quot;service.disaster.tolerance&quot;</span>);
+        <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;FastDFS&quot;</span>.equalsIgnoreCase(cacheService))&#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+        &#125;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+    &#125;
+&#125;</code></pre>
+
+<p>改造缓存和容灾策略的具体实现</p>
+<p>Redis缓存类上增加@Conditional(RedisCondition.class)注解</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 基于Redis缓存的存储</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@Conditional(RedisCondition.class)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedisCacheStorage</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">CacheStrategy</span>, <span class="hljs-title">InitializingBean</span> </span>&#123;
+    <span class="hljs-comment">//其余代码略</span>
+&#125;</code></pre>
+
+<p>FastDFS容灾策略增加@Conditional(FastDFSCondition.class)注解</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * FastDFS的配置存储方法</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@Conditional(FastDFSCondition.class)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FastDFSStorage</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DisasterToleranceStrategy</span> </span>&#123;
+    <span class="hljs-comment">//其余代码略</span>
+&#125;</code></pre>
+
+<h4 id="配置推送方案分析"><a href="#配置推送方案分析" class="headerlink" title="配置推送方案分析"></a>配置推送方案分析</h4><h5 id="推模式"><a href="#推模式" class="headerlink" title="推模式"></a>推模式</h5><p>配置发生变更后由服务端主动把更新的配置推送到具体业务微服务，优势是实时性高，不需要额外操作。弊端是，消耗资源较大。基于HTTP协议实现的推模式需要客户端进行轮询，向服务端发送请求，会造成比较大的资源开销。</p>
+<p><strong>拉模式</strong></p>
+<p>由客户端主动发送请求，把最新的配置拉去下来。对客户端微服务的资源开销较小，但实时性没有推模式高，需要使用者触发客户端拉取请求的操作，向服务端获取最新配置。所以，操作繁琐度比推模式高。  </p>
+<p><strong>长连接和短连接</strong></p>
+<p>HTTP长连接（long connection）与短连接（short connection）本质上是TCP长连接和短连接：短连接是指在一次HTTP请求和响应之后立即关闭本次TCP连接，下次请求响应重建一个新的TCP连接；而长连接是指请求响应之后并不立即关闭本次TCP连接，下次请求响应继续重用该TCP连接。HTTP/1.0默认短连接，HTTP/1.1起默认长连接， 长连接通过请求头Connection: keep-alive启用长连接、通过Keep-Alive: timeout=20设置长连接的超时时间（秒）。</p>
+<table>
+  <tr> <th>连接方式</th> <th>相同点</th> <th>区别</th> </tr> <tr> <td>短连接</td> <td rowspan="2">都是基于TCP连接，并无本质不同；由HTTP请求头Connection: keep‐alive控制是否 长/短连接。</td> <td>1、使用次数：仅使用一次；<br> 2、关闭时机：一次HTTP请求响应后立即关闭该TCP连接。</td> </tr> <tr> <td>长连接</td> <td>1、使用次数：重用多次；<br>2、关闭时机：超时后才关闭该TCP连接，由Keep‐Alive: timeout=20 控制超时时间（秒）。</td> </tr>
+</table>
+
+<p><strong>长轮询和短轮询</strong></p>
+<p>HTTP长轮询（long polling）是指服务端收到请求后若有数据立即返回，若无数据则保持到有数据或一段时间后超时，浏览器收到响应后立即重新发送相同的请求；HTTP短轮询（short polling）是指服务端收到请求后无论是否有数据都立即返回，浏览器收到响应后间隔一段时间后重新发送相同的请求。轮询建立在连接基础上，轮询是长是短与连接是长是短无关。</p>
+<table>
+<tr> 
+<th>连接方式</th> 
+  <th>相同点</th>
+  <th>区别</th> 
+</tr> 
+<tr> 
+<td>短轮询</td> 
+<td rowspan="2">都是基于HTTP连接，都将重复发送相同请求。</td> 
+<td>1、请求发送频率：浏览器端收到HTTP响应后间隔一段自定义时间后重复发起相同HTTP请求； 
+<br>2、服务器端处理机制：无论是否有数据都立即响应； 
+<br>3、特点：获取数据不实时，通过浏览器端脚本即可实现。 
+</td> 
+</tr> 
+<tr> 
+<td>长轮询</td> 
+<td> 
+1、请求发送频率：浏览器端收到HTTP响应后立即重复发起相同HTTP请求； 
+<br>2、服务器端处理机制：有数据时立即响应，无数据时等待数据或直到超时； 
+<br>3、特点：获取数据比较实时，服务器端需要较多资源以维持众多长轮询。 
+</td> 
+</tr> 
+</table>
+
+<p><strong>推送的效率</strong></p>
+<p>配置中心的执行效率快慢，也是该系统好坏的衡量标准之一。而执行效率中包括配置上传和更新后的存储效率，配置推送的处理效率两个方面。第一个方面，存储相关的问题，我们上一篇章已经分析过了。而第二个方面，处理效率又有两部分组成。第一部分是处理速度，第二部分是吞吐量，即并发访问的极限处理量。 </p>
+<p>针对第一部分，处理速度上，我们采用的不是Spring Cloud的endpoint发布方式，而是直接提供Controller访问(nacos和apollo都是controller的方式)，只是访问是不是由使用者访问的，而是通过HttpClient，并且配合RestAPI获取，传输json格式数据。而第二部分，高并发访问问题，我们可以通过异步获取的方式，即业务微服务在获取配置需求时，不直接访问配置中心服务端，而是通过消息队列来解耦，从而降低配置中心服务端的访问压力。 </p>
+<h4 id="配置推送的技术实现"><a href="#配置推送的技术实现" class="headerlink" title="配置推送的技术实现"></a>配置推送的技术实现</h4><h5 id="基于MQ的拉取功能实现"><a href="#基于MQ的拉取功能实现" class="headerlink" title="基于MQ的拉取功能实现"></a>基于<strong>MQ</strong>的拉取功能实现</h5><p>服务端实现</p>
+<pre><code class="hljs java"><span class="hljs-meta">@RequestMapping(value = &quot;refreshConfig&quot;,method = RequestMethod.POST)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-meta">@ResponseBody</span> <span class="hljs-function">String <span class="hljs-title">refreshConfig</span><span class="hljs-params">(String id)</span></span>&#123;
+    <span class="hljs-comment">//1.根据id查询配置</span>
+    ConfigInfo configInfo = configInfoService.findById(id);
+    <span class="hljs-comment">//2.判断配置是否存在</span>
+    <span class="hljs-keyword">if</span>(configInfo == <span class="hljs-keyword">null</span>)&#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>;
+    &#125;
+    <span class="hljs-comment">//3.取出配置详情</span>
+    String configDetail = configInfo.getConfigDetail();
+    <span class="hljs-comment">//4.把它响应给客户端</span>
+    <span class="hljs-keyword">return</span> configDetail;
+&#125;</code></pre>
+
+<p>客户端实现</p>
+<p>接收刷新请求</p>
+<pre><code class="hljs java"><span class="hljs-meta">@RequestMapping(value = &quot;/refresh&quot;,method = RequestMethod.POST)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">refresh</span><span class="hljs-params">()</span></span>&#123;
+    <span class="hljs-comment">// 发送消息至MQ</span>
+    rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;heimaconfig&quot;</span>,<span class="hljs-string">&quot;refresh&quot;</span>);
+&#125;</code></pre>
+
+<p>接收MQ消息</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 读取消息，并处理更新配置的操作</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> message</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> Exception</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@RabbitHandler</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onMessage</span><span class="hljs-params">(String message)</span><span class="hljs-keyword">throws</span> Exception</span>&#123;
+    <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;refresh&quot;</span>.equals(message))&#123;
+        <span class="hljs-comment">//1.从服务器端获取最新的配置</span>
+        Properties properties = PullConfigUtil.findConfig();<span class="hljs-comment">//从服务器端拿到的</span>
+        <span class="hljs-comment">//2.调用刷新器，刷新最新的配置</span>
+        contextRefresher.refresh(properties);
+    &#125;
+&#125;</code></pre>
+
+<p>向服务端请求配置信息</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 从服务端拉取最新配置的工具类</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PullConfigUtil</span> </span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String configHost ;<span class="hljs-comment">//应用配置管理平台的IP地址</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String configPort;<span class="hljs-comment">//应用配置管理平台的端口号</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String configId;<span class="hljs-comment">//配置的唯一标识</span>
+
+    <span class="hljs-comment">//静态代码块给成员变量赋值</span>
+    <span class="hljs-keyword">static</span> &#123;
+        InputStream in = <span class="hljs-keyword">null</span>;
+        String[] fileNames = <span class="hljs-keyword">new</span> String[]&#123;<span class="hljs-string">&quot;/bootstrap.yml&quot;</span>,<span class="hljs-string">&quot;/application.yml&quot;</span>,<span class="hljs-string">&quot;/application.properties&quot;</span>&#125;;
+        <span class="hljs-keyword">try</span>&#123;
+            <span class="hljs-comment">//1.读取配置文件</span>
+            <span class="hljs-keyword">for</span>(String fileName : fileNames)&#123;
+                <span class="hljs-keyword">try</span>&#123;
+                    <span class="hljs-comment">//读取微服务的配置文件</span>
+                    in = PullConfigUtil.class.getResourceAsStream(fileName);
+                    <span class="hljs-comment">//判断，取到了配置</span>
+                    <span class="hljs-keyword">if</span>(in.available() &gt; <span class="hljs-number">0</span>)&#123;
+                        <span class="hljs-keyword">break</span>;
+                    &#125;
+                &#125;<span class="hljs-keyword">catch</span> (Exception ex)&#123;
+                    <span class="hljs-keyword">continue</span>;
+                &#125;
+            &#125;
+            <span class="hljs-comment">//2.使用配置文件的内容给成员变量赋值</span>
+            YamlPropertiesFactoryBean yamlPropertiesFactoryBean = <span class="hljs-keyword">new</span> YamlPropertiesFactoryBean();
+            yamlPropertiesFactoryBean.setResources(<span class="hljs-keyword">new</span> InputStreamResource(in));
+            Properties properties = yamlPropertiesFactoryBean.getObject();
+            configHost = properties.getProperty(<span class="hljs-string">&quot;config.host&quot;</span>);
+            configPort = properties.getProperty(<span class="hljs-string">&quot;config.port&quot;</span>);
+            configId = properties.getProperty(<span class="hljs-string">&quot;config.id&quot;</span>);
+        &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+            e.printStackTrace();
+        &#125;<span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-keyword">if</span>(in != <span class="hljs-keyword">null</span>)&#123;
+                <span class="hljs-keyword">try</span>&#123;
+                    in.close();
+                &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+                    e.printStackTrace();
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 从服务端拉取最新配置的方法</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Properties <span class="hljs-title">findConfig</span><span class="hljs-params">()</span></span>&#123;
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">//1.定义请求消息头的信息</span>
+            HttpHeaders requestHeaders = <span class="hljs-keyword">new</span> HttpHeaders();
+            <span class="hljs-comment">//2.设置请求消息头内容</span>
+            requestHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            <span class="hljs-comment">//3.创建请求体对象</span>
+            MultiValueMap&lt;String,String&gt; requestBody = <span class="hljs-keyword">new</span> LinkedMultiValueMap&lt;&gt;();
+            requestBody.add(<span class="hljs-string">&quot;id&quot;</span>,configId);
+            HttpEntity&lt;MultiValueMap&gt; requestEntity = <span class="hljs-keyword">new</span> HttpEntity(requestBody,requestHeaders);
+            <span class="hljs-comment">//4.创建发送请求的对象</span>
+            RestTemplate restTemplate = <span class="hljs-keyword">new</span> RestTemplate();
+            String url = <span class="hljs-string">&quot;http://&quot;</span>+configHost+<span class="hljs-string">&quot;:&quot;</span>+configPort+<span class="hljs-string">&quot;/config/refreshConfig.do&quot;</span>;
+            String json = restTemplate.postForObject(url,requestEntity,String.class);
+            <span class="hljs-comment">//5.把Json格式数据转成properties</span>
+            Properties properties = JSON.parseObject(json,Properties.class);
+            <span class="hljs-keyword">return</span> properties;
+        &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>刷新本地信息</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ContextRefresher</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigurableApplicationContext context;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String REFRESH_ARGS_PROPERTY_SOURCE = <span class="hljs-string">&quot;refreshArgs&quot;</span>;
+
+    <span class="hljs-keyword">private</span> Set&lt;String&gt; standardSources = <span class="hljs-keyword">new</span> HashSet&lt;&gt;(
+            Arrays.asList(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME,
+                    StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                    StandardServletEnvironment.JNDI_PROPERTY_SOURCE_NAME,
+                    StandardServletEnvironment.SERVLET_CONFIG_PROPERTY_SOURCE_NAME,
+                    StandardServletEnvironment.SERVLET_CONTEXT_PROPERTY_SOURCE_NAME,
+                    <span class="hljs-string">&quot;configurationProperties&quot;</span>));
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String[] DEFAULT_PROPERTY_SOURCES = <span class="hljs-keyword">new</span> String[]&#123;
+            <span class="hljs-comment">// order matters, if cli args aren&#x27;t first, things get messy</span>
+            CommandLinePropertySource.COMMAND_LINE_PROPERTY_SOURCE_NAME,
+            <span class="hljs-string">&quot;defaultProperties&quot;</span>&#125;;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 刷新配置</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">synchronized</span> Set&lt;String&gt; <span class="hljs-title">refresh</span><span class="hljs-params">(Map after)</span> </span>&#123;
+        RefreshScope scope = (RefreshScope) context.getBean(Scope.class);
+        <span class="hljs-comment">//获取目前系统的配置</span>
+        Map&lt;String, Object&gt; before = extract(
+                context.getEnvironment().getPropertySources());
+        <span class="hljs-comment">//获取最新配置</span>
+        addConfigFilesToEnvironment(context);
+        <span class="hljs-comment">//对比目前系统配置和最新配置，返回修改后的属性</span>
+        Set&lt;String&gt; keys = changes(before, after).keySet();
+        <span class="hljs-comment">//通知系统配置变更</span>
+        context.publishEvent(<span class="hljs-keyword">new</span> EnvironmentChangeEvent(context, keys));
+        <span class="hljs-comment">//对应的bean刷新</span>
+        scope.refreshAll();
+        <span class="hljs-keyword">return</span> keys;
+    &#125;
+
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addConfigFilesToEnvironment</span><span class="hljs-params">(ConfigurableApplicationContext context)</span> </span>&#123;
+        ConfigurableApplicationContext capture = <span class="hljs-keyword">null</span>;
+        <span class="hljs-keyword">try</span> &#123;
+            StandardEnvironment environment = copyEnvironment(
+                    context.getEnvironment());
+            SpringApplicationBuilder builder = <span class="hljs-keyword">new</span> SpringApplicationBuilder(Empty.class)
+                    .bannerMode(Banner.Mode.OFF).web(WebApplicationType.NONE)
+                    .environment(environment);
+            <span class="hljs-comment">// Just the listeners that affect the environment (e.g. excluding logging</span>
+            <span class="hljs-comment">// listener because it has side effects)</span>
+            builder.application()
+                    .setListeners(Arrays.asList(<span class="hljs-keyword">new</span> BootstrapApplicationListener(),
+                            <span class="hljs-keyword">new</span> ConfigFileApplicationListener()));
+            capture = builder.run();
+            <span class="hljs-keyword">if</span> (environment.getPropertySources().contains(REFRESH_ARGS_PROPERTY_SOURCE)) &#123;
+                environment.getPropertySources().remove(REFRESH_ARGS_PROPERTY_SOURCE);
+            &#125;
+            MutablePropertySources target = context.getEnvironment()
+                    .getPropertySources();
+            String targetName = <span class="hljs-keyword">null</span>;
+            <span class="hljs-keyword">for</span> (PropertySource&lt;?&gt; source : environment.getPropertySources()) &#123;
+                String name = source.getName();
+                <span class="hljs-keyword">if</span> (target.contains(name)) &#123;
+                    targetName = name;
+                &#125;
+                <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.standardSources.contains(name)) &#123;
+                    <span class="hljs-keyword">if</span> (target.contains(name)) &#123;
+                        target.replace(name, source);
+                    &#125; <span class="hljs-keyword">else</span> &#123;
+                        <span class="hljs-keyword">if</span> (targetName != <span class="hljs-keyword">null</span>) &#123;
+                            target.addAfter(targetName, source);
+                        &#125; <span class="hljs-keyword">else</span> &#123;
+                            <span class="hljs-comment">// targetName was null so we are at the start of the list</span>
+                            target.addFirst(source);
+                            targetName = name;
+                        &#125;
+                    &#125;
+                &#125;
+            &#125;
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            ConfigurableApplicationContext closeable = capture;
+            <span class="hljs-keyword">while</span> (closeable != <span class="hljs-keyword">null</span>) &#123;
+                <span class="hljs-keyword">try</span> &#123;
+                    closeable.close();
+                &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                    <span class="hljs-comment">// Ignore;</span>
+                &#125;
+                <span class="hljs-keyword">if</span> (closeable.getParent() <span class="hljs-keyword">instanceof</span> ConfigurableApplicationContext) &#123;
+                    closeable = (ConfigurableApplicationContext) closeable.getParent();
+                &#125; <span class="hljs-keyword">else</span> &#123;
+                    <span class="hljs-keyword">break</span>;
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> StandardEnvironment <span class="hljs-title">copyEnvironment</span><span class="hljs-params">(ConfigurableEnvironment input)</span> </span>&#123;
+        StandardEnvironment environment = <span class="hljs-keyword">new</span> StandardEnvironment();
+        MutablePropertySources capturedPropertySources = environment.getPropertySources();
+        <span class="hljs-comment">// Only copy the default property source(s) and the profiles over from the main</span>
+        <span class="hljs-comment">// environment (everything else should be pristine, just like it was on startup).</span>
+        <span class="hljs-keyword">for</span> (String name : DEFAULT_PROPERTY_SOURCES) &#123;
+            <span class="hljs-keyword">if</span> (input.getPropertySources().contains(name)) &#123;
+                <span class="hljs-keyword">if</span> (capturedPropertySources.contains(name)) &#123;
+                    capturedPropertySources.replace(name,
+                            input.getPropertySources().get(name));
+                &#125; <span class="hljs-keyword">else</span> &#123;
+                    capturedPropertySources.addLast(input.getPropertySources().get(name));
+                &#125;
+            &#125;
+        &#125;
+        environment.setActiveProfiles(input.getActiveProfiles());
+        environment.setDefaultProfiles(input.getDefaultProfiles());
+        Map&lt;String, Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;String, Object&gt;();
+        map.put(<span class="hljs-string">&quot;spring.jmx.enabled&quot;</span>, <span class="hljs-keyword">false</span>);
+        map.put(<span class="hljs-string">&quot;spring.main.sources&quot;</span>, <span class="hljs-string">&quot;&quot;</span>);
+        capturedPropertySources
+                .addFirst(<span class="hljs-keyword">new</span> MapPropertySource(REFRESH_ARGS_PROPERTY_SOURCE, map));
+        <span class="hljs-keyword">return</span> environment;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> Map&lt;String, Object&gt; <span class="hljs-title">changes</span><span class="hljs-params">(Map&lt;String, Object&gt; before,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                        Map&lt;String, Object&gt; after)</span> </span>&#123;
+        Map&lt;String, Object&gt; result = <span class="hljs-keyword">new</span> HashMap&lt;String, Object&gt;();
+        <span class="hljs-keyword">for</span> (String key : before.keySet()) &#123;
+            <span class="hljs-keyword">if</span> (!after.containsKey(key)) &#123;
+                result.put(key, <span class="hljs-keyword">null</span>);
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!equal(before.get(key), after.get(key))) &#123;
+                result.put(key, after.get(key));
+            &#125;
+        &#125;
+        <span class="hljs-keyword">for</span> (String key : after.keySet()) &#123;
+            <span class="hljs-keyword">if</span> (!before.containsKey(key)) &#123;
+                result.put(key, after.get(key));
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> result;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">equal</span><span class="hljs-params">(Object one, Object two)</span> </span>&#123;
+        <span class="hljs-keyword">if</span> (one == <span class="hljs-keyword">null</span> &amp;&amp; two == <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+        &#125;
+        <span class="hljs-keyword">if</span> (one == <span class="hljs-keyword">null</span> || two == <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+        &#125;
+        <span class="hljs-keyword">return</span> one.equals(two);
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> Map&lt;String, Object&gt; <span class="hljs-title">extract</span><span class="hljs-params">(MutablePropertySources propertySources)</span> </span>&#123;
+        Map&lt;String, Object&gt; result = <span class="hljs-keyword">new</span> HashMap&lt;String, Object&gt;();
+        List&lt;PropertySource&lt;?&gt;&gt; sources = <span class="hljs-keyword">new</span> ArrayList&lt;PropertySource&lt;?&gt;&gt;();
+        <span class="hljs-keyword">for</span> (PropertySource&lt;?&gt; source : propertySources) &#123;
+            sources.add(<span class="hljs-number">0</span>, source);
+        &#125;
+        <span class="hljs-keyword">for</span> (PropertySource&lt;?&gt; source : sources) &#123;
+            <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.standardSources.contains(source.getName())) &#123;
+                extract(source, result);
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> result;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">extract</span><span class="hljs-params">(PropertySource&lt;?&gt; parent, Map&lt;String, Object&gt; result)</span> </span>&#123;
+        <span class="hljs-keyword">if</span> (parent <span class="hljs-keyword">instanceof</span> CompositePropertySource) &#123;
+            <span class="hljs-keyword">try</span> &#123;
+                List&lt;PropertySource&lt;?&gt;&gt; sources = <span class="hljs-keyword">new</span> ArrayList&lt;PropertySource&lt;?&gt;&gt;();
+                <span class="hljs-keyword">for</span> (PropertySource&lt;?&gt; source : ((CompositePropertySource) parent)
+                        .getPropertySources()) &#123;
+                    sources.add(<span class="hljs-number">0</span>, source);
+                &#125;
+                <span class="hljs-keyword">for</span> (PropertySource&lt;?&gt; source : sources) &#123;
+                    extract(source, result);
+                &#125;
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                <span class="hljs-keyword">return</span>;
+            &#125;
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (parent <span class="hljs-keyword">instanceof</span> EnumerablePropertySource) &#123;
+            <span class="hljs-keyword">for</span> (String key : ((EnumerablePropertySource&lt;?&gt;) parent).getPropertyNames()) &#123;
+                result.put(key, parent.getProperty(key));
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-meta">@Configuration</span>
+    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Empty</span> </span>&#123;
+
+    &#125;
+&#125;</code></pre>
+
+<p>EnvironmentPostProcessor的实现</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 用于容器启动时读取服务器端的微服务配置</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EnvironmentConfigPostProcessor</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">EnvironmentPostProcessor</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 读取最新服务器端的配置，并存入Spring的环境对象中</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> environment</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> application</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">postProcessEnvironment</span><span class="hljs-params">(ConfigurableEnvironment environment, SpringApplication application)</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;begin...&quot;</span>);
+        <span class="hljs-comment">//1.读配置中心服务端的最新配置</span>
+        Properties properties = PullConfigUtil.findConfig();
+        <span class="hljs-comment">//2.判断properties是否有值</span>
+        <span class="hljs-keyword">if</span>(properties == <span class="hljs-keyword">null</span>)&#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ExceptionInInitializerError(<span class="hljs-string">&quot;初始化系统配置失败！&quot;</span>);
+        &#125;
+        <span class="hljs-comment">//3.创建Spring的PropertySource</span>
+        PropertySource mapPropertySource = <span class="hljs-keyword">new</span> PropertiesPropertySource(<span class="hljs-string">&quot;applicationConfig: [classpath:/application.yml]&quot;</span>,properties);
+        <span class="hljs-comment">//4.从系统环境变量中获取存放PropertySource的对象</span>
+        MutablePropertySources mutablePropertySources = environment.getPropertySources();
+        <span class="hljs-comment">//5.判断是否已经有了</span>
+        PropertySource propertySource = mutablePropertySources.get(<span class="hljs-string">&quot;applicationConfig: [classpath:/application.yml]&quot;</span>);
+        <span class="hljs-keyword">if</span>(propertySource == <span class="hljs-keyword">null</span>)&#123;
+            <span class="hljs-comment">//没有，添加配置</span>
+            environment.getPropertySources().addLast(mapPropertySource);
+        &#125;<span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">//有了，替换</span>
+            environment.getPropertySources().replace(<span class="hljs-string">&quot;applicationConfig: [classpath:/application.yml]&quot;</span>,mapPropertySource);
+        &#125;
+        application.setEnvironment(environment);
+    &#125;
+&#125;</code></pre>
+
+<h5 id="基于长轮询功能实现"><a href="#基于长轮询功能实现" class="headerlink" title="基于长轮询功能实现"></a>基于长轮询功能实现</h5><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 通过定时向服务端发送请求，来获取最新配置</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@EnableScheduling</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LongLoopingListener</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ContextRefresher contextRefresher;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigurableEnvironment configurableEnvironment;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 定期执行</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Scheduled(fixedRate = 50L)</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">synchronizedServiceConfig</span><span class="hljs-params">()</span></span>&#123;
+        <span class="hljs-comment">//1.获取服务端的配置</span>
+        Properties properties = PullConfigUtil.findConfig();
+        <span class="hljs-comment">//2.比较</span>
+        <span class="hljs-keyword">boolean</span> isRefresh = <span class="hljs-keyword">this</span>.checkConfigInfo(properties);
+        <span class="hljs-comment">//3.判断</span>
+        <span class="hljs-keyword">if</span>(isRefresh)&#123;
+            contextRefresher.refresh(properties);
+        &#125;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 检查是否需要更新的方法</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> properties</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">checkConfigInfo</span><span class="hljs-params">(Properties properties)</span></span>&#123;
+        <span class="hljs-comment">//1.取出本地配置信息</span>
+        MutablePropertySources mutablePropertySources = configurableEnvironment.getPropertySources();
+        <span class="hljs-comment">//2.取出application.yml的配置内容</span>
+        PropertySource propertySource = mutablePropertySources.get(<span class="hljs-string">&quot;applicationConfig: [classpath:/application.yml]&quot;</span>);
+        <span class="hljs-comment">//3.遍历服务器端的配置</span>
+        Enumeration keys = properties.keys();
+        <span class="hljs-keyword">while</span> (keys.hasMoreElements())&#123;
+            <span class="hljs-comment">//取出key和value</span>
+            String key = (String)keys.nextElement();
+            String value = (String)properties.get(key);
+            <span class="hljs-comment">//判断本地的配置中是否有此key</span>
+            <span class="hljs-keyword">if</span>(propertySource.containsProperty(key))&#123;
+                <span class="hljs-comment">//有key,取出本地的value</span>
+                String localValue = (String)propertySource.getProperty(key);
+                <span class="hljs-comment">//比较</span>
+                <span class="hljs-keyword">if</span>(!value.equals(localValue))&#123;
+                    <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+                &#125;
+            &#125;<span class="hljs-keyword">else</span> &#123;
+                <span class="hljs-comment">//没有key</span>
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+    &#125;
+&#125;</code></pre>
+
+<h4 id="推送轨迹的技术实现"><a href="#推送轨迹的技术实现" class="headerlink" title="推送轨迹的技术实现"></a>推送轨迹的技术实现</h4><p>推送轨迹就是在配置更新后，把最新的配置推送到客户端时，需要记录更新的轨迹内容。它很类似于更新日志。特点就是，每次配置详情有所变化时，都需要记录此信息。 </p>
+<p>在记录轨迹的功能上，我们的解决方案可选择性非常广泛。例如，mysql，redis，HBASE，mongodb等等。此处我们选择了Mongodb作为轨迹记录的解决方案。mongodb的优势在于，它的存储可以是非格式化话，且是No-SQL数据库，比关系型数据库的效率高一些。并且，对轨迹的记录操作可能会较为频繁，所以不希望牺牲redis和mysql的性能，让他们专注缓存和持久化配置信息，而轨迹相较于我们的核心配置信息来说，没它重要。</p>
+<h5 id="Docker安装Mongodb"><a href="#Docker安装Mongodb" class="headerlink" title="Docker安装Mongodb"></a>Docker安装Mongodb</h5><pre><code class="hljs routeros">下载：
+docker pull mongo:3.2.10
+安装：
+docker <span class="hljs-builtin-name">run</span> -di <span class="hljs-attribute">--name</span>=mongo -p 27017:27017 mongo:3.2.10</code></pre>
+
+<h5 id="导入坐标"><a href="#导入坐标" class="headerlink" title="导入坐标"></a>导入坐标</h5><pre><code class="hljs xml"><span class="hljs-comment">&lt;!--spring boot data mongodb坐标--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-data-mongodb<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<h5 id="application-yml的配置"><a href="#application-yml的配置" class="headerlink" title="application.yml的配置"></a>application.yml的配置</h5><pre><code class="hljs yaml"><span class="hljs-comment">#放在spring节点下</span>
+<span class="hljs-attr">data:</span>
+    <span class="hljs-attr">mongodb:</span>
+      <span class="hljs-attr">host:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.32</span><span class="hljs-number">.132</span>
+      <span class="hljs-attr">database:</span> <span class="hljs-string">locos</span></code></pre>
+
+<h5 id="编写实体类"><a href="#编写实体类" class="headerlink" title="编写实体类"></a>编写实体类</h5><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigLocos</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Serializable</span> </span>&#123;
+
+    <span class="hljs-meta">@Id</span>
+    <span class="hljs-keyword">private</span> String id;
+    <span class="hljs-keyword">private</span> String configInfoId;
+    <span class="hljs-keyword">private</span> String envName;
+    <span class="hljs-keyword">private</span> String projectName;
+    <span class="hljs-keyword">private</span> String clusterNumber;
+    <span class="hljs-keyword">private</span> String serviceName;
+    <span class="hljs-keyword">private</span> String configDetail;
+    <span class="hljs-keyword">private</span> String userId;
+    <span class="hljs-keyword">private</span> String projectGroup;
+    <span class="hljs-keyword">private</span> Long createTime;
+&#125;</code></pre>
+
+<h5 id="编写持久层"><a href="#编写持久层" class="headerlink" title="编写持久层"></a>编写持久层</h5><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 记录轨迹的持久层接口</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">ConfigLocosDao</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">MongoRepository</span>&lt;<span class="hljs-title">ConfigLocos</span>,<span class="hljs-title">String</span>&gt; </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据配置信息ID查询推送轨迹，带分页</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfoId</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> pageable</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">Page&lt;ConfigLocos&gt; <span class="hljs-title">findByConfigInfoId</span><span class="hljs-params">(String configInfoId, Pageable pageable)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据创建时间查询轨迹</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> createTime</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">List&lt;ConfigLocos&gt; <span class="hljs-title">findByCreateTimeLessThan</span><span class="hljs-params">(Long createTime)</span></span>;
+&#125;</code></pre>
+
+<h5 id="编写业务层"><a href="#编写业务层" class="headerlink" title="编写业务层"></a>编写业务层</h5><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 记录轨迹的业务层</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Service</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigLocosService</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigLocosDao configLocosDao;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> IdWorkerUtil idWorkerUtil;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 保存轨迹（它是从配置信息对象中获取数据）</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">save</span><span class="hljs-params">(ConfigInfo configInfo)</span> </span>&#123;
+        <span class="hljs-comment">//1.创建轨迹对象</span>
+        ConfigLocos configLocos = <span class="hljs-keyword">new</span> ConfigLocos();
+        <span class="hljs-comment">//2.拷贝数据</span>
+        BeanUtils.copyProperties(configInfo, configLocos, <span class="hljs-keyword">new</span> String[]&#123;<span class="hljs-string">&quot;id&quot;</span>, <span class="hljs-string">&quot;createTime&quot;</span>&#125;);
+        <span class="hljs-comment">//3.补全数据</span>
+        configLocos.setConfigInfoId(configInfo.getId());
+        configLocos.setCreateTime(System.currentTimeMillis());
+        configLocos.setId(String.valueOf(idWorkerUtil.nextId()));
+        <span class="hljs-comment">//4.保存</span>
+        configLocosDao.save(configLocos);
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 分页查询轨迹信息</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configInfoId</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> page</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> size</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Page&lt;ConfigLocos&gt; <span class="hljs-title">findPage</span><span class="hljs-params">(String configInfoId, <span class="hljs-keyword">int</span> page, <span class="hljs-keyword">int</span> size)</span> </span>&#123;
+        <span class="hljs-comment">//1.创建分页对象</span>
+        Pageable pageable = PageRequest.of(page - <span class="hljs-number">1</span>, size);
+        <span class="hljs-comment">//2.分页查询</span>
+        Page&lt;ConfigLocos&gt; configLocosPage = configLocosDao.findByConfigInfoId(configInfoId, pageable);
+        <span class="hljs-comment">//3.返回</span>
+        <span class="hljs-keyword">return</span> configLocosPage;
+    &#125;
+&#125;</code></pre>
+
+<p>改造ConfigInfoService中的save方法</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 保存上传的配置信息</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> configInfo</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">save</span><span class="hljs-params">(ConfigInfo configInfo)</span></span>&#123;
+    <span class="hljs-comment">//1.生成id</span>
+    String id = String.valueOf(idWorkerUtil.nextId());
+    <span class="hljs-comment">//填充主键</span>
+    configInfo.setId(id);
+    <span class="hljs-comment">//2.保存</span>
+    configInfoDao.save(configInfo);
+    <span class="hljs-comment">//3.把ConfigInfo存入缓存</span>
+    cacheStrategy.saveCache(configInfo);
+    <span class="hljs-comment">//记录轨迹</span>
+    configLocosService.save(configInfo);
+    <span class="hljs-comment">//4.把操作和要操作的内容写入队列</span>
+    Map&lt;String,Object&gt; map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
+    map.put(<span class="hljs-string">&quot;operated&quot;</span>,<span class="hljs-string">&quot;change&quot;</span>);
+    map.put(<span class="hljs-string">&quot;data&quot;</span>,configInfo);
+    rabbitTemplate.convertAndSend(<span class="hljs-string">&quot;synchronizationdfs&quot;</span>,map);
+    <span class="hljs-comment">//5.返回id</span>
+    <span class="hljs-keyword">return</span> id;
+&#125;</code></pre>
+
+<h5 id="表现层"><a href="#表现层" class="headerlink" title="表现层"></a>表现层</h5><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 轨迹的控制器</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Controller</span>
+<span class="hljs-meta">@RequestMapping(&quot;/config&quot;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigLocosController</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigLocosService configLocosService;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> HttpServletRequest request;
+
+    <span class="hljs-meta">@RequestMapping(&quot;/findLocos&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">findLocos</span><span class="hljs-params">(String id, <span class="hljs-meta">@RequestParam(defaultValue = &quot;1&quot;)</span> <span class="hljs-keyword">int</span> page,<span class="hljs-meta">@RequestParam(defaultValue = &quot;5&quot;)</span> <span class="hljs-keyword">int</span> size)</span></span>&#123;
+        <span class="hljs-comment">//1.根据条件查询轨迹</span>
+        Page&lt;ConfigLocos&gt; configLocosPage = configLocosService.findPage(id,page,size);
+        <span class="hljs-comment">//2.创建页面所需的分页对象</span>
+        PageResult pageResult = <span class="hljs-keyword">new</span> PageResult(configLocosPage.getTotalElements(),configLocosPage.getContent(),page,size);
+        <span class="hljs-comment">//3.存入请求域中</span>
+        request.setAttribute(<span class="hljs-string">&quot;page&quot;</span>,pageResult);
+        <span class="hljs-comment">//4.前往页面</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;config/locos&quot;</span>;
+    &#125;
+&#125;</code></pre>
+
+<h4 id="日志转移的技术实现"><a href="#日志转移的技术实现" class="headerlink" title="日志转移的技术实现"></a>日志转移的技术实现</h4><p>mongodb的推送轨迹保存，随着项目的微服务过多，轨迹变更次数过多，它的体量会越来越大。所以，我们需要定期对轨迹信息进行转移，把不常用的轨迹信息转移到磁盘存储，从而节省mongodb的空间。 </p>
+<p>这里的技术选型就比较简单了，我们使用了apache的commons-io包中的文件工具类，直接把mongodb中的数据写到文件中即可。 </p>
+<h5 id="定时任务调度类"><a href="#定时任务调度类" class="headerlink" title="定时任务调度类"></a>定时任务调度类</h5><pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 定时执行轨迹转移的任务类</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@EnableScheduling</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LocosTransferToLogTask</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ConfigLocosDao configLocosDao;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String SYSTEM_PATH = LocosTransferToLogTask.class.getResource(<span class="hljs-string">&quot;/&quot;</span>).getPath();
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 每天凌晨3点执行处理</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Scheduled(cron = &quot;0 0 3 * * ?&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">transferToLog</span><span class="hljs-params">()</span></span>&#123;
+        <span class="hljs-comment">//获取当前系统时间的前一年的毫秒值</span>
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.YEAR,-<span class="hljs-number">1</span>);
+        Long time = calendar.getTimeInMillis();
+        <span class="hljs-comment">//根据前一年的毫秒值查询轨迹列表</span>
+        List&lt;ConfigLocos&gt; configLocosList = configLocosDao.findByCreateTimeLessThan(time);
+        <span class="hljs-comment">//遍历</span>
+        <span class="hljs-keyword">for</span>(ConfigLocos configLocos : configLocosList)&#123;
+            <span class="hljs-keyword">try</span>&#123;
+                <span class="hljs-comment">//使用项目名称+当前日期的作为文件名</span>
+                String prefix = configLocos.getProjectName();
+                String suffix = <span class="hljs-keyword">new</span> SimpleDateFormat(<span class="hljs-string">&quot;yyyy-MM-dd HH:mm:ss&quot;</span>).format(System.currentTimeMillis());
+                String fileName = prefix+<span class="hljs-string">&quot;_&quot;</span>+suffix+<span class="hljs-string">&quot;.log&quot;</span>;
+                <span class="hljs-keyword">byte</span>[] bytes = KryoSerializeUtil.serialize(configLocos);
+                <span class="hljs-comment">//写文件</span>
+                FileUtils.writeByteArrayToFile(<span class="hljs-keyword">new</span> File(SYSTEM_PATH+File.separator+<span class="hljs-string">&quot;logs&quot;</span>,fileName),bytes);
+            &#125;<span class="hljs-keyword">catch</span> (Exception e)&#123;
+                e.printStackTrace();
+            &#125;
+            <span class="hljs-comment">//删除已经写成文件的轨迹</span>
+            configLocosDao.deleteById(configLocos.getId());
+        &#125;
+    &#125;
+&#125;</code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E4%B8%9A%E5%8A%A1/">业务</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83/">配置中心</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/10/26/%E4%B8%9A%E5%8A%A1-%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">幂等性技术架构体系</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/10/01/ServiceMesh-Istio%E5%85%A5%E9%97%A8/">
+                        <span class="hidden-mobile">Istio入门</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

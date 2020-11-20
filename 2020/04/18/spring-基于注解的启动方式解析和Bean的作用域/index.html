@@ -19,7 +19,7 @@
   <meta name="keywords" content="">
   <title>Spring基于注解的启动方式解析和Bean的作用域 - 🍎🍊&#39;s blog</title>
 
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
 
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
@@ -27,19 +27,25 @@
 
   
     
-    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
   
 
   
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
 
 
 <!-- 主题依赖的图标库，不要自行修改 -->
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
 
 
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
 
 
 <link  rel="stylesheet" href="/blog/css/main.css" />
@@ -47,9 +53,13 @@
 <!-- 自定义样式保持在最底部 -->
 
 
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
-<meta name="generator" content="Hexo 4.2.1"></head>
+<meta name="generator" content="Hexo 5.2.0"></head>
 
 
 <body>
@@ -57,7 +67,7 @@
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
-       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
 
     <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navbarSupportedContent"
@@ -151,27 +161,30 @@
            background-size: cover;">
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-          <div class="container page-header text-center fade-in-up">
-            <span class="h2" id="subtitle">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Spring基于注解的启动方式解析和Bean的作用域">
               
             </span>
 
             
-              
-  <div class="mt-3 post-meta">
-    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-    <time datetime="2020-04-18 11:47" pubdate>
-      2020年4月18日 中午
-    </time>
-  </div>
-
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-18 11:47" pubdate>
+        2020年4月18日 中午
+      </time>
+    </span>
+  
+</div>
 
 <div class="mt-1">
   
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      3.5k 字
+      3.6k 字
     </span>
   
 
@@ -181,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      58
+      60
        分钟
     </span>
   
@@ -209,15 +222,15 @@
     <div class="col-lg-8 nopadding-md">
       <div class="container nopadding-md" id="board-ctn">
         <div class="py-5" id="board">
-          <article class="post-content mx-auto" id="post">
+          <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">Spring基于注解的启动方式解析和Bean的作用域</h1>
             
-            <div class="markdown-body" id="post-body">
+            <div class="markdown-body">
               <h2 id="Bean的作用域"><a href="#Bean的作用域" class="headerlink" title="Bean的作用域"></a>Bean的作用域</h2><p>@Scope注解可以设置bean的作用域，不同的作用域对bean对象的获取方式不同，spring也允许开发者注册自己的作用域，实现对对象作用域的控制。</p>
 <h3 id="doGetBean-的再分析"><a href="#doGetBean-的再分析" class="headerlink" title="doGetBean()的再分析"></a>doGetBean()的再分析</h3><p>如果缓存中获取不到实例且实例作用域不是单例时，spring就会获取到bean的作用域对象，并调用作用域对象的get()方法创建实例。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">doGetBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String name, @Nullable <span class="hljs-keyword">final</span> Class&lt;T&gt; requiredType,</span></span>
-<span class="hljs-function"><span class="hljs-params">			@Nullable <span class="hljs-keyword">final</span> Object[] args, <span class="hljs-keyword">boolean</span> typeCheckOnly)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;	
+<pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">doGetBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String name, <span class="hljs-meta">@Nullable</span> <span class="hljs-keyword">final</span> Class&lt;T&gt; requiredType,</span></span>
+<span class="hljs-function"><span class="hljs-params">			<span class="hljs-meta">@Nullable</span> <span class="hljs-keyword">final</span> Object[] args, <span class="hljs-keyword">boolean</span> typeCheckOnly)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;	
   
   <span class="hljs-keyword">final</span> String beanName = transformedBeanName(name);
 	Object bean;
@@ -229,11 +242,11 @@
 	<span class="hljs-keyword">if</span> (sharedInstance != <span class="hljs-keyword">null</span> &amp;&amp; args == <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
 			<span class="hljs-keyword">if</span> (isSingletonCurrentlyInCreation(beanName)) &#123;
-				logger.trace(<span class="hljs-string">"Returning eagerly cached instance of singleton bean '"</span> + beanName +
-						<span class="hljs-string">"' that is not fully initialized yet - a consequence of a circular reference"</span>);
+				logger.trace(<span class="hljs-string">&quot;Returning eagerly cached instance of singleton bean &#x27;&quot;</span> + beanName +
+						<span class="hljs-string">&quot;&#x27; that is not fully initialized yet - a consequence of a circular reference&quot;</span>);
 			&#125;
 			<span class="hljs-keyword">else</span> &#123;
-				logger.trace(<span class="hljs-string">"Returning cached instance of singleton bean '"</span> + beanName + <span class="hljs-string">"'"</span>);
+				logger.trace(<span class="hljs-string">&quot;Returning cached instance of singleton bean &#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27;&quot;</span>);
 			&#125;
 		&#125;
 		<span class="hljs-comment">//改方法是FactoryBean接口的调用入口</span>
@@ -243,8 +256,8 @@
 	<span class="hljs-keyword">else</span> &#123;
 
 		<span class="hljs-comment">//如果singletonObjects缓存里面没有，则走下来</span>
-		<span class="hljs-comment">// Fail if we're already creating this bean instance:</span>
-		<span class="hljs-comment">// We're assumably within a circular reference.</span>
+		<span class="hljs-comment">// Fail if we&#x27;re already creating this bean instance:</span>
+		<span class="hljs-comment">// We&#x27;re assumably within a circular reference.</span>
 
 		<span class="hljs-comment">//如果是scope 是Prototype的，校验是否有出现循环依赖，如果有则直接报错</span>
 		<span class="hljs-keyword">if</span> (isPrototypeCurrentlyInCreation(beanName)) &#123;
@@ -289,7 +302,7 @@
 				<span class="hljs-keyword">for</span> (String dep : dependsOn) &#123;
 					<span class="hljs-keyword">if</span> (isDependent(beanName, dep)) &#123;
 						<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(mbd.getResourceDescription(), beanName,
-								<span class="hljs-string">"Circular depends-on relationship between '"</span> + beanName + <span class="hljs-string">"' and '"</span> + dep + <span class="hljs-string">"'"</span>);
+								<span class="hljs-string">&quot;Circular depends-on relationship between &#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27; and &#x27;&quot;</span> + dep + <span class="hljs-string">&quot;&#x27;&quot;</span>);
 					&#125;
 					registerDependentBean(dep, beanName);
 					<span class="hljs-keyword">try</span> &#123;
@@ -298,7 +311,7 @@
 				&#125;
 					<span class="hljs-keyword">catch</span> (NoSuchBeanDefinitionException ex) &#123;
 						<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(mbd.getResourceDescription(), beanName,
-								<span class="hljs-string">"'"</span> + beanName + <span class="hljs-string">"' depends on missing bean '"</span> + dep + <span class="hljs-string">"'"</span>, ex);
+								<span class="hljs-string">&quot;&#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27; depends on missing bean &#x27;&quot;</span> + dep + <span class="hljs-string">&quot;&#x27;&quot;</span>, ex);
 					&#125;
 				&#125;
 			&#125;
@@ -323,7 +336,7 @@
 			&#125;
 
 			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (mbd.isPrototype()) &#123;
-				<span class="hljs-comment">// It's a prototype -&gt; create a new instance.</span>
+				<span class="hljs-comment">// It&#x27;s a prototype -&gt; create a new instance.</span>
 				Object prototypeInstance = <span class="hljs-keyword">null</span>;
 				<span class="hljs-keyword">try</span> &#123;
 					beforePrototypeCreation(beanName);
@@ -340,7 +353,7 @@
 				String scopeName = mbd.getScope();
 				<span class="hljs-keyword">final</span> Scope scope = <span class="hljs-keyword">this</span>.scopes.get(scopeName);
 				<span class="hljs-keyword">if</span> (scope == <span class="hljs-keyword">null</span>) &#123;
-					<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">"No Scope registered for scope name '"</span> + scopeName + <span class="hljs-string">"'"</span>);
+					<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;No Scope registered for scope name &#x27;&quot;</span> + scopeName + <span class="hljs-string">&quot;&#x27;&quot;</span>);
 				&#125;
 				<span class="hljs-keyword">try</span> &#123;
 					Object scopedInstance = scope.get(beanName, () -&gt; &#123;
@@ -357,8 +370,8 @@
 				&#125;
 				<span class="hljs-keyword">catch</span> (IllegalStateException ex) &#123;
 					<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(beanName,
-							<span class="hljs-string">"Scope '"</span> + scopeName + <span class="hljs-string">"' is not active for the current thread; consider "</span> +
-							<span class="hljs-string">"defining a scoped proxy for this bean if you intend to refer to it from a singleton"</span>,
+							<span class="hljs-string">&quot;Scope &#x27;&quot;</span> + scopeName + <span class="hljs-string">&quot;&#x27; is not active for the current thread; consider &quot;</span> +
+							<span class="hljs-string">&quot;defining a scoped proxy for this bean if you intend to refer to it from a singleton&quot;</span>,
 							ex);
 				&#125;
 			&#125;
@@ -380,8 +393,8 @@
 		&#125;
 		<span class="hljs-keyword">catch</span> (TypeMismatchException ex) &#123;
 			<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-				logger.trace(<span class="hljs-string">"Failed to convert bean '"</span> + name + <span class="hljs-string">"' to required type '"</span> +
-						ClassUtils.getQualifiedName(requiredType) + <span class="hljs-string">"'"</span>, ex);
+				logger.trace(<span class="hljs-string">&quot;Failed to convert bean &#x27;&quot;</span> + name + <span class="hljs-string">&quot;&#x27; to required type &#x27;&quot;</span> +
+						ClassUtils.getQualifiedName(requiredType) + <span class="hljs-string">&quot;&#x27;&quot;</span>, ex);
 			&#125;
 			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
 		&#125;
@@ -401,7 +414,7 @@
 
     <span class="hljs-meta">@Override</span>
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">postProcessBeanFactory</span><span class="hljs-params">(ConfigurableListableBeanFactory beanFactory)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;
-        beanFactory.registerScope(<span class="hljs-string">"refresh"</span>,<span class="hljs-keyword">new</span> ThreadScope());
+        beanFactory.registerScope(<span class="hljs-string">&quot;refresh&quot;</span>,<span class="hljs-keyword">new</span> ThreadScope());
     &#125;
 &#125;</code></pre>
 
@@ -433,8 +446,8 @@
 
 <h4 id="register-方法"><a href="#register-方法" class="headerlink" title="register()方法"></a>register()方法</h4><p>register()方法会调用到AnnotatedBeanDefinitionReader的register()方法循环annotatedClasses并调用registerBean()方法进行BeanDefinition的注册。</p>
 <p>doRegisterBean()是registerBean()的主要方法。doRegisterBean()方法首会创建一个BeanDefinition对象，然后将收集annotatedClass的信息并包装为Metadata对象，之后使用AnnotationConfigUtils.processCommonDefinitionAnnotations()对Metadata对象的注解和处理并设置到BeanDefinition对象中，之后将BeanDefinition对象封装为BeanDefinitionHolder并注册。</p>
-<pre><code class="hljs java">&lt;T&gt; <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">doRegisterBean</span><span class="hljs-params">(Class&lt;T&gt; annotatedClass, @Nullable Supplier&lt;T&gt; instanceSupplier, @Nullable String name,</span></span>
-<span class="hljs-function"><span class="hljs-params">		@Nullable Class&lt;? extends Annotation&gt;[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers)</span> </span>&#123;
+<pre><code class="hljs java">&lt;T&gt; <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">doRegisterBean</span><span class="hljs-params">(Class&lt;T&gt; annotatedClass, <span class="hljs-meta">@Nullable</span> Supplier&lt;T&gt; instanceSupplier, <span class="hljs-meta">@Nullable</span> String name,</span></span>
+<span class="hljs-function"><span class="hljs-params">		<span class="hljs-meta">@Nullable</span> Class&lt;? extends Annotation&gt;[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers)</span> </span>&#123;
 
 	AnnotatedGenericBeanDefinition abd = <span class="hljs-keyword">new</span> AnnotatedGenericBeanDefinition(annotatedClass);
 	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.conditionEvaluator.shouldSkip(abd.getMetadata())) &#123;
@@ -449,10 +462,10 @@
 	AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
 	<span class="hljs-keyword">if</span> (qualifiers != <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">for</span> (Class&lt;? extends Annotation&gt; qualifier : qualifiers) &#123;
-			<span class="hljs-keyword">if</span> (Primary<span class="hljs-class">.<span class="hljs-keyword">class</span> </span>== qualifier) &#123;
+			<span class="hljs-keyword">if</span> (Primary.class == qualifier) &#123;
 				abd.setPrimary(<span class="hljs-keyword">true</span>);
 			&#125;
-			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Lazy<span class="hljs-class">.<span class="hljs-keyword">class</span> </span>== qualifier) &#123;
+			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Lazy.class == qualifier) &#123;
 				abd.setLazyInit(<span class="hljs-keyword">true</span>);
 			&#125;
 			<span class="hljs-keyword">else</span> &#123;
@@ -472,40 +485,40 @@
 <h5 id="processCommonDefinitionAnnotations-方法"><a href="#processCommonDefinitionAnnotations-方法" class="headerlink" title="processCommonDefinitionAnnotations()方法"></a>processCommonDefinitionAnnotations()方法</h5><p>该方法会对注解进行收集并放到BeanDefinition中。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">processCommonDefinitionAnnotations</span><span class="hljs-params">(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata)</span> </span>&#123;
    <span class="hljs-comment">//对@Lazy注解支持</span>
-   AnnotationAttributes lazy = attributesFor(metadata, Lazy<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
    <span class="hljs-keyword">if</span> (lazy != <span class="hljs-keyword">null</span>) &#123;
-      abd.setLazyInit(lazy.getBoolean(<span class="hljs-string">"value"</span>));
+      abd.setLazyInit(lazy.getBoolean(<span class="hljs-string">&quot;value&quot;</span>));
    &#125;
    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (abd.getMetadata() != metadata) &#123;
-      lazy = attributesFor(abd.getMetadata(), Lazy<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+      lazy = attributesFor(abd.getMetadata(), Lazy.class);
       <span class="hljs-keyword">if</span> (lazy != <span class="hljs-keyword">null</span>) &#123;
-         abd.setLazyInit(lazy.getBoolean(<span class="hljs-string">"value"</span>));
+         abd.setLazyInit(lazy.getBoolean(<span class="hljs-string">&quot;value&quot;</span>));
       &#125;
    &#125;
 
-   <span class="hljs-keyword">if</span> (metadata.isAnnotated(Primary<span class="hljs-class">.<span class="hljs-keyword">class</span>.<span class="hljs-title">getName</span>())) </span>&#123;
+   <span class="hljs-keyword">if</span> (metadata.isAnnotated(Primary.class.getName())) &#123;
       abd.setPrimary(<span class="hljs-keyword">true</span>);
    &#125;
    <span class="hljs-comment">//对@DependsOn注解支持</span>
-   AnnotationAttributes dependsOn = attributesFor(metadata, DependsOn<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   AnnotationAttributes dependsOn = attributesFor(metadata, DependsOn.class);
    <span class="hljs-keyword">if</span> (dependsOn != <span class="hljs-keyword">null</span>) &#123;
-      abd.setDependsOn(dependsOn.getStringArray(<span class="hljs-string">"value"</span>));
+      abd.setDependsOn(dependsOn.getStringArray(<span class="hljs-string">&quot;value&quot;</span>));
    &#125;
 
-   AnnotationAttributes role = attributesFor(metadata, Role<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   AnnotationAttributes role = attributesFor(metadata, Role.class);
    <span class="hljs-keyword">if</span> (role != <span class="hljs-keyword">null</span>) &#123;
-      abd.setRole(role.getNumber(<span class="hljs-string">"value"</span>).intValue());
+      abd.setRole(role.getNumber(<span class="hljs-string">&quot;value&quot;</span>).intValue());
    &#125;
-   AnnotationAttributes description = attributesFor(metadata, Description<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+   AnnotationAttributes description = attributesFor(metadata, Description.class);
    <span class="hljs-keyword">if</span> (description != <span class="hljs-keyword">null</span>) &#123;
-      abd.setDescription(description.getString(<span class="hljs-string">"value"</span>));
+      abd.setDescription(description.getString(<span class="hljs-string">&quot;value&quot;</span>));
    &#125;
 &#125;</code></pre>
 
 <h3 id="AnnotatedBeanDefinitionReader解析"><a href="#AnnotatedBeanDefinitionReader解析" class="headerlink" title="AnnotatedBeanDefinitionReader解析"></a>AnnotatedBeanDefinitionReader解析</h3><p>其构造函数中会调用AnnotationConfigUtils.registerAnnotationConfigProcessors()方法。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">AnnotatedBeanDefinitionReader</span><span class="hljs-params">(BeanDefinitionRegistry registry, Environment environment)</span> </span>&#123;
-	Assert.notNull(registry, <span class="hljs-string">"BeanDefinitionRegistry must not be null"</span>);
-	Assert.notNull(environment, <span class="hljs-string">"Environment must not be null"</span>);
+	Assert.notNull(registry, <span class="hljs-string">&quot;BeanDefinitionRegistry must not be null&quot;</span>);
+	Assert.notNull(environment, <span class="hljs-string">&quot;Environment must not be null&quot;</span>);
 	<span class="hljs-keyword">this</span>.registry = registry;
 	<span class="hljs-keyword">this</span>.conditionEvaluator = <span class="hljs-keyword">new</span> ConditionEvaluator(registry, environment, <span class="hljs-keyword">null</span>);
 	AnnotationConfigUtils.registerAnnotationConfigProcessors(<span class="hljs-keyword">this</span>.registry);
@@ -513,7 +526,7 @@
 
 <h4 id="registerAnnotationConfigProcessors-方法"><a href="#registerAnnotationConfigProcessors-方法" class="headerlink" title="registerAnnotationConfigProcessors()方法"></a>registerAnnotationConfigProcessors()方法</h4><p>此方法会创建一些BeanDefinitionRegistryPostProcessor类，用于在Bean实例化之前对BeanDefinition进行操作。BeanDefinitionRegistryPostProcessor类继承了BeanFactoryPostProcessor类，在spring会在实例化Bean之前创建BeanFactoryPostProcessor对象，并调用postProcessBeanDefinitionRegistry()方法。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Set&lt;BeanDefinitionHolder&gt; <span class="hljs-title">registerAnnotationConfigProcessors</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">		BeanDefinitionRegistry registry, @Nullable Object source)</span> </span>&#123;
+<span class="hljs-function"><span class="hljs-params">		BeanDefinitionRegistry registry, <span class="hljs-meta">@Nullable</span> Object source)</span> </span>&#123;
 
 	DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
 	<span class="hljs-keyword">if</span> (beanFactory != <span class="hljs-keyword">null</span>) &#123;
@@ -529,20 +542,20 @@
 
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
      <span class="hljs-comment">// 重点关注这行代码中的ConfigurationClassPostProcessor类</span>
-		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(ConfigurationClassPostProcessor<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(ConfigurationClassPostProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
 
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
-		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(AutowiredAnnotationBeanPostProcessor<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
 
 	<span class="hljs-comment">// Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.</span>
 	<span class="hljs-keyword">if</span> (jsr250Present &amp;&amp; !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
-		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(CommonAnnotationBeanPostProcessor<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, COMMON_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
@@ -552,24 +565,24 @@
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition();
 		<span class="hljs-keyword">try</span> &#123;
 			def.setBeanClass(ClassUtils.forName(PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME,
-					AnnotationConfigUtils<span class="hljs-class">.<span class="hljs-keyword">class</span>.<span class="hljs-title">getClassLoader</span>()))</span>;
+					AnnotationConfigUtils.class.getClassLoader()));
 		&#125;
 		<span class="hljs-keyword">catch</span> (ClassNotFoundException ex) &#123;
 			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
-					<span class="hljs-string">"Cannot load optional framework class: "</span> + PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, ex);
+					<span class="hljs-string">&quot;Cannot load optional framework class: &quot;</span> + PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, ex);
 		&#125;
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
 
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) &#123;
-		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(EventListenerMethodProcessor<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(EventListenerMethodProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
 	&#125;
 
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) &#123;
-		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(DefaultEventListenerFactory<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(DefaultEventListenerFactory.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_FACTORY_BEAN_NAME));
 	&#125;
@@ -588,7 +601,7 @@
 		<span class="hljs-keyword">if</span> (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
 				ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) &#123;
 			<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-				logger.debug(<span class="hljs-string">"Bean definition has already been processed as a configuration class: "</span> + beanDef);
+				logger.debug(<span class="hljs-string">&quot;Bean definition has already been processed as a configuration class: &quot;</span> + beanDef);
 			&#125;
 		&#125;
 		<span class="hljs-comment">//判断是类上或方法上的注解，</span>
@@ -681,7 +694,7 @@
 
 	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.metadataReaderFactory <span class="hljs-keyword">instanceof</span> CachingMetadataReaderFactory) &#123;
 		<span class="hljs-comment">// Clear cache in externally provided MetadataReaderFactory; this is a no-op</span>
-		<span class="hljs-comment">// for a shared cache since it'll be cleared by the ApplicationContext.</span>
+		<span class="hljs-comment">// for a shared cache since it&#x27;ll be cleared by the ApplicationContext.</span>
 		((CachingMetadataReaderFactory) <span class="hljs-keyword">this</span>.metadataReaderFactory).clearCache();
 	&#125;
 &#125;</code></pre>
@@ -703,7 +716,7 @@
 	&#125;
 	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (beanDef <span class="hljs-keyword">instanceof</span> AbstractBeanDefinition &amp;&amp; ((AbstractBeanDefinition) beanDef).hasBeanClass()) &#123;
 		<span class="hljs-comment">// Check already loaded Class if present...</span>
-		<span class="hljs-comment">// since we possibly can't even load the class file for this Class.</span>
+		<span class="hljs-comment">// since we possibly can&#x27;t even load the class file for this Class.</span>
 		Class&lt;?&gt; beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
 		metadata = <span class="hljs-keyword">new</span> StandardAnnotationMetadata(beanClass, <span class="hljs-keyword">true</span>);
 	&#125;
@@ -714,7 +727,7 @@
 		&#125;
 		<span class="hljs-keyword">catch</span> (IOException ex) &#123;
 			<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-				logger.debug(<span class="hljs-string">"Could not find class file for introspecting configuration annotations: "</span> +
+				logger.debug(<span class="hljs-string">&quot;Could not find class file for introspecting configuration annotations: &quot;</span> +
 						className, ex);
 			&#125;
 			<span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
@@ -733,7 +746,7 @@
 		<span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
 	&#125;
 
-	<span class="hljs-comment">// It's a full or lite configuration candidate... Let's determine the order value, if any.</span>
+	<span class="hljs-comment">// It&#x27;s a full or lite configuration candidate... Let&#x27;s determine the order value, if any.</span>
    <span class="hljs-comment">//设置order属性</span>
 	Integer order = getOrder(metadata);
 	<span class="hljs-keyword">if</span> (order != <span class="hljs-keyword">null</span>) &#123;
@@ -747,27 +760,27 @@
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">final</span> SourceClass <span class="hljs-title">doProcessConfigurationClass</span><span class="hljs-params">(ConfigurationClass configClass, SourceClass sourceClass)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> IOException </span>&#123;
 
-	<span class="hljs-keyword">if</span> (configClass.getMetadata().isAnnotated(Component<span class="hljs-class">.<span class="hljs-keyword">class</span>.<span class="hljs-title">getName</span>())) </span>&#123;
+	<span class="hljs-keyword">if</span> (configClass.getMetadata().isAnnotated(Component.class.getName())) &#123;
 		<span class="hljs-comment">// Recursively process any member (nested) classes first</span>
 		processMemberClasses(configClass, sourceClass);
 	&#125;
 
 	<span class="hljs-comment">// Process any @PropertySource annotations</span>
 	<span class="hljs-keyword">for</span> (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
-			sourceClass.getMetadata(), PropertySources<span class="hljs-class">.<span class="hljs-keyword">class</span>,</span>
-<span class="hljs-class">			<span class="hljs-title">org</span>.<span class="hljs-title">springframework</span>.<span class="hljs-title">context</span>.<span class="hljs-title">annotation</span>.<span class="hljs-title">PropertySource</span>.<span class="hljs-title">class</span>)) </span>&#123;
+			sourceClass.getMetadata(), PropertySources.class,
+			org.springframework.context.annotation.PropertySource.class)) &#123;
 		<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.environment <span class="hljs-keyword">instanceof</span> ConfigurableEnvironment) &#123;
 			processPropertySource(propertySource);
 		&#125;
 		<span class="hljs-keyword">else</span> &#123;
-			logger.info(<span class="hljs-string">"Ignoring @PropertySource annotation on ["</span> + sourceClass.getMetadata().getClassName() +
-					<span class="hljs-string">"]. Reason: Environment must implement ConfigurableEnvironment"</span>);
+			logger.info(<span class="hljs-string">&quot;Ignoring @PropertySource annotation on [&quot;</span> + sourceClass.getMetadata().getClassName() +
+					<span class="hljs-string">&quot;]. Reason: Environment must implement ConfigurableEnvironment&quot;</span>);
 		&#125;
 	&#125;
 
 	<span class="hljs-comment">// Process any @ComponentScan annotations</span>
 	Set&lt;AnnotationAttributes&gt; componentScans = AnnotationConfigUtils.attributesForRepeatable(
-			sourceClass.getMetadata(), ComponentScans<span class="hljs-class">.<span class="hljs-keyword">class</span>, <span class="hljs-title">ComponentScan</span>.<span class="hljs-title">class</span>)</span>;
+			sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
 	<span class="hljs-keyword">if</span> (!componentScans.isEmpty() &amp;&amp;
 			!<span class="hljs-keyword">this</span>.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) &#123;
 		<span class="hljs-keyword">for</span> (AnnotationAttributes componentScan : componentScans) &#123;
@@ -795,10 +808,10 @@
 
 	<span class="hljs-comment">// Process any @ImportResource annotations</span>
 	AnnotationAttributes importResource =
-			AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+			AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
 	<span class="hljs-keyword">if</span> (importResource != <span class="hljs-keyword">null</span>) &#123;
-		String[] resources = importResource.getStringArray(<span class="hljs-string">"locations"</span>);
-		Class&lt;? extends BeanDefinitionReader&gt; readerClass = importResource.getClass(<span class="hljs-string">"reader"</span>);
+		String[] resources = importResource.getStringArray(<span class="hljs-string">&quot;locations&quot;</span>);
+		Class&lt;? extends BeanDefinitionReader&gt; readerClass = importResource.getClass(<span class="hljs-string">&quot;reader&quot;</span>);
 		<span class="hljs-keyword">for</span> (String resource : resources) &#123;
 			String resolvedResource = <span class="hljs-keyword">this</span>.environment.resolveRequiredPlaceholders(resource);
 			configClass.addImportedResource(resolvedResource, readerClass);
@@ -817,7 +830,7 @@
 	<span class="hljs-comment">// Process superclass, if any</span>
 	<span class="hljs-keyword">if</span> (sourceClass.getMetadata().hasSuperClass()) &#123;
 		String superclass = sourceClass.getMetadata().getSuperClassName();
-		<span class="hljs-keyword">if</span> (superclass != <span class="hljs-keyword">null</span> &amp;&amp; !superclass.startsWith(<span class="hljs-string">"java"</span>) &amp;&amp;
+		<span class="hljs-keyword">if</span> (superclass != <span class="hljs-keyword">null</span> &amp;&amp; !superclass.startsWith(<span class="hljs-string">&quot;java&quot;</span>) &amp;&amp;
 				!<span class="hljs-keyword">this</span>.knownSuperclasses.containsKey(superclass)) &#123;
 			<span class="hljs-keyword">this</span>.knownSuperclasses.put(superclass, configClass);
 			<span class="hljs-comment">// Superclass found, return its annotation metadata and recurse</span>
@@ -880,7 +893,7 @@
                 
               </div>
               
-                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
               
               
                 <div class="post-prevnext row">
@@ -917,7 +930,7 @@
       <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
         <div id="toc">
   <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
-  <div id="tocbot"></div>
+  <div class="toc-body" id="toc-body"></div>
 </div>
 
       </div>
@@ -929,16 +942,15 @@
 
 
     
-  </main>
 
-  
-    <a id="scroll-top-button" href="#" role="button">
-      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-    </a>
-  
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
 
-  
-    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
      aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
     <div class="modal-content">
@@ -959,57 +971,44 @@
     </div>
   </div>
 </div>
-  
-
-  
-
-  
-
-  <footer class="mt-5">
-  <div class="text-center py-3">
-    <div>
-      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
-      <i class="iconfont icon-love"></i>
-      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
-        <span>Fluid</span></a>
-    </div>
-    
-  <div class="statistics">
-    
     
 
     
-      
-        <!-- 不蒜子统计PV -->
-        <span id="busuanzi_container_site_pv" style="display: none">
-            总访问量 
-            <span id="busuanzi_value_site_pv"></span>
-             次
-          </span>
-      
-      
-        <!-- 不蒜子统计UV -->
-        <span id="busuanzi_container_site_uv" style="display: none">
-            总访客数 
-            <span id="busuanzi_value_site_uv"></span>
-             人
-          </span>
-      
-    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
   </div>
+  
 
+  
 
-    
-
-    
-  </div>
+  
 </footer>
 
 <!-- SCRIPTS -->
-<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
-<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
 <script  src="/blog/js/debouncer.js" ></script>
-<script  src="/blog/js/main.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
 
 <!-- Plugins -->
 
@@ -1020,105 +1019,51 @@
 
 
 
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
   <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
-  <script  src="/blog/js/clipboard-use.js" ></script>
 
 
-
-  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
-
-
-
-
-
-  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
-  <script>
-    $(document).ready(function () {
-      var boardCtn = $('#board-ctn');
-      var boardTop = boardCtn.offset().top;
-
-      tocbot.init({
-        tocSelector: '#tocbot',
-        contentSelector: '#post-body',
-        headingSelector: 'h1,h2,h3,h4,h5,h6',
-        linkClass: 'tocbot-link',
-        activeLinkClass: 'tocbot-active-link',
-        listClass: 'tocbot-list',
-        isCollapsedClass: 'tocbot-is-collapsed',
-        collapsibleClass: 'tocbot-is-collapsible',
-        collapseDepth: 0,
-        scrollSmooth: true,
-        headingsOffset: -boardTop
-      });
-      if ($('.toc-list-item').length > 0) {
-        $('#toc').css('visibility', 'visible');
-      }
-    });
-  </script>
 
 
 
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
-    var typed = new Typed('#subtitle', {
-      strings: [
-        '  ',
-        "Spring基于注解的启动方式解析和Bean的作用域&nbsp;",
-      ],
-      cursorChar: "_",
-      typeSpeed: 70,
-      loop: false,
-    });
-    typed.stop();
-    $(document).ready(function () {
-      $(".typed-cursor").addClass("h2");
-      typed.start();
-    });
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
-  <script>
-    anchors.options = {
-      placement: "right",
-      visible: "hover",
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
       
-    };
-    var el = "h1,h2,h3,h4,h5,h6".split(",");
-    var res = [];
-    for (item of el) {
-      res.push(".markdown-body > " + item)
-    }
-    anchors.add(res.join(", "))
+      typing(title)
+      
+    })(window, document);
   </script>
 
 
 
   <script  src="/blog/js/local-search.js" ></script>
   <script>
-    var path = "/blog/local-search.xml";
-    var inputArea = document.querySelector("#local-search-input");
-    inputArea.onclick = function () {
-      searchFunc(path, 'local-search-input', 'local-search-result');
-      this.onclick = null
-    }
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <script>
-    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
-      function () {
-        var element = document.createElement('a');
-        $(element).attr('data-fancybox', 'images');
-        $(element).attr('href', $(this).attr('src'));
-        $(this).wrap(element);
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
       }
-    );
+    })()
   </script>
 
 
@@ -1127,55 +1072,6 @@
 
 
 
-  
-  
-    <script type="text/javascript">
-      //定义获取词语下标
-      var a_idx = 0;
-      jQuery(document).ready(function ($) {
-        //点击body时触发事件
-        $("body").click(function (e) {
-          //需要显示的词语
-          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
-          //设置词语给span标签
-          var $i = $("<span/>").text(a[a_idx]);
-          //下标等于原来下标+1  余 词语总数
-          a_idx = (a_idx + 1) % a.length;
-          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
-          //获取x和y的指针坐标
-          var x = e.pageX, y = e.pageY;
-          //在鼠标的指针的位置给$i定义的span标签添加css样式
-          $i.css({
-            "z-index": 999,
-            "top": y - 20,
-            "left": x,
-            "position": "absolute",
-            "font-weight": "bold",
-            "color": rand_color()
-          });
-          // 随机颜色
-          function rand_color() {
-            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
-          }
-          //在body添加这个标签
-          $("body").append($i);
-          //animate() 方法执行 CSS 属性集的自定义动画。
-          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
-          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
-          $i.animate({
-            //将原来的位置向上移动180
-            "top": y - 180,
-            "opacity": 0
-            //1500动画的速度
-          }, 1500, function () {
-            //时间到了自动删除
-            $i.remove();
-          });
-        });
-      })
-      ;
-    </script>
-  
 
 
 
@@ -1184,9 +1080,8 @@
 
 
 
-
-
-
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
 
 
 

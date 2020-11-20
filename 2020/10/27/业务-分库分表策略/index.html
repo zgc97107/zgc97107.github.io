@@ -1,0 +1,827 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>分库分表策略 - 🍎🍊&#39;s blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="分库分表策略">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-10-27 19:08" pubdate>
+        2020年10月27日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      33
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">分库分表策略</h1>
+            
+            <div class="markdown-body">
+              <h3 id="架构体系的演进"><a href="#架构体系的演进" class="headerlink" title="架构体系的演进"></a>架构体系的演进</h3><h4 id="数据库架构"><a href="#数据库架构" class="headerlink" title="数据库架构"></a>数据库架构</h4><p>随着数据量的增长，一般db的架构，经历如下演进： </p>
+<ol>
+<li><p>单库主从：业务请求并发量大到一定量级后，分离读写操作，设置主从结构，主库负责写操作，从库负责读操作。缺点在于需要开发框架支持多数据源，而且主从之间数据存在延迟。 </p>
+</li>
+<li><p>单库双主多从架构：基于单库主从，增加主从节点数量，多为灾备而生。</p>
+</li>
+<li><p>分区表：在数据库层面做数据分区策略，开发层不需要改动。</p>
+<p>优点：</p>
+<ul>
+<li>比较适合订单场景，热点数据集中于最后部分，其他都是历史订单（不活跃） 。</li>
+<li>分区表的数据更容易维护，可以直接针对分区做删除、优化、检查、修复、备份等操作。</li>
+<li>支持多硬件设备，不同分区分散到不同设备，如硬盘。</li>
+<li>优化查询，只使用必要的分区来提高查询效率，涉及sum()和count()聚合查询时，也可以实现分区并发再汇总。</li>
+</ul>
+<p>不足：</p>
+<ul>
+<li><p>数量上限，一个表最多只能有1024个分区（mysql5.6之后支持8192个分区） </p>
+</li>
+<li><p>分区表达式类型受限，多为整数或日期。 </p>
+</li>
+<li><p>如果表中有主键或唯一索引，那么分区键必须是主键或唯一索引 </p>
+</li>
+<li><p>分区表中无法使用外键约束 </p>
+</li>
+</ul>
+</li>
+<li><p>横向分表：mysql单表性能超过千万级别会导致性能严重下降，这时可以将单张表切成多张表。但分表的策略比较难以确定，而且对查询以及扩容都会产生影响。</p>
+</li>
+<li><p>多库：超大量级的单节点主库，会使备份，主从同步操作臃肿不堪，即使拆了表，单服务器io也将成为瓶颈，必须扩充物理节点，将数据纵向拆分，将数据读写分布在不同节点。但多数据源读写也需要开发框架支持，数据分发难度进一步上升。</p>
+</li>
+</ol>
+<h4 id="连接层策略"><a href="#连接层策略" class="headerlink" title="连接层策略"></a>连接层策略</h4><ol>
+<li><p>jdbc直连（sql拼接）</p>
+<p>在开发层面进行sql拼接，实现比较简单。</p>
+<pre><code class="hljs java">String year = getYear();
+String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+year+<span class="hljs-string">&quot;where xxx&quot;</span>;</code></pre>
+</li>
+<li><p>中间件</p>
+<p>常见的几种中间件主要针对两种层面做代理</p>
+<p>DB Proxy：在DB层面，对DB服务器做代理，一般需要 LVS/F5 等手段来实现流量的负载均衡，跨机房可能需要DNS分发，常见组件：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>公司</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Atlas</td>
+<td>360</td>
+<td>读写分离、静态分表</td>
+</tr>
+<tr>
+<td>Meituan Atlas</td>
+<td>美团</td>
+<td>读写分离、单库分表，目前已经在原厂逐步下架。</td>
+</tr>
+<tr>
+<td>Cobar</td>
+<td>阿里</td>
+<td>Proxy 的形式位于前台应用和实际数据库之间，开放MySQL 通信协议，开源版中只支持 MySQL，不支持读写分离。</td>
+</tr>
+<tr>
+<td>MyCAT</td>
+<td>阿里</td>
+<td>基于 Cobar ，是一个实现了 MySQL 协议的服务器，可以把它看作是一个数据库代理</td>
+</tr>
+<tr>
+<td>Heisenberg</td>
+<td>百度</td>
+<td>热重启配置、可水平扩容、遵守 MySQL 原生协议、无语言限制。</td>
+</tr>
+<tr>
+<td>Kingshard</td>
+<td>kingshard</td>
+<td>由 Go 开发高性能 MySQL Proxy 项目，在满足基本的读写分离的功能上，Kingshard 的性能是直连 MySQL 性能的80%以上。</td>
+</tr>
+<tr>
+<td>Vitess</td>
+<td>谷歌、Youtube</td>
+<td>Rpc方式，集群基于ZooKeeper管理</td>
+</tr>
+<tr>
+<td>DBRS</td>
+<td>阿里</td>
+<td>专注于解决单机关系型数据库扩展性问题。</td>
+</tr>
+</tbody></table>
+<p>JDBC Proxy：从jdbc连接层面下手，需要对不同的语言编写Driver</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>公司</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TDDL</td>
+<td>阿里淘宝</td>
+<td>动态数据源、读写分离、分库分表，很久没更新了</td>
+</tr>
+<tr>
+<td>Zebra</td>
+<td>美团点评</td>
+<td>动态数据源、读写分离、分库分表、CAT监控，接入复杂、限制多。</td>
+</tr>
+<tr>
+<td>MTDDL</td>
+<td>美团点评</td>
+<td>动态数据源、读写分离、分布式主键生成、分库分表、连接池、SQL监控</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>sharding-jdbc</p>
+<p>{asset_img pic1.png}</p>
+<p>轻量级Java框架，在Java的JDBC层提供的额外服务。 以jar包形式使用客户端直连数据库，无需额外部署和依赖， 可理解为增强版的JDBC驱动，完全兼容JDBC和各种ORM框架。</p>
+<ul>
+<li><p>支持的ORM框架，JPA, Hibernate, Mybatis, Spring JDBC，甚至直接使用JDBC。 </p>
+</li>
+<li><p>支持的连接池，DBCP, C3P0, BoneCP, Druid, HikariCP。 </p>
+</li>
+<li><p>支持的数据库，MySQL，Oracle，SQLServer和PostgreSQL。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="分布式主键生成策略"><a href="#分布式主键生成策略" class="headerlink" title="分布式主键生成策略"></a>分布式主键生成策略</h3><h4 id="业务规则"><a href="#业务规则" class="headerlink" title="业务规则"></a>业务规则</h4><p>从业务角度对并发性降维，比如在订单号中加入用户id，将并发维度降低到单个用户，从而将主键生成速度变得可控。典型的事例有userId+时间戳，从业务角度来说，一个用户不可能在1毫秒内下两个单子，即使也说明是可以刷单，应该被限流。</p>
+<p>实现</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">busiadd</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;
+	Strorder order = <span class="hljs-keyword">new</span> Strorder();
+	order.setId(System.currentTimeMillis()+<span class="hljs-string">&quot;-&quot;</span>+userId);
+	order.setUserId(userId);
+	strorderMapper.save(order);
+	<span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<h4 id="集中式分配"><a href="#集中式分配" class="headerlink" title="集中式分配"></a>集中式分配</h4><h5 id="maxId表"><a href="#maxId表" class="headerlink" title="maxId表"></a>maxId表</h5><ol>
+<li>通过一张max表集中分配</li>
+</ol>
+<pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`maxid`</span>(
+	<span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,
+	<span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+	<span class="hljs-string">`nextid`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+	PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)
+);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> maxid(<span class="hljs-keyword">name</span>,nextid) <span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;orders&#x27;</span>,<span class="hljs-number">1000</span>);</code></pre>
+
+<ol start="2">
+<li>创建函数</li>
+</ol>
+<pre><code class="hljs sql"><span class="hljs-keyword">DROP</span> <span class="hljs-keyword">FUNCTION</span> getid;
+
+<span class="hljs-comment">-- 创建函数</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">FUNCTION</span> getid(table_name <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">50</span>))
+<span class="hljs-keyword">RETURNS</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>)
+<span class="hljs-keyword">BEGIN</span>
+  <span class="hljs-comment">-- 定义变量</span>
+  <span class="hljs-keyword">DECLARE</span> <span class="hljs-keyword">id</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>);
+  <span class="hljs-comment">-- 给定义的变量赋值 </span>
+	<span class="hljs-keyword">update</span> maxid <span class="hljs-keyword">set</span> nextid=nextid+<span class="hljs-number">1</span> <span class="hljs-keyword">where</span> <span class="hljs-keyword">name</span> = table_name;
+	<span class="hljs-keyword">SELECT</span> nextid <span class="hljs-keyword">INTO</span> <span class="hljs-keyword">id</span> <span class="hljs-keyword">FROM</span> maxid <span class="hljs-keyword">WHERE</span> <span class="hljs-keyword">name</span> = table_name;
+  <span class="hljs-comment">-- 返回函数处理结果</span>
+  RETURN id;
+<span class="hljs-keyword">END</span></code></pre>
+
+<ol start="3">
+<li>StrorderMapper调整id策略，借助mybatis的SelectKey生成id，注意Before=true</li>
+</ol>
+<pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span>
+<span class="hljs-meta">        &quot;insert into strorder (id,userId)&quot;,</span>
+<span class="hljs-meta">        &quot;values (#&#123;id&#125;,#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span>
+<span class="hljs-meta">&#125;)</span>
+<span class="hljs-meta">@SelectKey(statement=&quot;SELECT getid(&#x27;orders&#x27;) from dual&quot;, </span>
+<span class="hljs-meta">           keyProperty=&quot;id&quot;, before=true, resultType=String.class)</span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">getIdSave</span><span class="hljs-params">(Strorder record)</span></span>;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * maxid表验证</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@GetMapping(&quot;/maxId&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">maxId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setUserId(userId);
+    strorderMapper.getIdSave(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>通过maxId表分配实现简单，不需要借助中间件，但受限于mysql的效率在并发较大的情况下，会造成锁等待。</p>
+<h5 id="分布式缓存"><a href="#分布式缓存" class="headerlink" title="分布式缓存"></a>分布式缓存</h5><p>通过redis的inc操作的原子性实现，</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/redisId&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">redisId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setId(template.opsForValue().increment(<span class="hljs-string">&quot;next_order_id&quot;</span>).toString());
+    order.setUserid(userid);
+    strorderMapper.save(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>这种方式能够承受较大的并发，但对redis集群的可靠性要求很高，如果出现故障，会阻断入库操作，down机恢复时也需要去确认和库中最大id的一致性。</p>
+<h4 id="uuid"><a href="#uuid" class="headerlink" title="uuid"></a>uuid</h4><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/uuid&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">uuid</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setId(UUID.randomUUID().toString());
+    order.setUserid(userid);
+    strorderMapper.save(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>uuid的长度较大，会影响建立索引和基于索引查询时的效率，而且需要占用大量的存储空间。</p>
+<h4 id="雪花算法"><a href="#雪花算法" class="headerlink" title="雪花算法"></a>雪花算法</h4><p>雪花算法由Twitter发明，是一种约定，它把时间戳、工作组 ID、工作机器 ID、自增序列号组合在一起，生成一个 64bits 的整数ID，能够使用 (2^41)/(1000<em>60</em>60<em>24</em>365) = 69.7 年，每台机器每毫秒理论最多生成 2^12 个 ID</p>
+<img src="/blog/2020/10/27/%E4%B8%9A%E5%8A%A1-%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8%E7%AD%96%E7%95%A5/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>雪花算法的优点在于不需要依赖Redis等第三方介质，占用空间及查询效率都要优于uuid，但只能保证在工作组中的机器生成的 ID 唯一，不同组下可能会重复。而且时间回拨后，生成的 ID 就会重复，所以需要保持时间是网络同步的。</p>
+<h5 id="java代码实现"><a href="#java代码实现" class="headerlink" title="java代码实现"></a>java代码实现</h5><p>工具类</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.itheima.snow;
+
+<span class="hljs-keyword">import</span> org.apache.commons.lang3.StringUtils;
+<span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Value;
+<span class="hljs-keyword">import</span> org.springframework.stereotype.Component;
+
+<span class="hljs-meta">@Compoent</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Snowflake</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 序列的掩码，12个1，也就是(0B111111111111=0xFFF=4095)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> SEQUENCE_MASK = <span class="hljs-number">0xFFF</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 系统起始时间，这里取2020-01-01</span>
+<span class="hljs-comment">     **/</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> startTimeStamp = <span class="hljs-number">1577836800000L</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 上次生成 ID 的时间截</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> lastTimestamp = -<span class="hljs-number">1L</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 工作机器 ID(0~31)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> workerId;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 数据中心 ID(0~31)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> datacenterId;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 毫秒内序列(0~4095)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> sequence = <span class="hljs-number">0L</span>;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> datacenterId 数据中心 ID (0~31)</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> workerId     工作机器 ID (0~31)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Snowflake</span><span class="hljs-params">(<span class="hljs-meta">@Value(&quot;$&#123;snowflake.datacenterId&#125;&quot;)</span> <span class="hljs-keyword">long</span> datacenterId, <span class="hljs-meta">@Value(&quot;$&#123;snowflake.workerId&#125;&quot;)</span> <span class="hljs-keyword">long</span> workerId)</span> </span>&#123;
+        <span class="hljs-keyword">if</span> (workerId &gt; <span class="hljs-number">31</span> || workerId &lt; <span class="hljs-number">0</span>) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;workId必须在0-31之间，当前=&quot;</span> + workerId);
+        &#125;
+        <span class="hljs-keyword">if</span> (datacenterId &gt; <span class="hljs-number">31</span> || datacenterId &lt; <span class="hljs-number">0</span>) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;datacenterId必须在0-31之间，当前=&quot;</span> + datacenterId);
+        &#125;
+
+        <span class="hljs-keyword">this</span>.workerId = workerId;
+        <span class="hljs-keyword">this</span>.datacenterId = datacenterId;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 加锁，线程安全</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span> long 类型的 ID</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">synchronized</span> <span class="hljs-keyword">long</span> <span class="hljs-title">nextId</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">long</span> timestamp = currentTime();
+
+        <span class="hljs-comment">// 如果当前时间小于上一次 ID 生成的时间戳，说明系统时钟回退过这个时候应当抛出异常</span>
+        <span class="hljs-keyword">if</span> (timestamp &lt; lastTimestamp) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;时钟回退！时间差=&quot;</span> + (lastTimestamp - timestamp));
+        &#125;
+
+        <span class="hljs-comment">// 同一毫秒内，序列增加</span>
+        <span class="hljs-keyword">if</span> (lastTimestamp == timestamp) &#123;
+            <span class="hljs-comment">//超出阈值。思考下为什么这么运算？</span>
+            sequence = (sequence + <span class="hljs-number">1</span>) &amp; SEQUENCE_MASK;
+            <span class="hljs-comment">// 毫秒内序列溢出</span>
+            <span class="hljs-keyword">if</span> (sequence == <span class="hljs-number">0</span>) &#123;
+                <span class="hljs-comment">//自旋等待下一毫秒</span>
+                <span class="hljs-keyword">while</span> ((timestamp = currentTime()) &lt;= lastTimestamp) ;
+            &#125;
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">//已经进入下一毫秒，从0开始计数</span>
+            sequence = <span class="hljs-number">0L</span>;
+        &#125;
+
+        <span class="hljs-comment">//赋值为新的时间戳</span>
+        lastTimestamp = timestamp;
+
+        <span class="hljs-comment">//移位拼接</span>
+        <span class="hljs-keyword">long</span> id = ((timestamp - startTimeStamp) &lt;&lt; <span class="hljs-number">22</span>)
+                | (datacenterId &lt;&lt; <span class="hljs-number">17</span>)
+                | (workerId &lt;&lt; <span class="hljs-number">12</span>)
+                | sequence;
+
+        System.out.println(<span class="hljs-string">&quot;new id = &quot;</span> + id);
+        System.out.println(<span class="hljs-string">&quot;bit id = &quot;</span> + toBit(id));
+
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 返回当前时间，以毫秒为单位</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">long</span> <span class="hljs-title">currentTime</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> System.currentTimeMillis();
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 转成二进制展示</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">toBit</span><span class="hljs-params">(<span class="hljs-keyword">long</span> id)</span> </span>&#123;
+        String bit = StringUtils.leftPad(Long.toBinaryString(id), <span class="hljs-number">64</span>, <span class="hljs-string">&quot;0&quot;</span>);
+        <span class="hljs-keyword">return</span> bit.substring(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>) +
+                <span class="hljs-string">&quot; - &quot;</span> +
+                bit.substring(<span class="hljs-number">1</span>, <span class="hljs-number">42</span>) +
+                <span class="hljs-string">&quot; - &quot;</span> +
+                bit.substring(<span class="hljs-number">42</span>, <span class="hljs-number">52</span>) +
+                <span class="hljs-string">&quot; - &quot;</span> +
+                bit.substring(<span class="hljs-number">52</span>, <span class="hljs-number">64</span>);
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        Snowflake idWorker = <span class="hljs-keyword">new</span> Snowflake(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>);
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;
+            <span class="hljs-keyword">long</span> id = idWorker.nextId();
+            System.out.println(id);
+            System.out.println(toBit(id));
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>启动参数中指定机器编号</p>
+<pre><code class="hljs properties"><span class="hljs-meta">snowflake.datacenterId</span>=<span class="hljs-string">1</span>
+<span class="hljs-meta">snowflake.workerId</span>=<span class="hljs-string">1</span></code></pre>
+
+<p>使用</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/myflake&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">myflake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setId(String.valueOf(snowflake.nextId()));
+    order.setUserid(userid);
+    strorderMapper.save(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<h4 id="sharding实现"><a href="#sharding实现" class="headerlink" title="sharding实现"></a>sharding实现</h4><p>配置</p>
+<pre><code class="hljs properties"><span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.column</span>=<span class="hljs-string">id</span>
+<span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.type</span>=<span class="hljs-string">SNOWFLAKE</span>
+<span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.props.worker.id</span>=<span class="hljs-string">3</span></code></pre>
+
+<p>mapper</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span>
+<span class="hljs-meta">        &quot;insert into strorder (userid)&quot;,</span>
+<span class="hljs-meta">        &quot;values (#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span>
+<span class="hljs-meta">&#125;)</span>
+<span class="hljs-meta">@SelectKey(statement=&quot;SELECT max(id) from strorder where userid=#&#123;userid,jdbcType=INTEGER&#125;&quot;, keyProperty=&quot;id&quot;, before=false, resultType=String.class)</span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">shardingIdSave</span><span class="hljs-params">(Strorder record)</span></span>;</code></pre>
+
+<p>使用</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/shardingFlake&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">shardingFlake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setUserid(userid);
+    strorderMapper.shardingIdSave(order);
+    System.out.println(Snowflake.toBit(Long.valueOf(order.getId())));
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>生成的id号由sharding-jdbc自动添加到maper的sql中</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E4%B8%9A%E5%8A%A1/">业务</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/shardingjdbc/">shardingjdbc</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/mycat/">mycat</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/10/26/%E4%B8%9A%E5%8A%A1-%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/">
+                        <span class="hidden-mobile">幂等性技术架构体系</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

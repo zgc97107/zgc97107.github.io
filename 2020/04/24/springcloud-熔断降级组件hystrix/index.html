@@ -19,7 +19,7 @@
   <meta name="keywords" content="">
   <title>熔断降级组件Hystrix - 🍎🍊&#39;s blog</title>
 
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
 
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
@@ -27,19 +27,25 @@
 
   
     
-    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
   
 
   
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
 
 
 <!-- 主题依赖的图标库，不要自行修改 -->
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
 
 
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
 
 
 <link  rel="stylesheet" href="/blog/css/main.css" />
@@ -47,9 +53,13 @@
 <!-- 自定义样式保持在最底部 -->
 
 
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
-<meta name="generator" content="Hexo 4.2.1"></head>
+<meta name="generator" content="Hexo 5.2.0"></head>
 
 
 <body>
@@ -57,7 +67,7 @@
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
-       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
 
     <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navbarSupportedContent"
@@ -151,20 +161,23 @@
            background-size: cover;">
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-          <div class="container page-header text-center fade-in-up">
-            <span class="h2" id="subtitle">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="熔断降级组件Hystrix">
               
             </span>
 
             
-              
-  <div class="mt-3 post-meta">
-    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-    <time datetime="2020-04-24 10:46" pubdate>
-      2020年4月24日 上午
-    </time>
-  </div>
-
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-24 10:46" pubdate>
+        2020年4月24日 上午
+      </time>
+    </span>
+  
+</div>
 
 <div class="mt-1">
   
@@ -181,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      34
+      35
        分钟
     </span>
   
@@ -209,11 +222,11 @@
     <div class="col-lg-8 nopadding-md">
       <div class="container nopadding-md" id="board-ctn">
         <div class="py-5" id="board">
-          <article class="post-content mx-auto" id="post">
+          <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">熔断降级组件Hystrix</h1>
             
-            <div class="markdown-body" id="post-body">
+            <div class="markdown-body">
               <h2 id="服务雪崩"><a href="#服务雪崩" class="headerlink" title="服务雪崩"></a>服务雪崩</h2><p>当整个微服务系统中有一个节点出现异常情况，就会导致调用它的上游系统出现响应延迟，高并发情况下的响应延迟会迅速消耗掉tomcat的连接数，使得上游节点不能正常的接收请求，这就是服务雪崩。</p>
 <p>节点异常的发生原因多种多样，比如不合理的容量设计、高并发下某一个方法响应变慢、服务器的资源耗尽等，所以很难从源头上完全杜绝雪崩的发生，但是服务之间的强依赖也是雪崩的根本原因之一，解决服务之间强依赖关系也可以解决雪崩问题。</p>
 <h2 id="服务隔离"><a href="#服务隔离" class="headerlink" title="服务隔离"></a>服务隔离</h2><p>如果整个系统雪崩是由于某个接口响应不及时导致的，那么就可以对这个接口进行隔离，比如限制这个接口占用连接的上限，这样就不会消耗掉所有的tomcat连接，其他接口依然能够正常响应。</p>
@@ -234,14 +247,14 @@
 <pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>
 <span class="hljs-meta">@Override</span>
 <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">queryOrder</span><span class="hljs-params">()</span> </span>&#123;
-    String SERVICE_NAME = <span class="hljs-string">"micro-order"</span>;
-    <span class="hljs-keyword">return</span> restTemplate.getForObject(<span class="hljs-string">"http://"</span> + SERVICE_NAME + <span class="hljs-string">"/queryOrder"</span>, String<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>;
+    String SERVICE_NAME = <span class="hljs-string">&quot;micro-order&quot;</span>;
+    <span class="hljs-keyword">return</span> restTemplate.getForObject(<span class="hljs-string">&quot;http://&quot;</span> + SERVICE_NAME + <span class="hljs-string">&quot;/queryOrder&quot;</span>, String.class);
 &#125;</code></pre>
 
 <h2 id="Hystrix服务隔离策略"><a href="#Hystrix服务隔离策略" class="headerlink" title="Hystrix服务隔离策略"></a>Hystrix服务隔离策略</h2><p>Hystrix的服务隔离策略可以在@HystrixCommand注解中设置</p>
-<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>(commandProperties = &#123;
-        <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.strategy"</span>,value = <span class="hljs-string">"THREAD"</span>)
-&#125;)</code></pre>
+<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand(commandProperties = &#123;</span>
+<span class="hljs-meta">        @HystrixProperty(name = &quot;execution.isolation.strategy&quot;,value = &quot;THREAD&quot;)</span>
+<span class="hljs-meta">&#125;)</span></code></pre>
 
 <p><code>execution.isolation.strategy</code>属性代表使用的隔离策略，共有两种：</p>
 <ul>
@@ -250,21 +263,21 @@
 </ul>
 <p>THREAD的响应速度会比SEMAPHORE快，但资源占用也比较高，如果追求响应速度可以使用THREAD，如果追求资源消耗可以使用SEMAPHORE。</p>
 <p>注意，Hystix的全局并发量默认为10，如果超过就会报异常。两种策略的设置全局并发量方式也不相同，线程池策略的设置方式如下</p>
-<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>(
-        commandProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.strategy"</span>, value = <span class="hljs-string">"THREAD"</span>)
-        &#125;,
-        threadPoolProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"coreSize"</span>, value = <span class="hljs-string">"100"</span>)
-        &#125;
-)</code></pre>
+<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand(</span>
+<span class="hljs-meta">        commandProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;)</span>
+<span class="hljs-meta">        &#125;,</span>
+<span class="hljs-meta">        threadPoolProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;100&quot;)</span>
+<span class="hljs-meta">        &#125;</span>
+<span class="hljs-meta">)</span></code></pre>
 <p>信号量策略的设置如下</p>
-<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>(
-        commandProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.strategy"</span>, value = <span class="hljs-string">"SEMAPHORE"</span>),
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.semaphore.maxConcurrentRequests"</span>,value = <span class="hljs-string">"100"</span>)
-        &#125;
-)</code></pre>
+<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand(</span>
+<span class="hljs-meta">        commandProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;SEMAPHORE&quot;),</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.semaphore.maxConcurrentRequests&quot;,value = &quot;100&quot;)</span>
+<span class="hljs-meta">        &#125;</span>
+<span class="hljs-meta">)</span></code></pre>
 
 <p>@HystrixCommand注解中的其他几个属性</p>
 <ul>
@@ -275,17 +288,17 @@
 <li><p>commandKey：可以配合配置文件使用来指定某一个HystrixCommand的配置，如</p>
 </li>
 </ul>
-<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>(
-        commandKey = <span class="hljs-string">"queryOrder"</span>,
-        fallbackMethod = <span class="hljs-string">"queryOrderFallback"</span>,
-        commandProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.strategy"</span>, value = <span class="hljs-string">"THREAD"</span>),
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.thread.timeoutInMilliseconds"</span>, value = <span class="hljs-string">"10000"</span>)
-        &#125;,
-        threadPoolProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"coreSize"</span>, value = <span class="hljs-string">"9"</span>)
-        &#125;
-)</code></pre>
+<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand(</span>
+<span class="hljs-meta">        commandKey = &quot;queryOrder&quot;,</span>
+<span class="hljs-meta">        fallbackMethod = &quot;queryOrderFallback&quot;,</span>
+<span class="hljs-meta">        commandProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;),</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;)</span>
+<span class="hljs-meta">        &#125;,</span>
+<span class="hljs-meta">        threadPoolProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;9&quot;)</span>
+<span class="hljs-meta">        &#125;</span>
+<span class="hljs-meta">)</span></code></pre>
 
 <p>配置文件中</p>
 <pre><code class="hljs properties"><span class="hljs-comment">#全局的超时时间</span>
@@ -303,10 +316,10 @@
 <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
 
 <h3 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h3><p>使用方法</p>
-<pre><code class="hljs java"><span class="hljs-meta">@RunWith</span>(SpringJUnit4ClassRunner<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>
-<span class="hljs-class">@<span class="hljs-title">SpringBootTest</span>(<span class="hljs-title">classes</span> </span>= MicroWebApplication<span class="hljs-class">.<span class="hljs-keyword">class</span>)</span>
-<span class="hljs-class">@<span class="hljs-title">WebAppConfiguration</span></span>
-<span class="hljs-class"><span class="hljs-title">public</span> <span class="hljs-title">class</span> <span class="hljs-title">Test</span> </span>&#123;
+<pre><code class="hljs java"><span class="hljs-meta">@RunWith(SpringJUnit4ClassRunner.class)</span>
+<span class="hljs-meta">@SpringBootTest(classes = MicroWebApplication.class)</span>
+<span class="hljs-meta">@WebAppConfiguration</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Test</span> </span>&#123;
     <span class="hljs-meta">@Autowired</span>
     OrderService orderService;
 
@@ -318,34 +331,34 @@
 <span class="hljs-comment">     * invocations：调用次数</span>
 <span class="hljs-comment">     * threads：线程数 </span>
 <span class="hljs-comment">     */</span>
-    <span class="hljs-meta">@PerfTest</span>(invocations = <span class="hljs-number">5</span>,threads = <span class="hljs-number">5</span>)
+    <span class="hljs-meta">@PerfTest(invocations = 5,threads = 5)</span>
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">hystrixTest2</span><span class="hljs-params">()</span> </span>&#123;
-        log.info(Thread.currentThread().getName() + <span class="hljs-string">"==&gt;"</span> + orderService.queryOrder());
+        log.info(Thread.currentThread().getName() + <span class="hljs-string">&quot;==&gt;&quot;</span> + orderService.queryOrder());
     &#125;
 &#125;</code></pre>
 
 <p>注意Hystrix默认的时间非常短，可以通过<code>@HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;</code>重新设置超时时间来避免超时报错</p>
-<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>(
-        commandProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.strategy"</span>, value = <span class="hljs-string">"THREAD"</span>),
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.thread.timeoutInMilliseconds"</span>, value = <span class="hljs-string">"10000"</span>)
-        &#125;,
-        threadPoolProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"coreSize"</span>, value = <span class="hljs-string">"9"</span>)
-        &#125;
-)</code></pre>
+<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand(</span>
+<span class="hljs-meta">        commandProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;),</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;)</span>
+<span class="hljs-meta">        &#125;,</span>
+<span class="hljs-meta">        threadPoolProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;9&quot;)</span>
+<span class="hljs-meta">        &#125;</span>
+<span class="hljs-meta">)</span></code></pre>
 
 <h2 id="Hystrix服务降级"><a href="#Hystrix服务降级" class="headerlink" title="Hystrix服务降级"></a>Hystrix服务降级</h2><p>服务降级相当于对服务调用过程的出现的异常进行友好封装抛一个友好的信息给前端。可以通过<code>@HystrixCommand</code>的<code>fallbackMethod</code>属性来指定。指定的降级方法可以使用<code>@HystrixCommand</code>注解再修饰，完成服务的再降级。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand</span>(
-        fallbackMethod = <span class="hljs-string">"queryOrderFallback"</span>,
-        commandProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.strategy"</span>, value = <span class="hljs-string">"THREAD"</span>),
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"execution.isolation.thread.timeoutInMilliseconds"</span>, value = <span class="hljs-string">"10000"</span>)
-        &#125;,
-        threadPoolProperties = &#123;
-                <span class="hljs-meta">@HystrixProperty</span>(name = <span class="hljs-string">"coreSize"</span>, value = <span class="hljs-string">"9"</span>)
-        &#125;
-)</code></pre>
+<pre><code class="hljs java"><span class="hljs-meta">@HystrixCommand(</span>
+<span class="hljs-meta">        fallbackMethod = &quot;queryOrderFallback&quot;,</span>
+<span class="hljs-meta">        commandProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;THREAD&quot;),</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;execution.isolation.thread.timeoutInMilliseconds&quot;, value = &quot;10000&quot;)</span>
+<span class="hljs-meta">        &#125;,</span>
+<span class="hljs-meta">        threadPoolProperties = &#123;</span>
+<span class="hljs-meta">                @HystrixProperty(name = &quot;coreSize&quot;, value = &quot;9&quot;)</span>
+<span class="hljs-meta">        &#125;</span>
+<span class="hljs-meta">)</span></code></pre>
 
 <h2 id="Hystrix数据监控"><a href="#Hystrix数据监控" class="headerlink" title="Hystrix数据监控"></a>Hystrix数据监控</h2><p>Hystrix进行服务熔断时会对调用结果进行统计，比如超时数、bad请求数、降级数、异常数等等都会有统计，hystrix-dashboard就是展示hystrix统计结果的服务。</p>
 <h3 id="被监控工程的配置"><a href="#被监控工程的配置" class="headerlink" title="被监控工程的配置"></a>被监控工程的配置</h3><p>pom文件中需要引入</p>
@@ -359,11 +372,11 @@
 <span class="hljs-meta">management.endpoint.shutdown.enabled</span>=<span class="hljs-string">true</span>
 <span class="hljs-meta">management.endpoints.web.exposure.include</span>=<span class="hljs-string">*</span></code></pre>
 
-<p>数据统计地址；<a href="http://localhost:8091/actuator/hystrix.stream" target="_blank" rel="noopener">http://localhost:8091/actuator/hystrix.stream</a></p>
+<p>数据统计地址；<a target="_blank" rel="noopener" href="http://localhost:8091/actuator/hystrix.stream">http://localhost:8091/actuator/hystrix.stream</a></p>
 <h3 id="Dashboard工程搭建"><a href="#Dashboard工程搭建" class="headerlink" title="Dashboard工程搭建"></a>Dashboard工程搭建</h3><p>pom</p>
-<pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">project</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">"http://maven.apache.org/POM/4.0.0"</span> <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">"http://www.w3.org/2001/XMLSchema-instance"</span></span>
-<span class="hljs-tag">         <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"</span>&gt;</span>
+<pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">project</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://maven.apache.org/POM/4.0.0&quot;</span> <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span>
+<span class="hljs-tag">         <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;</span>&gt;</span>
     <span class="hljs-tag">&lt;<span class="hljs-name">modelVersion</span>&gt;</span>4.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">modelVersion</span>&gt;</span>
     <span class="hljs-tag">&lt;<span class="hljs-name">parent</span>&gt;</span>
         <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
@@ -470,11 +483,11 @@
 <span class="hljs-meta">@EnableHystrixDashboard</span>
 <span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DashboardApplication</span> </span>&#123;
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        SpringApplication.run(DashboardApplication<span class="hljs-class">.<span class="hljs-keyword">class</span>, <span class="hljs-title">args</span>)</span>;
+        SpringApplication.run(DashboardApplication.class, args);
     &#125;
 &#125;</code></pre>
 
-<p>启动之后进入监控地址：<a href="http://localhost:9990/hystrix，然后title中输入监控名称，点击Monitor" target="_blank" rel="noopener">http://localhost:9990/hystrix，然后title中输入监控名称，点击Monitor</a> Stream即可。</p>
+<p>启动之后进入监控地址：<a target="_blank" rel="noopener" href="http://localhost:9990/hystrix%EF%BC%8C%E7%84%B6%E5%90%8Etitle%E4%B8%AD%E8%BE%93%E5%85%A5%E7%9B%91%E6%8E%A7%E5%90%8D%E7%A7%B0%EF%BC%8C%E7%82%B9%E5%87%BBMonitor">http://localhost:9990/hystrix，然后title中输入监控名称，点击Monitor</a> Stream即可。</p>
 <h2 id="Hystrix熔断"><a href="#Hystrix熔断" class="headerlink" title="Hystrix熔断"></a>Hystrix熔断</h2><p>Hystrix熔断常用于并发比较高的接口，避免在网络抖动时接口响应超时导致大量连接占用的情况，熔断器开启后会直接访问降级方法，不再请求接口加快响应时间。注意，熔断器适合的场景是高并发的场景，在并发量不高的场景下使用Ribbon的重试功能更加合适。</p>
 <p>熔断器默认是开启的，触发的条件：在滚动窗口时间内，请求数达到断路器最小请求数，失败率达到断路器设置的百分比。滚动窗口的默认时间为10000ms，最小请求数默认为20次，失败率默认为50%</p>
 <p>熔断器的三个状态：</p>
@@ -506,7 +519,7 @@
                 
               </div>
               
-                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
               
               
                 <div class="post-prevnext row">
@@ -543,7 +556,7 @@
       <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
         <div id="toc">
   <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
-  <div id="tocbot"></div>
+  <div class="toc-body" id="toc-body"></div>
 </div>
 
       </div>
@@ -555,16 +568,15 @@
 
 
     
-  </main>
 
-  
-    <a id="scroll-top-button" href="#" role="button">
-      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-    </a>
-  
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
 
-  
-    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
      aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
     <div class="modal-content">
@@ -585,57 +597,44 @@
     </div>
   </div>
 </div>
-  
-
-  
-
-  
-
-  <footer class="mt-5">
-  <div class="text-center py-3">
-    <div>
-      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
-      <i class="iconfont icon-love"></i>
-      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
-        <span>Fluid</span></a>
-    </div>
-    
-  <div class="statistics">
-    
     
 
     
-      
-        <!-- 不蒜子统计PV -->
-        <span id="busuanzi_container_site_pv" style="display: none">
-            总访问量 
-            <span id="busuanzi_value_site_pv"></span>
-             次
-          </span>
-      
-      
-        <!-- 不蒜子统计UV -->
-        <span id="busuanzi_container_site_uv" style="display: none">
-            总访客数 
-            <span id="busuanzi_value_site_uv"></span>
-             人
-          </span>
-      
-    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
   </div>
+  
 
+  
 
-    
-
-    
-  </div>
+  
 </footer>
 
 <!-- SCRIPTS -->
-<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
-<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
 <script  src="/blog/js/debouncer.js" ></script>
-<script  src="/blog/js/main.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
 
 <!-- Plugins -->
 
@@ -646,105 +645,51 @@
 
 
 
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
   <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
-  <script  src="/blog/js/clipboard-use.js" ></script>
 
 
-
-  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
-
-
-
-
-
-  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
-  <script>
-    $(document).ready(function () {
-      var boardCtn = $('#board-ctn');
-      var boardTop = boardCtn.offset().top;
-
-      tocbot.init({
-        tocSelector: '#tocbot',
-        contentSelector: '#post-body',
-        headingSelector: 'h1,h2,h3,h4,h5,h6',
-        linkClass: 'tocbot-link',
-        activeLinkClass: 'tocbot-active-link',
-        listClass: 'tocbot-list',
-        isCollapsedClass: 'tocbot-is-collapsed',
-        collapsibleClass: 'tocbot-is-collapsible',
-        collapseDepth: 0,
-        scrollSmooth: true,
-        headingsOffset: -boardTop
-      });
-      if ($('.toc-list-item').length > 0) {
-        $('#toc').css('visibility', 'visible');
-      }
-    });
-  </script>
 
 
 
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
-    var typed = new Typed('#subtitle', {
-      strings: [
-        '  ',
-        "熔断降级组件Hystrix&nbsp;",
-      ],
-      cursorChar: "_",
-      typeSpeed: 70,
-      loop: false,
-    });
-    typed.stop();
-    $(document).ready(function () {
-      $(".typed-cursor").addClass("h2");
-      typed.start();
-    });
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
-  <script>
-    anchors.options = {
-      placement: "right",
-      visible: "hover",
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
       
-    };
-    var el = "h1,h2,h3,h4,h5,h6".split(",");
-    var res = [];
-    for (item of el) {
-      res.push(".markdown-body > " + item)
-    }
-    anchors.add(res.join(", "))
+      typing(title)
+      
+    })(window, document);
   </script>
 
 
 
   <script  src="/blog/js/local-search.js" ></script>
   <script>
-    var path = "/blog/local-search.xml";
-    var inputArea = document.querySelector("#local-search-input");
-    inputArea.onclick = function () {
-      searchFunc(path, 'local-search-input', 'local-search-result');
-      this.onclick = null
-    }
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <script>
-    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
-      function () {
-        var element = document.createElement('a');
-        $(element).attr('data-fancybox', 'images');
-        $(element).attr('href', $(this).attr('src'));
-        $(this).wrap(element);
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
       }
-    );
+    })()
   </script>
 
 
@@ -753,55 +698,6 @@
 
 
 
-  
-  
-    <script type="text/javascript">
-      //定义获取词语下标
-      var a_idx = 0;
-      jQuery(document).ready(function ($) {
-        //点击body时触发事件
-        $("body").click(function (e) {
-          //需要显示的词语
-          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
-          //设置词语给span标签
-          var $i = $("<span/>").text(a[a_idx]);
-          //下标等于原来下标+1  余 词语总数
-          a_idx = (a_idx + 1) % a.length;
-          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
-          //获取x和y的指针坐标
-          var x = e.pageX, y = e.pageY;
-          //在鼠标的指针的位置给$i定义的span标签添加css样式
-          $i.css({
-            "z-index": 999,
-            "top": y - 20,
-            "left": x,
-            "position": "absolute",
-            "font-weight": "bold",
-            "color": rand_color()
-          });
-          // 随机颜色
-          function rand_color() {
-            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
-          }
-          //在body添加这个标签
-          $("body").append($i);
-          //animate() 方法执行 CSS 属性集的自定义动画。
-          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
-          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
-          $i.animate({
-            //将原来的位置向上移动180
-            "top": y - 180,
-            "opacity": 0
-            //1500动画的速度
-          }, 1500, function () {
-            //时间到了自动删除
-            $i.remove();
-          });
-        });
-      })
-      ;
-    </script>
-  
 
 
 
@@ -810,9 +706,8 @@
 
 
 
-
-
-
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
 
 
 

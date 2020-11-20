@@ -19,7 +19,7 @@
   <meta name="keywords" content="">
   <title>Netty结构解析 - 🍎🍊&#39;s blog</title>
 
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
 
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
@@ -27,19 +27,25 @@
 
   
     
-    <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css" />
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
   
 
   
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
 
 
 <!-- 主题依赖的图标库，不要自行修改 -->
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_6peoq002giu.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
 
 
 
-<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_pjno9b9zyxs.css">
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
 
 
 <link  rel="stylesheet" href="/blog/css/main.css" />
@@ -47,9 +53,13 @@
 <!-- 自定义样式保持在最底部 -->
 
 
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
-<meta name="generator" content="Hexo 4.2.1"></head>
+<meta name="generator" content="Hexo 5.2.0"></head>
 
 
 <body>
@@ -57,7 +67,7 @@
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
-       href="/blog/">&nbsp;<strong>🍎🍊's blog</strong>&nbsp;</a>
+       href="/blog/">&nbsp;<strong>Fluid</strong>&nbsp;</a>
 
     <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
             data-target="#navbarSupportedContent"
@@ -151,27 +161,30 @@
            background-size: cover;">
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
-          <div class="container page-header text-center fade-in-up">
-            <span class="h2" id="subtitle">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Netty结构解析">
               
             </span>
 
             
-              
-  <div class="mt-3 post-meta">
-    <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-    <time datetime="2020-08-07 17:04" pubdate>
-      2020年8月7日 下午
-    </time>
-  </div>
-
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-08-07 17:04" pubdate>
+        2020年8月7日 下午
+      </time>
+    </span>
+  
+</div>
 
 <div class="mt-1">
   
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      6.3k 字
+      6.4k 字
     </span>
   
 
@@ -181,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      78
+      80
        分钟
     </span>
   
@@ -209,11 +222,11 @@
     <div class="col-lg-8 nopadding-md">
       <div class="container nopadding-md" id="board-ctn">
         <div class="py-5" id="board">
-          <article class="post-content mx-auto" id="post">
+          <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">Netty结构解析</h1>
             
-            <div class="markdown-body" id="post-body">
+            <div class="markdown-body">
               <h3 id="Java中的IO模型"><a href="#Java中的IO模型" class="headerlink" title="Java中的IO模型"></a>Java中的IO模型</h3><p>在JDK1.4之前，基于Java所有的socket通信都采⽤了同步阻塞模型（BIO），这种模型性能低下，当时⼤型的服务均采⽤C或C++开发，因为它们可以直接使⽤操作系统提供的异步IO或者AIO，使得性能得到⼤幅提升。</p>
 <p>2002年，JDK1.4发布，新增了java.nio包，提供了许多异步IO开发的API和类库。新增的NIO，极⼤的促进了基于Java的异步⾮阻塞的发展和应⽤。</p>
 <p>2011年，JDK7发布，将原有的NIO进⾏了升级，称为NIO2.0，其中也对AIO进⾏了⽀持。</p>
@@ -235,7 +248,7 @@
         ServerSocket serverSocket = <span class="hljs-keyword">new</span> ServerSocket(<span class="hljs-number">6666</span>);
         ExecutorService executorService = Executors.newCachedThreadPool();
         <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
-            System.out.println(<span class="hljs-string">"等待客户端连接。。。。"</span>);
+            System.out.println(<span class="hljs-string">&quot;等待客户端连接。。。。&quot;</span>);
             Socket socket = serverSocket.accept(); <span class="hljs-comment">//阻塞</span>
             executorService.execute(() -&gt; &#123;
                 <span class="hljs-keyword">try</span> &#123;
@@ -262,7 +275,7 @@
 <li>当连接创建后，如果该线程没有操作时，会进⾏阻塞操作，这样极⼤的浪费了服务器资源。</li>
 </ul>
 <h4 id="NIO模型"><a href="#NIO模型" class="headerlink" title="NIO模型"></a>NIO模型</h4><p>NIO，称之为New IO 或是 non-block IO （⾮阻塞IO），这两种说法都可以，其实称之为⾮阻塞IO更恰当⼀些。</p>
-<p>NIO相关的代码都放在了java.nio包下，其三⼤核⼼组件：<strong>Buffer</strong>（缓冲区）、<strong>Channel</strong>（通道）、<strong>Selector</strong>（选择器<strong>/</strong>多路复⽤器）</p>
+<p>NIO相关的代码都放在了java.nio包下，其三⼤核⼼组件：<strong>Buffer</strong>（缓冲区）、<strong>Channel</strong>（通道）、<strong>Selector</strong>（选择器**/**多路复⽤器）</p>
 <ul>
 <li><p>Buffer</p>
 <p>在NIO中，所有的读写操作都是基于缓冲区完成的，底层是通过数组实现的，常⽤的缓冲区是ByteBuffer，每⼀种java基本类型都有对应的缓冲区对象（除了Boolean类型），如：CharBuffer、IntBuffer、LongBuffer等。</p>
@@ -336,7 +349,7 @@
             SocketChannel channel = (SocketChannel) key.channel();
             ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="hljs-number">1024</span>);
             channel.read(byteBuffer);
-            System.out.println(<span class="hljs-string">"form 客户端 "</span> + <span class="hljs-keyword">new</span> String(byteBuffer.array(),
+            System.out.println(<span class="hljs-string">&quot;form 客户端 &quot;</span> + <span class="hljs-keyword">new</span> String(byteBuffer.array(),
                     <span class="hljs-number">0</span>, byteBuffer.position()));
         &#125;
     &#125;
@@ -488,9 +501,9 @@ EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup(
 <p>如果没有指定线程数⼤⼩，默认线程数为：cpu核数*2，源码如下：</p>
 <pre><code class="hljs java"><span class="hljs-keyword">static</span> &#123;
 	DEFAULT_EVENT_LOOP_THREADS = Math.max(<span class="hljs-number">1</span>, SystemPropertyUtil.getInt(
-		<span class="hljs-string">"io.netty.eventLoopThreads"</span>, NettyRuntime.availableProcessors()* <span class="hljs-number">2</span>)); <span class="hljs-comment">//可⽤cpu核数 * 2</span>
+		<span class="hljs-string">&quot;io.netty.eventLoopThreads&quot;</span>, NettyRuntime.availableProcessors()* <span class="hljs-number">2</span>)); <span class="hljs-comment">//可⽤cpu核数 * 2</span>
 	<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-		logger.debug(<span class="hljs-string">"-Dio.netty.eventLoopThreads: &#123;&#125;"</span>,
+		logger.debug(<span class="hljs-string">&quot;-Dio.netty.eventLoopThreads: &#123;&#125;&quot;</span>,
 			DEFAULT_EVENT_LOOP_THREADS);
  	&#125;
 &#125;</code></pre>
@@ -597,11 +610,11 @@ EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup(
 <span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf01</span> </span>&#123;
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
         <span class="hljs-comment">//构造</span>
-        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">"hello world"</span>,
+        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">&quot;hello world&quot;</span>,
                 CharsetUtil.UTF_8);
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
         <span class="hljs-keyword">while</span> (byteBuf.isReadable()) &#123; <span class="hljs-comment">//⽅法⼀：内部通过移动readerIndex进⾏读取</span>
             System.out.println((<span class="hljs-keyword">char</span>) byteBuf.readByte());
         &#125;
@@ -627,16 +640,16 @@ EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup(
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
         <span class="hljs-comment">//构造空的字节缓冲区，初始⼤⼩为10，最⼤为20</span>
         ByteBuf byteBuf = Unpooled.buffer(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>);
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
         <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">5</span>; i++) &#123;
             byteBuf.writeInt(i); <span class="hljs-comment">//写⼊int类型，⼀个int占4个字节</span>
         &#125;
-        System.out.println(<span class="hljs-string">"ok"</span>);
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;ok&quot;</span>);
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
         <span class="hljs-keyword">while</span> (byteBuf.isReadable()) &#123;
             System.out.println(byteBuf.readInt());
         &#125;
@@ -665,18 +678,18 @@ readerIndex (0) &lt;= writerIndex (decreased)</code></pre>
 
 <span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf03</span> </span>&#123;
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">"hello world"</span>,
+        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">&quot;hello world&quot;</span>,
                 CharsetUtil.UTF_8);
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
         <span class="hljs-keyword">while</span> (byteBuf.isReadable()) &#123;
             System.out.println((<span class="hljs-keyword">char</span>) byteBuf.readByte());
         &#125;
         byteBuf.discardReadBytes(); <span class="hljs-comment">//丢弃已读的字节空间</span>
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
     &#125;
 &#125;</code></pre>
 
@@ -702,15 +715,15 @@ AFTER clear()
 
 <span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf04</span> </span>&#123;
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">"hello world"</span>,
+        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">&quot;hello world&quot;</span>,
                 CharsetUtil.UTF_8);
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
         byteBuf.clear(); <span class="hljs-comment">//重置readerIndex 、 writerIndex 为0</span>
-        System.out.println(<span class="hljs-string">"byteBuf的容量为："</span> + byteBuf.capacity());
-        System.out.println(<span class="hljs-string">"byteBuf的可读容量为："</span> + byteBuf.readableBytes());
-        System.out.println(<span class="hljs-string">"byteBuf的可写容量为："</span> + byteBuf.writableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
     &#125;
 &#125;</code></pre>
 
@@ -725,7 +738,7 @@ AFTER clear()
 </li>
 </ul>
 <pre><code class="hljs java"><span class="hljs-comment">//默认使⽤的是DirectByteBuf，如果需要使⽤HeapByteBuf模式，则需要进⾏系统参数的设置</span>
-System.setProperty(<span class="hljs-string">"io.netty.noUnsafe"</span>, <span class="hljs-string">"true"</span>); <span class="hljs-comment">//netty中IO操作都是基于Unsafe完</span>
+System.setProperty(<span class="hljs-string">&quot;io.netty.noUnsafe&quot;</span>, <span class="hljs-string">&quot;true&quot;</span>); <span class="hljs-comment">//netty中IO操作都是基于Unsafe完</span>
 成的
 <span class="hljs-comment">//ByteBuf 的分配要设置为⾮池化，否则不能切换到堆缓冲器模式</span>
 serverBootstrap.childOption(ChannelOption.ALLOCATOR,
@@ -747,8 +760,8 @@ channel.alloc();
 serverBootstrap.childOption(ChannelOption.ALLOCATOR,
 UnpooledByteBufAllocator.DEFAULT);
 <span class="hljs-comment">//或通过系统参数设置</span>
-System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <span class="hljs-string">"pooled"</span>);
-System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <span class="hljs-string">"unpooled"</span>);</code></pre>
+System.setProperty(<span class="hljs-string">&quot;io.netty.allocator.type&quot;</span>, <span class="hljs-string">&quot;pooled&quot;</span>);
+System.setProperty(<span class="hljs-string">&quot;io.netty.allocator.type&quot;</span>, <span class="hljs-string">&quot;unpooled&quot;</span>);</code></pre>
 
 <h4 id="ByteBuf-的释放"><a href="#ByteBuf-的释放" class="headerlink" title="ByteBuf 的释放"></a>ByteBuf 的释放</h4><p>ByteBuf如果采⽤的是堆缓冲区模式的话，可以由GC回收，但是如果采⽤的是直接缓冲区，就不受GC的管理，就得⼿动释放，否则会发⽣内存泄露。</p>
 <p>关于ByteBuf的释放，分为⼿动释放与⾃动释放。</p>
@@ -767,7 +780,7 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 <span class="hljs-function">        Exception </span>&#123;
     ByteBuf byteBuf = (ByteBuf) msg;
     String msgStr = byteBuf.toString(CharsetUtil.UTF_8);
-    System.out.println(<span class="hljs-string">"客户端发来数据："</span> + msgStr);
+    System.out.println(<span class="hljs-string">&quot;客户端发来数据：&quot;</span> + msgStr);
     <span class="hljs-comment">//释放资源</span>
     ReferenceCountUtil.release(byteBuf);
 &#125;</code></pre>
@@ -788,9 +801,9 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 <span class="hljs-function">        Exception </span>&#123;
     ByteBuf byteBuf = (ByteBuf) msg;
     String msgStr = byteBuf.toString(CharsetUtil.UTF_8);
-    System.out.println(<span class="hljs-string">"客户端发来数据："</span> + msgStr);
+    System.out.println(<span class="hljs-string">&quot;客户端发来数据：&quot;</span> + msgStr);
     <span class="hljs-comment">//向客户端发送数据</span>
-    ctx.writeAndFlush(Unpooled.copiedBuffer(<span class="hljs-string">"ok"</span>, CharsetUtil.UTF_8));
+    ctx.writeAndFlush(Unpooled.copiedBuffer(<span class="hljs-string">&quot;ok&quot;</span>, CharsetUtil.UTF_8));
     ctx.fireChannelRead(msg); <span class="hljs-comment">//将ByteBuf向下传递</span>
 &#125;</code></pre>
 
@@ -804,9 +817,9 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onUnhandledInboundMessage</span><span class="hljs-params">(Object msg)</span> </span>&#123;
     <span class="hljs-keyword">try</span> &#123;
         logger.debug(
-                <span class="hljs-string">"Discarded inbound message &#123;&#125; that reached at the tail of the</span>
-<span class="hljs-string">                pipeline."</span> +
-                <span class="hljs-string">"Please check your pipeline configuration."</span>, msg);
+                <span class="hljs-string">&quot;Discarded inbound message &#123;&#125; that reached at the tail of the</span>
+<span class="hljs-string">                pipeline.&quot;</span> +
+                <span class="hljs-string">&quot;Please check your pipeline configuration.&quot;</span>, msg);
     &#125; <span class="hljs-keyword">finally</span> &#123;
         ReferenceCountUtil.release(msg); <span class="hljs-comment">//释放资源</span>
     &#125;
@@ -822,7 +835,7 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
     <span class="hljs-keyword">boolean</span> release = <span class="hljs-keyword">true</span>;
     <span class="hljs-keyword">try</span> &#123;
         <span class="hljs-keyword">if</span> (acceptInboundMessage(msg)) &#123;
-            <span class="hljs-meta">@SuppressWarnings</span>(<span class="hljs-string">"unchecked"</span>) I imsg = (I) msg;
+            <span class="hljs-meta">@SuppressWarnings(&quot;unchecked&quot;)</span> I imsg = (I) msg;
             channelRead0(ctx, imsg);
         &#125; <span class="hljs-keyword">else</span> &#123;
             release = <span class="hljs-keyword">false</span>;
@@ -848,14 +861,14 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
     <span class="hljs-meta">@Override</span>
     <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
 <span class="hljs-function">            Exception </span>&#123;
-        System.out.println(<span class="hljs-string">"接收到服务端的消息："</span> +
+        System.out.println(<span class="hljs-string">&quot;接收到服务端的消息：&quot;</span> +
                 msg.toString(CharsetUtil.UTF_8));
     &#125;
 
     <span class="hljs-meta">@Override</span>
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
         <span class="hljs-comment">// 向服务端发送数据</span>
-        String msg = <span class="hljs-string">"hello"</span>;
+        String msg = <span class="hljs-string">&quot;hello&quot;</span>;
         ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));
     &#125;
 
@@ -884,14 +897,14 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
     <span class="hljs-meta">@Override</span>
     <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
 <span class="hljs-function">            Exception </span>&#123;
-        System.out.println(<span class="hljs-string">"接收到服务端的消息："</span> +
+        System.out.println(<span class="hljs-string">&quot;接收到服务端的消息：&quot;</span> +
                 msg.toString(CharsetUtil.UTF_8));
     &#125;
 
     <span class="hljs-meta">@Override</span>
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
         <span class="hljs-comment">// 向服务端发送数据</span>
-        String msg = <span class="hljs-string">"hello"</span>;
+        String msg = <span class="hljs-string">&quot;hello&quot;</span>;
         ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));
     &#125;
 
@@ -941,7 +954,7 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
                 
               </div>
               
-                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
+                <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p>
               
               
                 <div class="post-prevnext row">
@@ -978,7 +991,7 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
       <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
         <div id="toc">
   <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
-  <div id="tocbot"></div>
+  <div class="toc-body" id="toc-body"></div>
 </div>
 
       </div>
@@ -990,16 +1003,15 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 
 
     
-  </main>
 
-  
-    <a id="scroll-top-button" href="#" role="button">
-      <i class="iconfont icon-arrowup" aria-hidden="true"></i>
-    </a>
-  
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
 
-  
-    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
      aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
     <div class="modal-content">
@@ -1020,57 +1032,44 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
     </div>
   </div>
 </div>
-  
-
-  
-
-  
-
-  <footer class="mt-5">
-  <div class="text-center py-3">
-    <div>
-      <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a>
-      <i class="iconfont icon-love"></i>
-      <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener">
-        <span>Fluid</span></a>
-    </div>
-    
-  <div class="statistics">
-    
     
 
     
-      
-        <!-- 不蒜子统计PV -->
-        <span id="busuanzi_container_site_pv" style="display: none">
-            总访问量 
-            <span id="busuanzi_value_site_pv"></span>
-             次
-          </span>
-      
-      
-        <!-- 不蒜子统计UV -->
-        <span id="busuanzi_container_site_uv" style="display: none">
-            总访客数 
-            <span id="busuanzi_value_site_uv"></span>
-             人
-          </span>
-      
-    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
   </div>
+  
 
+  
 
-    
-
-    
-  </div>
+  
 </footer>
 
 <!-- SCRIPTS -->
-<script  src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
-<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js" ></script>
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
 <script  src="/blog/js/debouncer.js" ></script>
-<script  src="/blog/js/main.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
 
 <!-- Plugins -->
 
@@ -1081,105 +1080,51 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 
 
 
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
   <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
-  <script  src="/blog/js/clipboard-use.js" ></script>
 
 
-
-  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
-
-
-
-
-
-  <script  src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js" ></script>
-  <script>
-    $(document).ready(function () {
-      var boardCtn = $('#board-ctn');
-      var boardTop = boardCtn.offset().top;
-
-      tocbot.init({
-        tocSelector: '#tocbot',
-        contentSelector: '#post-body',
-        headingSelector: 'h1,h2,h3,h4,h5,h6',
-        linkClass: 'tocbot-link',
-        activeLinkClass: 'tocbot-active-link',
-        listClass: 'tocbot-list',
-        isCollapsedClass: 'tocbot-is-collapsed',
-        collapsibleClass: 'tocbot-is-collapsible',
-        collapseDepth: 0,
-        scrollSmooth: true,
-        headingsOffset: -boardTop
-      });
-      if ($('.toc-list-item').length > 0) {
-        $('#toc').css('visibility', 'visible');
-      }
-    });
-  </script>
 
 
 
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
-    var typed = new Typed('#subtitle', {
-      strings: [
-        '  ',
-        "Netty结构解析&nbsp;",
-      ],
-      cursorChar: "_",
-      typeSpeed: 70,
-      loop: false,
-    });
-    typed.stop();
-    $(document).ready(function () {
-      $(".typed-cursor").addClass("h2");
-      typed.start();
-    });
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js" ></script>
-  <script>
-    anchors.options = {
-      placement: "right",
-      visible: "hover",
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
       
-    };
-    var el = "h1,h2,h3,h4,h5,h6".split(",");
-    var res = [];
-    for (item of el) {
-      res.push(".markdown-body > " + item)
-    }
-    anchors.add(res.join(", "))
+      typing(title)
+      
+    })(window, document);
   </script>
 
 
 
   <script  src="/blog/js/local-search.js" ></script>
   <script>
-    var path = "/blog/local-search.xml";
-    var inputArea = document.querySelector("#local-search-input");
-    inputArea.onclick = function () {
-      searchFunc(path, 'local-search-input', 'local-search-result');
-      this.onclick = null
-    }
-  </script>
-
-
-
-  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
-  <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
-
-  <script>
-    $('#post img:not(.no-zoom img, img[no-zoom]), img[zoom]').each(
-      function () {
-        var element = document.createElement('a');
-        $(element).attr('data-fancybox', 'images');
-        $(element).attr('href', $(this).attr('src'));
-        $(this).wrap(element);
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
       }
-    );
+    })()
   </script>
 
 
@@ -1188,55 +1133,6 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 
 
 
-  
-  
-    <script type="text/javascript">
-      //定义获取词语下标
-      var a_idx = 0;
-      jQuery(document).ready(function ($) {
-        //点击body时触发事件
-        $("body").click(function (e) {
-          //需要显示的词语
-          var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正", "法治", "爱国", "敬业", "诚信", "友善");
-          //设置词语给span标签
-          var $i = $("<span/>").text(a[a_idx]);
-          //下标等于原来下标+1  余 词语总数
-          a_idx = (a_idx + 1) % a.length;
-          //获取鼠标指针的位置，分别相对于文档的左和右边缘。
-          //获取x和y的指针坐标
-          var x = e.pageX, y = e.pageY;
-          //在鼠标的指针的位置给$i定义的span标签添加css样式
-          $i.css({
-            "z-index": 999,
-            "top": y - 20,
-            "left": x,
-            "position": "absolute",
-            "font-weight": "bold",
-            "color": rand_color()
-          });
-          // 随机颜色
-          function rand_color() {
-            return "rgb(" + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + "," + ~~(255 * Math.random()) + ")"
-          }
-          //在body添加这个标签
-          $("body").append($i);
-          //animate() 方法执行 CSS 属性集的自定义动画。
-          //该方法通过CSS样式将元素从一个状态改变为另一个状态。CSS属性值是逐渐改变的，这样就可以创建动画效果。
-          //详情请看http://www.w3school.com.cn/jquery/effect_animate.asp
-          $i.animate({
-            //将原来的位置向上移动180
-            "top": y - 180,
-            "opacity": 0
-            //1500动画的速度
-          }, 1500, function () {
-            //时间到了自动删除
-            $i.remove();
-          });
-        });
-      })
-      ;
-    </script>
-  
 
 
 
@@ -1245,9 +1141,8 @@ System.setProperty(<span class="hljs-string">"io.netty.allocator.type"</span>, <
 
 
 
-
-
-
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
 
 
 
