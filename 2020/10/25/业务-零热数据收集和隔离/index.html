@@ -184,7 +184,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      5.7k 字
+      5.6k 字
     </span>
   
 
@@ -227,20 +227,17 @@
             <h1 style="display: none">零热数据收集和隔离</h1>
             
             <div class="markdown-body">
-              <h3 id="热点数据收集"><a href="#热点数据收集" class="headerlink" title="热点数据收集"></a>热点数据收集</h3><p>热点数据又分为离线热点数据和实时热点数据，离线热点数据主要是分析过往热点商品信息，这个统计起来并无难 度，可以直接从历史数据库中查询分析。根据用户访问实时数据进行分析是一个比较困难的事，首先要存储大量的访问信息，同时还能高效的实时统计访问日志信息，从中获取热点数据信息。</p>
-<img src="/blog/2020/10/25/%E4%B8%9A%E5%8A%A1-%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic1.png" srcset="/blog/img/loading.gif" class>
+              <h3 id="热点数据收集"><a href="#热点数据收集" class="headerlink" title="热点数据收集"></a>热点数据收集</h3><p>热点数据又分为离线热点数据和实时热点数据，离线热点数据主要是分析过往热点商品信息，这个统计起来并无难度，可以直接从历史数据库中查询分析。根据用户访问实时数据进行分析是一个比较困难的事，首先要存储大量的访问信息，同时还能高效的实时统计访问日志信息，从中获取热点数据信息。</p>
+<h4 id="业务分析"><a href="#业务分析" class="headerlink" title="业务分析"></a>业务分析</h4><img src="/blog/2020/10/25/%E4%B8%9A%E5%8A%A1-%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic1.png" srcset="/blog/img/loading.gif" class>
 
 <p>本次以常见的商城系统为例，用户访问数据收集流程如上图，用户请求经过nginx后，使用lua脚本将用户访问的商品信息发送到kafka，再使用大数据实时分析工具 Apache Druid 实时存储访问信息，再通过程序分析计算访问情况。</p>
-<h4 id="业务分析"><a href="#业务分析" class="headerlink" title="业务分析"></a>业务分析</h4><img src="/blog/2020/10/25/%E4%B8%9A%E5%8A%A1-%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic19.png" srcset="/blog/img/loading.gif" class>
-
-<p>日志收集流程如上图，用户请求经过nginx，此时已经留下了用户对某个商品访问的足迹，我们可以在这里将用户访问的商品信息发送给我们kafka，采用大数据实时分析工具 Apache Druid 实时存储访问信息，再通过程序分析计算访问情况。 </p>
-<h3 id="架构搭建"><a href="#架构搭建" class="headerlink" title="架构搭建"></a>架构搭建</h3><h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><p>单机版的kafka搭建非常简单，本次采用Docker搭建kafka。Kafka使用Zookeeper存储Consumer、 Broker信息，安装kafa的时候，需要先安装Zookeeper。 </p>
-<p><strong>Zookeeper安装：</strong></p>
+<h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><p>单机版的kafka搭建非常简单，本次采用Docker搭建kafka。Kafka使用Zookeeper存储Consumer、 Broker信息，安装kafa的时候，需要先安装Zookeeper。 </p>
+<p>Zookeeper安装：</p>
 <pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> /etc/localtime:/etc/localtime:使容器与宿主机时间能够同步</span>
 
 docker run -d --name zookeeper -p 2181:2181 -v /etc/localtime:/etc/localtime wurstmeister/zookeeper</code></pre>
 
-<p><strong>Kafka安装：</strong></p>
+<p>Kafka安装：</p>
 <pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> KAFKA_BROKER_ID:当前Kafka的唯一ID</span>
 <span class="hljs-meta">#</span><span class="bash"> KAFKA_ZOOKEEPER_CONNECT:当前Kafka使用的Zookeeper配置信息</span>
 <span class="hljs-meta">#</span><span class="bash"> KAFKA_ADVERTISED_LISTENERS:对外发布(暴露)的监听器，对外发布监听端口、地址</span>
@@ -253,7 +250,8 @@ docker run -d --name kafka -p 9092:9092 -e KAFKA_BROKER_ID=0 -e KAFKA_ZOOKEEPER_
 <pre><code class="hljs properties"><span class="hljs-comment"># 设置为外部程序可以访问到的本机地址</span>
 <span class="hljs-meta">host.name</span>=<span class="hljs-string">192.168.211.137</span></code></pre>
 
-<h5 id="队列创建"><a href="#队列创建" class="headerlink" title="队列创建"></a>队列创建</h5><p>进入kafka容器，创建队列: </p>
+<p><strong>队列创建</strong></p>
+<p>进入kafka容器，创建队列: </p>
 <pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 使用kafka-topics.sh创建队列</span>
 <span class="hljs-meta">#</span><span class="bash"> --create:执行创建一个新的队列操作</span>
 <span class="hljs-meta">#</span><span class="bash"> --bootstrap-server：需要链接的kafka配置，必填</span>
@@ -283,7 +281,7 @@ cd /opt/kafka_2.12-2.4.1/bin
 
 ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic itemaccess --from-beginning</code></pre>
 
-<p>其他指令</p>
+<p><strong>其他指令</strong></p>
 <pre><code class="hljs sh"><span class="hljs-comment"># 查看已经存在的主题</span>
 ./kafka-topics.sh --zookeeper localhost:3181 --list
 <span class="hljs-comment"># 删除主题</span>
@@ -291,7 +289,7 @@ cd /opt/kafka_2.12-2.4.1/bin
 <span class="hljs-comment"># 查看主题信息</span>
 ./kafka-topics.sh --zookeeper localhost:3181 --describe --topic itemaccess</code></pre>
 
-<h4 id="Lua"><a href="#Lua" class="headerlink" title="Lua"></a>Lua</h4><h5 id="OpenResty安装"><a href="#OpenResty安装" class="headerlink" title="OpenResty安装"></a>OpenResty安装</h5><p>关于OpenRestry的学习，可以参考：<a target="_blank" rel="noopener" href="http://openresty.org/cn/">http://openresty.org/cn/</a> </p>
+<h4 id="OpenResty"><a href="#OpenResty" class="headerlink" title="OpenResty"></a>OpenResty</h4><p>关于OpenRestry的学习，可以参考：<a target="_blank" rel="noopener" href="http://openresty.org/cn/">http://openresty.org/cn/</a> </p>
 <pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 下载OpenRestry</span>
 wget https://openresty.org/download/openresty-1.11.2.5.tar.gz
 <span class="hljs-meta">#</span><span class="bash"> 解压</span>
@@ -314,14 +312,14 @@ make install</code></pre>
 <img src="/blog/2020/10/25/%E4%B8%9A%E5%8A%A1-%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic21.png" srcset="/blog/img/loading.gif" class>
 
 <p>启动nginx，并访问测试：<a target="_blank" rel="noopener" href="http://192.168.211.137/items/S1235433012716498944.html">http://192.168.211.137/items/S1235433012716498944.html</a> </p>
-<h5 id="Lua日志收集"><a href="#Lua日志收集" class="headerlink" title="Lua日志收集"></a>Lua日志收集</h5><p>使用Lua实现日志收集，并向Kafka发送访问的详情页信息，此时需要安装一个依赖组件 lua-restry-kafka 。 </p>
+<h4 id="Lua日志收集"><a href="#Lua日志收集" class="headerlink" title="Lua日志收集"></a>Lua日志收集</h4><p>使用Lua实现日志收集，并向Kafka发送访问的详情页信息，此时需要安装一个依赖组件 lua-restry-kafka 。 </p>
 <p>关于 lua-restry-kafka 的下载和使用，可以参考 <a target="_blank" rel="noopener" href="https://github.com/doujiang24/lua-resty-kafka">https://github.com/doujiang24/lua-resty-kafka</a></p>
 <p>收集流程如下：</p>
 <img src="/blog/2020/10/25/%E4%B8%9A%E5%8A%A1-%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic22.png" srcset="/blog/img/loading.gif" class>
 
 <p>用户请求/web/items/1.html，进入到nginx第1个location中，在该location中向Kafka发送请求日志信息，并将请求中的/web去掉，跳转到另一个location中，并查找本地文件，这样既可以完成日志收集，也能完成文件的访问。</p>
 <p>插件配置</p>
-<p>lua-restry-kafka ：<a target="_blank" rel="noopener" href="https://github.com/doujiang24/lua-resty-kafka">https://github.com/doujiang24/lua-resty-kafka</a> </p>
+<p>首先需要下载lua-restry-kafka，地址为：<a target="_blank" rel="noopener" href="https://github.com/doujiang24/lua-resty-kafka">https://github.com/doujiang24/lua-resty-kafka</a> </p>
 <p>下载后解压至<code>/usr/local/openresty/</code>下</p>
 <p>修改nginx.conf</p>
 <pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 设置为lua-resty-kafka所在的位置</span>
