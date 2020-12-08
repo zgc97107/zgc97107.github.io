@@ -1,0 +1,832 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>ConcurrentHashMap - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="ConcurrentHashMap">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-07-27 19:54" pubdate>
+        2020年7月27日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      7.2k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      82
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">ConcurrentHashMap</h1>
+            
+            <div class="markdown-body">
+              <h3 id="Hash算法"><a href="#Hash算法" class="headerlink" title="Hash算法"></a>Hash算法</h3><p>Hash就是把任意长度的输入（又叫做预映射， pre-image），通过散列算法，变换成固定长度的散列值。这种转换是一种压缩映射，散列值的空间通常小于输入的空间，不同的输入可能会散列成相同的输出，所以不可能从散列值来确定唯一的输入值。因为其不可逆的特性，Hash算法也可以用来作为加密算法。</p>
+
+
+<p>处理Hash冲突方法:</p>
+<ol>
+<li>开放寻址法：出现hash冲突时，从当前地址向后寻找</li>
+<li>再散列法：出现hash冲突时，再次进行hash运算</li>
+<li>链地址法（拉链法）：将有hash冲突的元素存储在链表或其他数据结构中</li>
+</ol>
+<p>常用hash算法的介绍：</p>
+<ol>
+<li>MD4 </li>
+<li>MD5（常被用为加密算法）</li>
+<li>SHA-1及其他。</li>
+</ol>
+<h3 id="位运算"><a href="#位运算" class="headerlink" title="位运算"></a>位运算</h3><h4 id="常用位运算"><a href="#常用位运算" class="headerlink" title="常用位运算"></a>常用位运算</h4><ul>
+<li><p>位与 &amp; (1&amp;1=1,0&amp;0=0,1&amp;0=0)</p>
+</li>
+<li><p>位或 | (1|1=1,0|0=0,1|0=1)</p>
+</li>
+<li><p>位非 ~ ( ~1=0,~0=1)</p>
+</li>
+<li><p>位异或 ^ (1^1=0,1^0=1,0^0=0)</p>
+</li>
+<li><p>有符号右移&gt;&gt;(正数高位补0,负数高位补1)</p>
+</li>
+<li><p>有符号左移&lt;&lt;(低位补0)</p>
+</li>
+<li><p>无符号右移&gt;&gt;&gt;(不论正负,高位均补0)</p>
+</li>
+</ul>
+<p>有趣的取模性质：取模a % (2^n) 等价于 a &amp; (2^n - 1)，所以在map里的数组个数一定是2的乘方数，计算key值在哪个元素中的时候，就用位运算来快速定位。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">IntToBinary</span> </span>&#123;
+   
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> UnsupportedEncodingException </span>&#123;
+
+        System.out.println(<span class="hljs-string">&quot;the 4 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">4</span>));
+        System.out.println(<span class="hljs-string">&quot;the 6 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">6</span>));
+        <span class="hljs-comment">//位与&amp;(真真为真 真假为假 假假为假)</span>
+        System.out.println(<span class="hljs-string">&quot;the 4&amp;6 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">6</span>&amp;<span class="hljs-number">4</span>));
+        <span class="hljs-comment">//位或|(真真为真 真假为真 假假为假)</span>
+        System.out.println(<span class="hljs-string">&quot;the 4|6 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">6</span>|<span class="hljs-number">4</span>));
+        <span class="hljs-comment">//位非~</span>
+        System.out.println(<span class="hljs-string">&quot;the ~4 is : &quot;</span> + Integer.toBinaryString(~<span class="hljs-number">4</span>));
+        <span class="hljs-comment">//位异或^(真真为假 真假为真 假假为假)</span>
+        System.out.println(<span class="hljs-string">&quot;the 4^6 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">6</span>^<span class="hljs-number">4</span>));
+        <span class="hljs-comment">//有符号右移&gt;&gt;(若正数,高位补0,负数,高位补1)</span>
+        System.out.println(<span class="hljs-string">&quot;the 4&gt;&gt;1 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">4</span>&gt;&gt;<span class="hljs-number">1</span>));
+        <span class="hljs-comment">//有符号左移&lt;&lt;(若正数,高位补0,负数,高位补1)</span>
+        System.out.println(<span class="hljs-string">&quot;the 4&lt;&lt;1 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">4</span>&lt;&lt;<span class="hljs-number">1</span>));
+        <span class="hljs-comment">//无符号右移&gt;&gt;&gt;(不论正负,高位均补0)</span>
+        System.out.println(<span class="hljs-string">&quot;the 234567 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">234567</span>));
+        System.out.println(<span class="hljs-string">&quot;the 234567&gt;&gt;&gt;4 is : &quot;</span> + Integer.toBinaryString(<span class="hljs-number">234567</span>&gt;&gt;&gt;<span class="hljs-number">4</span>));
+        <span class="hljs-comment">//无符号右移&gt;&gt;&gt;(不论正负,高位均补0)</span>
+        System.out.println(<span class="hljs-string">&quot;the -4 is : &quot;</span> + Integer.toBinaryString(-<span class="hljs-number">4</span>));
+        System.out.println(<span class="hljs-string">&quot;the -4&gt;&gt;&gt;4 is : &quot;</span> + Integer.toBinaryString(-<span class="hljs-number">4</span>&gt;&gt;&gt;<span class="hljs-number">4</span>));
+        System.out.println(Integer.parseInt(Integer.toBinaryString(-<span class="hljs-number">4</span>&gt;&gt;&gt;<span class="hljs-number">4</span>), <span class="hljs-number">2</span>));
+        
+        <span class="hljs-comment">//取模a % (2^n) 等价于 a &amp; (2^n - 1) </span>
+        System.out.println(<span class="hljs-string">&quot;the 345 % 16 is : &quot;</span> + (<span class="hljs-number">345</span>%<span class="hljs-number">16</span>)+<span class="hljs-string">&quot; or &quot;</span>+(<span class="hljs-number">345</span>&amp;(<span class="hljs-number">16</span>-<span class="hljs-number">1</span>)));
+        
+        System.out.println(<span class="hljs-string">&quot;Mark hashCode is : &quot;</span>+<span class="hljs-string">&quot;Mark&quot;</span>.hashCode()+<span class="hljs-string">&quot;=&quot;</span>
+              +Integer.toBinaryString(<span class="hljs-string">&quot;Mark&quot;</span>.hashCode()));
+        System.out.println(<span class="hljs-string">&quot;Bill hashCode is : &quot;</span>+<span class="hljs-string">&quot;Bill&quot;</span>.hashCode()+<span class="hljs-string">&quot;=&quot;</span>
+              +Integer.toBinaryString(<span class="hljs-string">&quot;Bill&quot;</span>.hashCode()));        
+        
+    &#125; 
+&#125;</code></pre>
+
+<h4 id="位运算运用场景"><a href="#位运算运用场景" class="headerlink" title="位运算运用场景"></a>位运算运用场景</h4><ul>
+<li><p>Java中的类修饰符、成员变量修饰符、方法修饰符，比如Class类中</p>
+</li>
+<li><p>Java容器中的HashMap和ConcurrentHashMap的实现</p>
+</li>
+<li><p>权限控制或者商品属性</p>
+</li>
+<li><p>简单可逆加密，比如异或运算(1^1=0,0^1=1 )</p>
+</li>
+</ul>
+<p>实战：权限控制</p>
+<pre><code class="hljs arduino"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Permission</span> &#123;</span>
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> ALLOW_SELECT = <span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> ALLOW_INSERT = <span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> ALLOW_UPDATE = <span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">2</span>;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> ALLOW_DELETE = <span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">3</span>;
+
+    <span class="hljs-comment">// 当前状态</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> flag;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setPermission</span><span class="hljs-params">(<span class="hljs-keyword">int</span> permission)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.flag = permission;
+    &#125;
+
+    <span class="hljs-comment">// 增加权限，可以一项或者多项</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addPermission</span><span class="hljs-params">(<span class="hljs-keyword">int</span> permission)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.flag = flag | permission;
+    &#125;
+
+    <span class="hljs-comment">// 删除权限，可以一项或者多项</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">disablePermission</span><span class="hljs-params">(<span class="hljs-keyword">int</span> permission)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.flag = flag &amp; ~permission;
+    &#125;
+
+    <span class="hljs-comment">// 是否拥有权限</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isAllow</span><span class="hljs-params">(<span class="hljs-keyword">int</span> permission)</span> </span>&#123;
+        <span class="hljs-keyword">return</span> (<span class="hljs-keyword">this</span>.flag &amp; permission) == permission;
+    &#125;
+
+    <span class="hljs-comment">// 是否不拥有权限</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isNotAllow</span><span class="hljs-params">(<span class="hljs-keyword">int</span> permission)</span> </span>&#123;
+        <span class="hljs-keyword">return</span> (<span class="hljs-keyword">this</span>.flag &amp; permission) == <span class="hljs-number">0</span>;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">String</span>[] args)</span> </span>&#123;
+      <span class="hljs-keyword">int</span> flag = <span class="hljs-number">15</span>;
+      Permission permission = <span class="hljs-keyword">new</span> Permission();
+      permission.setPermission(flag);
+      permission.disablePermission(ALLOW_DELETE|ALLOW_INSERT);
+      System.out.<span class="hljs-built_in">println</span>(<span class="hljs-string">&quot;ALLOW_SELECT=&quot;</span>+permission.isAllow(ALLOW_SELECT));
+      System.out.<span class="hljs-built_in">println</span>(<span class="hljs-string">&quot;ALLOW_INSERT=&quot;</span>+permission.isAllow(ALLOW_INSERT));
+      System.out.<span class="hljs-built_in">println</span>(<span class="hljs-string">&quot;ALLOW_UPDATE=&quot;</span>+permission.isAllow(ALLOW_UPDATE));
+      System.out.<span class="hljs-built_in">println</span>(<span class="hljs-string">&quot;ALLOW_DELETE=&quot;</span>+permission.isAllow(ALLOW_DELETE));
+    &#125;</code></pre>
+
+<p>使用位运算可以节省很多代码量，而且效率高、属性变动影响小，但位运算不太直观，会对代码可读性产生一定的影响。</p>
+<h3 id="HashMap死循环的分析"><a href="#HashMap死循环的分析" class="headerlink" title="HashMap死循环的分析"></a>HashMap死循环的分析</h3><p>在多线程环境下，HashMap在并发执行put操作时会导致HashMap的Entry链表形成环形数据结构，一旦形成环形数据结构，Entry的next节点永远不为空，就会产生死循环获取Entry，导致CPU利用率接近100%。</p>
+<h4 id="HashMap扩容流程"><a href="#HashMap扩容流程" class="headerlink" title="HashMap扩容流程"></a>HashMap扩容流程</h4><h5 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h5><p>正常的扩容操作是这个流程。HashMap的扩容在put操作中会触发扩容，主要是三个方法：</p>
+
+
+<p>综合来说，HashMap一次扩容的过程：</p>
+<ol>
+<li><p>取当前table的2倍作为新table的大小；</p>
+</li>
+<li><p>根据算出的新table的大小new出一个新的Entry数组来，名为newTable；</p>
+</li>
+<li><p>轮询原table的每一个位置，将每个位置上连接的Entry，算出在新table上的位置，并以链表形式连接；</p>
+</li>
+<li><p>原table上的所有Entry全部轮询完毕之后，HashMap中的table指向newTable；</p>
+</li>
+</ol>
+<h5 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h5><p>现在hashmap中有三个元素，key分别为3、7、5，Hash表的size=2, 通过hash计算后这三个元素都将分配到table[1]。</p>
+
+
+<p>按照方法中的代码</p>
+
+
+<p>对table[1]中的链表来说，进入while循环，此时e=key(3)，那么next=key(7)，经过计算重新定位e=key(3)在新表中的位置，并把e=key(3)分配newTable[3]的位置</p>
+
+
+<p>这样循环下去，将table[1]中的链表循环完成后，于是HashMap就完成了扩容</p>
+
+
+
+
+<p>HashMap在hash冲突插入元素时采用的是头插法，先将新的元素的next指向当前table[i]，之后再将table[i]指向当前元素</p>
+
+
+<h4 id="并发下的扩容"><a href="#并发下的扩容" class="headerlink" title="并发下的扩容"></a>并发下的扩容</h4><p>初始的HashMap还是：</p>
+
+
+<p>现在假设有两个线程并发操作，都进入了扩容操作线程1执行到Entry&lt;K,V&gt; next = e.next;时被操作系统调度挂起了，而线程2执行完成了扩容操作:</p>
+
+
+<p>于是，在线程1,2看来，就应该是这个样子</p>
+
+
+<p>接下来，线程1被调度回来执行： </p>
+<ol>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li>
+
+</li>
+</ol>
+<p>循环列表产生后，一旦线程1调用get（11,15之类的元素）时，就会进入一个死循环的情况，将CPU的消耗到100%。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>HashMap之所以在并发下的扩容造成死循环，是因为多个线程并发进行时，一个线程先期完成了扩容，将原Map的链表重新散列到自己的表中，并将链表变成了倒序，后一个线程再扩容时，又进行自己的散列，再次将倒序链表变为正序链表，于是形成了一个环形链表，当get表中不存在的元素时，会去遍历链表造成死循环。</p>
+<h3 id="ConcurrentHashMap"><a href="#ConcurrentHashMap" class="headerlink" title="ConcurrentHashMap"></a>ConcurrentHashMap</h3><h4 id="JDK1-7中的实现分析"><a href="#JDK1-7中的实现分析" class="headerlink" title="JDK1.7中的实现分析"></a>JDK1.7中的实现分析</h4><h5 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h5>
+
+<p>ConcurrentHashMap是由Segment数组结构和HashEntry数组结构组成。Segment是一种可重入锁（ReentrantLock），HashEntry则用于存储键值对数据。ConcurrentHashMap里包含一个Segment数组，Segment的结构和HashMap类似，是一种数组和链表结构。一个Segment里包含一个HashEntry数组，每个HashEntry是一个链表结构的元素，每个Segment守护着一个HashEntry数组里的元素，当对HashEntry数组的数据进行修改时，必须首先获得与它对应的Segment锁。Segment数组初始化之后大小不再改变，当需要扩容时Segment下的table数组进行扩容。</p>
+<h5 id="初始化方法"><a href="#初始化方法" class="headerlink" title="初始化方法"></a>初始化方法</h5><p>ConcurrentHashMap初始化方法是通过initialCapacity（初始化容量）、loadFactor（负载因子）和concurrencyLevel（并发级别）来初始化segment数组、段偏移量segmentShift、段掩码segmentMask和每个segment里的HashEntry数组来实现的。</p>
+<p>参数concurrencyLevel（并发度）可以理解为程序运行时能够同时更新ConccurentHashMap且不产生锁竞争的最大线程数，实际上就是ConcurrentHashMap中的分段锁个数，即Segment[]的数组长度。ConcurrentHashMap默认的并发度为16，用户也可以在构造函数中设置并发度，设置之后将不再改变。当用户设置并发度时，ConcurrentHashMap会使用大于等于该值的最小2幂指数作为实际并发度（假如用户设置并发度为17，实际并发度则为32）。如果设置的过小，会带来严重的锁竞争问题；如果设置的过大，原本位于同一个Segment内的访问会扩散到不同的Segment中，CPU cache命中率会下降，从而引起程序性能下降。大小可以通过cpu核心数或实际使用该Map的线程数量来确定。</p>
+
+
+<p>参数initialCapacity是ConcurrentHashMap的初始化容量，loadfactor是每个Segment的负载因子，在构造方法里需要通过这两个参数来初始化数组中的每个Segment。上面代码中的变量cap就是Segment里HashEntry数组的长度，它等于initialCapacity除以ssize的倍数c，如果c大于1，就会取大于等于c的2的N次方值，所以segment里HashEntry数组的长度不是1，就是2的N次方。</p>
+<p>在默认情况下， ssize = 16，initialCapacity = 16，loadFactor = 0.75f，那么cap = 1，threshold = (int) cap * loadFactor = 0。</p>
+<p>在初始化时，默认只初始化Segment[0]中的table，其他Segment中的table在put时再进行初始化。</p>
+<p>初始化segmentShift和segmentMask（了解即可，无需深究）这两个全局变量需要在定位segment时的散列算法里使用，shift等于size从1向左移位的次数，在默认情况下concurrencyLevel等于16，1需要向左移位移动4次，所以sshift等于4。segmentShift用于定位参与散列运算的位数，segmentShift等于32减sshift，所以等于28，这里之所以用<em>32</em>是因为ConcurrentHashMap里的hash()方法输出的最大数是<em>32</em>位的。segmentMask是散列运算的掩码，等于ssize减1，即15，掩码的二进制各个位的值都是<em>1</em>。因为ssize的最大长度是65536，所以segmentShift最大值是16，segmentMask最大值是65535，对应的二进制是16位，每个位都是1。</p>
+<h5 id="get方法"><a href="#get方法" class="headerlink" title="get方法"></a>get方法</h5>
+
+<p>既然ConcurrentHashMap使用分段锁Segment来保护不同段的数据，那么在插入和获取元素的时候，必须先通过散列算法定位到Segment。get操作先获取hash值，然后使用这个hash值通过hash运算定位到Segment(使用了hash值的高位部分)，再通过hash算法定位到table(使用了散列值的全部)。</p>
+
+
+<p>整个get过程没有加锁，而是通过volatile保证get总是可以拿到最新值。</p>
+<p>ConcurrentHashMap中使用的hash算法为Wang/Jenkins hash的变种算法，其产生的hash的值更加均匀，减少了hash冲突</p>
+<h5 id="put方法"><a href="#put方法" class="headerlink" title="put方法"></a>put方法</h5>
+
+<p>put方法首先会根据key计算出所在的Segment，然后调用ensureSegment()方法获取Segment。因为ConcurrentHashMap初始化时只会初始化第一个槽 segment[0]，所以其他槽在插入第一个值时会在ensureSegment()方法中进行初始化。</p>
+
+
+<p>ensureSegment方法考虑了并发情况，当多个线程同时进入初始化同一个槽 segment[k]会进行循环CAS操作保证只有一个线程成功。</p>
+
+
+<p>put方法在获取到Segment之后会调用Segment中的put方法，Segment中的put方法会通过tryLock()方法尝试获得锁，如果成功获得锁会将node置为null然后进入try语句块，如果没有获得锁会调用scanAndLockForPut()方法自旋等待获得锁。</p>
+
+
+<p>scanAndLockForPut方法里在尝试获得锁的过程中会对对应HashEntity链表进行遍历，如果遍历完毕仍然找不到与key相同的HashEntry节点，则为后续的put操作提前创建一个HashEntry。当tryLock一定次数（当cpu可用核心数大于1时重试64次，否则只重试1次）后仍无法获得锁，则通过lock()阻塞式申请锁。</p>
+
+
+<p>在获得锁之后，Segment对链表进行遍历，如果某个HashEntry节点具有相同的key，则更新该HashEntry的value值</p>
+
+
+<p>否则新建一个HashEntry节点，采用头插法，将它设置为链表的新head节点并将原头节点设为新head的下一个节点。新建过程中如果节点总数（含新建的HashEntry）超过threshold，则调用rehash()方法对Segment进行扩容，最后将新建HashEntry写入到数组中。</p>
+<h5 id="rehash方法"><a href="#rehash方法" class="headerlink" title="rehash方法"></a>rehash方法</h5><p>rehash方法扩容时会先创建数组newTable，然后进行将table中的节点迁移至newTable，最后用newTable取代table。</p>
+<p>由于扩容是基于2的幂指来操作，假设扩容前某HashEntry对应到Segment中数组的index为i，数组的容量为capacity，那么扩容后该HashEntry对应到新数组中的index只可能为i或者i+capacity，因此很多HashEntry节点在扩容前后index可以保持不变，避免让所有的节点都进行复制操作。</p>
+<p>假设原来table长度为4，那么元素在table中的分布是这样的</p>
+<table>
+<thead>
+<tr>
+<th>Hash值</th>
+<th>15</th>
+<th>23</th>
+<th>34</th>
+<th>56</th>
+<th>77</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>在table中的下标</td>
+<td>3 = 15%4</td>
+<td>3=23%4</td>
+<td>2 = 34%4</td>
+<td>0= 56%4</td>
+<td>1 =77 %4</td>
+</tr>
+</tbody></table>
+<p>扩容后table长度变为8，那么元素在table中的分布变成：</p>
+<table>
+<thead>
+<tr>
+<th>Hash值</th>
+<th>15</th>
+<th>23</th>
+<th>34</th>
+<th>56</th>
+<th>77</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>在table中的下标</td>
+<td>7</td>
+<td>7</td>
+<td>2</td>
+<td>0</td>
+<td>5</td>
+</tr>
+</tbody></table>
+<p>可以看见 hash值为34和56的下标保持不变，而15,23,77的下标都是在原来下标的基础上+4即可，可以快速定位和减少重排次数。</p>
+<p>该方法没有考虑并发，因为执行该方法之前已经获取了锁。</p>
+<h5 id="remove方法"><a href="#remove方法" class="headerlink" title="remove方法"></a>remove方法</h5><p>与put方法类似，都是在操作前需要拿到锁，以保证操作的线程安全性。</p>
+<h5 id="size、containsValue方法"><a href="#size、containsValue方法" class="headerlink" title="size、containsValue方法"></a>size、containsValue方法</h5><p>这些方法都是基于整个ConcurrentHashMap来进行操作的，他们的原理也基本类似：首先不加锁循环执行以下操作：循环所有的Segment，获得对应的值以及所有Segment的modcount之和。在 put、remove 和 clean 方法里操作元素前都会将变量 modCount 进行变动，如果连续两次所有Segment的modcount和相等，则过程中没有发生其他线程修改ConcurrentHashMap的情况，返回获得的值。</p>
+<p>当循环次数超过预定义的值时，这时需要对所有的Segment依次进行加锁，获取返回值后再依次解锁。所以一般来说，应该避免在多线程环境下使用size和containsValue方法。</p>
+<h5 id="ConcurrentHashMap的弱一致性"><a href="#ConcurrentHashMap的弱一致性" class="headerlink" title="ConcurrentHashMap的弱一致性"></a>ConcurrentHashMap的弱一致性</h5><p>ConcurrentHashMap的get()和containsKey()方法并没有加锁，在遍历链表节点判断key是否相同以及获得该节点的value时，其他线程对链表结构做的调整（put新的key或者remove操作）会由于HashEntity数组并不是volita修饰的导致返回的可能是过时的数据。如果要求强一致性，那么必须使用Collections.synchronizedMap()方法。</p>
+<h4 id="JDK1-8中的实现分析"><a href="#JDK1-8中的实现分析" class="headerlink" title="JDK1.8中的实现分析"></a>JDK1.8中的实现分析</h4><h5 id="相比JDK1-7的改进"><a href="#相比JDK1-7的改进" class="headerlink" title="相比JDK1.7的改进"></a>相比JDK1.7的改进</h5><ol>
+<li>取消segments字段，直接采用transient volatile HashEntry&lt;K,V&gt;[] table保存数据，使用table数组元素作为锁，由于table是可以扩容的，数据的增加时锁的粒度也会缩小以减少并发冲突的概率，同时大量使用了使用 CAS + synchronized 来保证并发安全性。</li>
+<li>将原本的table数组＋单向链表的数据结构，变更为table数组＋单向链表＋红黑树的结构。hash表最核心的能力在于将key hash之后能均匀的分布在数组中，理想的情况下table数组中的每个队列长度主要为0或者1，但实际情况并非如此。在数据量过大的情况下，即使ConcurrentHashMap类会依据默认的加载因子0.75进行扩容、增加table数组长度，但是如果hash结果不均匀，也会使数据集中在某个队列导致队列过长。此时查询某个节点的时间复杂度为O(n)。所以对于个数超过8(默认值)的列表jdk1.8中采用了红黑树的结构，查询的时间复杂度可以降低到O(logN)，从而改进性能。</li>
+<li>使用 Node（jdk1.7 为 HashEntry）作为链表的数据结点，仍然包含 key，value，hash 和 next 四个属性。 红黑树中使用的是 TreeNode（extends Node）。所以根据数组元素中第一个结点数据类型是 Node 还是 TreeNode 可以判断该位置下是链表还是红黑树。</li>
+</ol>
+
+
+<p>当链表的长度大于8时会转为红黑树</p>
+<p>当红黑树的大小小于6时会转为链表</p>
+<h5 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h5><p>Node是最核心的内部类，它包装了key-value键值对。</p>
+
+
+<p>定义基本和1.7中的HashEntry相同。Map本身所持有的也是一个Node型的数组</p>
+
+
+<p>增加了一个find方法来用以辅助map.get()方法。其实就是遍历链表，子类中会覆盖这个方法。</p>
+
+
+<p>在map中还定义了Segment这个类，不过只是为了向前兼容而已，不做过多考虑。</p>
+<h5 id="TreeNode"><a href="#TreeNode" class="headerlink" title="TreeNode"></a>TreeNode</h5><p>树节点类，另外一个核心的数据结构。当链表长度过长的时候，会转换为TreeNode。</p>
+
+
+<p>与1.8中HashMap不同点：</p>
+<ol>
+<li><p>它并不是直接转换为红黑树，而是把这些结点放在TreeBin对象中，由TreeBin完成对红黑树的包装。</p>
+</li>
+<li><p>TreeNode在ConcurrentHashMap继承Node类，HashMap中的继承LinkedHashMap.Entry&lt;K,V&gt;类，ConcurrentHashMap中的TreeNode带有next指针。</p>
+</li>
+</ol>
+<h5 id="TreeBin"><a href="#TreeBin" class="headerlink" title="TreeBin"></a>TreeBin</h5><p>负责TreeNode节点。它代替了TreeNode的根节点，也就是说在实际ConcurrentHashMap的table数组中存放的是TreeBin对象，而不是TreeNode对象。另外这个类还带有了读写锁机制。</p>
+
+
+<h5 id="ForwardingNode"><a href="#ForwardingNode" class="headerlink" title="ForwardingNode"></a>ForwardingNode</h5><p>ForwardingNode是一个特殊的 Node 结点，hash 值为 -1，内部存储nextTable的引用。在table发生扩容的时作为一个占位符放在 table 中表示当前结点为 null 或者已经被移动。</p>
+<h5 id="sizeCtl"><a href="#sizeCtl" class="headerlink" title="sizeCtl"></a>sizeCtl</h5><p>用来控制 table 的初始化和扩容操作。</p>
+<p>负数代表正在进行初始化或扩容操作：-1代表正在初始化，-N 表示有N-1个线程正在进行扩容操作，0为默认值，代表当时的table还没有被初始化。</p>
+<p>正数表示初始化大小或Map中的元素达到这个数量时，需要进行扩容了。</p>
+<h5 id="核心方法"><a href="#核心方法" class="headerlink" title="核心方法"></a>核心方法</h5>
+
+<h5 id="构造方法"><a href="#构造方法" class="headerlink" title="构造方法"></a>构造方法</h5>
+
+<p>可以发现，在new出一个map的实例时，并不会创建其中的数组等等相关的部件，只是进行简单的属性设置而已。同样的，table的大小也被规定为必须是2的乘方数。</p>
+<p>真正的初始化在放在了是在向ConcurrentHashMap中插入元素的时候发生的。如调用put()、computeIfAbsent()、compute()、merge()等方法的时候，调用时机是检查table==null。</p>
+<h5 id="get操作"><a href="#get操作" class="headerlink" title="get操作"></a>get操作</h5><p>get方法比较简单，给定一个key来确定value的时候，必须满足两个条件 key相同 hash值相同，对于节点可能在链表或树上的情况，需要分别去查找。</p>
+
+
+<h5 id="put操作"><a href="#put操作" class="headerlink" title="put操作"></a>put操作</h5>
+
+<p>总结来说，put方法也继续沿用HashMap的put方法的思想，首先不允许key或value为null的情况放入，对于每一个放入的值，利用spread方法对key的hashcode进行一次hash计算，由此来确定这个值在table中的位置i，如果i位置是空的，直接放进去且不需要加锁操作，否则对i位置节点进行加锁，然后对节点进行判断，如果是树节点则按照树的方式插入新的节点，如果是链表节点，则得到的结点就是由hash值相同的节点组成的链表的头节点。此时需要向后遍历链表，如果遇到key值一致的情况，则需要更新其value值，否则依次向后遍历，到链表尾插入这个结点（尾插法）。如果加入这个节点以后链表长度大于8，就把这个链表转换成红黑树。</p>
+<h5 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h5>
+
+<p>前面说过，构造方法中并没有真正初始化，真正的初始化在放在了是在向ConcurrentHashMap中插入元素的时候发生的。具体实现的方法就是initTable</p>
+<h5 id="transfer"><a href="#transfer" class="headerlink" title="transfer"></a>transfer</h5><p>当ConcurrentHashMap容量不足的时需要对table进行扩容。这个方法的基本思想跟HashMap是很像的，但是由于它是支持并发扩容的，所以要复杂的多。我们不深入源码去讲述，只讲述其大概原理。</p>
+<p>扩容的时总是会涉及到从一个“数组”到另一个“数组”拷贝的操作，并发扩容就是使这个操作能够并发进行，利用并发处理去减少扩容带来的时间影响。transfer中的并发扩容就是将数据迁移任务根据变量stride作为步长拆分成多个小迁移任务，每个线程每次负责迁移其中的一部分。</p>
+<p>整个扩容操作分为两个部分：</p>
+
+
+<p>第一部分是构建一个nextTable,它的容量是原来的2倍。</p>
+<p>第二个部分就是将原来table中的元素复制到nextTable中，这里允许多线程进行操作。</p>
+<p>整个扩容流程就是遍历和复制：</p>
+<p>为null或者已经处理过的节点，会被设置为forwardNode节点，当线程准备扩容时，发现节点是forwardNode节点，跳过这个节点，继续寻找未处理的节点，找到之后对节点上锁。</p>
+<p>如果这个位置是Node节点（fh&gt;=0），说明它是一个链表，就构造一个反序链表，把他们分别放在nextTable的i和i+n的位置上</p>
+<p>如果这个位置是TreeBin节点（fh&lt;0），也做一个反序处理，并且判断是否需要红黑树转链表，把处理的结果分别放在nextTable的i和i+n的位置上</p>
+<p>遍历过所有的节点以后就完成了复制工作，这时让nextTable作为新的table，并且更新sizeCtl为新容量的0.75倍 ，完成扩容。</p>
+<h5 id="remove"><a href="#remove" class="headerlink" title="remove"></a>remove</h5><p>移除方法的基本流程和put方法很类似，只不过操作由插入数据变为移除数据而已，而且如果存在红黑树的情况下，会检查是否需要将红黑树转为链表的步骤。不再重复讲述。</p>
+<h5 id="treeifyBin"><a href="#treeifyBin" class="headerlink" title="treeifyBin"></a>treeifyBin</h5><p>用于将过长的链表转换为TreeBin对象。但是他并不是直接转换，而是进行一次容量判断，没有达到转换的要求，直接进行扩容操作并返回；如果满足条件才将链表的结构转换为TreeBin ，这与HashMap不同的是，它并没有把TreeNode直接放入红黑树，而是利用了TreeBin这个小容器来封装所有的TreeNode。</p>
+<h5 id="size"><a href="#size" class="headerlink" title="size"></a>size</h5><p>JDK1.8中，调用put()方法时就会调用addCount()方法计算size的数量，扩容过程也会修改size的数量，因此在调用size()方法时可以直接返回，JDK1.7是调用size()方法时才会去计算。</p>
+<p>调用addCount()方法时，会使用CAS更新baseCount，因为CAS只允许一个线程做修改，如果修改失败就会使用counterCells，大致的流程就是：</p>
+<ol>
+<li><p>对 baseCount 做 CAS 自增操作。</p>
+</li>
+<li><p>如果并发导致 baseCount CAS 失败了，则使用 counterCells。</p>
+</li>
+<li><p>如果counterCells CAS 失败了，在 fullAddCount 方法中，会继续死循环操作，直到成功。</p>
+</li>
+</ol>
+<p>在具体实现上，计算大小的核心方法都是 sumCount()</p>
+<p>JDK1.8中sumCount()会获取baseCount和CounterCell数组然后遍历CounterCell数组，将baseCount与CounterCell的值累加后返回。</p>
+
+
+<p>其实去计算并发集合中实时在变的size是没有多大的意义的，但Doug Lea仍花费了很多心思去优化他的性能。</p>
+<h3 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h3><ul>
+<li><p>HashMap与HashTable的区别</p>
+<ul>
+<li>HashMap 是线程不安全的，HashTable 是线程安全的；</li>
+<li>由于线程安全，HashTable的效率比HashMap要低；</li>
+<li>HashMap是允许key为null的，HashTable是不允许的，ConcurrentHashMap也是不允许的。</li>
+<li>HashMap最多只允许一条记录的键为null，允许多条记录的值为null，而 HashTable 不允许；</li>
+<li>HashMap 默认初始化数组的大小为16，HashTable 为 11，前者扩容时，扩大两倍，后者扩大两倍+1；</li>
+<li>HashMap 需要重新计算 hash 值，而 HashTable 直接使用对象的 hashCode</li>
+</ul>
+</li>
+<li><p>ConcurrentHashMap与HashTable的区别</p>
+<p>HashTable只是简单的使用synchronize关键字保证线程安全，使用过程中只有一把锁，效率十分感人。</p>
+<p>ConcurrentHashMap是 Java并发包java.util.concurrent中提供的一个线程安全且高效的HashMap 实现，使用分段锁的方式细化了锁的粒度，以提升效率。在JDK 1.7中的结构是ReentranLock+Segment+HashEntry，Segment是一种ReentranLock的实现，锁的粒度是基于Segment的，Segment中包含多个HashEntry，HashEntry中存储着key跟value，但Segment的数量是固定的，无法随着扩容增加。JDK 1.8中进行了改进，采用CAS + synchronized + Node + 红黑树，锁力度基于table中的Node节点来实现的线程安全，进一步缩小了锁的粒度。</p>
+</li>
+<li><p>HashMap与ConcurrentHashMap的区别</p>
+<p>原理上没有太大区别，只不过ConcurrentHashMap是线程安全的，另外HashMap 的键值对允许有null，但是ConCurrentHashMap 都不允许，还有在数据结构上，红黑树相关的节点类不同、继承的类不同</p>
+</li>
+<li><p>ConcurrentHashMap锁机制</p>
+<p>JDK 1.7 中，采用分段锁的机制，实现并发的更新操作，底层采用数组+链表的存储结构，包括两个核心静态内部类 Segment 和 HashEntry。Segment 继承 ReentrantLock（重入锁） 用来充当锁的角色，每个 Segment 对象守护每个散列映射表的若干个桶；HashEntry 用来封装映射表的键-值对；每个桶是由若干个 HashEntry 对象链接起来的链表。</p>
+<p>JDK 1.8 中，采用Node + CAS + Synchronized来保证并发安全。取消类 Segment，当需要锁时直接用synchronized锁住table数组中的对象，键值对直接存储在table中；当 Node 对象组成的链表长度超过 TREEIFY_THRESHOLD 时，链表转换为红黑树，Node对象被包装为TreeNode，以提升检索性能。此时底层变更为数组 + 链表 + 红黑树。</p>
+</li>
+<li><p>ConcurrentHashMap在JDK 1.8中使用内置锁 synchronized 来代替重入锁 ReentrantLock的原因</p>
+<ul>
+<li>JVM 开发团队对 synchronized做了大量性能上的优化，而且基于 JVM 的 synchronized 优化空间更大，更加自然。</li>
+<li>在大量的数据操作下，ReentrantLock 会开销更多的内存。</li>
+</ul>
+</li>
+<li><p>ConcurrentHashMap注意点</p>
+<ul>
+<li>重要的常量：<strong>private transient volatile int sizeCtl</strong>，当为负数时，-1 表示正在初始化，-N 表示 N - 1 个线程正在进行扩容；当为 0 时，表示 table 还没有初始化；当为其他正数时，表示初始化或者下一次进行扩容的大小。</li>
+<li>数据结构：<strong>Node 是存储结构的基本单元</strong>，继承 HashMap 中的 Entry，用于存储数据；TreeNode 继承 Node，但是数据结构换成了二叉树结构，是红黑树的存储结构，用于红黑树中存储数据；TreeBin 是封装 TreeNode 的容器，提供转换红黑树的一些条件和锁的控制。</li>
+<li>put()方法：如果没有初始化，就调用 initTable() 方法来进行初始化；如果没有 hash 冲突就直接 CAS 无锁插入；如果需要扩容，就先进行扩容；如果存在 hash 冲突，就加锁来保证线程安全，两种情况：一种是链表形式就直接遍历到尾端插入，一种是红黑树就按照红黑树结构插入；如果该链表的数量大于阀值 8，就要先转换成红黑树的结构，break 再一次进入循环如果添加成功就调用 addCount() 方法统计 size，并且检查是否需要扩容。</li>
+<li>扩容方法 transfer()：默认容量为 16，扩容时，容量变为原来的两倍。helpTransfer()：调用多个工作线程一起帮助进行扩容，这样的效率就会更高。</li>
+<li>get()方法：计算 hash 值，定位到该 table 索引位置，如果是首结点符合就返回；如果遇到扩容时，会调用标记正在扩容结点 ForwardingNode.find()方法，查找该结点，匹配就返回；以上都不符合的话，就往下遍历结点，匹配就返回，否则最后就返回 null。</li>
+</ul>
+</li>
+<li><p>ConcurrentHashMap的并发度</p>
+<p>并发度表示程序运行时能够同时更新 ConccurentHashMap 且不产生锁竞争的最大线程数。JDK1.7种默认为 16，即Segment的数量，可以在构造函数中设置。当用户设置并发度时，ConcurrentHashMap 会使用大于等于该值的最小2幂指数作为实际并发度（假如用户设置并发度为17，实际并发度则为32）。1.8中由于直接使用table中的节点数量作为分段锁的数量，并发度已经没有太大的实际意义了，主要用处就是当设置的初始容量小于并发度，将初始容量提升至并发度大小。 </p>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/ConcurrentHashMap/">ConcurrentHashMap</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/07/28/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/ForkJoin/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">ForkJoin</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/07/27/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/ThreadLocal/">
+                        <span class="hidden-mobile">ThreadLocal</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

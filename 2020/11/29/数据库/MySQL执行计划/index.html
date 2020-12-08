@@ -1,0 +1,786 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>MySQL的执行计划 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="MySQL的执行计划">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-11-29 20:56" pubdate>
+        2020年11月29日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.6k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      51
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">MySQL的执行计划</h1>
+            
+            <div class="markdown-body">
+              <h3 id="执行计划简述"><a href="#执行计划简述" class="headerlink" title="执行计划简述"></a>执行计划简述</h3><p>使用EXPLAIN关键字可以模拟优化器执行SQL查询语句，从而知道MySQL是如何处理SQL语句的，分析查询语句或是表结构的性能瓶颈。</p>
+<p>用法：</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">EXPLAIN</span> &lt;<span class="hljs-keyword">SELECT</span>语句&gt;
+<span class="hljs-comment">-- 举例</span>
+<span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_contact <span class="hljs-keyword">WHERE</span> index_code = <span class="hljs-string">&#x27;M&#x27;</span></code></pre>
+
+<p>在查询中的每个表会输出⼀⾏信息，如果有两个表通过 join 连接查询，那么会输出两⾏，表的含义⽐较⼴泛：可以是⼦查询、⼀个 union 结果等。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>上图所展现出的就是其执⾏计划中的信息，根据这些信息进⾏SQL性能的判断。</p>
+<p>在查询中的每个表会输出⼀⾏信息，如果有两个表通过 join 连接查询，那么会输出两⾏，表的含义⽐较⼴泛：可以是⼦查询、⼀个 union 结果等。</p>
+<p>需要注意的是，在MySQL5.7.3以后的版本，EXPLAIN已经默认添加了EXTENDED参数，在结果中添加了filtered结果字段，filtered是指返回结果的⾏占需要读到的⾏(rows列的值)的百分⽐。紧跟着执⾏SHOW WARNINGS;语句查看优化后的查询语句。</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_sku <span class="hljs-keyword">WHERE</span> index_code = <span class="hljs-string">&#x27;M&#x27;</span> <span class="hljs-keyword">AND</span> surname = <span class="hljs-string">&#x27;ma&#x27;</span>;
+<span class="hljs-keyword">SHOW</span> <span class="hljs-keyword">WARNINGS</span>;</code></pre>
+
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>⼀般⽽⾔，优化的结果建议并不准确，仅做参考。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>通过执行计划的结果可以分析出以下内容：</p>
+<ul>
+<li>表的读取顺序</li>
+<li>数据读取操作的操作类型</li>
+<li>哪些索引可以使用</li>
+<li>哪些索引被实际使用</li>
+<li>表之间的引用</li>
+<li>每张表有多少行被优化器查询</li>
+</ul>
+<h3 id="字段含义"><a href="#字段含义" class="headerlink" title="字段含义"></a>字段含义</h3><h4 id="id列表"><a href="#id列表" class="headerlink" title="id列表"></a>id列表</h4><p>id列表的编号是描述select查询的序列号，id的顺序是按select出现的顺序增长的。值越大执行优先级越高，id相同则从上往下执行，id为NULL最后执行。</p>
+<h4 id="select-type"><a href="#select-type" class="headerlink" title="select_type"></a>select_type</h4><p>表示SELECT语句的类型，主要是用于区别普通查询，联合查询，自查询等复杂查询。</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SIMPLE</td>
+<td>表示简单查询，其中不包含连接查询和子查询。</td>
+</tr>
+<tr>
+<td>PRIMARY</td>
+<td>表示主查询，或者是最外面的查询语句。</td>
+</tr>
+<tr>
+<td>UNION</td>
+<td>表示连接查询的第二个或之后的查询语句。</td>
+</tr>
+<tr>
+<td>DEPENDENT UNION</td>
+<td>UNION中的第⼆个或后⾯的SELECT语句，取决于外⾯的查询。</td>
+</tr>
+<tr>
+<td>UNION RESULT</td>
+<td>从UNION表获取结果的SELECT。</td>
+</tr>
+<tr>
+<td>SUBQUERY</td>
+<td>子查询中的第一个SELECT语句。</td>
+</tr>
+<tr>
+<td>DEPENDENT SUBQUERY</td>
+<td>⼦查询中的第1个SELECT语句，取决于外⾯的查询。</td>
+</tr>
+<tr>
+<td>DERIVED</td>
+<td>在FROM列表中包含的子查询，被标记为DERIVED（衍生），MySQL会递归执行这些子查询，把结果放在临时表里。</td>
+</tr>
+</tbody></table>
+<h4 id="table"><a href="#table" class="headerlink" title="table"></a>table</h4><p>计划执⾏的表，当 from ⼦句中有⼦查询时，table列是&lt;derivenN&gt; 格式，表示当前查询依赖 id=N 的查询，于是先执⾏ id=N 的查询。 当有 union 时，UNION RESULT 的 table 列的值为&lt;union1,2&gt;，1和2表示参与 union 的 select ⾏id。</p>
+<h4 id="type"><a href="#type" class="headerlink" title="type"></a>type</h4><p>表示关联类型或者访问类型，即MySQL决定如何查找表中的行，查找数据行记录的大概范围。性能由好到坏依次为：system &gt; const &gt; eq_ref &gt; ref &gt; fulltext &gt; ref_or_null &gt; index_merge &gt; unique_subquery &gt; index_subquery &gt; range &gt; index &gt; all。较为常用的：system&gt;const&gt;eq_ref&gt;ref&gt;range&gt;index&gt;ALL</p>
+<p>一般来说，得保证查询至少达到range级别，最好能达到ref。</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NULL</td>
+<td>MySQL不访问任何表、索引，直接返回结果</td>
+</tr>
+<tr>
+<td>system</td>
+<td>表只有一行记录（等于系统表），这是const类型的特例，一般不会出现，可以忽略不计。</td>
+</tr>
+<tr>
+<td>const</td>
+<td>数据表最多只有一个匹配行，因为只匹配一行数据，所以很快，常用语PRIMARY KEY或者UNIQUE索引的查询，可理解为const是最优化的。</td>
+</tr>
+<tr>
+<td>eq_ref</td>
+<td>类似ref，区别在于使用的是唯一索引，使用主键的关联查询，关联查询的记录只有一条。常见于主键或唯一索引扫描。</td>
+</tr>
+<tr>
+<td>ref</td>
+<td>相比eq_ref，不使用唯一索引，而是使用普通索引或者唯一性索引的部分前缀，索引要和某个值相比较，可能会找到多个符合条件的行。</td>
+</tr>
+<tr>
+<td>range</td>
+<td>范围扫描通常出现在between、&lt;、&gt;、in等操作中。使用一个索引来检索给定范围的行。</td>
+</tr>
+<tr>
+<td>index</td>
+<td>和ALL一样，不同的就是mysql指扫描索引树，通常比ALL快一些。</td>
+</tr>
+<tr>
+<td>ALL</td>
+<td>即全表扫描，意味着mysql需要从头到尾去查找所需要的⾏。通常情况下这需要增加索引来进</td>
+</tr>
+</tbody></table>
+<h4 id="possible-keys"><a href="#possible-keys" class="headerlink" title="possible_keys"></a>possible_keys</h4><p>这⼀列显示查询可能使⽤哪些索引来查找。</p>
+<p>explain 时可能出现 possible_keys 有列，⽽ key 显示 NULL 的情况，这种情况是因为表中数据不多，mysql认为索引对此查询帮助不⼤，选择了全表查询。</p>
+<p>如果该列是NULL，则没有相关的索引。在这种情况下，可以通过检查 where ⼦句看是否可以创造⼀个适当的索引来提⾼查询性能，然后⽤ explain 查看效果。</p>
+<h4 id="key"><a href="#key" class="headerlink" title="key"></a>key</h4><p>显示MySQL实际决定使⽤的键(索引)。如果没有选择索引，键是NULL。</p>
+<p>可以强制使⽤索引或者忽略索引：</p>
+<pre><code class="hljs sql"><span class="hljs-comment"># 强制使用索引</span>
+<span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_user <span class="hljs-keyword">IGNORE</span> <span class="hljs-keyword">INDEX</span>(age) <span class="hljs-keyword">WHERE</span> age &lt; <span class="hljs-number">10</span>;
+<span class="hljs-comment"># 强制忽略索引</span>
+<span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_user <span class="hljs-keyword">USE</span> <span class="hljs-keyword">INDEX</span>(age) <span class="hljs-keyword">WHERE</span> agc &lt; <span class="hljs-number">10</span>;</code></pre>
+
+<h4 id="key-len"><a href="#key-len" class="headerlink" title="key_len"></a>key_len</h4><p>表示索引中使用的字节数，通过这个值可以算出具体使用了索引中的哪些列。在不损失精确性的情况下，长度越短越好。如果充分用了索引，key_len会比没有充分用到索引要长。key_len显示的值为索引字段的最大可能长度，并非实际使用长度，即key_len是根据表定义计算而得，不是通过表内检索出的。</p>
+<p>根据这个值，就可以判断索引使用情况，特别是在组合索引的时候，判断所有的索引字段是否都被查询用到。</p>
+<p>计算规则如下：</p>
+<ul>
+<li>字符串<ul>
+<li>char(n)：n字节长度</li>
+<li>varchar(n)：2字节存储字符串长度，如果utf-8，则长度 3n + 2。</li>
+</ul>
+</li>
+<li>数值类型<ul>
+<li>tinyint：1字节</li>
+<li>smallint：2字节</li>
+<li>int：4字节</li>
+<li>bigint：8字节</li>
+</ul>
+</li>
+<li>时间类型<ul>
+<li>date：3字节</li>
+<li>timestamp：4字节</li>
+<li>datetime：5.6中5个字节，5.5中8个字节。</li>
+</ul>
+</li>
+<li>如果字段允许为NULL，则需要1字节记录是否为 NULL</li>
+</ul>
+<blockquote>
+<p>VARCHAR值保存时只保存需要的字符数，另加一个字节来记录长度，如果列声明的长度超过255，则使用两个字节，所以VARCAHR索引长度计算时候要加2），固定长度字段（char）不需要额外的字节记录实际长度。 如果允许为NULL都需要1个字节的额外空间，所以索引字段最好不要允许为NULL，因为允许为NULL会让统计更加复杂并且需要额外的存储空间。不同字符编码占用的存储空间不同，latin1占用1个字节，gbk占用2个字节，utf8占用3个字节，如果允许为NULL，需要一个字节的额外空间。</p>
+<p>复合索引有最左前缀的特性，如果复合索引能全部使用上，则是复合索引字段的索引长度之和，这也可以用来判定复合索引是否部分使用，还是全部使用。</p>
+<p>索引最⼤⻓度是768字节，当字符串过⻓时，mysql会做⼀个类似左前缀索引的处理，将前半部分的字符提取出来做索引。</p>
+</blockquote>
+<h4 id="ref"><a href="#ref" class="headerlink" title="ref"></a>ref</h4><p>显示索引的哪一列被使用了，如果可能的话，是一个常数。哪些列或常量被用于查找索引列上的值</p>
+<h4 id="rows"><a href="#rows" class="headerlink" title="rows"></a>rows</h4><p>根据表统计信息及索引选用情况，大致估算出找到所需的记录所需要读取的行数</p>
+<h4 id="filtered"><a href="#filtered" class="headerlink" title="filtered"></a>filtered</h4><p>这个字段表示存储引擎返回的数据在server层过滤后，剩下多少满足查询的记录数量的比例。</p>
+<h4 id="extra"><a href="#extra" class="headerlink" title="extra"></a>extra</h4><p>包含不适合在其他列中显示但十分重要的额外信息。</p>
+<ul>
+<li><p>Distinct：MySQL发现第1个匹配⾏后,停⽌为当前的⾏组合搜索更多的⾏。</p>
+</li>
+<li><p>Not exists：MySQL能够对查询进⾏LEFT JOIN优化，发现1个匹配LEFT JOIN标准的⾏后，不再为前⾯的的⾏组合在该表内检查更多的⾏。</p>
+</li>
+<li><p>range checked for each record (index map: #)：MySQL没有发现好的可以使⽤的索引，但发现如果来⾃前⾯的表的列值已知，可能部分索引可以使⽤。</p>
+</li>
+<li><p><strong>Using filesort</strong>：MySQL会对结果使⽤⼀个外部索引排序，⽽不是按索引次序从表⾥读取⾏。此时mysql会根据联接类型浏览所有符合条件的记录，并保存排序关键字和⾏指针，然后排序关键字并按顺序检索⾏信息。这种情况下⼀般也是要考虑使⽤索引来优化的。</p>
+</li>
+<li><p><strong>Using index</strong>：表示使用了覆盖索引。覆盖索引表示在获取查询结果时只需要遍历索引树，不需要从回表。</p>
+<p>回表查询就是先通过辅助索引树定位主键值，再通过主键索引树定位⾏记录，它的性能较扫⼀遍索引树更低，这就是回表查询。</p>
+<p>覆盖索引只需要在辅助索引树上就能获取SQL所需的所有列数据，⽆需回表，速度更快。</p>
+</li>
+<li><p><strong>Using temporary</strong>：MySQL需要创建⼀张临时表来处理查询，常见于排序order by和分组查询group by。出现这种情况⼀般是要进⾏优化的，通常使⽤索引来优化。</p>
+</li>
+<li><p>Using where：MySQL将在存储引擎检索⾏后再进⾏过滤。就是先读取整⾏数据，再按 where 条件进⾏检查，符合就留下，不符合就丢弃。</p>
+</li>
+<li><p>Using join buffer：表示使用了连接缓存，连接缓存的大小可以使用<code>show VARIABLES like &#39;%join_buffer_size%&#39; </code></p>
+</li>
+<li><p>Using index condition：与Using where类似，查询的列不完全被索引覆盖，where条件中是⼀个前导列的范围；</p>
+</li>
+<li><p>Using sort_union(…), Using union(…), Using intersect(…)：这些函数说明如何为index_merge联接类型合并索引扫描。</p>
+</li>
+<li><p>Using index for group-by：类似于访问表的Using index⽅式，Using index for group-by表示MySQL发现了⼀个索引，可以⽤来查询GROUP BY或DISTINCT查询的所有列，⽽不要额外搜索硬盘访问实际的表。</p>
+</li>
+<li><p>NULL：查询的列未被索引覆盖，并且where筛选条件是索引的前导列，意味着⽤到了索引，但是部分字段未被索引覆盖，必须通过回表来实现，不是纯粹地⽤到了索引，也不是完全没⽤到索引。</p>
+</li>
+</ul>
+<h3 id="常见的优化方式"><a href="#常见的优化方式" class="headerlink" title="常见的优化方式"></a>常见的优化方式</h3><h4 id="order-by查询"><a href="#order-by查询" class="headerlink" title="order by查询"></a>order by查询</h4><p><strong>排序方式</strong></p>
+<ol>
+<li><p>第一种是通过对返回数据进行排序，也就是通常说的 filesort 排序，所有不是通过索引直接返回排序结果的排序都叫 FileSort 排序。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic12.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>第二种通过有序索引顺序扫描直接返回有序数据，这种情况即为 using index，不需要额外排序，操作效率高。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic13.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>多字段排序</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic14.png" srcset="/blog/img/loading.gif" class>
+
+</li>
+</ol>
+<p>了解了MySQL的排序方式，优化目标就清晰了：尽量减少额外的排序，通过索引直接返回有序数据。</p>
+<p>where 条件和Order by 使用相同的索引，并且Order By 的顺序和索引顺序相同， 并且Order by 的字段都是升序，或者都是降序。否则肯定需要额外的操作，这样就会出现FileSort。</p>
+<p><strong>Filesort的优化</strong></p>
+<p>通过创建合适的索引，能够减少 Filesort 的出现，但是在某些情况下，条件限制不能让Filesort消失，那就需要加快Filesort的排序操作。对于Filesort，MySQL 现在采用的是一次扫描算法：一次性取出满足条件的所有字段，然后在排序区 sort buffer 中排序后直接输出结果集。排序时内存开销较大，但是排序效率比两次扫描算法要高。</p>
+<p>MySQL 通过比较系统变量 max_length_for_sort_data 的大小和Query语句取出的字段总大小， 来判定是否那种排序算法，如果max_length_for_sort_data 更大，那么使用第二种优化之后的算法；否则使用第一种。</p>
+<p>可以适当提高 sort_buffer_size 和 max_length_for_sort_data 系统变量，来增大排序区的大小，提高排序的效率。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic15.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="group-by查询"><a href="#group-by查询" class="headerlink" title="group by查询"></a>group by查询</h4><p>由于GROUP BY 实际上也同样会进行排序操作，而且与ORDER BY 相比，GROUP BY 主要只是多了排序之后的分组操作。当然，如果在分组的时候还使用了其他的一些聚合函数，那么还需要一些聚合函数的计算。所以，在GROUP BY 的实现过程中，与 ORDER BY 一样也可以利用到索引。</p>
+<p>如果查询包含 group by 但是用户想要避免排序结果的消耗， 则可以执行order by null 禁止排序。如下：</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic16.png" srcset="/blog/img/loading.gif" class>
+
+<p>优化后</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic17.png" srcset="/blog/img/loading.gif" class>
+
+<p>创建索引</p>
+<p><code>create index idx_emp_age_salary on emp(age,salary);</code></p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic18.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h4><p>一般分页查询时，通过创建覆盖索引能够比较好地提高性能。一个常见又非常头疼的问题就是 limit 5000000,10 ，此时需要MySQL排序前5000010 记录，仅仅返回5000000 - 5000010 的记录，其他记录丢弃，查询排序的代价非常大 。</p>
+<p>limit分页操作, 越往后, 性能越低</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic19.png" srcset="/blog/img/loading.gif" class>
+
+<p>优化方案：</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic20.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="count查询"><a href="#count查询" class="headerlink" title="count查询"></a>count查询</h4><p>在很多的业务系统中，都需要考虑进行分页操作，但是当我们执行分页操作时，都需要进行一次count操作，求取总记录数，如果数据库表的数据量大，在InnoDB引擎中，执行count操作的性能是比较低的，需要遍历全表数据，对计数进行累加。</p>
+<p>优化方案：</p>
+<p>①. 在大数据量的查询中，只查询数据， 而不展示总记录数 ； </p>
+<p>②. 通过缓存redis维护一个表的计数，来记录数据库表的总记录数，在执行插入/删除时，需要动态更新；</p>
+<p>③. 在数据库表中定义一个大数据量的计数表，在执行插入/删除时，需要动态更新。</p>
+<p>大批量插入</p>
+<p>当使用 load 命令导入数据的时候，适当的设置可以提高导入的效率。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic21.png" srcset="/blog/img/loading.gif" class>
+
+<p>对于 InnoDB 类型的表，有以下几种方式可以提高导入的效率：</p>
+<ol>
+<li><p>主键顺序插入</p>
+<p>因为InnoDB类型的表是按照主键的顺序保存的，所以将导入的数据按照主键的顺序排列，可以有效的提高导入数据的效率。如果InnoDB表没有主键，那么系统会自动默认创建一个内部列作为主键，所以如果可以给表创建一个主键，将可以利用这点，来提高导入数据的效率。</p>
+<p>插入ID顺序排列数据：</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic22.png" srcset="/blog/img/loading.gif" class>
+
+<p>插入ID无序排列数据：</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic23.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>关闭唯一性校验</p>
+<p>在导入数据前执行 SET UNIQUE_CHECKS=0，关闭唯一性校验，在导入结束后执行 SET UNIQUE_CHECKS=1，恢复唯一性校验，可以提高导入的效率。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic24.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>手动提交事务</p>
+<p>如果应用使用自动提交的方式，建议在导入前执行 SET AUTOCOMMIT=0，关闭自动提交，导入结束后再执行 SET AUTOCOMMIT=1，打开自动提交，也可以提高导入的效率。</p>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic25.png" srcset="/blog/img/loading.gif" class>
+
+</li>
+</ol>
+<h4 id="复合索引优化"><a href="#复合索引优化" class="headerlink" title="复合索引优化"></a>复合索引优化</h4><p><strong>尽量全值匹配</strong>：如果使用复合索引，应使where条件中尽量包含复合索引的全部列。</p>
+<p><strong>最佳左前缀法则</strong>：复合索引在使用时要遵守最左前缀法则，即查询条件应从从索引最左侧的列开始并且不跳过索引中间的列。</p>
+<p><strong>不在索引列上做任何操作</strong>：索引列上做任何操作（计数、函数、类型转换）会导致索引失效而转向全表扫描。</p>
+<p><strong>进行范围条件查询的列放最后</strong>：如果对复合索引中的列进行范围查询，而且该列处于复合索引的中间位置，会导致符合索引后面的索引列全部失效。</p>
+<p><strong>尽量使用覆盖索引</strong>：尽量使用覆盖索引(只访问索引的查询(索引列和查询列一致))，减少select *</p>
+<p><strong>不等于要慎用</strong>：mysql 在使用不等于（!= 或者&lt;&gt;）的时候会导致索引失效会导致全表扫描，解决方式为使用覆盖索引</p>
+<p><strong>NULL、NOT NULL会影响索引</strong>：在列不允许为空的情况下，使用IS NULL或IS NOT NULL会导致索引失效，在列允许为空的情况下IS NOT NULL会导致索引失效，使用覆盖索引也可以解决这个问题。</p>
+<p><strong>慎用LIKE查询</strong>：如果LIKE以通配符开头（’%abc…’）会导致索引失效变成全表扫描的操作，同样使用覆盖索引也可以解决这个问题。</p>
+<p><strong>字符类型加引号</strong>：字符串不加单引号索引失效。</p>
+<p><strong>OR改为UNION效率高</strong>：OR会导致索引失效，解决方式为使用UNION改写SQL。</p>
+<p><strong>示例</strong></p>
+<table>
+<thead>
+<tr>
+<th>where语句</th>
+<th>使用到的索引</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>where a = 3</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b = 5</td>
+<td>a,b</td>
+</tr>
+<tr>
+<td>where a = 3 and b = 5 and c = 4</td>
+<td>a,b,c</td>
+</tr>
+<tr>
+<td>where b = 3 或者 where b = 3 and c = 4 或者 where c = 5</td>
+<td>空</td>
+</tr>
+<tr>
+<td>where a = 3 and c = 5</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b &gt;4 and c = 5</td>
+<td>a,b</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘kk%’ and c = 4</td>
+<td>a,b,c</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘%kk’ and c = 4</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘%kk%’ and c = 4</td>
+<td>a</td>
+</tr>
+<tr>
+<td>where a = 3 and b like ‘k%kk%’ and c = 4</td>
+<td>a,b,c</td>
+</tr>
+</tbody></table>
+<p><strong>记忆总结</strong></p>
+<ul>
+<li><p>全值匹配我最爱，最左前缀要遵守；</p>
+</li>
+<li><p>带头大哥不能死，中间兄弟不能断；</p>
+</li>
+<li><p>索引列上少计算，范围之后全失效；</p>
+</li>
+<li><p>LIKE百分写最右，覆盖索引不写*；</p>
+</li>
+<li><p>不等空值还有OR，索引影响要注意；</p>
+</li>
+<li><p>VARCHAR引号不可丢， SQL优化有诀窍。</p>
+</li>
+</ul>
+<h4 id="数据的迁移"><a href="#数据的迁移" class="headerlink" title="数据的迁移"></a>数据的迁移</h4><p>使用前需要确认MySQL是否允许允许导入导出。</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;secure_file_priv&#x27;</span></code></pre>
+
+<ul>
+<li><p>secure_file_priv为NULL时，表示限制MySQL不允许导入或导出。</p>
+</li>
+<li><p>secure_file_priv为/tmp时，表示限制MySQL只能在/tmp目录中执行导入导出，其他目录不能执行。</p>
+</li>
+<li><p>secure_file_priv没有值时，表示不限制MySQL在任意目录的导入导出。</p>
+</li>
+</ul>
+<p>修改方法为将<code>source_file_priv=&#39;&#39;</code>添加到my.cnf文件中。</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">select</span> * <span class="hljs-keyword">into</span> <span class="hljs-keyword">OUTFILE</span> <span class="hljs-string">&#x27;D:\\product.txt&#x27;</span> <span class="hljs-keyword">from</span> product_info    <span class="hljs-comment">-- 将表中的数据迁移到product.txt文件中</span>
+<span class="hljs-keyword">load</span> <span class="hljs-keyword">data</span> <span class="hljs-keyword">INFILE</span> <span class="hljs-string">&#x27;D:\\product.txt&#x27;</span> <span class="hljs-keyword">into</span> <span class="hljs-keyword">table</span> product_info    <span class="hljs-comment">-- 将product.txt文件中的数据导入到表中</span></code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/">MySQL执行计划</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">MySQL索引的实现</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/">
+                        <span class="hidden-mobile">数据库架构体系及平滑扩容简述</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

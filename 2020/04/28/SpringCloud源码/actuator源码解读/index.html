@@ -1,0 +1,558 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Actuator源码解读 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Actuator源码解读">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-28 16:11" pubdate>
+        2020年4月28日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      568 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      9
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Actuator源码解读</h1>
+            
+            <div class="markdown-body">
+              <h2 id="actuator源码解读"><a href="#actuator源码解读" class="headerlink" title="actuator源码解读"></a>actuator源码解读</h2><p>actuator的spring.factories中会注册很多带有@Endpoin注解的类。</p>
+<p>通过spring.factories引入的ManagementContextAutoConfiguration中有一个EnableSameManagementContextConfiguration类。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
+<span class="hljs-meta">@EnableManagementContext(ManagementContextType.SAME)</span>
+<span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EnableSameManagementContextConfiguration</span> </span>&#123;
+
+&#125;</code></pre>
+
+<p>这个类的@EnableManagementContext会引入ManagementContextConfigurationImportSelector类</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span>
+<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
+<span class="hljs-meta">@Documented</span>
+<span class="hljs-meta">@Import(ManagementContextConfigurationImportSelector.class)</span>
+<span class="hljs-meta">@interface</span> EnableManagementContext &#123;</code></pre>
+
+<p>ManagementContextConfigurationImportSelector类会引入spring.factories中ManagementContextConfiguration类型的所有类</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> List&lt;String&gt; <span class="hljs-title">loadFactoryNames</span><span class="hljs-params">()</span> </span>&#123;
+   <span class="hljs-keyword">return</span> SpringFactoriesLoader.loadFactoryNames(ManagementContextConfiguration.class, <span class="hljs-keyword">this</span>.classLoader);
+&#125;</code></pre>
+
+<p>这里我们只关注WebMvcEndpointManagementContextConfiguration</p>
+<p>WebMvcEndpointManagementContextConfiguration类中会调用getEndpoints()方法获取到带有@Endpoint注解的对象，然后创建WebMvcEndpointHandlerMapping映射关系对象。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Bean</span>
+<span class="hljs-meta">@ConditionalOnMissingBean</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> WebMvcEndpointHandlerMapping <span class="hljs-title">webEndpointServletHandlerMapping</span><span class="hljs-params">(WebEndpointsSupplier webEndpointsSupplier,</span></span>
+<span class="hljs-function"><span class="hljs-params">      ServletEndpointsSupplier servletEndpointsSupplier, ControllerEndpointsSupplier controllerEndpointsSupplier,</span></span>
+<span class="hljs-function"><span class="hljs-params">      EndpointMediaTypes endpointMediaTypes, CorsEndpointProperties corsProperties,</span></span>
+<span class="hljs-function"><span class="hljs-params">      WebEndpointProperties webEndpointProperties, Environment environment)</span> </span>&#123;
+   List&lt;ExposableEndpoint&lt;?&gt;&gt; allEndpoints = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
+   Collection&lt;ExposableWebEndpoint&gt; webEndpoints = webEndpointsSupplier.getEndpoints();
+   allEndpoints.addAll(webEndpoints);
+   allEndpoints.addAll(servletEndpointsSupplier.getEndpoints());
+   allEndpoints.addAll(controllerEndpointsSupplier.getEndpoints());
+   String basePath = webEndpointProperties.getBasePath();
+   EndpointMapping endpointMapping = <span class="hljs-keyword">new</span> EndpointMapping(basePath);
+   <span class="hljs-keyword">boolean</span> shouldRegisterLinksMapping = StringUtils.hasText(basePath)
+         || ManagementPortType.get(environment).equals(ManagementPortType.DIFFERENT);
+   <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> WebMvcEndpointHandlerMapping(endpointMapping, webEndpoints, endpointMediaTypes,
+         corsProperties.toCorsConfiguration(), <span class="hljs-keyword">new</span> EndpointLinksResolver(allEndpoints, basePath),
+         shouldRegisterLinksMapping);
+&#125;</code></pre>
+
+<p>getEndpoints()最终回调用到EndpointDiscoverer的createEndpointBeans()方法，该方法会拿到有@Endpoint注解的所有的类，然后返回对应的Endpoint。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> Collection&lt;EndpointBean&gt; <span class="hljs-title">createEndpointBeans</span><span class="hljs-params">()</span> </span>&#123;
+   Map&lt;EndpointId, EndpointBean&gt; byId = <span class="hljs-keyword">new</span> LinkedHashMap&lt;&gt;();
+   String[] beanNames = BeanFactoryUtils.beanNamesForAnnotationIncludingAncestors(<span class="hljs-keyword">this</span>.applicationContext,
+         Endpoint.class);
+   <span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;
+      <span class="hljs-keyword">if</span> (!ScopedProxyUtils.isScopedTarget(beanName)) &#123;
+         EndpointBean endpointBean = createEndpointBean(beanName);
+         EndpointBean previous = byId.putIfAbsent(endpointBean.getId(), endpointBean);
+         Assert.state(previous == <span class="hljs-keyword">null</span>, () -&gt; <span class="hljs-string">&quot;Found two endpoints with the id &#x27;&quot;</span> + endpointBean.getId() + <span class="hljs-string">&quot;&#x27;: &#x27;&quot;</span>
+               + endpointBean.getBeanName() + <span class="hljs-string">&quot;&#x27; and &#x27;&quot;</span> + previous.getBeanName() + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+      &#125;
+   &#125;
+   <span class="hljs-keyword">return</span> byId.values();
+&#125;</code></pre>
+
+<p>WebMvcEndpointHandlerMapping的父类AbstractHandlerMethodMapping实现了InitializingBean接口，spring会在实例化完成后调用其afterPropertiesSet()方法</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">afterPropertiesSet</span><span class="hljs-params">()</span> </span>&#123;
+   initHandlerMethods();
+&#125;</code></pre>
+
+<p>afterPropertiesSet()方法回到用到子类AbstractWebMvcEndpointHandlerMapping中的initHandlerMethods()方法。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initHandlerMethods</span><span class="hljs-params">()</span> </span>&#123;
+   <span class="hljs-keyword">for</span> (ExposableWebEndpoint endpoint : <span class="hljs-keyword">this</span>.endpoints) &#123;
+      <span class="hljs-keyword">for</span> (WebOperation operation : endpoint.getOperations()) &#123;
+         registerMappingForOperation(endpoint, operation);
+      &#125;
+   &#125;
+   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.shouldRegisterLinksMapping) &#123;
+      registerLinksMapping();
+   &#125;
+&#125;</code></pre>
+
+<p>initHandlerMethods()方法会调用到registerMappingForOperation()方法，将所有的endpoint绑定到OperationHandler类</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerMappingForOperation</span><span class="hljs-params">(ExposableWebEndpoint endpoint, WebOperation operation)</span> </span>&#123;
+   WebOperationRequestPredicate predicate = operation.getRequestPredicate();
+   String path = predicate.getPath();
+   String matchAllRemainingPathSegmentsVariable = predicate.getMatchAllRemainingPathSegmentsVariable();
+   <span class="hljs-keyword">if</span> (matchAllRemainingPathSegmentsVariable != <span class="hljs-keyword">null</span>) &#123;
+      path = path.replace(<span class="hljs-string">&quot;&#123;*&quot;</span> + matchAllRemainingPathSegmentsVariable + <span class="hljs-string">&quot;&#125;&quot;</span>, <span class="hljs-string">&quot;**&quot;</span>);
+   &#125;
+   ServletWebOperation servletWebOperation = wrapServletWebOperation(endpoint, operation,
+         <span class="hljs-keyword">new</span> ServletWebOperationAdapter(operation));
+   registerMapping(createRequestMappingInfo(predicate, path), <span class="hljs-keyword">new</span> OperationHandler(servletWebOperation),
+         <span class="hljs-keyword">this</span>.handleMethod);
+&#125;</code></pre>
+
+<p>OperationHandler类，所有的请求都会进入其handle()方法，handle()方法最终会调用到通过spring.factories中的创建的带有@Endpoint注解的实例。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OperationHandler</span> </span>&#123;
+
+   <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ServletWebOperation operation;
+
+   OperationHandler(ServletWebOperation operation) &#123;
+      <span class="hljs-keyword">this</span>.operation = operation;
+   &#125;
+
+   <span class="hljs-meta">@ResponseBody</span>
+   <span class="hljs-function">Object <span class="hljs-title">handle</span><span class="hljs-params">(HttpServletRequest request, <span class="hljs-meta">@RequestBody(required = false)</span> Map&lt;String, String&gt; body)</span> </span>&#123;
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.operation.handle(request, body);
+   &#125;
+
+   <span class="hljs-meta">@Override</span>
+   <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">toString</span><span class="hljs-params">()</span> </span>&#123;
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.operation.toString();
+   &#125;
+
+&#125;</code></pre>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/SpringCloud%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">SpringCloud源码解析</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/actuator/">actuator</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">tomcat体系架构</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/04/28/SpringCloud%E6%BA%90%E7%A0%81/config%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">Config源码解读</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

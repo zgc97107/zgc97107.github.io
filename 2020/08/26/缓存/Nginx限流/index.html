@@ -1,0 +1,526 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Nginx限流 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Nginx限流">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-08-26 15:52" pubdate>
+        2020年8月26日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.2k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      13
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Nginx限流</h1>
+            
+            <div class="markdown-body">
+              <h3 id="Nginx限流"><a href="#Nginx限流" class="headerlink" title="Nginx限流"></a>Nginx限流</h3><p>很多查询的并发量是比较大的情况下，即使有了多级缓存，如果用户不停的刷新页面或者有恶意的请求大量达到，也会对系统造成影响。而限流就是保护措施之一。</p>
+<p>nginx提供两种限流的方式：</p>
+<ul>
+<li><p>一是控制速率</p>
+</li>
+<li><p>二是控制并发连接数</p>
+</li>
+</ul>
+<h4 id="速率限流"><a href="#速率限流" class="headerlink" title="速率限流"></a>速率限流</h4><p>控制速率的方式之一就是采用漏桶算法。</p>
+<p>(1)漏桶算法实现控制速率限流</p>
+<p>漏桶(Leaky Bucket)算法思路很简单,水(请求)先进入到漏桶里,漏桶以一定的速度出水(接口有响应速率),当水流入速度过大会直接溢出(访问频率超过接口响应速率),然后就拒绝请求,可以看出漏桶算法能强行限制数据的传输速率.示意图如下：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>(2)nginx的配置</p>
+<p>配置示如下：</p>
+<p>创建限流缓存空间：</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#限流设置</span>
+limit_req_zone <span class="hljs-variable">$binary_remote_addr</span> zone=contentRateLimit:10m rate=2r/s;</code></pre>
+
+<p>配置限流：</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#使用限流配置</span>
+limit_req zone=contentRateLimit;</code></pre>
+
+<p>参数说明：</p>
+<pre><code class="hljs apache"><span class="hljs-attribute">binary_remote_addr</span> 是一种key，表示基于 remote_addr(客户端IP) 来做限流，binary_ 的目的是压缩内存占用 量。
+<span class="hljs-attribute">zone</span>：定义共享内存区来存储访问信息，contentRateLimit:<span class="hljs-number">10</span>m 表示一个大小为<span class="hljs-number">10</span>M，名字为 contentRateLimit 的 内存区域。<span class="hljs-number">1</span>M能存储<span class="hljs-number">16000</span>IP地址的访问信息，<span class="hljs-number">10</span>M可以存储<span class="hljs-number">16</span>WIP地址访问信息。
+<span class="hljs-attribute">rate</span> 用于设置最大访问速率，rate=<span class="hljs-number">10</span>r/s 表示每秒最多处理<span class="hljs-number">10</span>个请求。Nginx 实际上以毫秒为粒度来跟踪请求信息，因 此 <span class="hljs-number">10</span>r/s 实际上是限制：每<span class="hljs-number">100</span>毫秒处理一个请求。这意味着，自上一个请求处理完后，若后续<span class="hljs-number">100</span>毫秒内又有请求到达，将拒绝处理该请求。这里设置成<span class="hljs-number">2</span>方便测试。</code></pre>
+
+<p>如果恶意一直刷新会出现如下现象：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>(3)处理突发流量</p>
+<p>上面例子限制 2r/s，如果有时正常流量突然增大，超出的请求将被拒绝，无法处理突发流量，可以结合 <strong>burst</strong> 参数使用来解决该问题。</p>
+<p>例如，如下配置表示：</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#burst配置</span>
+limit_req zone=contentRateLimit burst=4;</code></pre>
+
+<p>burst 译为突发、爆发，表示在超过设定的处理速率后能额外处理的请求数,当 rate=10r/s 时，将1s拆成10份，即每100ms可处理1个请求。</p>
+<p>此处，<strong>burst=4</strong> ，若同时有4个请求到达，Nginx 会处理第一个请求，剩余3个请求将放入队列，然后每隔500ms从队列中获取一个请求进行处理。若请求数大于4，将拒绝处理多余的请求，直接返回503。</p>
+<p>不过，单独使用 burst 参数并不实用。假设 burst=50 ，rate依然为10r/s，排队中的50个请求虽然每100ms会处理一个，但第50个请求却需要等待 50 * 100ms即 5s，这么长的处理时间自然难以接受。</p>
+<p>因此，burst 往往结合 nodelay 一起使用。</p>
+<p>例如：如下配置：</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#nodelay配置</span>
+limit_req zone=contentRateLimit burst=4 nodelay;</code></pre>
+
+<p>如上表示：</p>
+<p>平均每秒允许不超过2个请求，突发不超过4个请求，并且处理突发4个请求的时候，没有延迟，等到完成之后，按照正常的速率处理。</p>
+<p>完整配置如下：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="控制并发量（连接数）"><a href="#控制并发量（连接数）" class="headerlink" title="控制并发量（连接数）"></a>控制并发量（连接数）</h4><p>ngx_http_limit_conn_module 提供了限制连接数的能力。主要是利用limit_conn_zone和limit_conn两个指令。利用连接数限制 某一个用户的ip连接的数量来控制流量。</p>
+<p>注意：并非所有连接都被计算在内 只有当服务器正在处理请求并且已经读取了整个请求头时，才会计算有效连接。</p>
+<p>此处忽略测试。</p>
+<p>配置语法：</p>
+<pre><code class="hljs pgsql">Syntax: limit_conn <span class="hljs-type">zone</span> number;
+<span class="hljs-keyword">Default</span>: —;
+Context: http, <span class="hljs-keyword">server</span>, <span class="hljs-keyword">location</span>;</code></pre>
+
+<p>(1)配置限制固定连接数</p>
+<p>如下，配置如下：</p>
+<p>配置限流缓存空间：</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#根据IP地址来限制，存储内存大小10M</span>
+limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=addr:1m;</code></pre>
+
+<pre><code class="hljs sh"><span class="hljs-comment">#location配置</span>
+limit_conn addr 2;</code></pre>
+
+<p>参数说明：</p>
+<pre><code class="hljs apache"><span class="hljs-attribute">limit_conn_zone</span> $binary_remote_addr zone=addr:<span class="hljs-number">10</span>m; 表示限制根据用户的IP地址来显示，设置存储地址为的 内存大小<span class="hljs-number">10</span>M 
+<span class="hljs-attribute">limit_conn</span> addr <span class="hljs-number">2</span>; 表示 同一个地址只允许连接<span class="hljs-number">2</span>次。</code></pre>
+
+<p>(2)限制每个客户端IP与服务器的连接数，同时限制与虚拟服务器的连接总数。</p>
+<p>限流缓存空间配置：</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#IP限流</span>
+limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=perip:10m;
+<span class="hljs-comment">#根据server的名字限流</span>
+limit_conn_zone <span class="hljs-variable">$server_name</span> zone=perserver:10m;</code></pre>
+
+<p>location配置</p>
+<pre><code class="hljs sh">limit_conn perip 10; <span class="hljs-comment">#单个客户端ip与服务器的连接数。</span>
+limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总连接数。</span></code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E7%BC%93%E5%AD%98/">缓存</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/nginx/">nginx</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/nginx%E9%99%90%E6%B5%81/">nginx限流</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">缓存穿透</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/24/%E7%BC%93%E5%AD%98/%E7%BA%A2%E5%8C%85%E9%9B%A8%E6%A1%88%E4%BE%8B/">
+                        <span class="hidden-mobile">红包雨案例</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,753 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>类文件结构 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="类文件结构">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-07-14 17:38" pubdate>
+        2020年7月14日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      15
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">类文件结构</h1>
+            
+            <div class="markdown-body">
+              <h3 id="字节码"><a href="#字节码" class="headerlink" title="字节码"></a>字节码</h3><p>通过winhex软件打开class文件如下：</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="字节码表"><a href="#字节码表" class="headerlink" title="字节码表"></a>字节码表</h4><p>class文件只有两种数据类型：</p>
+<ul>
+<li>无符号数<ul>
+<li>无符号数可以用来描述数字、索引引用、数量值或按照utf-8编码构成的字符串值。</li>
+<li>其中无符号数属于基本的数据类型，以u1、u2、u4、u8来分别代表1个字节、2个字节、4个字节和8个字节。</li>
+</ul>
+</li>
+<li>表<ul>
+<li>表是由多个无符号数或其他表构成的复合数据结构。</li>
+<li>所有的表都以“_info”结尾，由于表没有固定长度，所以通常会在其前面加上个数说明。</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>名称</th>
+<th>说明</th>
+<th>长度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>u4</td>
+<td>magic</td>
+<td>魔数，识别Class文件格式</td>
+<td>4个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>minor_version</td>
+<td>副版本号</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>major_version</td>
+<td>主版本号</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>constant_pool_count</td>
+<td>常量池计算器</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>cp_info</td>
+<td>constant_pool</td>
+<td>常量池</td>
+<td>n个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>access_flflags</td>
+<td>访问标志</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>this_class</td>
+<td>类索引</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>super_class</td>
+<td>父类索引</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>interfaces_count</td>
+<td>接口计数器</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>interfaces</td>
+<td>接口索引集合</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>fields_count</td>
+<td>字段个数</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>field_info</td>
+<td>fields</td>
+<td>字段集合</td>
+<td>n个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>methods_count</td>
+<td>方法计数器</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>method_info</td>
+<td>methods</td>
+<td>方法集合</td>
+<td>n个字节</td>
+</tr>
+<tr>
+<td>u2</td>
+<td>attributes_count</td>
+<td>附加属性计数器</td>
+<td>2个字节</td>
+</tr>
+<tr>
+<td>attribute_info</td>
+<td>attributes</td>
+<td>附加属性集合</td>
+<td>n个字节</td>
+</tr>
+</tbody></table>
+<h4 id="魔数"><a href="#魔数" class="headerlink" title="魔数"></a>魔数</h4><p>在class文件中，前4个字节就是魔数，如下：</p>
+<p>魔数是用来区分文件类型的一种标识，0XCAFEBABE （咖啡豆/咖啡宝贝）表示就是class文件，之所以不使用文件后缀名区别就是后缀名比较容易篡改。</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="版本号"><a href="#版本号" class="headerlink" title="版本号"></a>版本号</h4><p>魔数后面的4位就是版本号了，同样也是4个字节，其中前2个字节表示副版本号，后2个字节表示主版本号。</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>前面两个字节是0x0000,也就是其值为0; 后面两个字节是0x0034,也就是其值为52； 所以上面的代码就是52.0版本来编译的，也就是jdk1.8.0。</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="常量池"><a href="#常量池" class="headerlink" title="常量池"></a>常量池</h3><p>版本号后就是常量池</p>
+<h4 id="容量计数器"><a href="#容量计数器" class="headerlink" title="容量计数器"></a>容量计数器</h4><img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>前面两个字节是0x0000,也就是其值为0; 后面两个字节是0x0034,也就是其值为52； 所以上面的代码就是52.0版本来编译的，也就是jdk1.8.0。</p>
+<blockquote>
+<p>与Java中语言习惯不同，这个容量计数是从1而不是0开始的，在Class文件格式规范制定之时，设计者将第0项常量空出来是有特殊考虑的，这样做的目的在于，如果后面某些指向常量池的索引值的数据在特定情况下需要表达“不引用任何一个常量池项目”的含义，可以把索引值设置为0来表示。</p>
+</blockquote>
+<h4 id="常量类型和结构"><a href="#常量类型和结构" class="headerlink" title="常量类型和结构"></a>常量类型和结构</h4><p>常量池中的每一项都是一个表，其项目类型共有14种，如下表格所示：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>标志</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CONSTANT_utf8_info</td>
+<td>1</td>
+<td>UTF-8编码的字符串</td>
+</tr>
+<tr>
+<td>CONSTANT_Integer_info</td>
+<td>3</td>
+<td>整形字面量</td>
+</tr>
+<tr>
+<td>CONSTANT_Float_info</td>
+<td>4</td>
+<td>浮点型字面量</td>
+</tr>
+<tr>
+<td>CONSTANT_Long_info</td>
+<td>5</td>
+<td>长整型字面量</td>
+</tr>
+<tr>
+<td>CONSTANT_Double_info</td>
+<td>6</td>
+<td>双精度浮点型字面量</td>
+</tr>
+<tr>
+<td>CONSTANT_Class_info</td>
+<td>7</td>
+<td>类或接口的符号引用</td>
+</tr>
+<tr>
+<td>CONSTANT_String_info</td>
+<td>8</td>
+<td>字符串类型字面量</td>
+</tr>
+<tr>
+<td>CONSTANT_Fieldref_info</td>
+<td>9</td>
+<td>字段的符号引用</td>
+</tr>
+<tr>
+<td>CONSTANT_Methodref_info</td>
+<td>10</td>
+<td>类中方法的符号引用</td>
+</tr>
+<tr>
+<td>CONSTANT_InterfaceMethodref_info</td>
+<td>11</td>
+<td>接口中方法的符号引用</td>
+</tr>
+<tr>
+<td>CONSTANT_NameAndType_info</td>
+<td>12</td>
+<td>字段或方法的符号引用</td>
+</tr>
+<tr>
+<td>CONSTANT_MethodHandle_info</td>
+<td>15</td>
+<td>表示方法句柄</td>
+</tr>
+<tr>
+<td>CONSTANT_MothodType_info</td>
+<td>16</td>
+<td>标志方法类型</td>
+</tr>
+<tr>
+<td>CONSTANT_InvokeDynamic_info</td>
+<td>18</td>
+<td>表示一个动态方法调用点</td>
+</tr>
+</tbody></table>
+<p>这14种类型的结构各不相同，如下表格所示：</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<blockquote>
+<p>注：此表格的类型的单位不对，不是bit，应该是byte(字节)。</p>
+</blockquote>
+<p>从上面的表格可以看到，虽然每一项的结构都各不相同，但是他们有个共同点，就是每一项的第一个字节都是一个标志位，标识这一项是哪种类型的常量。</p>
+<h4 id="第一个常量"><a href="#第一个常量" class="headerlink" title="第一个常量"></a>第一个常量</h4><img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>可以看到，第一个常量的值为10，对应到表中的标志位，找到常量为 CONSTANT_Methodref_info（类中方法的符号引用），它的结构为：</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>第一个索引值为：0X0009，也就是9，指向常量池中第9项的索引。</p>
+<p>第二个索引值为：0X001E，也就是30，指向常量池中第30项的索引。</p>
+<h4 id="第二个常量"><a href="#第二个常量" class="headerlink" title="第二个常量"></a>第二个常量</h4><img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>可以看到，第一个常量的值为9，对应到表中的标志位，找到常量为 CONSTANT_Fieldref_info（字段的符号引用），它的结构为：</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p>后面的4个字节都是它的内容，记录着2个索引值：</p>
+<img src="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>第一个索引值为：0X0004，也就是4，指向常量池中第4项的索引。</p>
+<p>第二个索引值为：0X001F，也就是31，指向常量池中第31项的索引。</p>
+<h3 id="描述符"><a href="#描述符" class="headerlink" title="描述符"></a>描述符</h3><h4 id="字段描述符"><a href="#字段描述符" class="headerlink" title="字段描述符"></a>字段描述符</h4><p>官网：<a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2">https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2</a></p>
+<table>
+<thead>
+<tr>
+<th>FieldType term</th>
+<th>Type</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B</td>
+<td>byte</td>
+<td>signed byte</td>
+</tr>
+<tr>
+<td>C</td>
+<td>char</td>
+<td>Unicode character code point in the Basic Multilingual Plane, encoded with UTF-16</td>
+</tr>
+<tr>
+<td>D</td>
+<td>double</td>
+<td>double-precision flfloating-point value</td>
+</tr>
+<tr>
+<td>E</td>
+<td>float</td>
+<td>single-precision flfloating-point value</td>
+</tr>
+<tr>
+<td>F</td>
+<td>int</td>
+<td>integer</td>
+</tr>
+<tr>
+<td>J</td>
+<td>long</td>
+<td>long integer</td>
+</tr>
+<tr>
+<td>LClassName</td>
+<td>reference</td>
+<td>an instance of class <em>ClassName</em></td>
+</tr>
+<tr>
+<td>S</td>
+<td>short</td>
+<td>signed short</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>boolean</td>
+<td>true or false</td>
+</tr>
+<tr>
+<td>[</td>
+<td>reference</td>
+<td>one array dimension</td>
+</tr>
+</tbody></table>
+<h4 id="方法描述符"><a href="#方法描述符" class="headerlink" title="方法描述符"></a>方法描述符</h4><p>官网：<a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3">https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3</a></p>
+<p>示例：</p>
+<p>The method descriptor for the method:</p>
+<pre><code class="hljs java"><span class="hljs-function">Object <span class="hljs-title">m</span><span class="hljs-params">(<span class="hljs-keyword">int</span> i, <span class="hljs-keyword">double</span> d, Thread t)</span> </span>&#123;...&#125;</code></pre>
+
+<p>is</p>
+<pre><code class="hljs java">(IDLjava/lang/Thread;)Ljava/lang/Object;</code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/JVM%E8%99%9A%E6%8B%9F%E6%9C%BA/">JVM虚拟机</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/class%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/">class文件结构</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/07/14/JVM/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">类加载机制</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/07/14/JVM/GC%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7/">
+                        <span class="hidden-mobile">GC日志分析工具</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

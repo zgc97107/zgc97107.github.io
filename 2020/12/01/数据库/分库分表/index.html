@@ -1,0 +1,1141 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>分库分表的深入剖析 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="分库分表的深入剖析">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-12-01 14:48" pubdate>
+        2020年12月1日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      8.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      92
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">分库分表的深入剖析</h1>
+            
+            <div class="markdown-body">
+              <h3 id="数据库架构体系演进"><a href="#数据库架构体系演进" class="headerlink" title="数据库架构体系演进"></a>数据库架构体系演进</h3><h4 id="数据库架构"><a href="#数据库架构" class="headerlink" title="数据库架构"></a>数据库架构</h4><p>随着数据量的增长，一般db的架构，经历如下演进： </p>
+<ol>
+<li><p>单库主从：业务请求并发量大到一定量级后，分离读写操作，设置主从结构，主库负责写操作，从库负责读操作。缺点在于需要开发框架支持多数据源，而且主从之间数据存在延迟。 </p>
+</li>
+<li><p>单库双主多从架构：基于单库主从，增加主从节点数量，多为灾备而生。</p>
+</li>
+<li><p>分区表：在数据库层面做数据分区策略，开发层不需要改动。</p>
+<p>优点：</p>
+<ul>
+<li>比较适合订单场景，热点数据集中于最后部分，其他都是历史订单（不活跃） 。</li>
+<li>分区表的数据更容易维护，可以直接针对分区做删除、优化、检查、修复、备份等操作。</li>
+<li>支持多硬件设备，不同分区分散到不同设备，如硬盘。</li>
+<li>优化查询，只使用必要的分区来提高查询效率，涉及sum()和count()聚合查询时，也可以实现分区并发再汇总。</li>
+</ul>
+<p>不足：</p>
+<ul>
+<li><p>数量上限，一个表最多只能有1024个分区（mysql5.6之后支持8192个分区） </p>
+</li>
+<li><p>分区表达式类型受限，多为整数或日期。 </p>
+</li>
+<li><p>如果表中有主键或唯一索引，那么分区键必须是主键或唯一索引 </p>
+</li>
+<li><p>分区表中无法使用外键约束 </p>
+</li>
+</ul>
+</li>
+<li><p>横向分表：mysql单表性能超过千万级别会导致性能严重下降，这时可以将单张表切成多张表。但分表的策略比较难以确定，而且对查询以及扩容都会产生影响。</p>
+</li>
+<li><p>多库：超大量级的单节点主库，会使备份，主从同步操作臃肿不堪，即使拆了表，单服务器io也将成为瓶颈，必须扩充物理节点，将数据纵向拆分，将数据读写分布在不同节点。但多数据源读写也需要开发框架支持，数据分发难度进一步上升。</p>
+</li>
+</ol>
+<h4 id="连接层策略"><a href="#连接层策略" class="headerlink" title="连接层策略"></a>连接层策略</h4><ol>
+<li><p>jdbc直连（sql拼接）</p>
+<p>在开发层面进行sql拼接，实现比较简单。</p>
+<pre><code class="hljs java">String year = getYear();
+String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+year+<span class="hljs-string">&quot;where xxx&quot;</span>;</code></pre>
+</li>
+<li><p>中间件</p>
+<p>常见的几种中间件主要针对两种层面做代理</p>
+<p>DB Proxy：在DB层面，对DB服务器做代理，一般需要 LVS/F5 等手段来实现流量的负载均衡，跨机房可能需要DNS分发，常见组件：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>公司</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Atlas</td>
+<td>360</td>
+<td>读写分离、静态分表</td>
+</tr>
+<tr>
+<td>Meituan Atlas</td>
+<td>美团</td>
+<td>读写分离、单库分表，目前已经在原厂逐步下架。</td>
+</tr>
+<tr>
+<td>Cobar</td>
+<td>阿里</td>
+<td>Proxy 的形式位于前台应用和实际数据库之间，开放MySQL 通信协议，开源版中只支持 MySQL，不支持读写分离。</td>
+</tr>
+<tr>
+<td>MyCAT</td>
+<td>阿里</td>
+<td>基于 Cobar ，是一个实现了 MySQL 协议的服务器，可以把它看作是一个数据库代理</td>
+</tr>
+<tr>
+<td>Heisenberg</td>
+<td>百度</td>
+<td>热重启配置、可水平扩容、遵守 MySQL 原生协议、无语言限制。</td>
+</tr>
+<tr>
+<td>Kingshard</td>
+<td>kingshard</td>
+<td>由 Go 开发高性能 MySQL Proxy 项目，在满足基本的读写分离的功能上，Kingshard 的性能是直连 MySQL 性能的80%以上。</td>
+</tr>
+<tr>
+<td>Vitess</td>
+<td>谷歌、Youtube</td>
+<td>Rpc方式，集群基于ZooKeeper管理</td>
+</tr>
+<tr>
+<td>DBRS</td>
+<td>阿里</td>
+<td>专注于解决单机关系型数据库扩展性问题。</td>
+</tr>
+</tbody></table>
+<p>JDBC Proxy：从jdbc连接层面下手，需要对不同的语言编写Driver</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>公司</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TDDL</td>
+<td>阿里淘宝</td>
+<td>动态数据源、读写分离、分库分表，很久没更新了</td>
+</tr>
+<tr>
+<td>Zebra</td>
+<td>美团点评</td>
+<td>动态数据源、读写分离、分库分表、CAT监控，接入复杂、限制多。</td>
+</tr>
+<tr>
+<td>MTDDL</td>
+<td>美团点评</td>
+<td>动态数据源、读写分离、分布式主键生成、分库分表、连接池、SQL监控</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>sharding-jdbc</p>
+<p>轻量级Java框架，在Java的JDBC层提供的额外服务。 以jar包形式使用客户端直连数据库，无需额外部署和依赖， 可理解为增强版的JDBC驱动，完全兼容JDBC和各种ORM框架。</p>
+<ul>
+<li><p>支持的ORM框架，JPA, Hibernate, Mybatis, Spring JDBC，甚至直接使用JDBC。 </p>
+</li>
+<li><p>支持的连接池，DBCP, C3P0, BoneCP, Druid, HikariCP。 </p>
+</li>
+<li><p>支持的数据库，MySQL，Oracle，SQLServer和PostgreSQL。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="分库分表的概念"><a href="#分库分表的概念" class="headerlink" title="分库分表的概念"></a>分库分表的概念</h3><p>MySQL单表数据量如果达到千万级别，甚至过亿，这时候再对数据库进行操作就比较吃力，select个半天都出不来数据，这时候业务已经难以维系。不得已，分库分表提上日程，分库分表的目的很简单就是减小数据库的压力，缩短表的操作时间。</p>
+<h4 id="分表"><a href="#分表" class="headerlink" title="分表"></a>分表</h4><p>分表是指在一个或者多个数据库实例内，将一张表拆分为多张表存储。一般来说，分表是因为该表需要存储很庞大的记录数，如果将其堆积到一起，就会导致数据量过于庞大（一般 MySQL 的表是 5000 万条记录左右）引发性能瓶颈。一般分表会按照某种算法进行拆分，如交易记录，可能按年份拆分:</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="分库"><a href="#分库" class="headerlink" title="分库"></a>分库</h4><p>分库是指将一套数据库的设计结构，部署到多个数据库实例的节点中去，在应用的时候，按照一定的方法通过多个数据库实例节点访问数据。请注意，这里的数据库实例节点是一个逻辑概念，不是一个物理概念，什么意思呢？简单地说，一个机器节点可以部署多个数据库实例节点，也可以一个机器节点只部署一个数据库实例节点，所以机器节点不一定等于数据库节点。而机器节点是物理概念，是看得到的真实的机器；数据库节点是逻辑概念，是看不到的东西。为了更好地说明分库的概念，如下图</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="海量数据存储解决方案"><a href="#海量数据存储解决方案" class="headerlink" title="海量数据存储解决方案"></a>海量数据存储解决方案</h3><p>移动互联网时代，海量的用户每天产生海量的数量，比如：用户表、订单表、交易流水表。</p>
+<p>以支付宝用户为例，8亿；微信用户更是多大10亿。订单表更夸张，比如美团外卖，每天都是几千万的订单。淘宝的历史订单总量应该是百亿，甚至是千亿级别，这些海量数据远不是一张表能Hold住的。事实上MySQL单表可以存储10亿级数据，只是这时候性能比较差，业界公认MySQL单表容量在1000W以下是最佳状态，因为这是它的BTREE索引树高在3~5之间。既然一张表无法搞定，那么就想办法将数据放到多个地方，目前比较普遍的方案有3个：分区、分库分表、NoSQL/NewSQL</p>
+<blockquote>
+<p>只分库，或者只分表，或者分库分表融合方案都统一认为是分库分表方案，因为分库，或者分表只是一种特殊的分库分表而已。</p>
+<p>NoSQL比较具有代表性的是MongoDB，es。NewSQL比较具有代表性的是TiDB。 </p>
+</blockquote>
+<h4 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h4><p>分区技术与分表技术很类似，只是分区技术属于数据库内部的技术，对于开发者来说，它逻辑上仍旧是一张表，开发时不需要改变 SQL 表名。</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>它的缺点很明显：很多的资源都受到单机的限制，例如连接数，网络吞吐等。虽然每个分区可以独立存储，但是分区表的总入口还是一个MySQL示例。从而导致它的并发能力非常一般，远远达不到互联网高并发的要求。</p>
+<p>使用分区，业务必须具备两个特点：</p>
+<ul>
+<li><p>数据不是海量(分区数有限，存储能力有限)</p>
+</li>
+<li><p>并发能力要求不高</p>
+</li>
+</ul>
+<h4 id="NoSQL-NewSQL"><a href="#NoSQL-NewSQL" class="headerlink" title="NoSQL/NewSQL"></a>NoSQL/NewSQL</h4><p>目前绝大部分公司的核心数据都是：以RDBMS存储为主，NoSQL/NewSQL存储为辅，互联网公司又以MySQL为主。目前对NoSQL/NewSQL的定位，仍是RDBMS的补充，而不是取而代之。</p>
+<h4 id="分库分表"><a href="#分库分表" class="headerlink" title="分库分表"></a>分库分表</h4><p>分库分表是目前互联网行业处理海量数据的通用方法。</p>
+<p>但目前分库分表方案还没有一个一统江湖的中间件，这里列举一些有一定知名度的分库分表中间件：阿里的TDDL、DRDS、cobar、开源社区的Sharding-jdbc（3.x已经更名为sharding-sphere）、民间组织的MyCAT、360的Atlas</p>
+<blockquote>
+<p>备注：sharding-jdbc的作者张亮大神原来在当当，现在在京东金融。但是sharding-jdbc的版权属于开源社区，不是公司的，也不是张亮个人的！</p>
+</blockquote>
+<h3 id="分库分表中间件归结类型"><a href="#分库分表中间件归结类型" class="headerlink" title="分库分表中间件归结类型"></a>分库分表中间件归结类型</h3><p>分库分表的中间件很多，但是可以归结为两大类型：</p>
+<ul>
+<li><p>CLIENT模式</p>
+</li>
+<li><p>PROXY模式</p>
+</li>
+</ul>
+<h4 id="CLIENT模式"><a href="#CLIENT模式" class="headerlink" title="CLIENT模式"></a>CLIENT模式</h4><p>代表有阿里的TDDL，开源社区的sharding-jdbc（sharding-jdbc的3.x版本即sharding-sphere已经支持了proxy模式）。架构如下：</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="PROXY模式"><a href="#PROXY模式" class="headerlink" title="PROXY模式"></a>PROXY模式</h4><p>代表有阿里的cobar，民间组织的MyCAT。架构如下：</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>从以上两种模式可以看出sharding-jdbc作为一个组件集成在应用内，而mycat则作为一个独立的应用需要单独部署。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Sharding-JDBC</th>
+<th>MyCAT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>性能</td>
+<td>高</td>
+<td>中</td>
+</tr>
+<tr>
+<td>应用场景限制</td>
+<td>java应用</td>
+<td>无</td>
+</tr>
+<tr>
+<td>是否支持自定义sharding路由</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>最大支持sharding路由维度</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>分布式事务</td>
+<td>标准事务，XA强一致事务，柔性事务</td>
+<td>支持弱xa、支持XA分布式事务(1.6.5)</td>
+</tr>
+<tr>
+<td>限制</td>
+<td>不支持子语句，不支持union和union all，不支持批量插入，不支持distinct聚合</td>
+<td>详见《MYCAT权威指南》-5.6 MyCat目前存在的限制</td>
+</tr>
+<tr>
+<td>是否开源</td>
+<td>是</td>
+<td>是</td>
+</tr>
+</tbody></table>
+<p>但是，无论是CLIENT模式，还是PROXY模式。几个核心的步骤是一样的：SQL解析，重写，路由，执行，结果归并。</p>
+<p>client模式，架构简单，性能损耗比较小，运维成本低。但mycat的单机模式无法保证可靠性，一旦宕机则服务就变得不可用，你又不得不引入HAProxy来实现他的高可用集群部署方案，为了解决HAProxy的高可用问题，有需要采用keepalived来实现。</p>
+<h3 id="分库分表原则剖析"><a href="#分库分表原则剖析" class="headerlink" title="分库分表原则剖析"></a>分库分表原则剖析</h3><ol>
+<li><p><strong>能不分就不分</strong></p>
+<p>MySQL是关系型数据库，数据库表之间的关系从一定的角度上映射了业务逻辑。任何分库分表的行为都会在某种程度上提升业务逻辑的复杂度，数据库除了承载数据的存储和访问外，协助业务更好的实现需求和逻辑也是其重要工作之一。分库分表会带来数据的合并，查询或者更新条件的分离，事务的分离等等多种后果，业务实现的复杂程度往往会翻倍或者指数级上升。所以，在分库分表之前，不要为分而分，去做其他力所能及的事情，比如升级硬件，升级网络，升级数据库库版本，读写分离，负载均衡等。所有分库分表的前提是，这些都已经尽力了。</p>
+</li>
+<li><p>数据量太大，正常的运维不满足正常业务访问</p>
+<p>对数据库的备份。如果单表或者单个实例太大，在做备份的时候需要大量的磁盘IO或者网络IO资源。例如1T的数据，网络传输占用50MB的时候，需要20000秒才能传输完毕，在此整个过程中的维护风险都是高于平时的。</p>
+<p>对数据表的修改。如果某个表过大，对此表做DDL的时候，MySQL会锁住全表，这个时间可能很长，在这段时间业务不能访问此表，影响甚大。</p>
+<p>整个表热点，数据访问和更新频繁，经常有锁等待，可以把其中的数据物理拆开，用空间换时间，变相降低访问压力。</p>
+</li>
+<li><p>表设计不合理，需要对某些字段垂直拆分</p>
+<p>举一个例子，如果一个用户表，在最初设计表的时候是这样的：</p>
+<p>users表</p>
+<table>
+<thead>
+<tr>
+<th>字段名称</th>
+<th>字段类型</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>bigint</td>
+<td>用户的ID</td>
+</tr>
+<tr>
+<td>name</td>
+<td>varchar</td>
+<td>用户名字</td>
+</tr>
+<tr>
+<td>last_login_time</td>
+<td>datetime</td>
+<td>最近登录时间</td>
+</tr>
+<tr>
+<td>personal_info</td>
+<td>text</td>
+<td>私人信息</td>
+</tr>
+<tr>
+<td>xxxx</td>
+<td>xxxx</td>
+<td>其他信息字段</td>
+</tr>
+</tbody></table>
+<p>这种设计是很常见的，但是：</p>
+<p>情况:1：</p>
+<p>你的业务中如果用户数从100W增长到10亿。你为了统计活跃用户，在每个人登录的时候都会记录一下他的最近登录时间。并且用户活跃的很，不断的去update这个login_time字段值，那么这个表就会压力很大。站在业务的角度上，最好的办法就是先把last_login_time字段拆分出去，我们暂且叫他user_time。这样做的好处是业务的代码只有在用到这个字段的时候修改一下就行了。如果不这么做，直接把users表水平切分了，那么所有访问users表的地方都要进行修改。</p>
+<p>情况2：</p>
+<p>personal_info这个字段本来没啥用，就是让用户注册的时候填一些个人爱好而已，基本不查询。一开始的时候有没有无所谓，但是后来发现两个问题：一，这个字段占用了大量的空间，因为是text类型，有很多人喜欢长篇大论地介绍自己。更糟糕的是二，不知道哪天哪个产品经理心血来潮，说允许个人信息公开吧，以方便让大家更好的相互了解。那么在所有人猎奇窥私心理的影响下，对此字段的访问大幅度增加。数据库压力瞬间扛不住了，这个时候，只好考虑对这个表进行垂直拆分。</p>
+</li>
+<li><p>某些数据表出现了无穷增长</p>
+<p>在目前项目中，各种的评论，消息，日志记录。这个增长不是跟人口成比例的，而是不可控的，例如微博的feed的广播，我发一条消息，会扩散给很多很多人。虽然主体可能只存一份，但不排除一些索引或者路由有这种存储需求。这个时候，增加存储，提升机器配置已经苍白无力了，水平切分是最佳实践。拆分的标准很多，按用户的，按时间的，按用途的等等方式进行拆分。</p>
+</li>
+<li><p>安全性和可用性的考虑</p>
+<p>比如用户，库存，订单等等本来同统一的资源水平切分后，每个数据库实例承担一小部分业务数据，这样整体的可用性就会提升，单个节点的挂机不会影响全部用户。</p>
+</li>
+<li><p>业务耦合性考虑</p>
+<p>主要是站在业务的层面上，将两个完全不相关的业务表，放在不同的数据库节点上，如果某个业务出现问题引起数据库宕机，不会影响到其他业务。</p>
+</li>
+</ol>
+<h3 id="分库分表架构方案"><a href="#分库分表架构方案" class="headerlink" title="分库分表架构方案"></a>分库分表架构方案</h3><h4 id="垂直切分"><a href="#垂直切分" class="headerlink" title="垂直切分"></a>垂直切分</h4><p>垂直切分常见有垂直分库和垂直分表两种。</p>
+<h5 id="垂直分库"><a href="#垂直分库" class="headerlink" title="垂直分库"></a>垂直分库</h5><p>是根据数据库里面的数据库表的相关性进行拆分，比如：一个数据库里面既存在用户数据，又存在订单数据，那么垂直拆分可以吧用户数据放在用户库，把订单数据放到订单库。另外在微服务盛行的今天已经非常普及，按照业务模块来划分不同的数据库，也是一种垂直拆分，而不是像早期一样将所有的数据表都放在同一个数据库中。如下图：</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>以表为依据，按照业务归属不同，将不同的表拆分到不同的库中</p>
+<p>注意事项：</p>
+<ol>
+<li><p>每个库的结构不一样</p>
+</li>
+<li><p>每个库的数据也不一样，没有交集</p>
+</li>
+<li><p>所有库的并集是全部数据</p>
+</li>
+</ol>
+<p><strong>使用垂直分库的场景：</strong>当系统绝对并发量上来了，并且可以抽象出单独的业务模块的情况下使用垂直分库方案。</p>
+<h5 id="垂直分表"><a href="#垂直分表" class="headerlink" title="垂直分表"></a>垂直分表</h5><p>在日常开发和设计中比较常见，通俗的说法叫做“大表拆小表”。拆分是基于关系型数据库中的“列”（字段）进行的。通常情况，某个表中的字段比较多，可以新建立一张”扩展表”，将不经常使用或者长度较大的字段拆分出去放到“扩展表”中，如下图所示：</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>以字段为依据，按照字段的活跃性，将表中字段拆到不同的表中（主表和扩展表）。</p>
+<p>说明：拆分字段的操作建议在数据库设计阶段就做好。如果是在发展过程中拆分，则需要改写以前的查询语句，会额外带来一定的成本和风险，建议谨慎。</p>
+<p>注意事项：</p>
+<ol>
+<li><p>每个表的结构不一样</p>
+</li>
+<li><p>每个表的数据也不一样，一般来说，每个表的字段的交集只有一列，一般是主键，用于关联数据</p>
+</li>
+<li><p>所有表的并集是全部数据</p>
+</li>
+</ol>
+<p><strong>使用垂直分表的场景：</strong></p>
+<p>当系统绝对并发量没有上来，表的记录并不多，但是字段多，并且热点数据和非热点数据在一起，单行数据所需要的存储空间较大，以致于数据库缓存的数据行减少，查询时回去读磁盘数据产生大量随机读IO，产生IO瓶颈的时候使用垂直分表。</p>
+<p>垂直拆分的优点和缺点：</p>
+<p>优点：</p>
+<ul>
+<li><p>拆分后业务清晰，拆分规则明确</p>
+</li>
+<li><p>系统之间进行整合或扩展很容易</p>
+</li>
+<li><p>按照成本，应用的等级，应用的类型等将表放在不同的机器上，便于管理</p>
+</li>
+<li><p>便于实现动静分离，冷热分离的数据库表的设计模式</p>
+</li>
+<li><p>数据维护简单。</p>
+</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li><p>主键出现冗余，需要管理冗余列。</p>
+</li>
+<li><p>会引起表连接JOIN操作(增加CPU开销)可以通过在业务服务器上进行join来减少数据库压力。</p>
+</li>
+<li><p>依然存在单表数据量过大的问题(需要水平拆分)。</p>
+</li>
+<li><p>事务处理复杂。</p>
+</li>
+</ul>
+<h4 id="水平切分"><a href="#水平切分" class="headerlink" title="水平切分"></a>水平切分</h4><p>水平切分是通过某种策略将数据片来存储，分为水平分表和水平分库两部分，每片数据会分散到不同的MySQL表或者库中，达到分布式的效果，能够支持非常大的数据量。</p>
+<h5 id="水平分库"><a href="#水平分库" class="headerlink" title="水平分库"></a>水平分库</h5><p>以字段为依据，按照一定策略(hash、range等)，将一个库中的数据拆分到多个库中。</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>注意事项：</p>
+<ol>
+<li><p>每个库的结构都一样</p>
+</li>
+<li><p>每个库中的数据不一样，没有交集</p>
+</li>
+<li><p>所有库的数据并集是全部数据</p>
+</li>
+</ol>
+<p><strong>使用水平分库的场景：</strong></p>
+<p>当系统绝对并发量上来了，分表难以从根本上解决问题，并且还没有明显的业务归属进行抽取业务的情况下使用水平分库方案。</p>
+<h5 id="水平分表"><a href="#水平分表" class="headerlink" title="水平分表"></a>水平分表</h5><p>以字段为依据，按照一定策略(hash,range等)，将一个表中的数据拆分到多个表中。</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>注意事项: </p>
+<ol>
+<li><p>每个表的结构都一样</p>
+</li>
+<li><p>每个表的数据不一样，没有交集，所有表的并集是全部数据</p>
+</li>
+</ol>
+<p>使用水平分表的场景：</p>
+<p>当系统绝对并发量没有上来，只是单表的数据量太多，影响SQL效率，加重了CPU负担，以致于成为瓶颈的情况下使用水平分表方案。</p>
+<p>水平拆分的优点和缺点：</p>
+<p>优点：</p>
+<ul>
+<li><p>单库单表的数据保持在一定的量级，有助于性能的提高</p>
+</li>
+<li><p>切分的表结构相同，应用层改造较少，只需要增加路由规则即可</p>
+</li>
+<li><p>提高了系统的稳定性和负载能力</p>
+</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li><p>切分后，数据是分散的，很难利用数据库的Join操作，跨库Join性能较差</p>
+</li>
+<li><p>拆分规则难以抽象</p>
+</li>
+<li><p>分片事务的一致性难以解决</p>
+</li>
+<li><p>数据多次拓展难度跟维护量极</p>
+</li>
+</ul>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>垂直分库和水平分库的区别</p>
+<ul>
+<li><p>垂直分库是按照业务模块的不同进行拆分</p>
+</li>
+<li><p>水平分库是按照一定的策略进行拆分，达到把一个库中的数据进行拆分到不同的数据库中。</p>
+</li>
+<li><p>垂直分表和水平分表的区别垂直分表是按照表中的冷热数据(活跃数据)进行拆分的，并且拆分完了之后，一般是分主表和拓展表，那么两张表的结构不一样，两张表的关联靠id来支持。</p>
+</li>
+<li><p>水平分表是按照一定的策略进行拆分，目的是把单表的庞大的数量按照一定的策略分摊到拆</p>
+</li>
+<li><p>分之后的小表中，拆分之后，每张表的结构是一样的，但是数据不一样。</p>
+</li>
+</ul>
+<h3 id="分库分表产生的问题剖析"><a href="#分库分表产生的问题剖析" class="headerlink" title="分库分表产生的问题剖析"></a>分库分表产生的问题剖析</h3><p>分库分表能有效的缓解单机单库和单表带来的性能瓶颈和压力，突破网络IO、硬件资源、连接数的瓶</p>
+<p>颈，同时也带来一些问题，问题如下：</p>
+<h4 id="事务一致性问题"><a href="#事务一致性问题" class="headerlink" title="事务一致性问题"></a>事务一致性问题</h4><p><strong>分布式事务：</strong></p>
+<p>当更新内容同时存在于不同库找那个，不可避免会带来跨库事务问题。跨分片事务也是分布式事务，没有简单的方案，一般可使用“XA 协议”和“两阶段提交”处理。</p>
+<p>分布式事务能最大限度保证了数据库操作的原子性。但在提交事务时需要协调多个节点，推后了提交事务的时间点，延长了事务的执行时间，导致事务在访问共享资源时发生冲突或死锁的概率增高。</p>
+<p>随着数据库节点的增多，这种趋势会越来越严重，从而成为系统在数据库层面上水平扩展的枷锁。</p>
+<p><strong>最终一致性：</strong></p>
+<p>对于那些性能要求很高，但对一致性要求不高的系统，往往不苛求系统的实时一致性，只要在允许的时间段内达到最终一致性即可，可采用事务补偿的方式。</p>
+<p>与事务在执行中发生错误立刻回滚的方式不同，事务补偿是一种事后检查补救的措施，一些常见的实现方法有：对数据进行对账检查，基于日志进行对比，定期同标准数据来源进行同步等。</p>
+<p><strong>解决办法：</strong></p>
+<p>使用分布式事务，比如阿里的Seata分布式事务，XA两阶段事务，saga柔性事务。</p>
+<h4 id="跨节点关联查询Join问题"><a href="#跨节点关联查询Join问题" class="headerlink" title="跨节点关联查询Join问题"></a>跨节点关联查询Join问题</h4><p>切分之前，系统中很多列表和详情表的数据可以通过 Join 来完成，但是切分之后，数据可能分布在不同的节点上，此时 Join 带来的问题就比较麻烦了，考虑到性能，尽量避免使用 Join 查询。</p>
+<p>解决的办法：</p>
+<p><strong>全局表：</strong></p>
+<p>全局表，也可看做“数据字典表”，就是系统中所有模块都可能依赖的一些表，为了避免库 Join 查询，可以将这类表在每个数据库中都保存一份。这些数据通常很少修改，所以不必担心一致性的问题。</p>
+<p><strong>字段冗余：</strong></p>
+<p>一种典型的反范式设计，利用空间换时间，为了性能而避免 Join 查询。</p>
+<p>例如，订单表在保存 userId 的时候，也将 userName 也冗余的保存一份，这样查询订单详情表就可以查到用户名 userName，就不用查询买家 user 表了。</p>
+<p>但这种方法适用场景也有限，比较适用依赖字段比较少的情况，而冗余字段的一致性也较难保证。</p>
+<p><strong>数据组装(常用)：</strong></p>
+<p>在系统 Service 业务层面，分两次查询，第一次查询的结果集找出关联的数据 id，然后根据 id 发起器第二次请求得到关联数据，最后将获得的结果进行字段组装。这是比较常用的方法。</p>
+<p><strong>ER分片：</strong></p>
+<p>关系型数据库中，如果已经确定了表之间的关联关系（如订单表和订单详情表），并且将那些存在关联关系的表记录存放在同一个分片上，那么就能较好地避免跨分片 Join 的问题。</p>
+<p>可以在一个分片内进行 Join，在 1：1 或 1：n 的情况下，通常按照主表的 ID 进行主键切分。</p>
+<h4 id="跨节点分页、排序、函数问题"><a href="#跨节点分页、排序、函数问题" class="headerlink" title="跨节点分页、排序、函数问题"></a>跨节点分页、排序、函数问题</h4><p>跨节点多库进行查询时，会出现 limit 分页、order by 排序等问题。</p>
+<p>分页需要按照指定字段进行排序，当排序字段就是分片字段时，通过分片规则就比较容易定位到指定的分片；当排序字段非分片字段时，就变得比较复杂。</p>
+<p>需要先在不同的分片节点中将数据进行排序并返回，然后将不同分片返回的结果集进行汇总和再次排序。</p>
+<p>最终返回给用户如下图：</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p>上图只是取第一页的数据，对性能影响还不是很大。但是如果取得页数很大，情况就变得复杂的多。</p>
+<p>因为各分片节点中的数据可能是随机的，为了排序的准确性，需要将所有节点的前N页数据都排序好做合并，最后再进行整体排序，这样的操作很耗费 CPU 和内存资源，所以页数越大，系统性能就会越差。</p>
+<p>在使用 Max、Min、Sum、Count 之类的函数进行计算的时候，也需要先在每个分片上执行相应的函数，然后将各个分片的结果集进行汇总再次计算。</p>
+<h4 id="全局主键避重问题"><a href="#全局主键避重问题" class="headerlink" title="全局主键避重问题"></a>全局主键避重问题</h4><p>在分库分表环境中，由于表中数据同时存在不同数据库中，主键值平时使用的自增长将无用武之地，某个分区数据库自生成 ID 无法保证全局唯一。</p>
+<p>因此需要单独设计全局主键，避免跨库主键重复问题。这里有一些策略：</p>
+<ol>
+<li><p>Twitter的Snowflake（又名“雪花算法”） </p>
+</li>
+<li><p>UUID/GUID（一般应用程序和数据库均支持）</p>
+</li>
+<li><p>MongoDB ObjectID（类似UUID的方式）</p>
+</li>
+<li><p>Ticket Server（数据库生存方式，Flickr采用的就是这种方式）</p>
+</li>
+</ol>
+<h5 id="数据迁移、扩容问题"><a href="#数据迁移、扩容问题" class="headerlink" title="数据迁移、扩容问题"></a>数据迁移、扩容问题</h5><p>当业务高速发展、面临性能和存储瓶颈时，才会考虑分片设计，此时就不可避免的需要考虑历史数据的迁移问题。</p>
+<p>一般做法是先读出历史数据，然后按照指定的分片规则再将数据写入到各分片节点中。</p>
+<p>此外还需要根据当前的数据量个 QPS，以及业务发展速度，进行容量规划，推算出大概需要多少分片（一般建议单个分片的单表数据量不超过 1000W）。</p>
+<h3 id="分布式主键生成策略"><a href="#分布式主键生成策略" class="headerlink" title="分布式主键生成策略"></a>分布式主键生成策略</h3><h4 id="业务规则"><a href="#业务规则" class="headerlink" title="业务规则"></a>业务规则</h4><p>从业务角度对并发性降维，比如在订单号中加入用户id，将并发维度降低到单个用户，从而将主键生成速度变得可控。典型的事例有userId+时间戳，从业务角度来说，一个用户不可能在1毫秒内下两个单子，即使也说明是可以刷单，应该被限流。</p>
+<p>实现</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">busiadd</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;
+	Strorder order = <span class="hljs-keyword">new</span> Strorder();
+	order.setId(System.currentTimeMillis()+<span class="hljs-string">&quot;-&quot;</span>+userId);
+	order.setUserId(userId);
+	strorderMapper.save(order);
+	<span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<h4 id="集中式分配"><a href="#集中式分配" class="headerlink" title="集中式分配"></a>集中式分配</h4><h5 id="maxId表"><a href="#maxId表" class="headerlink" title="maxId表"></a>maxId表</h5><ol>
+<li>通过一张max表集中分配</li>
+</ol>
+<pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`maxid`</span>(
+	<span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,
+	<span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+	<span class="hljs-string">`nextid`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+	PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)
+);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> maxid(<span class="hljs-keyword">name</span>,nextid) <span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;orders&#x27;</span>,<span class="hljs-number">1000</span>);</code></pre>
+
+<ol start="2">
+<li>创建函数</li>
+</ol>
+<pre><code class="hljs sql"><span class="hljs-keyword">DROP</span> <span class="hljs-keyword">FUNCTION</span> getid;
+
+<span class="hljs-comment">-- 创建函数</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">FUNCTION</span> getid(table_name <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">50</span>))
+<span class="hljs-keyword">RETURNS</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>)
+<span class="hljs-keyword">BEGIN</span>
+  <span class="hljs-comment">-- 定义变量</span>
+  <span class="hljs-keyword">DECLARE</span> <span class="hljs-keyword">id</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>);
+  <span class="hljs-comment">-- 给定义的变量赋值 </span>
+	<span class="hljs-keyword">update</span> maxid <span class="hljs-keyword">set</span> nextid=nextid+<span class="hljs-number">1</span> <span class="hljs-keyword">where</span> <span class="hljs-keyword">name</span> = table_name;
+	<span class="hljs-keyword">SELECT</span> nextid <span class="hljs-keyword">INTO</span> <span class="hljs-keyword">id</span> <span class="hljs-keyword">FROM</span> maxid <span class="hljs-keyword">WHERE</span> <span class="hljs-keyword">name</span> = table_name;
+  <span class="hljs-comment">-- 返回函数处理结果</span>
+  RETURN id;
+<span class="hljs-keyword">END</span></code></pre>
+
+<ol start="3">
+<li>StrorderMapper调整id策略，借助mybatis的SelectKey生成id，注意Before=true</li>
+</ol>
+<pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span>
+<span class="hljs-meta">        &quot;insert into strorder (id,userId)&quot;,</span>
+<span class="hljs-meta">        &quot;values (#&#123;id&#125;,#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span>
+<span class="hljs-meta">&#125;)</span>
+<span class="hljs-meta">@SelectKey(statement=&quot;SELECT getid(&#x27;orders&#x27;) from dual&quot;, </span>
+<span class="hljs-meta">           keyProperty=&quot;id&quot;, before=true, resultType=String.class)</span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">getIdSave</span><span class="hljs-params">(Strorder record)</span></span>;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * maxid表验证</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@GetMapping(&quot;/maxId&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">maxId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setUserId(userId);
+    strorderMapper.getIdSave(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>通过maxId表分配实现简单，不需要借助中间件，但受限于mysql的效率在并发较大的情况下，会造成锁等待。</p>
+<h5 id="分布式缓存"><a href="#分布式缓存" class="headerlink" title="分布式缓存"></a>分布式缓存</h5><p>通过redis的inc操作的原子性实现，</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/redisId&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">redisId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setId(template.opsForValue().increment(<span class="hljs-string">&quot;next_order_id&quot;</span>).toString());
+    order.setUserid(userid);
+    strorderMapper.save(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>这种方式能够承受较大的并发，但对redis集群的可靠性要求很高，如果出现故障，会阻断入库操作，down机恢复时也需要去确认和库中最大id的一致性。</p>
+<h4 id="uuid"><a href="#uuid" class="headerlink" title="uuid"></a>uuid</h4><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/uuid&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">uuid</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setId(UUID.randomUUID().toString());
+    order.setUserid(userid);
+    strorderMapper.save(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>uuid的长度较大，会影响建立索引和基于索引查询时的效率，而且需要占用大量的存储空间。</p>
+<h4 id="雪花算法"><a href="#雪花算法" class="headerlink" title="雪花算法"></a>雪花算法</h4><p>雪花算法由Twitter发明，是一种约定，它把时间戳、工作组 ID、工作机器 ID、自增序列号组合在一起，生成一个 64bits 的整数ID，能够使用 (2^41)/(1000<em>60</em>60<em>24</em>365) = 69.7 年，每台机器每毫秒理论最多生成 2^12 个 ID</p>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>雪花算法的优点在于不需要依赖Redis等第三方介质，占用空间及查询效率都要优于uuid，但只能保证在工作组中的机器生成的 ID 唯一，不同组下可能会重复。而且时间回拨后，生成的 ID 就会重复，所以需要保持时间是网络同步的。</p>
+<h5 id="java代码实现"><a href="#java代码实现" class="headerlink" title="java代码实现"></a>java代码实现</h5><p>工具类</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.itheima.snow;
+
+<span class="hljs-keyword">import</span> org.apache.commons.lang3.StringUtils;
+<span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Value;
+<span class="hljs-keyword">import</span> org.springframework.stereotype.Component;
+
+<span class="hljs-meta">@Compoent</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Snowflake</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 序列的掩码，12个1，也就是(0B111111111111=0xFFF=4095)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> SEQUENCE_MASK = <span class="hljs-number">0xFFF</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 系统起始时间，这里取2020-01-01</span>
+<span class="hljs-comment">     **/</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> startTimeStamp = <span class="hljs-number">1577836800000L</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 上次生成 ID 的时间截</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> lastTimestamp = -<span class="hljs-number">1L</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 工作机器 ID(0~31)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> workerId;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 数据中心 ID(0~31)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> datacenterId;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 毫秒内序列(0~4095)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> sequence = <span class="hljs-number">0L</span>;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> datacenterId 数据中心 ID (0~31)</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> workerId     工作机器 ID (0~31)</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Snowflake</span><span class="hljs-params">(<span class="hljs-meta">@Value(&quot;$&#123;snowflake.datacenterId&#125;&quot;)</span> <span class="hljs-keyword">long</span> datacenterId, <span class="hljs-meta">@Value(&quot;$&#123;snowflake.workerId&#125;&quot;)</span> <span class="hljs-keyword">long</span> workerId)</span> </span>&#123;
+        <span class="hljs-keyword">if</span> (workerId &gt; <span class="hljs-number">31</span> || workerId &lt; <span class="hljs-number">0</span>) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;workId必须在0-31之间，当前=&quot;</span> + workerId);
+        &#125;
+        <span class="hljs-keyword">if</span> (datacenterId &gt; <span class="hljs-number">31</span> || datacenterId &lt; <span class="hljs-number">0</span>) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;datacenterId必须在0-31之间，当前=&quot;</span> + datacenterId);
+        &#125;
+
+        <span class="hljs-keyword">this</span>.workerId = workerId;
+        <span class="hljs-keyword">this</span>.datacenterId = datacenterId;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 加锁，线程安全</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span> long 类型的 ID</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">synchronized</span> <span class="hljs-keyword">long</span> <span class="hljs-title">nextId</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">long</span> timestamp = currentTime();
+
+        <span class="hljs-comment">// 如果当前时间小于上一次 ID 生成的时间戳，说明系统时钟回退过这个时候应当抛出异常</span>
+        <span class="hljs-keyword">if</span> (timestamp &lt; lastTimestamp) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;时钟回退！时间差=&quot;</span> + (lastTimestamp - timestamp));
+        &#125;
+
+        <span class="hljs-comment">// 同一毫秒内，序列增加</span>
+        <span class="hljs-keyword">if</span> (lastTimestamp == timestamp) &#123;
+            <span class="hljs-comment">//超出阈值。思考下为什么这么运算？</span>
+            sequence = (sequence + <span class="hljs-number">1</span>) &amp; SEQUENCE_MASK;
+            <span class="hljs-comment">// 毫秒内序列溢出</span>
+            <span class="hljs-keyword">if</span> (sequence == <span class="hljs-number">0</span>) &#123;
+                <span class="hljs-comment">//自旋等待下一毫秒</span>
+                <span class="hljs-keyword">while</span> ((timestamp = currentTime()) &lt;= lastTimestamp) ;
+            &#125;
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">//已经进入下一毫秒，从0开始计数</span>
+            sequence = <span class="hljs-number">0L</span>;
+        &#125;
+
+        <span class="hljs-comment">//赋值为新的时间戳</span>
+        lastTimestamp = timestamp;
+
+        <span class="hljs-comment">//移位拼接</span>
+        <span class="hljs-keyword">long</span> id = ((timestamp - startTimeStamp) &lt;&lt; <span class="hljs-number">22</span>)
+                | (datacenterId &lt;&lt; <span class="hljs-number">17</span>)
+                | (workerId &lt;&lt; <span class="hljs-number">12</span>)
+                | sequence;
+
+        System.out.println(<span class="hljs-string">&quot;new id = &quot;</span> + id);
+        System.out.println(<span class="hljs-string">&quot;bit id = &quot;</span> + toBit(id));
+
+        <span class="hljs-keyword">return</span> id;
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 返回当前时间，以毫秒为单位</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">long</span> <span class="hljs-title">currentTime</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> System.currentTimeMillis();
+    &#125;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 转成二进制展示</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">toBit</span><span class="hljs-params">(<span class="hljs-keyword">long</span> id)</span> </span>&#123;
+        String bit = StringUtils.leftPad(Long.toBinaryString(id), <span class="hljs-number">64</span>, <span class="hljs-string">&quot;0&quot;</span>);
+        <span class="hljs-keyword">return</span> bit.substring(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>) +
+                <span class="hljs-string">&quot; - &quot;</span> +
+                bit.substring(<span class="hljs-number">1</span>, <span class="hljs-number">42</span>) +
+                <span class="hljs-string">&quot; - &quot;</span> +
+                bit.substring(<span class="hljs-number">42</span>, <span class="hljs-number">52</span>) +
+                <span class="hljs-string">&quot; - &quot;</span> +
+                bit.substring(<span class="hljs-number">52</span>, <span class="hljs-number">64</span>);
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        Snowflake idWorker = <span class="hljs-keyword">new</span> Snowflake(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>);
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;
+            <span class="hljs-keyword">long</span> id = idWorker.nextId();
+            System.out.println(id);
+            System.out.println(toBit(id));
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>启动参数中指定机器编号</p>
+<pre><code class="hljs properties"><span class="hljs-meta">snowflake.datacenterId</span>=<span class="hljs-string">1</span>
+<span class="hljs-meta">snowflake.workerId</span>=<span class="hljs-string">1</span></code></pre>
+
+<p>使用</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/myflake&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">myflake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setId(String.valueOf(snowflake.nextId()));
+    order.setUserid(userid);
+    strorderMapper.save(order);
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<h4 id="sharding实现"><a href="#sharding实现" class="headerlink" title="sharding实现"></a>sharding实现</h4><p>配置</p>
+<pre><code class="hljs properties"><span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.column</span>=<span class="hljs-string">id</span>
+<span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.type</span>=<span class="hljs-string">SNOWFLAKE</span>
+<span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.props.worker.id</span>=<span class="hljs-string">3</span></code></pre>
+
+<p>mapper</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span>
+<span class="hljs-meta">        &quot;insert into strorder (userid)&quot;,</span>
+<span class="hljs-meta">        &quot;values (#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span>
+<span class="hljs-meta">&#125;)</span>
+<span class="hljs-meta">@SelectKey(statement=&quot;SELECT max(id) from strorder where userid=#&#123;userid,jdbcType=INTEGER&#125;&quot;, keyProperty=&quot;id&quot;, before=false, resultType=String.class)</span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">shardingIdSave</span><span class="hljs-params">(Strorder record)</span></span>;</code></pre>
+
+<p>使用</p>
+<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/shardingFlake&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">shardingFlake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
+    Strorder order = <span class="hljs-keyword">new</span> Strorder();
+    order.setUserid(userid);
+    strorderMapper.shardingIdSave(order);
+    System.out.println(Snowflake.toBit(Long.valueOf(order.getId())));
+    <span class="hljs-keyword">return</span> order;
+&#125;</code></pre>
+
+<p>生成的id号由sharding-jdbc自动添加到maper的sql中</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9E%B6%E6%9E%84/">数据库架构</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8%E7%AD%96%E7%95%A5/">分库分表策略</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/">
+                        <span class="hidden-mobile">MySQL索引的实现</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

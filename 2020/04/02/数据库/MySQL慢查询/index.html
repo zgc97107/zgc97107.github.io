@@ -1,0 +1,644 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>MySQL的慢查询 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="MySQL的慢查询">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-02 18:31" pubdate>
+        2020年4月2日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.4k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      32
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">MySQL的慢查询</h1>
+            
+            <div class="markdown-body">
+              <h3 id="慢查询的配置"><a href="#慢查询的配置" class="headerlink" title="慢查询的配置"></a>慢查询的配置</h3><p>慢查询日志是指MySQL记录所有执行超过long_query_time参数设定的时间阈值的SQL语句的日志。该日志能为SQL语句的优化带来很好的帮助。默认情况下，慢查询日志是关闭的，要使用慢查询日志功能，首先要开启慢查询日志功能。</p>
+<h4 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h4><ul>
+<li>slow_query_log 启动停止技术慢查询日志</li>
+<li>slow_query_log_file 指定慢查询日志得存储路径及文件（默认和数据文件放一起）</li>
+<li>long_query_time 指定记录慢查询日志SQL执行时间得伐值（单位:秒，默认10秒）</li>
+<li>log_queries_not_using_indexes 是否记录未使用索引的SQL</li>
+<li>log_output 日志存放的地方[TABLE][FILE][FILE,TABLE]</li>
+</ul>
+<p>通过下面命令查看下上面的配置：</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;%slow_query_log%&#x27;</span>
+<span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;%slow_query_log_file%&#x27;</span>
+<span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;%long_query_time%&#x27;</span>
+<span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;%log_queries_not_using_indexes%&#x27;</span>
+<span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;%log_output%&#x27;</span></code></pre>
+
+<p>通过下面命令设置上面的配置：</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">set</span> <span class="hljs-keyword">global</span> long_query_time=<span class="hljs-number">5</span>;  <span class="hljs-comment">-- 默认10秒，这里设置为5秒</span>
+<span class="hljs-keyword">set</span> <span class="hljs-keyword">GLOBAL</span> slow_query_log = <span class="hljs-number">1</span>; <span class="hljs-comment">-- 开启慢查询日志</span>
+<span class="hljs-keyword">set</span> <span class="hljs-keyword">global</span> log_output=<span class="hljs-string">&#x27;FILE,TABLE&#x27;</span> <span class="hljs-comment">-- 记录在表跟文件中，项目开发中日志只能记录在日志文件中，不能记表中</span></code></pre>
+
+<p>设置完成后在datadir中就可以看到慢查询语句，数据库的datadir查看方式为<code>show VARIABLES like &#39;datadir&#39;</code></p>
+<h3 id="慢查询解读"><a href="#慢查询解读" class="headerlink" title="慢查询解读"></a>慢查询解读</h3><pre><code class="hljs sql"><span class="hljs-comment"># User@Host: root[root] @ localhost [127.0.0.1]  Id:   10    -- 用户名 、用户的IP信息、线程ID号</span>
+<span class="hljs-comment"># Query_time: 0.001042    -- 执行花费的时间【单位：毫秒】</span>
+<span class="hljs-comment"># Lock_time:0.000000    -- 执行获得锁的时间</span>
+<span class="hljs-comment"># Rows_sent: 2    -- 获得的结果行数</span>
+<span class="hljs-comment"># Rows_examined: 2    -- 扫描的数据行数</span>
+<span class="hljs-keyword">SET</span> <span class="hljs-built_in">timestamp</span>=<span class="hljs-number">1535462721</span>;    <span class="hljs-comment">-- 这SQL执行的具体时间</span>
+<span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> mvarchive <span class="hljs-keyword">LIMIT</span> O, <span class="hljs-number">1000</span>;    <span class="hljs-comment">-- 具体的SQL语句</span></code></pre>
+
+<h3 id="慢查询分析"><a href="#慢查询分析" class="headerlink" title="慢查询分析"></a>慢查询分析</h3><p>慢查询的日志记录非常多，要从里面找寻一条查询慢的日志并不是很容易的事情，一般来说都需要一些工具辅助才能快速定位到需要优化的SQL语句，下面介绍两个慢查询辅助工具。</p>
+<h4 id="mysql-dumpslow"><a href="#mysql-dumpslow" class="headerlink" title="mysql dumpslow"></a>mysql dumpslow</h4><p>常用的慢查询日志分析工具，汇总除查询条件外其他完全相同的SQL，并将分析结果按照参数中所指定的顺序输出。</p>
+<p>使用方法：</p>
+<pre><code class="hljs vim">mysqldumpslow -s r -t <span class="hljs-number">10</span> slow-mysql.<span class="hljs-built_in">log</span>
+-s 排序规则，可选参数[<span class="hljs-keyword">c</span>,t,<span class="hljs-keyword">l</span>,r,at,<span class="hljs-keyword">al</span>,<span class="hljs-keyword">ar</span>]
+   <span class="hljs-keyword">c</span>:总次数
+   <span class="hljs-variable">t:</span>总时间
+   <span class="hljs-variable">l:</span>锁的时间
+   r:总数据行
+   at,<span class="hljs-keyword">al</span>,<span class="hljs-keyword">ar</span>:平均数[例如：at = 总时间/总次数]
+-t 选取条数</code></pre>
+
+<h4 id="pt-query-digest"><a href="#pt-query-digest" class="headerlink" title="pt_query_digest"></a>pt_query_digest</h4><p>是用于分析mysql慢查询的一个工具，与mysqldumpshow工具相比，py-query_digest 工具的分析结果更具体，更完善。但可能因为某些原因如权限不足等，无法在服务器上记录查询。</p>
+<h5 id="安装方式"><a href="#安装方式" class="headerlink" title="安装方式"></a>安装方式</h5><pre><code class="hljs awk">安装依赖工具：
+yum install perl-DBI
+yum install perl-DBD-MySQL
+yum install perl-Time-HiRes
+yum install perl-IO-Socket-SSL
+yum install perl-Digest-MD5
+下载pt-query-disgest、授权、将其放到<span class="hljs-regexp">/usr/</span>bin下：
+wget percona.com<span class="hljs-regexp">/get/</span>pt-query-digest
+chmod u+x pt-query-digest
+mv <span class="hljs-regexp">/usr/</span>src<span class="hljs-regexp">/pt-query-digest /u</span>sr<span class="hljs-regexp">/bin/</span>
+
+perl .<span class="hljs-regexp">/pt-query-digest  --explain h=127.0.0.1,u=root,p=root1234%  /u</span>sr<span class="hljs-regexp">/local/my</span>sql<span class="hljs-regexp">/data/my</span>sql-slow.log
+</code></pre>
+
+<h5 id="语法与重要选项"><a href="#语法与重要选项" class="headerlink" title="语法与重要选项"></a>语法与重要选项</h5><pre><code class="hljs brainfuck"><span class="hljs-comment">pt</span><span class="hljs-literal">-</span><span class="hljs-comment">query</span><span class="hljs-literal">-</span><span class="hljs-comment">digest</span> <span class="hljs-title">[</span><span class="hljs-comment">OPTIONS</span><span class="hljs-title">]</span> <span class="hljs-title">[</span><span class="hljs-comment">FILES</span><span class="hljs-title">]</span> <span class="hljs-title">[</span><span class="hljs-comment">DSN</span><span class="hljs-title">]</span>
+
+--<span class="hljs-comment">create</span><span class="hljs-literal">-</span><span class="hljs-comment">review</span><span class="hljs-literal">-</span><span class="hljs-comment">table</span>  <span class="hljs-comment">当使用</span>--<span class="hljs-comment">review参数把分析结果输出到表中时，如果没有表就自动创建。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">create</span><span class="hljs-literal">-</span><span class="hljs-comment">history</span><span class="hljs-literal">-</span><span class="hljs-comment">table</span>  <span class="hljs-comment">当使用</span>--<span class="hljs-comment">history参数把分析结果输出到表中时，如果没有表就自动创建。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">filter</span>  <span class="hljs-comment">对输入的慢查询按指定的字符串进行匹配过滤后再进行分析</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">limit限制输出结果百分比或数量，默认值是20</span><span class="hljs-string">,</span><span class="hljs-comment">即将最慢的20条语句输出，如果是50%则按总响应时间占比从大到小排序，输出到总和达到50%位置截止。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">host</span>  <span class="hljs-comment">mysql服务器地址</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">user</span>  <span class="hljs-comment">mysql用户名</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">password</span>  <span class="hljs-comment">mysql用户密码</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">history</span> <span class="hljs-comment">将分析结果保存到表中，分析结果比较详细，下次再使用</span>--<span class="hljs-comment">history时，如果存在相同的语句，且查询所在的时间区间和历史表中的不同，则会记录到数据表中，可以通过查询同一CHECKSUM来比较某类型查询的历史变化。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">review</span> <span class="hljs-comment">将分析结果保存到表中，这个分析只是对查询条件进行参数化，一个类型的查询一条记录，比较简单。当下次使用</span>--<span class="hljs-comment">review时，如果存在相同的语句分析，就不会记录到数据表中。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">output</span> <span class="hljs-comment">分析结果输出类型，值可以是report(标准分析报告)、slowlog(Mysql</span> <span class="hljs-comment">slow</span> <span class="hljs-comment">log)、json、json</span><span class="hljs-literal">-</span><span class="hljs-comment">anon，一般使用report，以便于阅读。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">since</span> <span class="hljs-comment">从什么时间开始分析，值为字符串，可以是指定的某个”yyyy</span><span class="hljs-literal">-</span><span class="hljs-comment">mm</span><span class="hljs-literal">-</span><span class="hljs-comment">dd</span> <span class="hljs-title">[</span><span class="hljs-comment">hh:mm:ss</span><span class="hljs-title">]</span><span class="hljs-comment">”格式的时间点，也可以是简单的一个时间值：s(秒)、h(小时)、m(分钟)、d(天)，如12h就表示从12小时前开始统计。</span>
+<span class="hljs-comment"></span>--<span class="hljs-comment">until</span> <span class="hljs-comment">截止时间，配合—since可以分析一段时间内的慢查询。</span></code></pre>
+
+<h5 id="用法示例"><a href="#用法示例" class="headerlink" title="用法示例"></a>用法示例</h5><p>直接分析慢查询文件:</p>
+<pre><code class="hljs bash"><span class="hljs-comment">#分析slow.log日志，并将分析报告输入到slow_report.log中</span>
+shell&gt; pt-query-digest  slow.log &gt; slow_report.log</code></pre>
+
+<p>分析最近12小时内的查询：</p>
+<pre><code class="hljs bash">shell&gt; pt-query-digest  --since=12h  slow.log &gt; slow_report2.log</code></pre>
+
+<p>分析指定时间范围内的查询：</p>
+<pre><code class="hljs bash">pt-query-digest slow.log --since <span class="hljs-string">&#x27;2014-04-17 09:30:00&#x27;</span> --until <span class="hljs-string">&#x27;2014-04-17 10:00:00&#x27;</span> &gt; slow_report3.log</code></pre>
+
+<p>分析指含有select语句的慢查询</p>
+<pre><code class="hljs bash">shell&gt; pt-query-digest--filter <span class="hljs-string">&#x27;$event-&gt;&#123;fingerprint&#125; =~ m/^select/i&#x27;</span> slow.log&gt; slow_report4.log</code></pre>
+
+<p>针对某个用户的慢查询</p>
+<pre><code class="hljs bash">shell&gt; pt-query-digest--filter <span class="hljs-string">&#x27;($event-&gt;&#123;user&#125; || &quot;&quot;) =~ m/^root/i&#x27;</span> slow.log&gt; slow_report5.log</code></pre>
+
+<p>查询所有所有的全表扫描或full join的慢查询</p>
+<pre><code class="hljs bash">pt-query-digest--filter <span class="hljs-string">&#x27;(($event-&gt;&#123;Full_scan&#125; || &quot;&quot;) eq &quot;yes&quot;) ||(($event-&gt;&#123;Full_join&#125; || &quot;&quot;) eq &quot;yes&quot;)&#x27;</span> slow.log&gt; slow_report6.log</code></pre>
+
+<p>把查询保存到query_review表</p>
+<pre><code class="hljs bash">pt-query-digest  --user=root –password=abc123 --review  h=localhost,D=<span class="hljs-built_in">test</span>,t=query_review--create-review-table  slow.log</code></pre>
+
+<p>把查询保存到query_history表</p>
+<pre><code class="hljs bash">pt-query-digest  --user=root –password=abc123 --review  h=localhost,D=<span class="hljs-built_in">test</span>,t=query_ history--create-review-table  slow.log_20140401
+pt-query-digest  --user=root –password=abc123--review  h=localhost,D=<span class="hljs-built_in">test</span>,t=query_history--create-review-table  slow.log_20140402</code></pre>
+
+<p>通过tcpdump抓取mysql的tcp协议数据，然后再分析</p>
+<pre><code class="hljs bash">tcpdump -s 65535 -x -nn -q -tttt -i any -c 1000 port 3306 &gt; mysql.tcp.txt
+pt-query-digest --<span class="hljs-built_in">type</span> tcpdump mysql.tcp.txt&gt; slow_report9.log</code></pre>
+
+<p>分析binlog</p>
+<pre><code class="hljs bash">mysqlbinlog mysql-bin.000093 &gt; mysql-bin000093.sql
+pt-query-digest  --<span class="hljs-built_in">type</span>=binlog  mysql-bin000093.sql &gt; slow_report10.log</code></pre>
+
+<p>分析general log</p>
+<pre><code class="hljs bash">pt-query-digest  --<span class="hljs-built_in">type</span>=genlog  localhost.log &gt; slow_report11.log</code></pre>
+
+<h5 id="报告参数说明"><a href="#报告参数说明" class="headerlink" title="报告参数说明"></a>报告参数说明</h5><img src="/blog/2020/04/02/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%85%A2%E6%9F%A5%E8%AF%A2/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p><strong>第一部分：总体统计结果</strong></p>
+<ul>
+<li>Overall：总共有多少条查询</li>
+<li>Time range：查询执行的时间范围</li>
+<li>unique：唯一查询数量，即对查询条件进行参数化以后，总共有多少个不同的查询</li>
+<li>total：总计 min：最小 max：最大 avg：平均</li>
+<li>95%：把所有值从小到大排列，位置位于95%的那个数，这个数一般最具有参考价值</li>
+<li>median：中位数，把所有值从小到大排列，位置位于中间那个数</li>
+</ul>
+<pre><code class="hljs vala"><span class="hljs-meta"># 该工具执行日志分析的用户时间，系统时间，物理内存占用大小，虚拟内存占用大小</span>
+<span class="hljs-meta"># 340ms user time, 140ms system time, 23.99M rss, 203.11M vsz</span>
+<span class="hljs-meta"># 工具执行时间</span>
+<span class="hljs-meta"># Current date: Fri Nov 25 02:37:18 2016</span>
+<span class="hljs-meta"># 运行分析工具的主机名</span>
+<span class="hljs-meta"># Hostname: localhost.localdomain</span>
+<span class="hljs-meta"># 被分析的文件名</span>
+<span class="hljs-meta"># Files: slow.log</span>
+<span class="hljs-meta"># 语句总数量，唯一的语句数量，QPS，并发数</span>
+<span class="hljs-meta"># Overall: 2 total, 2 unique, 0.01 QPS, 0.01x concurrency </span>
+<span class="hljs-meta"># 日志记录的时间范围</span>
+<span class="hljs-meta"># Time range: 2016-11-22 06:06:18 to 06:11:40</span>
+<span class="hljs-meta"># 属性    总计  最小 最大 平均 95% 标准 中等</span>
+<span class="hljs-meta"># Attribute   total  min  max  avg  95% stddev median</span>
+<span class="hljs-meta"># ============  ======= ======= ======= ======= ======= ======= =======</span>
+<span class="hljs-meta"># 语句执行时间</span>
+<span class="hljs-meta"># Exec time    3s 640ms  2s  1s  2s 999ms  1s</span>
+<span class="hljs-meta"># 锁占用时间</span>
+<span class="hljs-meta"># Lock time   1ms  0  1ms 723us  1ms  1ms 723us</span>
+<span class="hljs-meta"># 发送到客户端的行数</span>
+<span class="hljs-meta"># Rows sent    5  1  4 2.50  4 2.12 2.50</span>
+<span class="hljs-meta"># select语句扫描行数</span>
+<span class="hljs-meta"># Rows examine  186.17k  0 186.17k 93.09k 186.17k 131.64k 93.09k</span>
+<span class="hljs-meta"># 查询的字符数</span>
+<span class="hljs-meta"># Query size   455  15  440 227.50  440 300.52 227.50</span></code></pre>
+
+<p><strong>第二部分：查询分组统计结果</strong></p>
+<ul>
+<li>Rank：所有语句的排名，默认按查询时间降序排列，通过–order-by指定</li>
+<li>Query ID：语句的ID，（去掉多余空格和文本字符，计算hash值）</li>
+<li>Response：总的响应时间</li>
+<li>time：该查询在本次分析中总的时间占比</li>
+<li>calls：执行次数，即本次分析总共有多少条这种类型的查询语句</li>
+<li>R/Call：平均每次执行的响应时间</li>
+<li>V/M：响应时间Variance-to-mean的比率</li>
+<li>Item：查询对象</li>
+</ul>
+<pre><code class="hljs vala"><span class="hljs-meta"># Profile</span>
+<span class="hljs-meta"># Rank Query ID   Response time Calls R/Call V/M Item</span>
+<span class="hljs-meta"># ==== ================== ============= ===== ====== ===== ===============</span>
+<span class="hljs-meta"># 1 0xF9A57DD5A41825CA 2.0529 76.2%  1 2.0529 0.00 SELECT</span>
+<span class="hljs-meta"># 2 0x4194D8F83F4F9365 0.6401 23.8%  1 0.6401 0.00 SELECT wx_member_base</span></code></pre>
+
+<p><strong>第三部分：每一种查询的详细统计结果</strong></p>
+<p>由下面查询的详细统计结果，最上面的表格列出了执行次数、最大、最小、平均、95%等各项目的统计。</p>
+<ul>
+<li>ID：查询的ID号，和上图的Query ID对应</li>
+<li>Databases：数据库名</li>
+<li>Users：各个用户执行的次数（占比）</li>
+<li>Query_time distribution ：查询时间分布, 长短体现区间占比，本例中1s-10s之间查询数量是10s以上的两倍。</li>
+<li>Tables：查询中涉及到的表</li>
+<li>Explain：SQL语句</li>
+</ul>
+<pre><code class="hljs clean"># Query <span class="hljs-number">1</span>: <span class="hljs-number">0</span> QPS, <span class="hljs-number">0</span>x concurrency, ID <span class="hljs-number">0xF9A57DD5A41825CA</span> at byte <span class="hljs-number">802</span> 
+# This item is included <span class="hljs-keyword">in</span> the report because it matches --limit.
+# Scores: V/M = <span class="hljs-number">0.00</span>
+# Time range: all events occurred at <span class="hljs-number">2016</span><span class="hljs-number">-11</span><span class="hljs-number">-22</span> <span class="hljs-number">06</span>:<span class="hljs-number">11</span>:<span class="hljs-number">40</span>
+# Attribute pct total  min  max  avg  <span class="hljs-number">95</span>% stddev median
+# ============ === ======= ======= ======= ======= ======= ======= =======
+# Count   <span class="hljs-number">50</span>  <span class="hljs-number">1</span>
+# Exec time  <span class="hljs-number">76</span>  <span class="hljs-number">2</span>s  <span class="hljs-number">2</span>s  <span class="hljs-number">2</span>s  <span class="hljs-number">2</span>s  <span class="hljs-number">2</span>s  <span class="hljs-number">0</span>  <span class="hljs-number">2</span>s
+# Lock time  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>
+# Rows sent  <span class="hljs-number">20</span>  <span class="hljs-number">1</span>  <span class="hljs-number">1</span>  <span class="hljs-number">1</span>  <span class="hljs-number">1</span>  <span class="hljs-number">1</span>  <span class="hljs-number">0</span>  <span class="hljs-number">1</span>
+# Rows examine <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>  <span class="hljs-number">0</span>
+# Query size  <span class="hljs-number">3</span>  <span class="hljs-number">15</span>  <span class="hljs-number">15</span>  <span class="hljs-number">15</span>  <span class="hljs-number">15</span>  <span class="hljs-number">15</span>  <span class="hljs-number">0</span>  <span class="hljs-number">15</span>
+# String:
+# Databases test
+# Hosts  <span class="hljs-number">192.168</span><span class="hljs-number">.8</span><span class="hljs-number">.1</span>
+# Users  mysql
+# Query_time distribution
+# <span class="hljs-number">1</span>us
+# <span class="hljs-number">10</span>us
+# <span class="hljs-number">100</span>us
+# <span class="hljs-number">1</span>ms
+# <span class="hljs-number">10</span>ms
+# <span class="hljs-number">100</span>ms
+# <span class="hljs-number">1</span>s ################################################################
+# <span class="hljs-number">10</span>s+
+# EXPLAIN <span class="hljs-comment">/*!50100 PARTITIONS*/</span>
+select sleep(<span class="hljs-number">2</span>)\G</code></pre>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/MySQL%E6%85%A2%E6%9F%A5%E8%AF%A2/">MySQL慢查询</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/04/13/Spring%E6%BA%90%E7%A0%81/%E5%88%9D%E5%A7%8B%E5%8C%96%E5%85%A5%E5%8F%A3%E5%92%8Cxml%E8%A7%A3%E6%9E%90/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Spring的初始化入口和xml解析</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/04/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83/">
+                        <span class="hidden-mobile">数据库设计规范</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

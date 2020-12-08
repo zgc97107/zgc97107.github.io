@@ -1,0 +1,613 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Kubernetes集群搭建 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Kubernetes集群搭建">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-06-06 18:32" pubdate>
+        2020年6月6日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.1k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      17
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Kubernetes集群搭建</h1>
+            
+            <div class="markdown-body">
+              <h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><p>本次使用三台centos虚拟机，docker 18.09.9和kubelet-1.16.4，要求 centos7.6以上版本</p>
+<ol>
+<li>关闭selinux </li>
+</ol>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 查看是否关闭 Enforcing表示未关闭</span>
+getenforce
+<span class="hljs-meta">#</span><span class="bash"> 临时关闭</span>
+setenforce 0
+<span class="hljs-meta">#</span><span class="bash"> 永久关闭 将selinux文件中的SELINUX设置为disabled</span>
+vi /etc/sysconfig/selinux</code></pre>
+
+<pre><code class="hljs sh"><span class="hljs-comment"># This file controls the state of SELinux on the system.</span>
+<span class="hljs-comment"># SELINUX= can take one of these three values:</span>
+<span class="hljs-comment">#     enforcing - SELinux security policy is enforced.</span>
+<span class="hljs-comment">#     permissive - SELinux prints warnings instead of enforcing.</span>
+<span class="hljs-comment">#     disabled - No SELinux policy is loaded.</span>
+SELINUX=disabled
+<span class="hljs-comment"># SELINUXTYPE= can take one of three values:</span>
+<span class="hljs-comment">#     targeted - Targeted processes are protected,</span>
+<span class="hljs-comment">#     minimum - Modification of targeted policy. Only selected processes are protected.</span>
+<span class="hljs-comment">#     mls - Multi Level Security protection.</span>
+SELINUXTYPE=targeted</code></pre>
+
+<ol start="2">
+<li>关闭swap</li>
+</ol>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 临时禁用</span>
+swapoff -a
+<span class="hljs-meta">#</span><span class="bash"> 永久禁用 将fstab中的swap记录注释掉</span>
+vi /etc/fstab</code></pre>
+
+<pre><code class="hljs shell"><span class="hljs-meta">#</span>
+<span class="bash"><span class="hljs-comment"># /etc/fstab</span></span>
+<span class="hljs-meta">#</span><span class="bash"> Created by anaconda on Thu Jun  4 00:10:49 2020</span>
+<span class="hljs-meta">#</span>
+<span class="bash"><span class="hljs-comment"># Accessible filesystems, by reference, are maintained under &#x27;/dev/disk&#x27;</span></span>
+<span class="hljs-meta">#</span><span class="bash"> See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) <span class="hljs-keyword">for</span> more info</span>
+<span class="hljs-meta">#</span>
+<span class="bash">/dev/mapper/centos-root /                       xfs     defaults        0 0</span>
+UUID=c7048475-1b55-4027-ac48-d7d1a62e2d2d /boot                   xfs     defaults        0 0
+/dev/mapper/centos-home /home                   xfs     defaults        0 0
+<span class="hljs-meta">#</span><span class="bash"> /dev/mapper/centos-swap swap                    swap    defaults        0 0</span></code></pre>
+
+<ol start="3">
+<li>配置ip_forward转发</li>
+</ol>
+<pre><code class="hljs awk">echo <span class="hljs-string">&quot;1&quot;</span> &gt; <span class="hljs-regexp">/proc/</span>sys<span class="hljs-regexp">/net/i</span>pv4/ip_forward</code></pre>
+
+<ol start="4">
+<li>更新yum源</li>
+</ol>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 删除系统自带配置</span>
+cd /etc/yum.repos.d/
+rm -rf *
+<span class="hljs-meta">#</span><span class="bash"> 下载centos7的源和docker源</span>
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
+wget -P /etc/yum.repos.d/ http://mirrors.aliyun.com/repo/epel-7.repo
+wget https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+vim kubernetes.repo
+<span class="hljs-meta">#</span><span class="bash"> 创建kubernetes.repo文件，内容如下</span>
+[kubernetes]
+name=Kubernetes
+baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=0
+<span class="hljs-meta">#</span><span class="bash"> 刷新yum缓存</span>
+yum clean all &amp;&amp; yum makecache fast</code></pre>
+
+<h2 id="安装docker"><a href="#安装docker" class="headerlink" title="安装docker"></a>安装docker</h2><pre><code class="hljs sh"><span class="hljs-comment"># 安装docker</span>
+yum install docker-ce-18.09.9 docker-ce-cli-18.09.9 containerd.io -y
+<span class="hljs-comment"># 创建/etc/docker/daemon.json文件 内容为</span>
+&#123;
+  <span class="hljs-string">&quot;registry-mirrors&quot;</span> : [
+    <span class="hljs-string">&quot;https://jjc7lr0o.mirror.aliyuncs.com&quot;</span>
+  ],
+  <span class="hljs-string">&quot;exec-opts&quot;</span>:[<span class="hljs-string">&quot;native.cgroupdriver=systemd&quot;</span>]
+&#125;
+<span class="hljs-comment"># 启动docker并设置开机启动</span>
+systemctl <span class="hljs-built_in">enable</span> docker &amp;&amp; systemctl start docker</code></pre>
+
+<h2 id="安装k8s组件"><a href="#安装k8s组件" class="headerlink" title="安装k8s组件"></a>安装k8s组件</h2><pre><code class="hljs shell">yum install -y kubelet-1.16.4 kubeadm-1.16.4 kubectl-1.16.4
+<span class="hljs-meta">#</span><span class="bash"> 设置开机启动</span>
+systemctl enable kubelet &amp;&amp; systemctl start kubelet
+<span class="hljs-meta">#</span><span class="bash"> 添加 kubectl上下文到环境中</span>
+echo &quot;source &lt;(kubectl completion bash)&quot; &gt;&gt; ~/.bash_profile
+cd ~
+source .bash_profile
+<span class="hljs-meta">#</span><span class="bash"> 设置内核参数，创建/etc/sysctl.d/k8s.conf文件</span>
+vi /etc/sysctl.d/k8s.conf
+<span class="hljs-meta">#</span><span class="bash"> 输入内容</span>
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+<span class="hljs-meta">#</span><span class="bash"> 生效</span>
+sysctl -p /etc/sysctl.d/k8s.conf</code></pre>
+
+<h2 id="Master节点初始化"><a href="#Master节点初始化" class="headerlink" title="Master节点初始化"></a>Master节点初始化</h2><pre><code class="hljs shell">kubeadm init --image-repository registry.aliyuncs.com/google_containers --kubernetes-version v1.16.4 --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU</code></pre>
+
+<p>如果CPU核心数大于2可以忽略<code>--ignore-preflight-errors=NumCPU</code>参数</p>
+<p>执行成功之后会输出</p>
+<pre><code class="hljs sql">Your Kubernetes control-plane has initialized successfully!
+
+To <span class="hljs-keyword">start</span> <span class="hljs-keyword">using</span> your cluster, you need <span class="hljs-keyword">to</span> run the <span class="hljs-keyword">following</span> <span class="hljs-keyword">as</span> a regular <span class="hljs-keyword">user</span>:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(<span class="hljs-keyword">id</span> -u):$(<span class="hljs-keyword">id</span> -g) $HOME/.kube/config
+
+You should <span class="hljs-keyword">now</span> deploy a pod network <span class="hljs-keyword">to</span> the cluster.
+Run <span class="hljs-string">&quot;kubectl apply -f [podnetwork].yaml&quot;</span> <span class="hljs-keyword">with</span> one <span class="hljs-keyword">of</span> the options listed <span class="hljs-keyword">at</span>:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+<span class="hljs-keyword">Then</span> you can <span class="hljs-keyword">join</span> <span class="hljs-keyword">any</span> <span class="hljs-built_in">number</span> <span class="hljs-keyword">of</span> worker nodes <span class="hljs-keyword">by</span> running the <span class="hljs-keyword">following</span> <span class="hljs-keyword">on</span> <span class="hljs-keyword">each</span> <span class="hljs-keyword">as</span> root:
+
+kubeadm <span class="hljs-keyword">join</span> <span class="hljs-number">172.21</span><span class="hljs-number">.0</span><span class="hljs-number">.10</span>:<span class="hljs-number">6443</span> <span class="hljs-comment">--token alnxu5.7iyympkn7az2tjsj \</span>
+    <span class="hljs-comment">--discovery-token-ca-cert-hash sha256:ed7a47cad9fd343f99c8725d0fe4e476b51d3e50a083a364a17a8e1c8512ed04 </span></code></pre>
+
+<p>首先执行</p>
+<pre><code class="hljs shell">mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
+
+<p>然后将peter-flannel.yml上传到服务器并执行</p>
+<pre><code class="hljs shell">kubectl apply -f peter-flannel.yml</code></pre>
+
+<p>然后在其他节点</p>
+<pre><code class="hljs shell">kubeadm join 192.168.124.101:6443 --token 8h1zf4.11fjnpz1qwbrqkz3 --discovery-token-ca-cert-hash sha256:5032b6b7b51c8b375c6ec95eee87fe11dd5651cbf3053f58c3107dd1d3861895</code></pre>
+
+<p>如果忘记加入命令可以再次执行</p>
+<pre><code class="hljs shell">kubeadm token create --print-join-command</code></pre>
+
+<h2 id="基础操作"><a href="#基础操作" class="headerlink" title="基础操作"></a>基础操作</h2><h3 id="kubectl命令用法"><a href="#kubectl命令用法" class="headerlink" title="kubectl命令用法"></a>kubectl命令用法</h3><p>可以借助kubectl -h命令学习用法，下面介绍常用的一些命令使用：</p>
+<ul>
+<li><p>创建一个应用程序</p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 测试创建一个应用程序，副本为2，端口为80，注意，该网段的所有80端口都会被绑定</span>
+kubectl run nginx-dep --image=nginx:1.7.9 --port=80 --replicas=2 --dry-run
+<span class="hljs-meta">#</span><span class="bash"> 正式创建</span>
+kubectl run nginx-dep --image=nginx:1.7.9 --port=80 --replicas=2
+<span class="hljs-meta">#</span><span class="bash"> 查看服务信息 -o wide表示获取更详细的信息</span>
+kubectl get pods -o wide</code></pre>
+</li>
+<li><p>查看服务信息</p>
+<pre><code class="hljs apache"><span class="hljs-attribute">kubectl</span> describe pod nginx-dep-<span class="hljs-number">5779</span>c<span class="hljs-number">9</span>d<span class="hljs-number">6</span>c<span class="hljs-number">9</span>-<span class="hljs-number">7</span>k<span class="hljs-number">7</span>mf</code></pre>
+</li>
+<li><p>进入pod内部</p>
+<pre><code class="hljs apache"><span class="hljs-attribute">kubectl</span> exec -it nginx-dep-<span class="hljs-number">5779</span>c<span class="hljs-number">9</span>d<span class="hljs-number">6</span>c<span class="hljs-number">9</span>-<span class="hljs-number">7</span>k<span class="hljs-number">7</span>mf -c nginx-dep /bin/bash</code></pre>
+</li>
+<li><p>删除pod</p>
+<pre><code class="hljs shell">kubectl delete pod nginx-dep-5779c9d6c9-7k7mf</code></pre>
+</li>
+<li><p>服务的伸缩</p>
+<pre><code class="hljs routeros">kubectl scale <span class="hljs-attribute">--replicas</span>=3 deployment nginx-dep</code></pre>
+</li>
+<li><p>滚动更新</p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 设置镜像版本</span>
+kubectl set image deployment nginx-dep nginx-dep=nginx:1.9.7
+<span class="hljs-meta">#</span><span class="bash"> 回滚镜像</span>
+kubectl rollout undo deployment ngxin-dep</code></pre>
+</li>
+<li><p>服务暴露</p>
+<pre><code class="hljs shell">kubectl expose deployment nginx-dep --name=nginx-svc --port=81 --target-port=80
+<span class="hljs-meta">#</span><span class="bash"> 获取service信息</span>
+kubectl get service -o wide
+<span class="hljs-meta">#</span><span class="bash"> 暴露到外网</span>
+kubectl expose deployment nginx-dep --name=nginx-svc --port=81 --target-port=80 --type=NodePort</code></pre>
+
+
+
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/K8s/">K8s</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/K8s/">K8s</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/07/09/JVM/%E5%86%8D%E6%AC%A1%E8%AE%A4%E8%AF%86Java/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">再次认识Java</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/06/03/K8S/Kubernetes%E6%A6%82%E8%BF%B0/">
+                        <span class="hidden-mobile">Kubernetes概述</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

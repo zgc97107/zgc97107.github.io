@@ -1,0 +1,702 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>多级缓存架构 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="多级缓存架构">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-08-24 15:17" pubdate>
+        2020年8月24日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.8k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      24
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">多级缓存架构</h1>
+            
+            <div class="markdown-body">
+              <h3 id="多级缓存架构"><a href="#多级缓存架构" class="headerlink" title="多级缓存架构"></a>多级缓存架构</h3><p>任何项目中我们都有一些频繁的查询，而那些频繁的查询数据基本都是相同的，比如项目中查看用户个人信息，购物狂欢查询活动信息，这些功能点使用频率非常高，我们一般需要对他们做特殊处理。 </p>
+<p>我们以狂欢活动信息为例，当双十一的时候，很多人会去查看今天优惠活动有哪些，对这些活动信息我们可以采用多级缓存架构来抗住高并发。 </p>
+<h4 id="多级缓存架构对比"><a href="#多级缓存架构对比" class="headerlink" title="多级缓存架构对比"></a>多级缓存架构对比</h4><img src="/blog/2020/08/24/%E7%BC%93%E5%AD%98/%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98%E6%9E%B6%E6%9E%84/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>基于Java版的缓存架构实现流程如下： </p>
+<ol>
+<li><p>用户请求经过Nginx </p>
+</li>
+<li><p>Nginx检查是否有缓存，如果Nginx有缓存，直接响应用户数据 </p>
+</li>
+<li><p>Nginx如果没有缓存，则将请求路由给后端Java服务</p>
+</li>
+<li><p>Java服务查询Redis缓存，如果有数据，则将数据直接响应给Nginx，并将数据存入缓存，Nginx将数据响应给用户 </p>
+</li>
+<li><p>如果Redis没有缓存，则使用Java程序查询MySQL，并将数据存入到Reids，再将数据存入到Nginx中 </p>
+</li>
+</ol>
+<p>优点</p>
+<pre><code class="hljs plain">1、采用了Nginx缓存，减少了数据加载的路径，从而提升站点数据加载效率
+2、多级缓存有效防止了缓存击穿、缓存穿透问题</code></pre>
+
+<p>缺点</p>
+<pre><code class="hljs plain">1、Tomcat并发量偏低，导致缓存同步并发量失衡，缓存首次加载效率偏低
+2、Tomcat大规模集群占用资源高</code></pre>
+
+<img src="/blog/2020/08/24/%E7%BC%93%E5%AD%98/%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98%E6%9E%B6%E6%9E%84/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>优点</p>
+<pre><code class="hljs plain">1、采用了Nginx缓存，减少了数据加载的路径，从而提升站点数据加载效率 
+2、多级缓存有效防止了缓存击穿、缓存穿透问题
+3、使用了Nginx+Lua集成，无论是哪次缓存加载，效率都高
+4、Nginx并发量高，Nginx+Lua集成，大幅提升了并发能力</code></pre>
+
+<h3 id="Nginx-Lua多级缓存实战"><a href="#Nginx-Lua多级缓存实战" class="headerlink" title="Nginx+Lua多级缓存实战"></a>Nginx+Lua多级缓存实战</h3><p>我们以双十一活动信息加载为例，通过多级缓存架构来加载双十一活动信息，双十一活动信息表结构如下： </p>
+<pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`activitt_info`</span> (
+  <span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,
+  <span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">&#x27;活动名称&#x27;</span>,
+  <span class="hljs-string">`desc`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">3000</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">COMMENT</span> <span class="hljs-string">&#x27;活动介绍&#x27;</span>,
+  <span class="hljs-string">`starttime`</span> datetime <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+  <span class="hljs-string">`endtime`</span> datetime <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
+  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)
+) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> AUTO_INCREMENT=<span class="hljs-number">3</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8;</code></pre>
+
+<h4 id="链接MySQL封装"><a href="#链接MySQL封装" class="headerlink" title="链接MySQL封装"></a>链接MySQL封装</h4><p>创建一个lua脚本 mysql.lua ，用于提供根据SQL语句执行查询操作，代码如下：</p>
+<pre><code class="hljs lua"><span class="hljs-comment">--MySQL查询操作，封装成一个模块</span>
+<span class="hljs-comment">--Java操作MySqL</span>
+<span class="hljs-comment">--导入依赖包</span>
+<span class="hljs-keyword">local</span> mysql = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;resty.mysql&quot;</span>
+
+<span class="hljs-comment">--配置数据源链接</span>
+<span class="hljs-keyword">local</span> props = &#123;
+    host = <span class="hljs-string">&quot;docker.for.mac.host.internal&quot;</span>,
+    port = <span class="hljs-number">3306</span>,
+    database = <span class="hljs-string">&quot;test&quot;</span>,
+    user = <span class="hljs-string">&quot;root&quot;</span>,
+    password = <span class="hljs-string">&quot;123456&quot;</span>
+&#125;
+
+<span class="hljs-comment">--创建一个对象</span>
+<span class="hljs-keyword">local</span> mysqldb = &#123;&#125;
+
+
+<span class="hljs-comment">--查询数据库</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mysqldb.query</span><span class="hljs-params">(sql)</span></span>
+	<span class="hljs-comment">--创建链接</span>
+	<span class="hljs-keyword">local</span> db = mysql:new()
+	<span class="hljs-comment">--设置超时时间</span>
+	db:set_timeout(<span class="hljs-number">10000</span>)
+	db:connect(props)
+
+	<span class="hljs-comment">--配置编码格式</span>
+	db:query(<span class="hljs-string">&quot;SET NAMES utf8&quot;</span>)
+
+	<span class="hljs-comment">--查询数据库 &quot;select * from activity_info where id=1&quot;</span>
+	<span class="hljs-keyword">local</span> result = db:query(sql)
+	
+	<span class="hljs-comment">--关闭链接</span>
+	db:<span class="hljs-built_in">close</span>()
+	<span class="hljs-comment">--返回结果集</span>
+	<span class="hljs-keyword">return</span> result
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">return</span> mysqldb</code></pre>
+
+<h4 id="链接Redis集群封装"><a href="#链接Redis集群封装" class="headerlink" title="链接Redis集群封装"></a>链接Redis集群封装</h4><p>我们需要安装 lua-resty-redis-cluster ,用该依赖库实现Redis集群的操作，这里提供github地址，大家下载后按操作配置即可，下载地址： <a target="_blank" rel="noopener" href="https://github.com/cuiweixie/lua-resty-redis-cluster">https://github.com/cuiweixie/lua-resty-redis-cluster</a>     。</p>
+<p>下载完成后需要用到rediscluster.lua和redis_slot.c，复制包中的 redis_slot.c 到openresty安装目录的lualib下, rediscluster.lua 到lualib下的resty下，.c文件无法在Nginx配置文件中引入，需要编译成**.so**文件，编译命令</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#编译命令</span>
+gcc redis_slot.c -fPIC -shared -o libredis_slot.so</code></pre>
+
+<p>接下来我们实现Redis集群操作，创建一个脚本 redis.lua ，脚本中实现Redis中数据的查询和添加操作，代码如下：</p>
+<pre><code class="hljs lua"><span class="hljs-comment">-- redis链接配置</span>
+<span class="hljs-keyword">local</span> <span class="hljs-built_in">config</span> = &#123;
+    name = <span class="hljs-string">&quot;test&quot;</span>,
+    serv_list = &#123;
+        &#123; ip = <span class="hljs-string">&quot;192.168.211.141&quot;</span>, port = <span class="hljs-number">7001</span> &#125;,
+        &#123; ip = <span class="hljs-string">&quot;192.168.211.141&quot;</span>, port = <span class="hljs-number">7002</span> &#125;,
+        &#123; ip = <span class="hljs-string">&quot;192.168.211.141&quot;</span>, port = <span class="hljs-number">7003</span> &#125;,
+        &#123; ip = <span class="hljs-string">&quot;192.168.211.141&quot;</span>, port = <span class="hljs-number">7004</span> &#125;,
+        &#123; ip = <span class="hljs-string">&quot;192.168.211.141&quot;</span>, port = <span class="hljs-number">7005</span> &#125;,
+        &#123; ip = <span class="hljs-string">&quot;192.168.211.141&quot;</span>, port = <span class="hljs-number">7006</span> &#125;
+    &#125;,
+    idle_timeout = <span class="hljs-number">1000</span>,
+    pool_size = <span class="hljs-number">10000</span>,
+&#125;
+
+<span class="hljs-comment">-- 引入redis集群配置</span>
+<span class="hljs-keyword">local</span> redis_cluster = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;resty.rediscluster&quot;</span>
+
+<span class="hljs-comment">-- 定义一个对象</span>
+<span class="hljs-keyword">local</span> lredis = &#123;&#125;
+
+<span class="hljs-comment">-- 根据key查询</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">lredis.get</span><span class="hljs-params">(key)</span></span>
+    <span class="hljs-comment">-- 创建链接</span>
+    <span class="hljs-keyword">local</span> red = redis_cluster:new(<span class="hljs-built_in">config</span>)
+    red:init_pipeline()
+
+    <span class="hljs-comment">-- 根据key获取数据</span>
+    red:get(key)
+    <span class="hljs-keyword">local</span> rresult = red:commit_pipeline()
+
+    <span class="hljs-comment">-- 关闭链接</span>
+    red:<span class="hljs-built_in">close</span>()
+
+    <span class="hljs-keyword">return</span> rresult
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-comment">-- 添加带过期的数据</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">lredis.set</span><span class="hljs-params">(key,value)</span></span>
+    <span class="hljs-comment">-- 创建链接</span>
+    <span class="hljs-keyword">local</span> red = redis_cluster:new(<span class="hljs-built_in">config</span>)
+    red:init_pipeline()
+
+    <span class="hljs-comment">-- 添加key，同时设置过期时间</span>
+    red:set(key,value)
+    <span class="hljs-keyword">local</span> rresult = red:commit_pipeline()
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">return</span> lredis</code></pre>
+
+<h4 id="多级缓存操作"><a href="#多级缓存操作" class="headerlink" title="多级缓存操作"></a>多级缓存操作</h4><p>配置创建Nginx缓存共享空间</p>
+<pre><code class="hljs abnf">lua_shared_dict act_cache <span class="hljs-number">128</span>m<span class="hljs-comment">;</span></code></pre>
+
+<p>创建多级缓存操作脚本 activity.lua ，代码如下： </p>
+<pre><code class="hljs lua"><span class="hljs-comment">--多级缓存流程操作</span>
+<span class="hljs-comment">--1）Lua脚本查询Nginx缓存</span>
+<span class="hljs-comment">--2）Nginx如果没有缓存</span>
+<span class="hljs-comment">--2.1）Lua脚本查询Redis</span>
+<span class="hljs-comment">--2.1.1）Redis如果有数据，则将数据存入到Nginx缓存，并响应用户</span>
+<span class="hljs-comment">--2.1.2）Redis没有数据，Lua脚本查询MySQL</span>
+<span class="hljs-comment">--       MySQL有数据，则将数据存入到Redis、Nginx缓存[需要额外定义]，响应用户</span>
+<span class="hljs-comment">--3）Nginx如果有缓存，则直接将缓存响应给用户</span>
+
+<span class="hljs-comment">--响应数据为JSON类型</span>
+ngx.header.content_type=<span class="hljs-string">&quot;application/json;charset=utf8&quot;</span>
+<span class="hljs-comment">--引入依赖库</span>
+<span class="hljs-comment">--cjson：对象转JSON或者JSON转对象</span>
+<span class="hljs-keyword">local</span> cjson = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;cjson&quot;</span>)
+<span class="hljs-keyword">local</span> mysql = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;mysql&quot;</span>)
+<span class="hljs-keyword">local</span> lrredis = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;redis&quot;</span>)
+
+<span class="hljs-comment">--获取请求参数ID   http://192.168.211.141/act?id=1</span>
+<span class="hljs-keyword">local</span> id = ngx.req.get_uri_args()[<span class="hljs-string">&quot;id&quot;</span>];
+
+<span class="hljs-comment">--加载本地缓存</span>
+<span class="hljs-keyword">local</span> cache_ngx = ngx.shared.act_cache;
+
+<span class="hljs-comment">--组装本地缓存的key,并获取nginx本地缓存</span>
+<span class="hljs-keyword">local</span> ngx_key = <span class="hljs-string">&#x27;ngx_act_cache_&#x27;</span>..id
+<span class="hljs-keyword">local</span> actCache = cache_ngx:get(ngx_key)
+
+<span class="hljs-comment">--如果nginx中没有缓存，则查询Redis集群缓存</span>
+<span class="hljs-keyword">if</span> actCache == <span class="hljs-string">&quot;&quot;</span> <span class="hljs-keyword">or</span> actCache == <span class="hljs-literal">nil</span> <span class="hljs-keyword">then</span>
+	<span class="hljs-comment">--从Redis集群中加载数据</span>
+	<span class="hljs-keyword">local</span> redis_key = <span class="hljs-string">&#x27;redis_act_&#x27;</span>..id
+	<span class="hljs-keyword">local</span> result = lrredis.get(redis_key)
+	
+	<span class="hljs-comment">--Redis中数据为空，查询数据库</span>
+	<span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>]==<span class="hljs-literal">nil</span> <span class="hljs-keyword">or</span> result[<span class="hljs-number">1</span>]==ngx.null <span class="hljs-keyword">then</span>
+		<span class="hljs-comment">--组装SQL语句</span>
+		<span class="hljs-keyword">local</span> sql = <span class="hljs-string">&quot;select * from activity_info where id =&quot;</span>..id
+		<span class="hljs-comment">--执行查询</span>
+		result = mysql.query(sql)
+		<span class="hljs-comment">--数据不为空，则添加到Redis中</span>
+		<span class="hljs-keyword">if</span> result[<span class="hljs-number">1</span>]==<span class="hljs-literal">nil</span> <span class="hljs-keyword">or</span> result[<span class="hljs-number">1</span>]==ngx.null <span class="hljs-keyword">then</span>
+			ngx.say(<span class="hljs-string">&quot;no data&quot;</span>)
+		<span class="hljs-keyword">else</span>
+			<span class="hljs-comment">--数据添加到Nginx缓存和Redis缓存</span>
+			lrredis.set(redis_key,cjson.encode(result))
+			cache_ngx:set(ngx_key, cjson.encode(result), <span class="hljs-number">2</span>*<span class="hljs-number">60</span>);
+			ngx.say(cjson.encode(result))
+		<span class="hljs-keyword">end</span>
+	<span class="hljs-keyword">else</span>
+		<span class="hljs-comment">--将数据添加到Nginx缓存中</span>
+		cache_ngx:set(ngx_key, result, <span class="hljs-number">2</span>*<span class="hljs-number">60</span>);
+		<span class="hljs-comment">--直接输出</span>
+		ngx.say(result)
+	<span class="hljs-keyword">end</span>
+<span class="hljs-keyword">else</span>
+	<span class="hljs-comment">--输出缓存数据</span>
+	ngx.say(actCache)
+<span class="hljs-keyword">end</span></code></pre>
+
+<p>Nginx配置： </p>
+<pre><code class="hljs sh"><span class="hljs-comment">#活动查询</span>
+location /act &#123;
+	content_by_lua_file /usr/<span class="hljs-built_in">local</span>/openresty/nginx/lua/activity.lua;
+&#125;</code></pre>
+
+<p>连接单机版reids</p>
+<pre><code class="hljs lua"><span class="hljs-keyword">local</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">close_redis</span><span class="hljs-params">(red)</span></span>  
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> red <span class="hljs-keyword">then</span>  
+        <span class="hljs-keyword">return</span>  
+    <span class="hljs-keyword">end</span>  
+  
+    <span class="hljs-keyword">local</span> pool_max_idle_time = <span class="hljs-number">10000</span> <span class="hljs-comment">--毫秒  </span>
+    <span class="hljs-keyword">local</span> pool_size = <span class="hljs-number">100</span> <span class="hljs-comment">--连接池大小  </span>
+    <span class="hljs-keyword">local</span> ok, err = red:set_keepalive(pool_max_idle_time, pool_size)  
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> ok <span class="hljs-keyword">then</span>  
+        ngx.say(<span class="hljs-string">&quot;set keepalive error : &quot;</span>, err)  
+    <span class="hljs-keyword">end</span>  
+<span class="hljs-keyword">end</span>    
+  
+<span class="hljs-keyword">local</span> redis = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;resty.redis&quot;</span>)  
+  
+
+<span class="hljs-keyword">local</span> red = redis:new()  
+ 
+red:set_timeout(<span class="hljs-number">1000</span>)  
+
+<span class="hljs-keyword">local</span> ip = <span class="hljs-string">&quot;127.0.0.1&quot;</span>  
+<span class="hljs-keyword">local</span> port = <span class="hljs-number">6379</span>  
+<span class="hljs-keyword">local</span> ok, err = red:connect(ip, port)  
+<span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> ok <span class="hljs-keyword">then</span>  
+    ngx.say(<span class="hljs-string">&quot;connect to redis error : &quot;</span>, err)  
+    <span class="hljs-keyword">return</span> close_redis(red)  
+<span class="hljs-keyword">end</span>  
+ 
+ok, err = red:set(<span class="hljs-string">&quot;msg&quot;</span>, <span class="hljs-string">&quot;hello world&quot;</span>)  
+<span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> ok <span class="hljs-keyword">then</span>  
+    ngx.say(<span class="hljs-string">&quot;set msg error : &quot;</span>, err)  
+    <span class="hljs-keyword">return</span> close_redis(red)  
+<span class="hljs-keyword">end</span>  
+  
+
+<span class="hljs-keyword">local</span> resp, err = red:get(<span class="hljs-string">&quot;msg&quot;</span>)  
+<span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> resp <span class="hljs-keyword">then</span>  
+    ngx.say(<span class="hljs-string">&quot;get msg error : &quot;</span>, err)  
+    <span class="hljs-keyword">return</span> close_redis(red)  
+<span class="hljs-keyword">end</span>  
+
+<span class="hljs-keyword">if</span> resp == ngx.null <span class="hljs-keyword">then</span>  
+    resp = <span class="hljs-string">&#x27;&#x27;</span>  
+<span class="hljs-keyword">end</span>  
+ngx.say(<span class="hljs-string">&quot;msg : &quot;</span>, resp)  
+  
+close_redis(red)</code></pre>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E7%BC%93%E5%AD%98/">缓存</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E5%A4%9A%E7%BA%A7%E7%BC%93%E5%AD%98%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/">多级缓存架构设计</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/24/%E7%BC%93%E5%AD%98/%E7%BA%A2%E5%8C%85%E9%9B%A8%E6%A1%88%E4%BE%8B/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">红包雨案例</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/24/%E7%BC%93%E5%AD%98/Lua%E9%AB%98%E6%80%A7%E8%83%BD%E8%84%9A%E6%9C%AC%E8%AF%AD%E8%A8%80/">
+                        <span class="hidden-mobile">Lua高性能脚本语言</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

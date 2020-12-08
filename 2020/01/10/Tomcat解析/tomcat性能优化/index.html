@@ -1,0 +1,706 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Tomcat性能优化 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Tomcat性能优化">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-01-10 17:27" pubdate>
+        2020年1月10日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      32
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Tomcat性能优化</h1>
+            
+            <div class="markdown-body">
+              <h2 id="Tomcat内存优化"><a href="#Tomcat内存优化" class="headerlink" title="Tomcat内存优化"></a>Tomcat内存优化</h2><p>tomcat默认参数是为开发环境制定，而非适合生产环境，尤其是内存和线程的配置，默认都很低，容易成为性能瓶颈。</p>
+<p>TOMCAT_HOME/bin/catalina.sh，在前面加入</p>
+<pre><code class="hljs ini"><span class="hljs-attr">JAVA_OPTS</span>=<span class="hljs-string">&quot;-XX:PermSize=64M -XX:MaxPermSize=128m -Xms512m -Xmx1024m -Duser.timezone=Asia/Shanghai&quot;</span></code></pre>
+
+<p>此设置将最大堆内存改为1024m，实际调整时还是按照服务器的具体配置优化。</p>
+<ul>
+<li>JVM初始化堆大小：Xms</li>
+<li>JVM堆的最大值：Xmx</li>
+<li>JVM初始分配的非堆内存：PermSize</li>
+<li>JVM最大允许分配的非堆内存：MaxPermSize</li>
+</ul>
+<h2 id="Tomcat线程优化"><a href="#Tomcat线程优化" class="headerlink" title="Tomcat线程优化"></a>Tomcat线程优化</h2><p>在TOMCAT_HOME/conf/server.xml中设置</p>
+<pre><code class="hljs routeros">&lt;Connector <span class="hljs-attribute">port</span>=<span class="hljs-string">&quot;8080&quot;</span> <span class="hljs-attribute">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span> <span class="hljs-attribute">maxThreads</span>=<span class="hljs-string">&quot;600&quot;</span> <span class="hljs-attribute">minSpareThreads</span>=<span class="hljs-string">&quot;100&quot;</span> <span class="hljs-attribute">maxSpareThreads</span>=<span class="hljs-string">&quot;500&quot;</span> <span class="hljs-attribute">acceptCount</span>=<span class="hljs-string">&quot;700&quot;</span>
+<span class="hljs-attribute">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span> <span class="hljs-attribute">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> /&gt;</code></pre>
+
+<ul>
+<li>maxThreads：最大线程数</li>
+<li>minSpareThreads：最小空闲线程数（tomcat初始化时创建的线程数）</li>
+<li>maxSpareThreads：最大空闲线程数（超过这个值之后，tomcat会关闭多余的socket线程）</li>
+<li>acceptCount：等待队列长度。超过这个数的请求将不予处理，http请求将返回502状态码</li>
+</ul>
+<p>如果使用apache和tomcat做集群的负载均衡，并且使用ajp协议做apache和tomcat的协议转发，那么还需要优化ajp connector。</p>
+<pre><code class="hljs routeros">&lt;Connector <span class="hljs-attribute">port</span>=<span class="hljs-string">&quot;8009&quot;</span> <span class="hljs-attribute">protocol</span>=<span class="hljs-string">&quot;AJP/1.3&quot;</span> <span class="hljs-attribute">maxThreads</span>=<span class="hljs-string">&quot;600&quot;</span> <span class="hljs-attribute">minSpareThreads</span>=<span class="hljs-string">&quot;100&quot;</span> <span class="hljs-attribute">maxSpareThreads</span>=<span class="hljs-string">&quot;500&quot;</span> <span class="hljs-attribute">acceptCount</span>=<span class="hljs-string">&quot;700&quot;</span>
+<span class="hljs-attribute">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span> <span class="hljs-attribute">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> /&gt;</code></pre>
+
+<p>由于tomcat有多个connector，所以tomcat线程的配置可以支持多个connector共享一个线程池。</p>
+<pre><code class="hljs routeros">&lt;Executor <span class="hljs-attribute">name</span>=<span class="hljs-string">&quot;tomcatThreadPool&quot;</span> <span class="hljs-attribute">namePrefix</span>=<span class="hljs-string">&quot;catalina-exec-&quot;</span> <span class="hljs-attribute">maxThreads</span>=<span class="hljs-string">&quot;500&quot;</span> <span class="hljs-attribute">minSpareThreads</span>=<span class="hljs-string">&quot;20&quot;</span> <span class="hljs-attribute">maxIdleTime</span>=<span class="hljs-string">&quot;60000&quot;</span> /&gt;</code></pre>
+
+<p>修改Connector节点，增加executor属性设置为线程池的名字</p>
+<pre><code class="hljs routeros">&lt;Connector <span class="hljs-attribute">executor</span>=<span class="hljs-string">&quot;tomcatThreadPool&quot;</span> <span class="hljs-attribute">port</span>=<span class="hljs-string">&quot;80&quot;</span> <span class="hljs-attribute">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span>  <span class="hljs-attribute">connectionTimeout</span>=<span class="hljs-string">&quot;60000&quot;</span> <span class="hljs-attribute">keepAliveTimeout</span>=<span class="hljs-string">&quot;15000&quot;</span> <span class="hljs-attribute">maxKeepAliveRequests</span>=<span class="hljs-string">&quot;1&quot;</span>  <span class="hljs-attribute">redirectPort</span>=<span class="hljs-string">&quot;443&quot;</span> /&gt;</code></pre>
+
+<p>可以多个connector公用1个线程池，所以ajp connector也同样可以设置使用tomcatThreadPool线程池。</p>
+<h2 id="Tomcat的连接器优化"><a href="#Tomcat的连接器优化" class="headerlink" title="Tomcat的连接器优化"></a>Tomcat的连接器优化</h2><p>Tomcat Connector(Tomcat连接器)有bio、nio、apr三种运行模式</p>
+<h3 id="BIO"><a href="#BIO" class="headerlink" title="BIO"></a>BIO</h3><p>bio（blocking I/O，阻塞式I/O操作），表示Tomcat使用的是传统的Java I/O操作(即java.io包及其子包)。<br><strong>默认的模式，性能最差，没有经过任何优化处理和支持。</strong></p>
+<h3 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h3><p>nio(non-blocking I/O，非阻塞式I/O操作)，也被看成是<code>non-blocking I/O</code>的缩写，是Java SE 1.4及后续版本提供的一种新的I/O操作方式(即java.nio包及其子包)。Java nio是一个基于缓冲区、并能提供非阻塞I/O操作的Java API。拥有比传统I/O操作(bio)更好的并发运行性能。 tomcat在8.0之后已经将nio作为默认运行模式，在8.0之前要让tomcat以nio方式来运行也比较简单，只需要修改tomcat目录下的/conf/servcer.xml中的protocol设置为<code>org.apache.coyote.http11.Http11NioProtocol</code>即可</p>
+<pre><code class="hljs routeros">&lt;Connector <span class="hljs-attribute">port</span>=<span class="hljs-string">&quot;8080&quot;</span> <span class="hljs-attribute">protocol</span>=<span class="hljs-string">&quot;org.apache.coyote.http11.Http11NioProtocol&quot;</span>
+<span class="hljs-attribute">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span>
+<span class="hljs-attribute">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> /&gt;</code></pre>
+
+<p>点击tomcat管理页面的server status之后就可以看到当前的运行模式</p>
+<img src="/blog/2020/01/10/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="APR"><a href="#APR" class="headerlink" title="APR"></a>APR</h3><p>apr(Apache Portable Runtime/Apache可移植运行时库)，Tomcat将以JNI(Java Native Interface)的形式调用Apache HTTP服务器的核心动态链接库来处理文件读取或网络传输操作，从而大大地提高Tomcat对静态文件的处理性能。使用操作系统的部分本地操作，解决异步的IO问题，大幅度的提高性能。 Tomcat apr也是在Tomcat上运行高并发应用的首选模式。</p>
+<p>Tomcat apr运行模式的配置是三种运行模式之中相对比较麻烦的一种。据官方文档所述，Tomcat apr需要以下三个组件的支持：</p>
+<ul>
+<li>APR library[APR库]</li>
+<li>JNI wrappers for APR used by Tomcat (libtcnative)[简单地说，如果是在Windows操作系统上，就是一个名为tcnative-1.dll的动态链接库文件]</li>
+<li>OpenSSL libraries[OpenSSL库]</li>
+</ul>
+<h3 id="centos7下tomcat8开启APR步骤"><a href="#centos7下tomcat8开启APR步骤" class="headerlink" title="centos7下tomcat8开启APR步骤"></a>centos7下tomcat8开启APR步骤</h3><ol>
+<li>下载APR组件依赖</li>
+</ol>
+<img src="/blog/2020/01/10/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<ol start="2">
+<li>安装apr</li>
+</ol>
+<pre><code class="hljs awk">tar zxvf apr-<span class="hljs-number">1.6</span>.<span class="hljs-number">5</span>.tar.gz
+cd apr-<span class="hljs-number">1.6</span>.<span class="hljs-number">5</span>
+.<span class="hljs-regexp">/configure --prefix=/u</span>sr<span class="hljs-regexp">/local/</span>apr
+make &amp;&amp; make install</code></pre>
+
+<ol start="3">
+<li>安装apr-iconv</li>
+</ol>
+<pre><code class="hljs awk">tar zxvf apr-iconv.<span class="hljs-number">1.2</span>.<span class="hljs-number">2</span>.tar.gz
+cd apr-iconv-<span class="hljs-number">1.2</span>.<span class="hljs-number">2</span>
+.<span class="hljs-regexp">/configure --prefix=/u</span>sr<span class="hljs-regexp">/local/</span>apr-iconv --with-apr=<span class="hljs-regexp">/usr/</span>local/apr
+make &amp;&amp; make install</code></pre>
+
+<ol start="4">
+<li>安装apr-util</li>
+</ol>
+<pre><code class="hljs awk">tar zxvf apr-util.<span class="hljs-number">1.6</span>.<span class="hljs-number">1</span>.tar.gz
+cd apr-util-<span class="hljs-number">1.6</span>.<span class="hljs-number">1</span>
+.<span class="hljs-regexp">/configure --prefix=/u</span>sr<span class="hljs-regexp">/local/</span>apr-util --with-apr=<span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/apr --with-apr-iconv=/u</span>sr<span class="hljs-regexp">/local/</span>apr-iconv<span class="hljs-regexp">/bin/</span>apriconv
+make &amp;&amp; make install</code></pre>
+
+<ol start="5">
+<li>安装tomcat的bin目录下的tomcat-native-1.2.21-src.tar.gz</li>
+</ol>
+<pre><code class="hljs gradle">tar zxf tomcat-<span class="hljs-keyword">native</span>-<span class="hljs-number">1.2</span>.<span class="hljs-number">21</span>-src.tar.gz
+cd tomcat-<span class="hljs-keyword">native</span>-<span class="hljs-number">1.2</span>.<span class="hljs-number">21</span>
+cd <span class="hljs-keyword">native</span>
+.<span class="hljs-regexp">/configure --with-apr=/u</span>sr<span class="hljs-regexp">/local/</span>apr --with-java-home=<span class="hljs-regexp">/usr/</span>java/jdk1.<span class="hljs-number">8.0</span>_65
+make &amp;&amp; make install</code></pre>
+
+<ol start="6">
+<li>在tomcat的bin目录下的catalina.sh的最后一行添加变量</li>
+</ol>
+<pre><code class="hljs awk">JAVA_OPTS=”<span class="hljs-variable">$JAVA_OPTS</span> -Djava.library.path=<span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/apr/</span>lib”</code></pre>
+
+<ol start="7">
+<li>重启tomcat启动日志中出现以下内容证明APR模式启动</li>
+</ol>
+<pre><code class="hljs css">10<span class="hljs-selector-tag">-Jan-2020</span> 17<span class="hljs-selector-pseudo">:23</span><span class="hljs-selector-pseudo">:29.744</span> 信息 <span class="hljs-selector-attr">[main]</span> <span class="hljs-selector-tag">org</span><span class="hljs-selector-class">.apache</span><span class="hljs-selector-class">.coyote</span><span class="hljs-selector-class">.AbstractProtocol</span><span class="hljs-selector-class">.init</span> <span class="hljs-selector-tag">Initializing</span> <span class="hljs-selector-tag">ProtocolHandler</span> <span class="hljs-selector-attr">[<span class="hljs-string">&quot;http-apr-9080&quot;</span>]</span></code></pre>
+
+<p>同理，通过tomcat的启动日志也可以判断出其运行状态</p>
+<ul>
+<li>bio</li>
+</ul>
+<pre><code class="hljs css"><span class="hljs-selector-tag">INFO</span>: <span class="hljs-selector-tag">Initializing</span> <span class="hljs-selector-tag">ProtocolHandler</span> <span class="hljs-selector-attr">[<span class="hljs-string">&quot;http-bio-8080&quot;</span>]</span>
+<span class="hljs-selector-tag">Aug</span> 04, 2015 10<span class="hljs-selector-pseudo">:20</span><span class="hljs-selector-pseudo">:35</span> <span class="hljs-selector-tag">PM</span> <span class="hljs-selector-tag">org</span><span class="hljs-selector-class">.apache</span><span class="hljs-selector-class">.coyote</span><span class="hljs-selector-class">.AbstractProtocol</span> <span class="hljs-selector-tag">init</span></code></pre>
+
+<ul>
+<li>nio</li>
+</ul>
+<pre><code class="hljs css"><span class="hljs-selector-tag">INFO</span>: <span class="hljs-selector-tag">Initializing</span> <span class="hljs-selector-tag">ProtocolHandler</span> <span class="hljs-selector-attr">[<span class="hljs-string">&quot;http-nio-8080&quot;</span>]</span>
+<span class="hljs-selector-tag">Aug</span> 04, 2015 10<span class="hljs-selector-pseudo">:27</span><span class="hljs-selector-pseudo">:58</span> <span class="hljs-selector-tag">PM</span> <span class="hljs-selector-tag">org</span><span class="hljs-selector-class">.apache</span><span class="hljs-selector-class">.coyote</span><span class="hljs-selector-class">.AbstractProtocol</span> <span class="hljs-selector-tag">init</span></code></pre>
+
+<ul>
+<li>apr</li>
+</ul>
+<pre><code class="hljs css"><span class="hljs-selector-tag">INFO</span>: <span class="hljs-selector-tag">Initializing</span> <span class="hljs-selector-tag">ProtocolHandler</span> <span class="hljs-selector-attr">[<span class="hljs-string">&quot;http-apr-8080&quot;</span>]</span>
+<span class="hljs-selector-tag">Aug</span> 04, 2015 10<span class="hljs-selector-pseudo">:33</span><span class="hljs-selector-pseudo">:45</span> <span class="hljs-selector-tag">PM</span> <span class="hljs-selector-tag">org</span><span class="hljs-selector-class">.apache</span><span class="hljs-selector-class">.coyote</span><span class="hljs-selector-class">.AbstractProtocol</span> <span class="hljs-selector-tag">init</span></code></pre>
+
+<h2 id="禁用DNS查询"><a href="#禁用DNS查询" class="headerlink" title="禁用DNS查询"></a>禁用DNS查询</h2><p>当web应用程序向要记录客户端的信息时，它也会记录客户端的IP地址或者通过域名服务器查找机器名 转换为IP地址。</p>
+<p>DNS查询需要占用网络，并且包括可能从很多很远的服务器或者不起作用的服务器上去获取对应的IP的过程，这样会消耗一定的时间。</p>
+<p>修改server.xml文件中的Connector元素，修改属性enableLookups参数值: enableLookups=”false”</p>
+<p>如果为true，则可以通过调用request.getRemoteHost()进行DNS查询来得到远程客户端的实际主机名，若为false则不进行DNS查询，而是返回其ip地址</p>
+<h2 id="设置session过期时间"><a href="#设置session过期时间" class="headerlink" title="设置session过期时间"></a>设置session过期时间</h2><p>在tomcat目录下的conf\web.xml中通过参数指定，单位为分钟。</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">session-config</span>&gt;</span>   
+    <span class="hljs-tag">&lt;<span class="hljs-name">session-timeout</span>&gt;</span>180<span class="hljs-tag">&lt;/<span class="hljs-name">session-timeout</span>&gt;</span>     
+<span class="hljs-tag">&lt;/<span class="hljs-name">session-config</span>&gt;</span></code></pre>
+
+<h2 id="Maven项目远程部署到Tomcat"><a href="#Maven项目远程部署到Tomcat" class="headerlink" title="Maven项目远程部署到Tomcat"></a>Maven项目远程部署到Tomcat</h2><p>其实本节内容并不属于tomcat性能调优，但内容较少不足以再开一篇文章，凑合凑合塞到这吧。</p>
+<ol>
+<li>在tomcat根目录下的/conf/tomcat-users.xml添加用户</li>
+</ol>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">tomcat-users</span> <span class="hljs-attr">version</span>=<span class="hljs-string">&quot;1.0&quot;</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://tomcat.apache.org/xml&quot;</span> <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span> <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://tomcat.apache.org/xml tomcat-users.xsd&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">role</span> <span class="hljs-attr">rolename</span>=<span class="hljs-string">&quot;manager-gui&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">role</span> <span class="hljs-attr">rolename</span>=<span class="hljs-string">&quot;manager-script&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">role</span> <span class="hljs-attr">rolename</span>=<span class="hljs-string">&quot;admin-gui&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">role</span> <span class="hljs-attr">rolename</span>=<span class="hljs-string">&quot;admin-script&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">user</span> <span class="hljs-attr">username</span>=<span class="hljs-string">&quot;admin&quot;</span> <span class="hljs-attr">password</span>=<span class="hljs-string">&quot;tomcat&quot;</span> <span class="hljs-attr">roles</span>=<span class="hljs-string">&quot;manager-gui,manager-script,admin-gui,admin-script&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">tomcat-users</span>&gt;</span></code></pre>
+
+<ol start="2">
+<li>pom文件中加入maven插件</li>
+</ol>
+<pre><code class="hljs dust"><span class="xml"><span class="hljs-tag">&lt;<span class="hljs-name">plugin</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.tomcat.maven<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>tomcat7-maven-plugin<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.2<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">configuration</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">charset</span>&gt;</span>utf-8<span class="hljs-tag">&lt;/<span class="hljs-name">charset</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">update</span>&gt;</span>true<span class="hljs-tag">&lt;/<span class="hljs-name">update</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">url</span>&gt;</span>http://</span><span class="hljs-template-variable">&#123;yourIP&#125;</span><span class="xml">:8080/manager/text<span class="hljs-tag">&lt;/<span class="hljs-name">url</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">mode</span>&gt;</span>war<span class="hljs-tag">&lt;/<span class="hljs-name">mode</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">username</span>&gt;</span>username<span class="hljs-tag">&lt;/<span class="hljs-name">username</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">password</span>&gt;</span>password<span class="hljs-tag">&lt;/<span class="hljs-name">password</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">path</span>&gt;</span>/$</span><span class="hljs-template-variable">&#123;project.artifactId&#125;</span><span class="xml"><span class="hljs-tag">&lt;/<span class="hljs-name">path</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;/<span class="hljs-name">configuration</span>&gt;</span></span>
+<span class="xml"><span class="hljs-tag">&lt;/<span class="hljs-name">plugin</span>&gt;</span></span></code></pre>
+
+<p>tomcat7-maven-plugin是很久以前的插件版本，默认支持到Tomcat7，但是对于目前最新的Tomcat9同样可以使用该插件</p>
+<p>官方介绍文档为：<code>http://tomcat.apache.org/maven-plugin-2.1/index.html</code></p>
+<p>参数说明：</p>
+<p>以下参数必选，但是可以在pom中空缺，空缺时将采用默认值</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>描述</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>charset</td>
+<td>在与Tomcat Manager通信是的URL编 码字符集</td>
+<td>ISO-8859-1</td>
+</tr>
+<tr>
+<td>mode</td>
+<td>部署的模式，值可为：war,context,both</td>
+<td>war</td>
+</tr>
+<tr>
+<td>path</td>
+<td>应用程序运行的上下文路径，必须以’/‘开始</td>
+<td>/${project.artifactId}</td>
+</tr>
+<tr>
+<td>update</td>
+<td>当部署已存在的应用时，是否自动 undeploy该应用</td>
+<td>false</td>
+</tr>
+<tr>
+<td>url</td>
+<td>Tomcat Manager实例使用的全路径</td>
+<td>tomcat的根路径/manager/text</td>
+</tr>
+<tr>
+<td>warFile</td>
+<td>部署warFile的路径</td>
+<td>${project.build.directory} ${project.build.finalName}.war</td>
+</tr>
+</tbody></table>
+<p>对于个性化的需求，tomcat7插件提供了可配置的参数</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>contextFile</td>
+<td>Tomcat的context的XML路径，对于mode=war不适用，默认为 ${project.build.directory}/${project.build.finalName}/ META-INF/context.xml</td>
+</tr>
+<tr>
+<td>ignorePackaging</td>
+<td>如果设置为true，忽略类型不是war的项目</td>
+</tr>
+<tr>
+<td>username</td>
+<td>部署到Tomcat的username</td>
+</tr>
+<tr>
+<td>password</td>
+<td>部署到Tomcat的password</td>
+</tr>
+<tr>
+<td>server</td>
+<td>指定Maven的setting.xml中配置的server id用于Tomcat认证</td>
+</tr>
+<tr>
+<td>tag</td>
+<td>应用程序在Tomcat中使用的标签的名字</td>
+</tr>
+</tbody></table>
+<p>还可以在maven目录中的conf/setting.xml中添加tomcat的用户名和密码</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">servers</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">server</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">id</span>&gt;</span>tomcatServer<span class="hljs-tag">&lt;/<span class="hljs-name">id</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">username</span>&gt;</span>username<span class="hljs-tag">&lt;/<span class="hljs-name">username</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">password</span>&gt;</span>password<span class="hljs-tag">&lt;/<span class="hljs-name">password</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">server</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">servers</span>&gt;</span></code></pre>
+
+<p>之后在pom文件中指定server的id即可，不在需要用户名密码</p>
+<pre><code class="hljs dust"><span class="xml"><span class="hljs-tag">&lt;<span class="hljs-name">plugin</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.tomcat.maven<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>tomcat7-maven-plugin<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.2<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;<span class="hljs-name">configuration</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">url</span>&gt;</span>http://</span><span class="hljs-template-variable">&#123;yourIP&#125;</span><span class="xml">:8080/manager/text<span class="hljs-tag">&lt;/<span class="hljs-name">url</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">server</span>&gt;</span>tomcatServer<span class="hljs-tag">&lt;/<span class="hljs-name">server</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">update</span>&gt;</span>true<span class="hljs-tag">&lt;/<span class="hljs-name">update</span>&gt;</span></span>
+<span class="xml">        <span class="hljs-tag">&lt;<span class="hljs-name">path</span>&gt;</span>/$</span><span class="hljs-template-variable">&#123;project.artifactId&#125;</span><span class="xml"><span class="hljs-tag">&lt;/<span class="hljs-name">path</span>&gt;</span></span>
+<span class="xml">    <span class="hljs-tag">&lt;/<span class="hljs-name">configuration</span>&gt;</span>        </span>
+<span class="xml"><span class="hljs-tag">&lt;/<span class="hljs-name">plugin</span>&gt;</span></span></code></pre>
+
+<ol start="3">
+<li>idea部署项目</li>
+</ol>
+<p>idea可以直接在右侧边栏中的plugins中找到tomcat7，第一次部署时选择deploy之后选择redeploy就可以了</p>
+<p>mvn命令</p>
+<pre><code class="hljs apache"><span class="hljs-attribute">mvn</span> tomcat<span class="hljs-number">7</span>:deploy
+<span class="hljs-attribute">mvn</span> tomcat<span class="hljs-number">7</span>:redeploy
+<span class="hljs-attribute">mvn</span> tomcat<span class="hljs-number">7</span>:undeploy</code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Tomcat%E8%A7%A3%E6%9E%90/">Tomcat解析</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">性能优化</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/tomcat/">tomcat</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/03/23/JVM/%E6%B7%B1%E5%85%A5%E4%BA%86%E8%A7%A3%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">深入了解性能优化</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2019/12/13/%E6%9C%AA%E5%88%86%E7%B1%BB/springboot2-shiro-token%E8%AE%A4%E8%AF%81/">
+                        <span class="hidden-mobile">springboot2+shiro+token认证</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

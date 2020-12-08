@@ -1,0 +1,557 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>ServiceMesh简介 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="ServiceMesh简介">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-09-27 11:57" pubdate>
+        2020年9月27日 中午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.1k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      32
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">ServiceMesh简介</h1>
+            
+            <div class="markdown-body">
+              <h3 id="微服务架构⾯临的⼀些问题"><a href="#微服务架构⾯临的⼀些问题" class="headerlink" title="微服务架构⾯临的⼀些问题"></a>微服务架构⾯临的⼀些问题</h3><img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>当单体架构拆分成微服务架构后，同样也存在很多的挑战，⽐如：</p>
+<ul>
+<li><p>原来的单个应⽤拆分成了许多分散的微服务，它们之间相互调⽤才能完成⼀个任务，⽽⼀旦某个过程出错（组件越多，出错的概率也就越⼤），就⾮常难以排查。</p>
+</li>
+<li><p>如果⽤户请求的响应太慢，我们就需要知道到底哪些地⽅⽐较慢？整个链路的调⽤各阶段耗时是多少？哪些调⽤是并发执⾏的，哪些是串⾏的？这些问题需要我们能⾮常清楚整个集群的调⽤以及流量情况。</p>
+</li>
+<li><p>微服务拆分成这么多组件，如果单个组件出错的概率不变，那么整体有地⽅出错的概率就会增⼤。服务调⽤的时候如果没有错误处理机制，那么会导致⾮常多的问题。</p>
+</li>
+<li><p>应⽤数量的增多，对于⽇常的应⽤发布来说也是个难题。应⽤的发布需要⾮常谨慎，如果应⽤都是⼀次性升级的，出现错误会导致整个线上应⽤不可⽤，影响范围太⼤。</p>
+</li>
+<li><p>很多情况我们需要同时存在不同的版本，使⽤ AB 测试验证哪个版本更好。</p>
+</li>
+<li><p>如果版本升级改动了 API，并且互相有依赖，那么我们还希望能⾃动地控制发布期间不同版本访问不同的地址。这些问题都需要智能的流量控制机制。</p>
+</li>
+<li><p>为了保证整个系统的安全性，每个应⽤都需要实现⼀套相似的认证、授权、HTTPS、限流等功能。</p>
+</li>
+</ul>
+<p>Service Mesh就是为了解决以上问题才出现的。</p>
+<h3 id="技术架构演进"><a href="#技术架构演进" class="headerlink" title="技术架构演进"></a>技术架构演进</h3><h4 id="发展历史时间轴"><a href="#发展历史时间轴" class="headerlink" title="发展历史时间轴"></a>发展历史时间轴</h4><img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="单机⼩型机时代"><a href="#单机⼩型机时代" class="headerlink" title="单机⼩型机时代"></a>单机⼩型机时代</h4><p>2000年此时大多数人还不知道互联网为何物，大多数服务业务单⼀且简单，采⽤典型的单机+数据库模式，所有的功能都写在⼀个应⽤⾥并进⾏集中部署。</p>
+<p>比如论坛业务、聊天室业务、邮箱业务全部都耦合在⼀台⼩型机上⾯，所有的业务数据也都存储在⼀台数据库上。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="垂直拆分"><a href="#垂直拆分" class="headerlink" title="垂直拆分"></a>垂直拆分</h4><p>在单机⼩型机时代，如果⼩型机和数据库中任何⼀个出现故障，整个系统都会崩溃，若某个板块的功能需要更新，那么整个系统都需要重新发布。为了保障可⽤性的同时快速响应业务的变化，需要将系统拆分为多个子应用，应⽤间进⾏解耦，这样就解决了独⽴应⽤发布的问题，也提升了系统容错。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="集群化负载均衡架构"><a href="#集群化负载均衡架构" class="headerlink" title="集群化负载均衡架构"></a>集群化负载均衡架构</h4><p>应⽤垂直拆分解决了应⽤发布的问题，但是随着⽤户数量的增加，单机的计算能⼒依旧是杯⽔⻋薪。⽤户量越来越⼤，就意味着需要更多的⼩型机，但是⼩型机价格昂贵，操作维护成本⾼。 此时更优的选择是采⽤多台PC机部署同⼀个应⽤的⽅案，但是此时就需要对这些应⽤做负载均衡。</p>
+<blockquote>
+<p>负载均衡可以分为硬件层⾯和软件层⾯。 硬件层⾯：F5 软件负载层⾯：LVS、Nginx、Haproxy负载均衡的思想：对外暴露⼀个统⼀的接⼝，根据⽤户的请求进⾏对应规则转发，同时负载均衡还可以做限流等等</p>
+</blockquote>
+<p>有了负载均衡之后，后端的应⽤可以根据流量的⼤⼩进⾏动态扩容，我们称为”⽔平扩展”。通过⽔平扩展，增强了系统的并发能⼒。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="服务化改造架构"><a href="#服务化改造架构" class="headerlink" title="服务化改造架构"></a>服务化改造架构</h4><p>虽然系统经过了垂直拆分，但是拆分之后发现在论坛和聊天室中有重复的功能，⽐如，⽤户注册、发邮件等等，⼀旦项⽬⼤了，集群部署多了，这些重复的功能⽆疑会造成资源浪费，所以会把重复功能抽取出来，名字叫”XX服务（Service）”。</p>
+<p>为了解决服务跟服务如何相互调⽤，需要⼀个程序之间的通信协议，所以就有了远程过程调⽤（RPC），作⽤就是让服务之间的程序调⽤变得像本地调⽤⼀样的简单。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h4><p>随着业务的增⼤，基础服务越来越多，调⽤⽹的关系由最初的⼏个增加到⼏⼗上百，造成了调⽤链路错综复杂，需要对服务进⾏治理。</p>
+<p>服务治理要求：</p>
+<ul>
+<li><p>当我们服务节点数⼏⼗上百的时候，需要对服务有动态的感知，引⼊了注册中⼼。</p>
+</li>
+<li><p>当服务链路调⽤很⻓的时候如何实现链路的监控。</p>
+</li>
+<li><p>单个服务的异常，如何能避免整条链路的异常（雪崩），需要考虑熔断、降级、限流。</p>
+</li>
+<li><p>服务⾼可⽤：负载均衡。</p>
+</li>
+</ul>
+<p>典型框架⽐如有：Dubbo，默认采⽤的是Zookeeper作为注册中⼼。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="微服务时代"><a href="#微服务时代" class="headerlink" title="微服务时代"></a>微服务时代</h4><p>微服务是在2012年提出的概念，微服务的希望的重点是⼀个服务只负责⼀个独⽴的功能。</p>
+<p>拆分原则，任何⼀个需求不会因为发布或者维护⽽影响到不相关的服务，⼀切可以做到独⽴部署运维。⽐如传统的“⽤户中⼼”服务，对于微服务来说，需要根据业务再次拆分，可能需要拆分成“买家服务”、 “卖家服务”、“商家服务”等。</p>
+<p>典型代表：Spring Cloud，相对于传统分布式架构，SpringCloud使⽤的是HTTP作为RPC远程调⽤，配合上注册中⼼Eureka和API⽹关Zuul，可以做到细分内部服务的同时⼜可以对外暴露统⼀的接⼝，让外部对系统内部架构⽆感，此外Spring Cloud的config组件还可以把配置统⼀管理。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>Spring Cloud微服务架构存在的不⾜：</p>
+<ul>
+<li><p>Spring Cloud属于侵⼊式框架，在项⽬中需要添加spring cloud maven依赖，加上spring cloud组件注解，写配置，打成jar的时候还必须要把⾮业务的代码也要融合在⼀起。</p>
+</li>
+<li><p>微服务中的服务⽀持不同语⾔开发，也需要维护不同语⾔和⾮业务代码的成本；</p>
+</li>
+<li><p>业务代码开发者应该把更多的精⼒投⼊到业务熟悉度上，⽽不应该是⾮业务上，Spring Cloud虽然能解决微服务领域的很多问题，但是学习成本还是较⼤的。</p>
+</li>
+<li><p>互联⽹公司产品的版本升级是⾮常频繁的，为了维护各个版本的兼容性、权限、流量等，因为Spring Cloud是“代码侵⼊式的框架”，这时候版本的升级就注定要让⾮业务代码⼀起，⼀旦出现问题，再加上多语⾔之间的调⽤，⼯程师会⾮常痛苦。</p>
+</li>
+<li><p>我们已经感觉到了，服务拆分的越细，只是感觉上轻量级解耦了，但是维护成本却越⾼了。</p>
+</li>
+</ul>
+<h4 id="服务⽹格新时期-（Service-Mesh）"><a href="#服务⽹格新时期-（Service-Mesh）" class="headerlink" title="服务⽹格新时期 （Service Mesh）"></a>服务⽹格新时期 （<strong>Service Mesh</strong>）</h4><p>Service Mesh主要解决的问题就希望开发⼈员对于业务的聚焦，服务发现、服务注册、负载均衡等对于开发⼈员透明，可以更加专注业务逻辑的实现。</p>
+<p>如果将为微服务提供通信服务的这部分逻辑从应⽤程序进程中抽取出来，作为⼀个单独的进程进⾏部署，并将其作为服务间的通信代理，可以得到如下图所示的架构：</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>Sidecar，翻译成中⽂是边⻋，⾮常的形象。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p>当服务⼤量部署时，随着服务部署的Sidecar代理之间的连接形成了⼀个如下图所示的⽹格，该⽹格成为了微服务的通讯基础设施层，承载了微服务之间的所有流量，被称之为Service Mesh（服务⽹格）。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>服务⽹格中有数量众多的Sidecar代理，如果对每个代理分别进⾏设置，⼯作量将⾮常巨⼤。为了更⽅便地对服务⽹格中的代理进⾏统⼀集中控制，在服务⽹格上增加了控制⾯组件。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic12.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="Service-Mesh简介"><a href="#Service-Mesh简介" class="headerlink" title="Service Mesh简介"></a>Service Mesh简介</h4><p>服务⽹格⽤来描述组成这些应⽤程序的微服务⽹络以及它们之间的交互。随着服务⽹格的规模和复杂性不断的增⻓，它将会变得越来越难以理解和管理。它的需求包括服务发现、负载均衡、故障恢复、度量和监控等。服务⽹格通常还有更复杂的运维需求，⽐如 A/B 测试、⾦丝雀发布、速率限制、访问控制和端到端认证。</p>
+<img src="/blog/2020/09/27/ServiceMesh/ServiceMesh-%E7%AE%80%E4%BB%8B/pic13.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="Service-Mesh产品"><a href="#Service-Mesh产品" class="headerlink" title="Service Mesh产品"></a>Service Mesh产品</h3><h4 id="CNCF"><a href="#CNCF" class="headerlink" title="CNCF"></a>CNCF</h4><p>CNCF 是⼀个开源软件基⾦会，致⼒于使云原⽣计算具有普遍性和可持续性。 云原⽣计算使⽤开源软件技术栈将应⽤程序部署为微服务，将每个部分打包到⾃⼰的容器中，并动态编排这些容器以优化资源利⽤率。 云原⽣技术使软件开发⼈员能够更快地构建出⾊的产品。</p>
+<p>官⽹：<a target="_blank" rel="noopener" href="https://www.cncf.io/">https://www.cncf.io/</a></p>
+<p>常⽤的已经毕业的云原⽣项⽬：</p>
+<ul>
+<li><p>Kubernetes：Kubernetes 是世界上最受欢迎的容器编排平台也是第⼀个 CNCF 项⽬。 Kubernetes 帮助⽤户构建、扩展和管理应⽤程序及其动态⽣命周期。</p>
+</li>
+<li><p>Prometheus：Prometheus 为云原⽣应⽤程序提供实时监控、警报包括强⼤的查询和可视化能⼒，并与许多流⾏的开源数据导⼊、导出⼯具集成。</p>
+</li>
+<li><p>Jaeger：Jaeger 是由 Uber 开发的分布式追踪系统，⽤于监控其⼤型微服务环境。 Jaeger 被设计为具有⾼度可扩展性和可⽤性，它具有现代 UI，旨在与云原⽣系统（如 OpenTracing、Kubernetes 和 Prometheus）集成。</p>
+</li>
+<li><p>Envoy：Envoy 是最初在 Lyft 创建的 Service Mesh（服务⽹格），现在⽤于Google、Apple、Netflix等公司内部。 Envoy 是⽤ C++ 编写的，旨在最⼤限度地减少内存和 CPU 占⽤空间，同时提供诸如负载均衡、⽹络深度可观察性、微服务环境中的跟踪和数据库活动等功能。</p>
+</li>
+<li><p>Containerd：Containerd 是由 Docker 开发并基于 Docker Engine 运⾏时的⾏业标准容器运⾏时组件。 作为容器⽣态系统的选择，Containerd 通过提供运⾏时，可以将 Docker 和 OCI 容器镜像作为新平台或产品的⼀部分进⾏管理。</p>
+</li>
+</ul>
+<h4 id="Linkerd"><a href="#Linkerd" class="headerlink" title="Linkerd"></a>Linkerd</h4><p>Linkerd是Buoyant公司2016年率先开源的⾼性能⽹络代理程序，是业界的第⼀款Service Mesh产品，甚⾄可以说Linkerd的诞⽣标志着Service Mesh时代的开始，其引领后来Service Mesh的快速发展。</p>
+<p>其主要⽤于解决分布式环境中服务之间通信⾯临的⼀些问题，⽐如⽹络不可靠、不安全、延迟丢包等问题。Linkerd使⽤Scala语⾔编写，运⾏于JVM，底层基于Twitter的Finagle库，并对其做相应的扩展。</p>
+<p>最主要的是Linkerd具有快速、轻量级、⾼性能等特点，每秒以最⼩的时延及负载处理万级请求，易于⽔平扩展，经过⽣产线测试及验证，可运⾏任何平台的产线级Service Mesh⼯具。</p>
+<h4 id="Envoy"><a href="#Envoy" class="headerlink" title="Envoy"></a>Envoy</h4><p>Envoy也是⼀款⾼性能的⽹络代理程序，于2016年10⽉份由Lyft公司开源，为云原⽣应⽤⽽设计，可作为边界⼊⼝，处理外部流量，当然，也作为内部服务间通信代理，实现服务间可靠通信。</p>
+<p>Envoy的实现借鉴现有产线级代理及负载均衡器，如Nginx、HAProxy、硬件负载均衡器及云负载均衡器的实践经验，同时基于C++编写及Lyft公司产线实践证明，Envoy性能⾮常优秀、稳定。</p>
+<p>Envoy既可⽤作独⽴代理层运⾏，也可作为Service Mesh架构中数据平⾯层，因此通常Envoy跟服务运⾏在⼀起，将应⽤的⽹络功能抽象化，Envoy提供通⽤⽹络功能，实现平台及语⾔⽆关。</p>
+<h4 id="Istio"><a href="#Istio" class="headerlink" title="Istio"></a>Istio</h4><p>2017年5⽉24⽇，Google, IBM 和 Lyft 共同发布 Istio 的第⼀个公开版本(0.1)。Istio为⼀款开源的为微服务提供服务间连接、管理以及安全保障的平台软件，⽀持运⾏在Kubernetes、Mesos等容器管理⼯具，但不限于Kubernetes、Mesos，其底层依赖于Envoy。</p>
+<p>Istio提供⼀种简单的⽅法实现服务间的负载均衡、服务间认证、监控等功能，⽽且⽆需应⽤层代码调整。其控制平⾯由Pilot、Citadel 和 Galley组成，数据平⾯由Envoy实现，通常情况下，数据平⾯代理Envoy以sidecar模式部署，使得所有服务间的⽹络通信均由Envoy实现，⽽Istio的控制平⾯则负责服务间流量管理、安全通信策略等功能。</p>
+<h4 id="Conduit"><a href="#Conduit" class="headerlink" title="Conduit"></a>Conduit</h4><p>Conduit于2017年12⽉发布，作为由Buoyant继Linkerd后赞助的另⼀个开源项⽬。Conduit旨在彻底简化⽤户在Kubernetes使⽤服务⽹格的复杂度，提⾼⽤户体验，⽽不是像Linkerd⼀样针对各种平台进⾏优化。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%9C%8D%E5%8A%A1%E7%BD%91%E6%A0%BC/">服务网格</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/Service-Mesh/">Service Mesh</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/10/01/ServiceMesh/ServiceMesh-Istio%E5%85%A5%E9%97%A8/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Istio入门</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/09/20/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E7%AE%80%E8%BF%B0/">
+                        <span class="hidden-mobile">分布式事务简述</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

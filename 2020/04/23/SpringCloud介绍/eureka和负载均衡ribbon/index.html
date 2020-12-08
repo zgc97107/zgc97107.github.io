@@ -1,0 +1,703 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>springcloud注册中心eureka和负载均衡ribbon - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="springcloud注册中心eureka和负载均衡ribbon">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-23 18:29" pubdate>
+        2020年4月23日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      30
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">springcloud注册中心eureka和负载均衡ribbon</h1>
+            
+            <div class="markdown-body">
+              <h2 id="Eureka用户认证"><a href="#Eureka用户认证" class="headerlink" title="Eureka用户认证"></a>Eureka用户认证</h2><p>eureka加入认证功能，在连接时会验证用户名密码。</p>
+<h3 id="服务端配置"><a href="#服务端配置" class="headerlink" title="服务端配置"></a>服务端配置</h3><p>pom中添加</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-security<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>application.properties</p>
+<pre><code class="hljs properties"><span class="hljs-meta">security.basic.enabled</span>=<span class="hljs-string">true</span>
+<span class="hljs-meta">spring.security.user.name</span>=<span class="hljs-string">admin</span>
+<span class="hljs-meta">spring.security.user.password</span>=<span class="hljs-string">admin</span></code></pre>
+
+<p>添加配置类</p>
+<pre><code class="hljs java"><span class="hljs-meta">@EnableWebSecurity</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebSecurityConfigurer</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebSecurityConfigurerAdapter</span> </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">configure</span><span class="hljs-params">(HttpSecurity http)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">//关闭csrf</span>
+        http.csrf().disable();
+        <span class="hljs-comment">//开启认证：URL格式登录必须是httpBasic</span>
+        http.authorizeRequests().anyRequest().authenticated().and().httpBasic();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="客户端配置"><a href="#客户端配置" class="headerlink" title="客户端配置"></a>客户端配置</h3><p>properties中的连接改为</p>
+<pre><code class="hljs awk">eureka.client.serviceUrl.defaultZone=http:<span class="hljs-regexp">//</span>admin:admin@localhost:<span class="hljs-number">8763</span><span class="hljs-regexp">/eureka/</span></code></pre>
+
+<h2 id="服务的续约和保活"><a href="#服务的续约和保活" class="headerlink" title="服务的续约和保活"></a>服务的续约和保活</h2><p>当客户端启动向eureka注册本身服务列表后，需要隔段时间发送一次心跳给eureka服务端来证明自己还活着，当eureka收到这个心跳请求后才会知道客户端还活着，继续维护该客户端的服务列表信息。一旦因为某些原因导致客户端没有按时发送心跳给eureka服务端，这时候eureka可能就会认为客户端已经挂掉，就有可能把该服务从服务列表中删除掉。</p>
+<h3 id="客户端配置-1"><a href="#客户端配置-1" class="headerlink" title="客户端配置"></a>客户端配置</h3><pre><code class="hljs properties"><span class="hljs-comment">#服务续约，心跳的时间间隔</span>
+<span class="hljs-meta">eureka.instance.lease-renewal-interval-in-seconds</span>=<span class="hljs-string">30</span>
+<span class="hljs-comment">#如果从前一次发送心跳时间起，90秒没接受到新的心跳，将剔除服务</span>
+<span class="hljs-meta">eureka.instance.lease-expiration-duration-in-seconds</span>=<span class="hljs-string">90</span>
+<span class="hljs-comment">#表示eureka client间隔多久去拉取服务注册信息，默认为30秒</span>
+<span class="hljs-meta">eureka.client.registry-fetch-interval-seconds</span>=<span class="hljs-string">30</span></code></pre>
+
+<h3 id="服务端的配置"><a href="#服务端的配置" class="headerlink" title="服务端的配置"></a>服务端的配置</h3><pre><code class="hljs properties"><span class="hljs-comment">#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式</span>
+<span class="hljs-meta">eureka.server.enable-self-preservation</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#Eureka Server 在运行期间会去统计心跳失败比例在15分钟之内是否低于85%，如果低于85%，Eureka Server会将这些实例保护起来</span>
+<span class="hljs-meta">eureka.server.renewal-percent-threshold</span>=<span class="hljs-string">0.85</span>
+<span class="hljs-comment">#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒</span>
+<span class="hljs-meta">eureka.server.eviction-interval-timer-in-ms</span>=<span class="hljs-string">60000</span></code></pre>
+
+<h2 id="Eureka监控检测"><a href="#Eureka监控检测" class="headerlink" title="Eureka监控检测"></a>Eureka监控检测</h2><p>Eureka默认的健康检测只是校验服务连接是否是UP还是DOWN的，客户端只会调用状态为UP状态的服务，但是可能会有服务连接正常，接口调用出现问题的情况，如连接Redis、mongodb、数据库出现问题导致接口调用失败，这时候就需要做自定义的检测。</p>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p>pom文件中引入</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-actuator<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>application.properties</p>
+<pre><code class="hljs properties"><span class="hljs-comment">#开启健康检测</span>
+<span class="hljs-meta">eureka.client.healthcheck.enabled</span>=<span class="hljs-string">true</span></code></pre>
+
+<p>配置类</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Configuration</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MicroOrderHealthIndicator</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">HealthIndicator</span> </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Health <span class="hljs-title">health</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">if</span> (OrderController.canVisitDb) &#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Health.Builder(Status.UP).build();
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Health.Builder(Status.DOWN).build();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h2 id="服务下线"><a href="#服务下线" class="headerlink" title="服务下线"></a>服务下线</h2><p>比如有些情况是服务主机意外宕机了，无法给eureka发送心跳，但是eureka在没有接受到心跳的情况下依赖维护该服务90s，在这90s之内可能会有客户端调用到该服务，这就可能会导致调用失败。所以eureka提供了接口可以将宕机的服务立即从eureka服务列表中清除掉，避免被服务调用方调用到。</p>
+<p>注意，该请求方式为DELETE，可以用postman请求这个接口，如果需要认证则在Authorization中选择Basic Auth然后输入用户名密码即可。如果服务状态正常，依然在发送心跳，即使调用这个接口也不会删除。</p>
+<pre><code class="hljs awk">http:<span class="hljs-regexp">//</span>localhost:<span class="hljs-number">8763</span><span class="hljs-regexp">/eureka/</span>apps<span class="hljs-regexp">/&#123;Application&#125;/</span>&#123;Status中的地址&#125;</code></pre>
+
+<p>还可以缩短eureka服务端中的清理无效节点、客户端拉取服务注册信息的时间间隔。</p>
+<p>服务端</p>
+<pre><code class="hljs properties"><span class="hljs-comment">#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒</span>
+<span class="hljs-meta">eureka.server.eviction-interval-timer-in-ms</span>=<span class="hljs-string">60000</span></code></pre>
+
+<p>客户端</p>
+<pre><code class="hljs properties"><span class="hljs-comment">#表示 eureka client 间隔多久去拉取服务注册信息，默认为 30 秒</span>
+<span class="hljs-meta">eureka.client.registry-fetch-interval-seconds</span>=<span class="hljs-string">30</span></code></pre>
+
+<h2 id="Eureka高可用"><a href="#Eureka高可用" class="headerlink" title="Eureka高可用"></a>Eureka高可用</h2><img src="/blog/2020/04/23/SpringCloud%E4%BB%8B%E7%BB%8D/eureka%E5%92%8C%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1ribbon/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>整个微服务中存在多个eureka服务，每个eureka服务都是相互复制的，会把客户端注册进来的服务复制到eureka集群中的其他节点里面来。其实简单来说就是eureka每个节点相互复制。</p>
+<p>eureka1的配置</p>
+<pre><code class="hljs properties"><span class="hljs-meta">server.port</span>=<span class="hljs-string">8761</span>
+<span class="hljs-meta">eureka.instance.hostname</span>=<span class="hljs-string">eureka-8761</span>
+<span class="hljs-comment">#是否注册到eureka</span>
+<span class="hljs-meta">eureka.client.registerWithEureka</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#是否从eureka拉取注册信息</span>
+<span class="hljs-meta">eureka.client.fetchRegistry</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#暴露eureka服务的地址</span>
+<span class="hljs-meta">eureka.client.serviceUrl.defaultZone</span>=<span class="hljs-string">http://admin:admin@eureka-8762:8762/eureka/</span>
+<span class="hljs-comment">#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式</span>
+<span class="hljs-meta">eureka.server.enable-self-preservation</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#Eureka Server 在运行期间会去统计心跳失败比例在15分钟之内是否低于85%，如果低于85%，Eureka Server会将这些实例保护起来</span>
+<span class="hljs-meta">eureka.server.renewal-percent-threshold</span>=<span class="hljs-string">0.85</span>
+<span class="hljs-comment">#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒</span>
+<span class="hljs-meta">eureka.server.eviction-interval-timer-in-ms</span>=<span class="hljs-string">60000</span>
+
+<span class="hljs-meta">security.basic.enabled</span>=<span class="hljs-string">true</span>
+<span class="hljs-meta">spring.security.user.name</span>=<span class="hljs-string">admin</span>
+<span class="hljs-meta">spring.security.user.password</span>=<span class="hljs-string">admin</span></code></pre>
+
+<p>eureka2的配置</p>
+<pre><code class="hljs properties"><span class="hljs-meta">server.port</span>=<span class="hljs-string">8762</span>
+<span class="hljs-meta">eureka.instance.hostname</span>=<span class="hljs-string">eureka-8762</span>
+<span class="hljs-comment">#是否注册到eureka</span>
+<span class="hljs-meta">eureka.client.registerWithEureka</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#是否从eureka拉取注册信息</span>
+<span class="hljs-meta">eureka.client.fetchRegistry</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#暴露eureka服务的地址</span>
+<span class="hljs-meta">eureka.client.serviceUrl.defaultZone</span>=<span class="hljs-string">http://admin:admin@eureka-8761:8761/eureka/</span>
+<span class="hljs-comment">#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式</span>
+<span class="hljs-meta">eureka.server.enable-self-preservation</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#Eureka Server 在运行期间会去统计心跳失败比例在15分钟之内是否低于85%，如果低于85%，Eureka Server会将这些实例保护起来</span>
+<span class="hljs-meta">eureka.server.renewal-percent-threshold</span>=<span class="hljs-string">0.85</span>
+<span class="hljs-comment">#eureka server清理无效节点的时间间隔，默认60000毫秒，单位毫秒</span>
+<span class="hljs-meta">eureka.server.eviction-interval-timer-in-ms</span>=<span class="hljs-string">60000</span>
+
+<span class="hljs-meta">security.basic.enabled</span>=<span class="hljs-string">true</span>
+<span class="hljs-meta">spring.security.user.name</span>=<span class="hljs-string">admin</span>
+<span class="hljs-meta">spring.security.user.password</span>=<span class="hljs-string">admin</span></code></pre>
+
+<p>注意：eureka-8761、eureka-8762需要在本地配置host，对应的地址一般都为127.0.0.1。</p>
+<h2 id="Eureka自我保护模式"><a href="#Eureka自我保护模式" class="headerlink" title="Eureka自我保护模式"></a>Eureka自我保护模式</h2><p>如果开启了自我保护，如果服务没有发送心跳会继续维护90s，如果关闭自我保护在很短一段时间就会删除服务，不会继续维护90s。</p>
+<pre><code class="hljs properties"><span class="hljs-comment">#自我保护模式，当出现网格分区，eureka在短时间内丢失过多客户端时，会进入自我保护模式</span>
+<span class="hljs-meta">eureka.server.enable-self-preservation</span>=<span class="hljs-string">true</span></code></pre>
+
+<h2 id="Ribbon-API"><a href="#Ribbon-API" class="headerlink" title="Ribbon API"></a>Ribbon API</h2><p>Ribbon是一个独立的组件，用来进行远程接口调用的。Ribbon会从本地列表选择服务来调用。</p>
+<p>配置类中</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> *负载均衡的注解</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@LoadBalanced</span>
+<span class="hljs-meta">@Bean</span>
+<span class="hljs-function">RestTemplate <span class="hljs-title">restTemplate</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RestTemplate();
+&#125;</code></pre>
+
+<p>具体的调用</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Autowired</span>
+<span class="hljs-keyword">private</span> RestTemplate restTemplate;
+
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">queryOrder</span><span class="hljs-params">()</span> </span>&#123;
+    String SERVICE_NAME = <span class="hljs-string">&quot;micro-order&quot;</span>;
+    <span class="hljs-keyword">return</span> restTemplate.getForObject(<span class="hljs-string">&quot;http://&quot;</span> + SERVICE_NAME + <span class="hljs-string">&quot;/queryOrder&quot;</span>, String.class);
+&#125;</code></pre>
+
+<h2 id="Ribbon配置"><a href="#Ribbon配置" class="headerlink" title="Ribbon配置"></a>Ribbon配置</h2><p>配置文件方式：</p>
+<pre><code class="hljs properties"><span class="hljs-comment">#是否从eureka获取服务列表</span>
+<span class="hljs-meta">ribbon.eureka.enabled</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#用于不从eureka获取服务列表，提供服务调用的节点，不建议使用</span>
+<span class="hljs-comment">#micro-order.ribbon.listOfServers=localhost:8081,localhost:8082</span>
+<span class="hljs-comment">#单位ms，请求连接超时时间</span>
+<span class="hljs-meta">micro-order.ribbon.ConnectTimeout</span>=<span class="hljs-string">1000</span>
+<span class="hljs-comment">#单位mx，请求处理超时时间</span>
+<span class="hljs-meta">micro-order.ribbon.ReadTimeout</span>=<span class="hljs-string">2000</span>
+<span class="hljs-comment">#如果调用失败是否针对所有接口进行重试</span>
+<span class="hljs-meta">micro-order.ribbon.OkToRetryOnAllOperations</span>=<span class="hljs-string">true</span>
+<span class="hljs-comment">#切换实例的重试次数</span>
+<span class="hljs-meta">micro-order.ribbon.MaxAutoRetriesNextServer</span>=<span class="hljs-string">2</span>
+<span class="hljs-comment">#对当前实例的重试次数 当Eureka中可以找到服务，但是服务连接不上时会重试</span>
+<span class="hljs-meta">micro-order.ribbon.MaxAutoRetries</span>=<span class="hljs-string">2</span>
+<span class="hljs-comment">#配置负载均衡策略</span>
+<span class="hljs-meta">micro-order.ribbon.NFLoadBalancerRuleClassName</span>=<span class="hljs-string">com.netflix.loadbalancer.RoundRobinRule</span>
+<span class="hljs-comment">#</span>
+<span class="hljs-meta">micro-order.ribbon.NFLoadBalancerPingClassName</span>=<span class="hljs-string">com.netflix.loadbalancer.PingUrl</span></code></pre>
+
+<p>配置类方式：</p>
+<p>使用@RebbonClients加载配置，这个配置类只针对micro-order服务，可以区别化配置。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Configuration</span>
+<span class="hljs-meta">@RibbonClients(value = &#123;</span>
+<span class="hljs-meta">        @RibbonClient(name = &quot;micro-order&quot;,configuration = RibbonLoadBalanceMicroOrderConfig.class)</span>
+<span class="hljs-meta">&#125;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LoadBalanceConfig</span> </span>&#123;
+
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-comment">/*</span>
+<span class="hljs-comment"> * 这个类最好不要出现在启动类的@ComponentScan扫描范围</span>
+<span class="hljs-comment"> * 如果出现在@ComponentScan扫描访问，那么这个配置类就是每个服务共用的配置了</span>
+<span class="hljs-comment"> * */</span>
+<span class="hljs-meta">@Configuration</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RibbonLoadBalanceMicroOrderConfig</span> </span>&#123;
+
+    <span class="hljs-comment">//    @RibbonClientName</span>
+    <span class="hljs-keyword">private</span> String name = <span class="hljs-string">&quot;micro-order&quot;</span>;
+
+    <span class="hljs-meta">@Bean</span>
+    <span class="hljs-meta">@ConditionalOnClass</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> IClientConfig <span class="hljs-title">defaultClientConfigImpl</span><span class="hljs-params">()</span> </span>&#123;
+        DefaultClientConfigImpl config = <span class="hljs-keyword">new</span> DefaultClientConfigImpl();
+        config.loadProperties(name);
+        config.set(CommonClientConfigKey.MaxAutoRetries, <span class="hljs-number">2</span>);
+        config.set(CommonClientConfigKey.MaxAutoRetriesNextServer, <span class="hljs-number">2</span>);
+        config.set(CommonClientConfigKey.ConnectTimeout, <span class="hljs-number">2000</span>);
+        config.set(CommonClientConfigKey.ReadTimeout, <span class="hljs-number">4000</span>);
+        config.set(CommonClientConfigKey.OkToRetryOnAllOperations, <span class="hljs-keyword">true</span>);
+        <span class="hljs-keyword">return</span> config;
+    &#125;
+
+    <span class="hljs-comment">/*</span>
+<span class="hljs-comment">     * 用于请求前判断服务是否存活，会拉长请求时间，不建议使用</span>
+<span class="hljs-comment">     * */</span>
+<span class="hljs-comment">//    @Bean</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> IPing <span class="hljs-title">iPing</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-comment">//这个实现类会去调用服务来判断服务是否存活</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> PingUrl();
+    &#125;
+
+    <span class="hljs-meta">@Bean</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> IRule <span class="hljs-title">ribbonRule</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-comment">//线性轮训</span>
+        <span class="hljs-keyword">new</span> RoundRobinRule();
+        <span class="hljs-comment">//可以重试的轮训</span>
+        <span class="hljs-keyword">new</span> RetryRule();
+        <span class="hljs-comment">//根据运行情况来计算权重</span>
+        <span class="hljs-keyword">new</span> WeightedResponseTimeRule();
+        <span class="hljs-comment">//过滤掉故障实例，选择请求数最小的实例</span>
+        <span class="hljs-keyword">new</span> BestAvailableRule();
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RandomRule();
+    &#125;
+&#125;</code></pre>
+
+<p>负载均衡策略：</p>
+<ul>
+<li>RoundRobinRule：线性轮询</li>
+<li>RetryRule：可以重试的轮询</li>
+<li>WeightedResponseTimeRule：根据运行情况计算权重</li>
+<li>BestAvailableRule：过滤掉故障实例，选择请求数最小的</li>
+</ul>
+<p>注：涉及到的统计数据来源于actuator。</p>
+<h2 id="Ribbon的单独使用"><a href="#Ribbon的单独使用" class="headerlink" title="Ribbon的单独使用"></a>Ribbon的单独使用</h2><p>Ribbon是一个独立的组件，可以脱离springcloud单独使用。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test1</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-comment">//myClients随便取值</span>
+        ConfigurationManager.getConfigInstance().setProperty(<span class="hljs-string">&quot;myClients.ribbon.listOfServers&quot;</span>,<span class="hljs-string">&quot;localhost:8001,localhost:8002&quot;</span>);
+        RestClient client = (RestClient)ClientFactory.getNamedClient(<span class="hljs-string">&quot;myClients&quot;</span>);
+        HttpRequest request = HttpRequest.newBuilder().uri(<span class="hljs-keyword">new</span> URI(<span class="hljs-string">&quot;/user/queryContent&quot;</span>)).build();
+
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;
+            HttpResponse httpResponse = client.executeWithLoadBalancer(request);
+            String entity = httpResponse.getEntity(String.class);
+            System.out.println(entity);
+        &#125;
+    &#125; <span class="hljs-keyword">catch</span> (URISyntaxException e) &#123;
+        e.printStackTrace();
+    &#125; <span class="hljs-keyword">catch</span> (ClientException e) &#123;
+        e.printStackTrace();
+    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+        e.printStackTrace();
+    &#125;
+&#125;</code></pre>
+
+<p>需要的jar包：</p>
+<ul>
+<li>com.netflix.ribbon:ribbon-core:2.3.0</li>
+<li>com.netflix.ribbon:ribbon-httpclient:2.3.0</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/SpringCloud%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8/">SpringCloud基本使用</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/04/24/SpringCloud%E4%BB%8B%E7%BB%8D/%E7%86%94%E6%96%AD%E9%99%8D%E7%BA%A7%E7%BB%84%E4%BB%B6hystrix/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">熔断降级组件Hystrix</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/04/23/SpringCloud%E4%BB%8B%E7%BB%8D/%E7%AE%80%E5%8D%95%E6%90%AD%E5%BB%BA/">
+                        <span class="hidden-mobile">SpringCloud的简单搭建</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,1236 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>tomcat源码解析 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="tomcat源码解析">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-30 18:26" pubdate>
+        2020年4月30日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      7.1k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      94
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">tomcat源码解析</h1>
+            
+            <div class="markdown-body">
+              <h2 id="tomcat源码目录"><a href="#tomcat源码目录" class="headerlink" title="tomcat源码目录"></a>tomcat源码目录</h2><ul>
+<li><p>catalina目录：catalina包含所有的Servlet容器实现，以及涉及到安全、会话、集群、部署管理Servlet容器的各个方面，同时，它还包含了启动入口。</p>
+</li>
+<li><p>coyote目录：coyote是Tomcat链接器框架的名称，是Tomcat服务器提供的客户端访问的外部接口，客户端通过Coyote与服务器建立链接、发送请求并接收响应。</p>
+</li>
+<li><p>El目录，提供java表达式语言</p>
+</li>
+<li><p>Jasper模块提供JSP引擎</p>
+</li>
+<li><p>Naming模块提供JNDI的服务</p>
+</li>
+<li><p>Juli提供服务器日志的服务</p>
+</li>
+<li><p>tomcat提供外部调用的接口api</p>
+</li>
+</ul>
+<h2 id="tomcat组件的生命周期管理"><a href="#tomcat组件的生命周期管理" class="headerlink" title="tomcat组件的生命周期管理"></a>tomcat组件的生命周期管理</h2><p>tomcat的架构设计是清晰的、模块化、它拥有很多组件，加入在启动Tomcat时一个一个组件启动，很容易遗漏组件，同时还会对后面的动态组件拓展带来麻烦。如果采用我们传统的方式的话，组件在启动过程中如果发生异常，会很难管理，比如你的下一个组件调用了start()方法，但是如果它的上级组件还没有start()甚至还没有init()的话，Tomcat的启动会非常难管理，因此，Tomcat的设计者提出一个解决方案：使用生命周期统一接口Lifecycle定义一些状态常量，然后将启动、停止、关闭及所有与生命周期相关的方法都组织到一起，这样就可以很方便管理tomcat各个容器组件的生命周期。</p>
+<p>LifecycleBase实现了Lifecycle接口，在init()方法中初始化之前会进行状态检查：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">synchronized</span> <span class="hljs-keyword">void</span> <span class="hljs-title">init</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> LifecycleException </span>&#123;
+    <span class="hljs-comment">//防止组件启动时状态不对</span>
+    <span class="hljs-keyword">if</span> (!state.equals(LifecycleState.NEW)) &#123;
+        invalidTransition(Lifecycle.BEFORE_INIT_EVENT);
+    &#125;
+
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-comment">//设置初始化状态</span>
+        setStateInternal(LifecycleState.INITIALIZING, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>);
+        initInternal();
+        <span class="hljs-comment">//设置初始化完成</span>
+        setStateInternal(LifecycleState.INITIALIZED, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>);
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        handleSubClassException(t, <span class="hljs-string">&quot;lifecycleBase.initFail&quot;</span>, toString());
+    &#125;
+&#125;</code></pre>
+
+<p>init()方法中会调用子类的initInternal()方法，这里使用了模版方法设计模式，LifecycleBase为骨架类，initInternal()的具体实现在子类中，spring中也使用了这种设计模式。</p>
+<p>start()方法中同样会进行相应的判断。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">synchronized</span> <span class="hljs-keyword">void</span> <span class="hljs-title">start</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> LifecycleException </span>&#123;
+    <span class="hljs-comment">// 统一进行生命周期的管理</span>
+    <span class="hljs-keyword">if</span> (LifecycleState.STARTING_PREP.equals(state) || LifecycleState.STARTING.equals(state) ||
+            LifecycleState.STARTED.equals(state)) &#123;
+        <span class="hljs-keyword">if</span> (log.isDebugEnabled()) &#123;
+            Exception e = <span class="hljs-keyword">new</span> LifecycleException();
+            log.debug(sm.getString(<span class="hljs-string">&quot;lifecycleBase.alreadyStarted&quot;</span>, toString()), e);
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (log.isInfoEnabled()) &#123;
+            log.info(sm.getString(<span class="hljs-string">&quot;lifecycleBase.alreadyStarted&quot;</span>, toString()));
+        &#125;
+        <span class="hljs-keyword">return</span>;
+    &#125;
+    <span class="hljs-comment">// 检查组件生命周期状态</span>
+    <span class="hljs-keyword">if</span> (state.equals(LifecycleState.NEW)) &#123;
+        init();
+    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (state.equals(LifecycleState.FAILED)) &#123;
+        stop();
+    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!state.equals(LifecycleState.INITIALIZED) &amp;&amp;
+            !state.equals(LifecycleState.STOPPED)) &#123;
+        invalidTransition(Lifecycle.BEFORE_START_EVENT);
+    &#125;
+
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-comment">// 设置组件状态</span>
+        setStateInternal(LifecycleState.STARTING_PREP, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>);
+        <span class="hljs-comment">// 调用具体实现类的方法</span>
+        startInternal();
+        <span class="hljs-comment">// 统一进行生命周期的管理</span>
+        <span class="hljs-keyword">if</span> (state.equals(LifecycleState.FAILED)) &#123;
+            <span class="hljs-comment">// 失败，调用stop()方法完成清理</span>
+            stop();
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!state.equals(LifecycleState.STARTING)) &#123;
+            <span class="hljs-comment">// 不是已经在启动的状态</span>
+            invalidTransition(Lifecycle.AFTER_START_EVENT);
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">// 设置组件状态</span>
+            setStateInternal(LifecycleState.STARTED, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>);
+        &#125;
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        <span class="hljs-comment">// This is an &#x27;uncontrolled&#x27; failure so put the component into the</span>
+        <span class="hljs-comment">// FAILED state and throw an exception.</span>
+        handleSubClassException(t, <span class="hljs-string">&quot;lifecycleBase.startFail&quot;</span>, toString());
+    &#125;
+&#125;</code></pre>
+
+<p>tomcat内部架构中各个核心组件有包含与被包含关系，例如：Server包含了Service，Service又包含了Container和Connector，这个结构有一点像数据结构中的树，树的根结点没有父节点，其他节点有且仅有一个父节点，每一个父节点有0至多个子节点。所以，我们可以通过父容器启动它的子容器，这样只要启动根容器，就可以把其他所有的容器都启动，从而达到了统一的启动，停止、关闭的效果。</p>
+<h2 id="tomcat组件分析"><a href="#tomcat组件分析" class="headerlink" title="tomcat组件分析"></a>tomcat组件分析</h2><h3 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h3><p>继承结构：</p>
+<img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>Server是tomcat最顶层的容器，代表整个服务器，Tomcat中的标准实现为StandardServer类。</p>
+<h3 id="Service"><a href="#Service" class="headerlink" title="Service"></a>Service</h3><p>继承结构：</p>
+<img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>其中LifecycleMBeanBase用于监督对象状态。</p>
+<p>Service中请求监听和请求处理分开为两个模块：</p>
+<img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>Connector负责请求监听，Container负责请求处理，一个Service可以有多个Connector，但只能有一个Container。</p>
+<h3 id="Connector"><a href="#Connector" class="headerlink" title="Connector"></a>Connector</h3><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>Connector使用ProtocolHandler来处理请求，ProtocolHandler包含三个部件：</p>
+<ul>
+<li>Endpoint：用来处理底层的Scoket的网络连接。</li>
+<li>Processor：用于将Endpoint接收到的Socket封装为Request</li>
+<li>Adapter：作为适配器将Reqeust将为ServletRequest交给Container进行具体的处理。</li>
+</ul>
+<h3 id="Container"><a href="#Container" class="headerlink" title="Container"></a>Container</h3><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li>Engine：引擎，在servler.xml中定义了一个名为Catalina的Engline，只能有一个。</li>
+<li>Host：站点、虚拟主机，一个Engline包含多个Host的设计，使得一个服务器实例可以承担多个域名的服务，是很灵活的设计</li>
+<li>Context：应用，默认配置下webapps下的每个目录都是一个应用。</li>
+<li>Wrapper：一个Servlet。</li>
+</ul>
+<h2 id="tomcat启动流程"><a href="#tomcat启动流程" class="headerlink" title="tomcat启动流程"></a>tomcat启动流程</h2><p>tomcat组件的启动流程：</p>
+<img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="入口类Bootstrap"><a href="#入口类Bootstrap" class="headerlink" title="入口类Bootstrap"></a>入口类Bootstrap</h3><p>start.sh会执行catalina.sh，catalina.sh会调用Bootstrap类中的main()方法。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String args[])</span> </span>&#123;
+
+    <span class="hljs-comment">//初始化阶段 init()方法</span>
+    <span class="hljs-keyword">synchronized</span> (daemonLock) &#123;
+        <span class="hljs-keyword">if</span> (daemon == <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-comment">// Don&#x27;t set daemon until init() has completed</span>
+            Bootstrap bootstrap = <span class="hljs-keyword">new</span> Bootstrap();
+            <span class="hljs-keyword">try</span> &#123;
+                bootstrap.init();
+            &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+                handleThrowable(t);
+                t.printStackTrace();
+                <span class="hljs-keyword">return</span>;
+            &#125;
+            daemon = bootstrap;
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">// When running as a service the call to stop will be on a new</span>
+            <span class="hljs-comment">// thread so make sure the correct class loader is used to</span>
+            <span class="hljs-comment">// prevent a range of class not found exceptions.</span>
+            Thread.currentThread().setContextClassLoader(daemon.catalinaLoader);
+        &#125;
+    &#125;
+
+    <span class="hljs-comment">//运行阶段 start()</span>
+    <span class="hljs-keyword">try</span> &#123;
+        String command = <span class="hljs-string">&quot;start&quot;</span>;
+        <span class="hljs-keyword">if</span> (args.length &gt; <span class="hljs-number">0</span>) &#123;
+            command = args[args.length - <span class="hljs-number">1</span>];
+        &#125;
+
+        <span class="hljs-keyword">if</span> (command.equals(<span class="hljs-string">&quot;startd&quot;</span>)) &#123;
+            args[args.length - <span class="hljs-number">1</span>] = <span class="hljs-string">&quot;start&quot;</span>;
+            daemon.load(args);
+            daemon.start();
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (command.equals(<span class="hljs-string">&quot;stopd&quot;</span>)) &#123;
+            args[args.length - <span class="hljs-number">1</span>] = <span class="hljs-string">&quot;stop&quot;</span>;
+            daemon.stop();
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (command.equals(<span class="hljs-string">&quot;start&quot;</span>)) &#123;
+            daemon.setAwait(<span class="hljs-keyword">true</span>);
+            daemon.load(args);
+            daemon.start();
+            <span class="hljs-keyword">if</span> (<span class="hljs-keyword">null</span> == daemon.getServer()) &#123;
+                System.exit(<span class="hljs-number">1</span>);
+            &#125;
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (command.equals(<span class="hljs-string">&quot;stop&quot;</span>)) &#123;
+            daemon.stopServer(args);
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (command.equals(<span class="hljs-string">&quot;configtest&quot;</span>)) &#123;
+            daemon.load(args);
+            <span class="hljs-keyword">if</span> (<span class="hljs-keyword">null</span> == daemon.getServer()) &#123;
+                System.exit(<span class="hljs-number">1</span>);
+            &#125;
+            System.exit(<span class="hljs-number">0</span>);
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            log.warn(<span class="hljs-string">&quot;Bootstrap: command \&quot;&quot;</span> + command + <span class="hljs-string">&quot;\&quot; does not exist.&quot;</span>);
+        &#125;
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        <span class="hljs-comment">// Unwrap the Exception for clearer error reporting</span>
+        <span class="hljs-keyword">if</span> (t <span class="hljs-keyword">instanceof</span> InvocationTargetException &amp;&amp;
+                t.getCause() != <span class="hljs-keyword">null</span>) &#123;
+            t = t.getCause();
+        &#125;
+        handleThrowable(t);
+        t.printStackTrace();
+        System.exit(<span class="hljs-number">1</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>main()方法首先会调用init()方法及start()方法，init()方法中会通过反射加载Catalina。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">init</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+
+    <span class="hljs-comment">//类加载器初始化</span>
+    initClassLoaders();
+
+    <span class="hljs-comment">//设置线程上下文类加载器，来解决有可能的ClassNotFoundException问题</span>
+    Thread.currentThread().setContextClassLoader(catalinaLoader);
+
+    SecurityClassLoad.securityClassLoad(catalinaLoader);
+
+    <span class="hljs-comment">// 加载启动类Catalina并调用其process()方法</span>
+    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+        log.debug(<span class="hljs-string">&quot;Loading startup class&quot;</span>);
+    Class&lt;?&gt; startupClass = catalinaLoader.loadClass(<span class="hljs-string">&quot;org.apache.catalina.startup.Catalina&quot;</span>);
+    Object startupInstance = startupClass.getConstructor().newInstance();
+
+    <span class="hljs-comment">// 设置共享类加载器sharedLoader</span>
+    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+        log.debug(<span class="hljs-string">&quot;Setting startup class properties&quot;</span>);
+    String methodName = <span class="hljs-string">&quot;setParentClassLoader&quot;</span>;
+    Class&lt;?&gt; paramTypes[] = <span class="hljs-keyword">new</span> Class[<span class="hljs-number">1</span>];
+    paramTypes[<span class="hljs-number">0</span>] = Class.forName(<span class="hljs-string">&quot;java.lang.ClassLoader&quot;</span>);
+    Object paramValues[] = <span class="hljs-keyword">new</span> Object[<span class="hljs-number">1</span>];
+    <span class="hljs-comment">// 把shared加载器传递给catalina</span>
+    paramValues[<span class="hljs-number">0</span>] = sharedLoader;
+    Method method =
+        startupInstance.getClass().getMethod(methodName, paramTypes);
+    method.invoke(startupInstance, paramValues);
+
+    catalinaDaemon = startupInstance;
+&#125;</code></pre>
+
+<p>start()方法中会通过反射调用Catalina的start方法。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">start</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+    <span class="hljs-keyword">if</span> (catalinaDaemon == <span class="hljs-keyword">null</span>) &#123;
+        init();
+    &#125;
+
+    Method method = catalinaDaemon.getClass().getMethod(<span class="hljs-string">&quot;start&quot;</span>, (Class [])<span class="hljs-keyword">null</span>);
+    method.invoke(catalinaDaemon, (Object [])<span class="hljs-keyword">null</span>);
+&#125;</code></pre>
+
+<h3 id="Catalina"><a href="#Catalina" class="headerlink" title="Catalina"></a>Catalina</h3><p>Bootstrap的init()方法会调用到Catalina的load()方法，load()方法中会通过文件流的方式加载各种文件及配置信息，最后调用Server的init()方法，同样的，start()方法中会调用Servler的start()方法，这里不在进行详细分析。</p>
+<h3 id="Server-1"><a href="#Server-1" class="headerlink" title="Server"></a>Server</h3><p>这里使用了模版方法设计模式，start()方法将调用子类中的startInternal()方法。StandardServer中的startInternal()方法会循环调用所有的Service的start()方法，同样的initInternal()方法中也会调用所有Service的init()方法。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">startInternal</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> LifecycleException </span>&#123;
+
+    fireLifecycleEvent(CONFIGURE_START_EVENT, <span class="hljs-keyword">null</span>);
+    setState(LifecycleState.STARTING);
+
+    globalNamingResources.start();
+
+    <span class="hljs-comment">// Start our defined Services</span>
+    <span class="hljs-keyword">synchronized</span> (servicesLock) &#123;
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; services.length; i++) &#123;
+            services[i].start();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h3 id="Service-1"><a href="#Service-1" class="headerlink" title="Service"></a>Service</h3><p>StandardService中的startInternal()方法，该方法首先会启动容器，然后启动线程执行器，自定义连接器。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">startInternal</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> LifecycleException </span>&#123;
+
+    <span class="hljs-keyword">if</span>(log.isInfoEnabled())
+        log.info(sm.getString(<span class="hljs-string">&quot;standardService.start.name&quot;</span>, <span class="hljs-keyword">this</span>.name));
+    setState(LifecycleState.STARTING);
+
+    <span class="hljs-comment">// 首先启动的是容器</span>
+    <span class="hljs-keyword">if</span> (engine != <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">synchronized</span> (engine) &#123;
+            engine.start();
+        &#125;
+    &#125;
+    <span class="hljs-comment">// 线程执行器</span>
+    <span class="hljs-keyword">synchronized</span> (executors) &#123;
+        <span class="hljs-keyword">for</span> (Executor executor: executors) &#123;
+            executor.start();
+        &#125;
+    &#125;
+
+    mapperListener.start();
+
+    <span class="hljs-comment">// 启动自定义的连接器</span>
+    <span class="hljs-keyword">synchronized</span> (connectorsLock) &#123;
+        <span class="hljs-keyword">for</span> (Connector connector: connectors) &#123;
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-comment">// If it has already failed, don&#x27;t try and start it</span>
+                <span class="hljs-keyword">if</span> (connector.getState() != LifecycleState.FAILED) &#123;
+                    connector.start();
+                &#125;
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                log.error(sm.getString(
+                        <span class="hljs-string">&quot;standardService.connector.startFailed&quot;</span>,
+                        connector), e);
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h2 id="tomcat的请求处理过程"><a href="#tomcat的请求处理过程" class="headerlink" title="tomcat的请求处理过程"></a>tomcat的请求处理过程</h2><ol>
+<li>用户点击网页内容，请求被发送到本机端口8080，被在那里监听的Coyote HTTP/1.1 Connector获得。</li>
+<li>Connector把该请求交给它所在的Service的Engine来处理，并等待Engine的回应。</li>
+<li>Engine获得请求localhost/test/index.jsp，匹配所有的虚拟主机Host。</li>
+<li>Engine匹配到名为localhost的Host（即使匹配不到也把请求交给该Host处理，因为该Host被定义为该Engine的默认主机），名为localhost的Host获得请求/test/index.jsp，匹配它所拥有的所有的Context。Host匹配到路径为/test的Context（如果匹配不到就把该请求交给路径名为“ ”的Context去处理）。</li>
+<li>path=“/test”的Context获得请求/index.jsp，在它的mapping table中寻找出对应的Servlet。Context匹配到URL PATTERN为*.jsp的Servlet,对应于JspServlet类。</li>
+<li>构造HttpServletRequest对象和HttpServletResponse对象，作为参数调用JspServlet的doGet()或doPost()。执行业务逻辑、数据存储等程序。</li>
+<li>Context把执行完之后的HttpServletResponse对象返回给Host。</li>
+<li>Host把HttpServletResponse对象返回给Engine。</li>
+<li>Engine把HttpServletResponse对象返回Connector。</li>
+<li>Connector把HttpServletResponse对象返回给客户Browser。</li>
+</ol>
+<h2 id="管道模式"><a href="#管道模式" class="headerlink" title="管道模式"></a>管道模式</h2><h3 id="管道与阀门"><a href="#管道与阀门" class="headerlink" title="管道与阀门"></a>管道与阀门</h3><p>在一个比较复杂的大型系统中，如果一个对象或数据流需要进行繁杂的逻辑处理，我们可以选择在一个大的组件中直接处理这些繁杂的逻辑处理，这个方式虽然达到目的，但是拓展性和可重用性差。因为牵一发而动全身。</p>
+<p>管道是就像一条管道把多个对象连接起来，整体看起来就像若干个阀门嵌套在管道中，而处理逻辑放在阀门上。它的结构和实现是非常值得我们学习和借鉴的。</p>
+<h3 id="管道的实现"><a href="#管道的实现" class="headerlink" title="管道的实现"></a>管道的实现</h3><p>首先需要定义阀门接口，阀门接口中包含下一个阀门的引用，每个阀门完成自己的逻辑后将调用下一个阀门的方法，直到基础阀门，基础阀门的方法中不再对下一个阀门进行调用。管道接口中保存有第一个阀门及基础阀门的引用，基础阀门的将作为阀门添加时的顺序比较，第一个阀门将用于管道调用的开始，管道调用开始于第一个管道，终止于基础管道。</p>
+<p>管道接口：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Pipeline</span> </span>&#123;
+    <span class="hljs-comment">//获取第一个阀门</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getFirst</span><span class="hljs-params">()</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getBasic</span><span class="hljs-params">()</span></span>;
+    <span class="hljs-comment">//设置阀门</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setBasic</span><span class="hljs-params">(Valve valve)</span></span>;
+    <span class="hljs-comment">//添加阀门</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addVave</span><span class="hljs-params">(Valve valve)</span></span>;
+&#125;</code></pre>
+
+<p>阀门接口</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Valve</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getNext</span><span class="hljs-params">()</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setNext</span><span class="hljs-params">(Valve valve)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invoke</span><span class="hljs-params">(String handing)</span></span>;
+&#125;</code></pre>
+
+<p>管道接口的实现：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StandardPipeline</span> <span class="hljs-keyword">implements</span>  <span class="hljs-title">Pipeline</span> </span>&#123;
+    <span class="hljs-comment">//阀门（非基础，定义一个first）</span>
+    <span class="hljs-keyword">protected</span> Valve first = <span class="hljs-keyword">null</span>;
+    <span class="hljs-comment">//基础阀门</span>
+    <span class="hljs-keyword">protected</span> Valve basic = <span class="hljs-keyword">null</span>;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getBasic</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> basic;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setBasic</span><span class="hljs-params">(Valve valve)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.basic=valve;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getFirst</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> first;
+    &#125;
+
+    <span class="hljs-comment">//添加阀门，链式构建阀门的执行顺序（先定制、最后基础阀门）</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">addVave</span><span class="hljs-params">(Valve valve)</span> </span>&#123;
+        <span class="hljs-keyword">if</span>(first == <span class="hljs-keyword">null</span>)&#123;
+            first = valve;
+            valve.setNext(basic);
+        &#125;<span class="hljs-keyword">else</span>&#123;
+            Valve current =first;
+            <span class="hljs-keyword">while</span>(current !=<span class="hljs-keyword">null</span>)&#123;
+                <span class="hljs-keyword">if</span>(current.getNext() == basic)&#123;
+                    current.setNext(valve);
+                    valve.setNext(basic);
+                &#125;
+                current = current.getNext();
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>基础阀门</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">StandardValve</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Valve</span> </span>&#123;
+    <span class="hljs-keyword">protected</span>  Valve next =<span class="hljs-keyword">null</span>;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getNext</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> next;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setNext</span><span class="hljs-params">(Valve valve)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.next =valve;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invoke</span><span class="hljs-params">(String request)</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;基础阀门处理&quot;</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>第一个阀门</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FirstValve</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Valve</span> </span>&#123;
+    <span class="hljs-keyword">protected</span>  Valve next =<span class="hljs-keyword">null</span>;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getNext</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> next;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setNext</span><span class="hljs-params">(Valve valve)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.next =valve;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invoke</span><span class="hljs-params">(String request)</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;阀门1处理&quot;</span>);
+        getNext().invoke(request);
+    &#125;
+&#125;</code></pre>
+
+<p>第二个阀门</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SecondValve</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Valve</span> </span>&#123;
+    <span class="hljs-keyword">protected</span>  Valve next =<span class="hljs-keyword">null</span>;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Valve <span class="hljs-title">getNext</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">return</span> next;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setNext</span><span class="hljs-params">(Valve valve)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.next =valve;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invoke</span><span class="hljs-params">(String request)</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;阀门2处理&quot;</span>);
+        getNext().invoke(request);
+    &#125;
+&#125;</code></pre>
+
+<p>测试类</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        String request =<span class="hljs-string">&quot;这个是一个Servlet请求&quot;</span>;
+        <span class="hljs-comment">//new出一个管道</span>
+        StandardPipeline pipeline = <span class="hljs-keyword">new</span> StandardPipeline();
+        <span class="hljs-comment">//三个阀门(一个基础、2个定制)</span>
+        StandardValve standardValve = <span class="hljs-keyword">new</span> StandardValve();
+        FirstValve firstValve = <span class="hljs-keyword">new</span> FirstValve();
+        SecondValve secondValve = <span class="hljs-keyword">new</span> SecondValve();
+        <span class="hljs-comment">//设置基础阀门(定制阀门)</span>
+        pipeline.setBasic(standardValve);
+        <span class="hljs-comment">//设置非基础阀门</span>
+        pipeline.addVave(firstValve);
+        pipeline.addVave(secondValve);
+        <span class="hljs-comment">//调用对象管道中的第一个阀门</span>
+        pipeline.getFirst().invoke(request);
+    &#125;
+&#125;</code></pre>
+
+<h2 id="tomcat中的管道"><a href="#tomcat中的管道" class="headerlink" title="tomcat中的管道"></a>tomcat中的管道</h2><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>其中的Engine、Host、Context、warpper分别对应StandardEngineValve、StandardHostValve、StandardContextValve、StandardWrapperValve四种阀门。</p>
+<h3 id="管道处理流程"><a href="#管道处理流程" class="headerlink" title="管道处理流程"></a>管道处理流程</h3><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>接收到请求后在CoyoteAdapter的service()方法中的<code>connector.getContainer().getPipeline().getFirst().invoke(request, response);</code>将获取管道并开始阀门的调用过程对reqeust、response进行处理。</p>
+<p>StandardEngineValue类中的invoke()方法。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invoke</span><span class="hljs-params">(Request request, Response response)</span></span>
+<span class="hljs-function">    <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;
+
+    <span class="hljs-comment">// 拿到Engline中包含的host</span>
+    Host host = request.getHost();
+    <span class="hljs-keyword">if</span> (host == <span class="hljs-keyword">null</span>) &#123;
+        response.sendError
+            (HttpServletResponse.SC_BAD_REQUEST,
+             sm.getString(<span class="hljs-string">&quot;standardEngine.noHost&quot;</span>,
+                          request.getServerName()));
+        <span class="hljs-keyword">return</span>;
+    &#125;
+    <span class="hljs-keyword">if</span> (request.isAsyncSupported()) &#123;
+        request.setAsyncSupported(host.getPipeline().isAsyncSupported());
+    &#125;
+
+    <span class="hljs-comment">// 将request，response交给下一个阀门</span>
+    host.getPipeline().getFirst().invoke(request, response);
+
+&#125;</code></pre>
+
+<p>tomcat的Pipeline处理是这样的：</p>
+<ol>
+<li><p>在生产线上的第一个工人拿到生产原料后，二话不说就人给下一个工人，下一个工人也是一样直接扔给下一个工人，直到最后一个工人，而最后一个工人被安排为上面提过的StandardValve，他要完成的是把生产资料运给自己所在包含的container的Pipeline上去。 </p>
+</li>
+<li><p>四个container就相当于有四个生产线（Pipeline），当StandardWrapperValve拿到资源开始调用servlet，返回后，再一步一步按照刚才丢生产原料是的顺序的倒序一次执行。</p>
+</li>
+</ol>
+<h3 id="自定义tomcat阀门"><a href="#自定义tomcat阀门" class="headerlink" title="自定义tomcat阀门"></a>自定义tomcat阀门</h3><p>管道机制给我们带来了更好的拓展性，例如，你要添加一个额外的逻辑处理阀门是很容易的。自定义个阀门PrintIPValve，只要继承ValveBase并重写invoke方法即可。注意在invoke方法中一定要执行调用下一个阀门的操作，否则会出现异常。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PrintIPValve</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">ValveBase</span></span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invoke</span><span class="hljs-params">(Request request, Response response)</span> <span class="hljs-keyword">throws</span> IOException, ServletException </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;------自定义阀门PrintIPValve:&quot;</span>+request.getRemoteAddr());
+        getNext().invoke(request,response);
+    &#125;
+&#125;</code></pre>
+
+<p>配置Tomcat的核心配置文件server.xml,这里把阀门配置到Engine容器下，作用范围就是整个引擎，也可以根据作用范围配置在Host或者是Context下</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Valve</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.valves.PrintIPValve&quot;</span> /&gt;</span></code></pre>
+
+
+<p>源码中可以直接生效，但是如果是运行版本，可以将这个类导出成一个Jar包放入Tomcat/lib目录下，也可以直接将.class文件打包进catalina.jar包中。</p>
+<h3 id="tomcat中提供常用的阀门"><a href="#tomcat中提供常用的阀门" class="headerlink" title="tomcat中提供常用的阀门"></a>tomcat中提供常用的阀门</h3><p>AccessLogValve：请求访问日志阀门，通过此阀门可以记录所有客户端的访问日志，包括远程主机IP，远程主机名，请求方法，请求协议，会话ID，请求时间，处理时长，数据包大小等。它提供任意参数化的配置，可以通过任意组合来定制访问日志的格式。</p>
+<p>JDBCAccessLogValve：同样是记录访问日志的阀门，但是它有助于将访问日志通过JDBC持久化到数据库中。</p>
+<p>ErrorReportValve：这是一个讲错误以HTML格式输出的阀门。</p>
+<p>PersistentValve：这是对每一个请求的会话实现持久化的阀门。</p>
+<p>RemoteAddrValve：访问控制阀门。可以通过配置决定哪些IP可以访问WEB应用。</p>
+<p>RemoteHostValve：访问控制阀门，通过配置觉得哪些主机名可以访问WEB应用。</p>
+<p>RemoteIpValve：针对代理或者负载均衡处理的一个阀门，一般经过代理或者负载均衡转发的请求都将自己的IP添加到请求头”X-Forwarded-For”中，此时，通过阀门可以获取访问者真实的IP。</p>
+<p>SemaphoreValve：这个是一个控制容器并发访问的阀门，可以作用在不同容器上。</p>
+<h2 id="JVM中的类加载机制"><a href="#JVM中的类加载机制" class="headerlink" title="JVM中的类加载机制"></a>JVM中的类加载机制</h2><p><strong>类加载：</strong>主要是将.class文件中的二进制字节读入到JVM中</p>
+<p>我们可以看到因为这个定义，所以并没有规定一定是要磁盘加载文件，可以通过网络，内存什么的加载。只要是二进制流字节数据，JVM就可以加载。</p>
+<p><strong>类加载过程：</strong></p>
+<ol>
+<li><p>通过类的全限定名获取该类的二进制字节流；</p>
+</li>
+<li><p>将字节流所代表的静态结构转化为方法区的运行时数据结构</p>
+</li>
+<li><p>在内存中生成一个该类的java.lang.Class对象，作为方法区这个类的各种数据的访问入口</p>
+</li>
+</ol>
+<p><strong>类加载器</strong>：</p>
+<p>JVM设计者把“类加载”这个动作放到java虚拟机外部去实现，以便让应用程序决定如何获取所需要的类。实现这个动作的代码模块成为“类加载器”</p>
+<p><strong>类的唯一性：</strong></p>
+<p>对于任何一个类，都需要由加载它的类加载器和这个类来确定其在JVM中的唯一性。也就是说，两个类来源于同一个Class文件，并且被同一个类加载器加载，这两个类才相等。</p>
+<p>注意：这里所谓的“相等”，一般使用instanceof关键字做判断。</p>
+<p><strong>双亲委派模型：</strong></p>
+<ul>
+<li><p><strong>定义：</strong>双亲委派模型的工作过程为：如果一个类加载器收到了类请求，它首先不会自己去尝试加载这个类，而是把这个请求委派给父加载器去完成，每一层都是如此，因此所有类加载的请求都会传到启动类加载器，只有当父加载器无法完成该请求时，子加载器才去自己加载。</p>
+</li>
+<li><p><strong>实现方式：</strong>该模型要求除了顶层的启动类加载器外，其余的类加载器都应当有自己的父类加载器。子类加载器不是以继承的关系来实现，而是通过组合关系来复用父加载器的代码。</p>
+</li>
+<li><p><strong>意义：</strong>好处双亲委派模型的好处就是java类随着它的类加载器一起具备了一种带有优先级的层次关系。例如：Object,无论那个类加载器去加载该类，最终都是由启动类加载器进行加载的，因此Object类在程序的各种类加载环境中都是一个类。如果不用改模型，那么java.lang.Object类存放在classpath中，那么系统中就会出现多个Object类，程序变得很混乱。</p>
+</li>
+</ul>
+<h5 id="类加载器的分类："><a href="#类加载器的分类：" class="headerlink" title="类加载器的分类："></a>类加载器的分类：</h5><p>从虚拟机的角度来说，有两种不同的类加载器：一种是启动类加载器（Bootstrap ClassLoader）,该加载器使用C++语言实现，属于虚拟机自身的一部分。另一部分就是所有其它的类加载器，这些类加载器是由Java语言实现，独立于JVM外部，并且全部继承抽象类java.lang.ClassLoader.</p>
+<p>  从java开发人员的角度看，大部分java程序会用到以下三种系统提供的类加载器：</p>
+<ol>
+<li><p>启动类加载器（Bootstrap ClassLoader）:负责加载JAVA_HOME\lib目录中并且能被虚拟机识别的类库加载到JVM内存中，如果名称不符合的类库即使在lib目录中也不会被加载。该类加载器无法被java程序直接引用。</p>
+</li>
+<li><p>扩展类加载器(Extension ClassLoader):该加载器主要负责加载JAVA_HOME\lib\ext目录中的类库，开发者可以使用扩展加载器。 </p>
+</li>
+<li><p>应用程序类加载器（Application ClassLoader）:该列加载器也称为系统加载器，它负责加载用户类路径(Classpath)上所指定的类库，开发者可以直接使用该类加载器，如果应用程序中没有自定义过自己的类加载器，一般情况下这个就是程序中默认的类加载器。</p>
+</li>
+</ol>
+<h2 id="tomcat类加载的特性"><a href="#tomcat类加载的特性" class="headerlink" title="tomcat类加载的特性"></a>tomcat类加载的特性</h2><p><strong>隔离性</strong>：Web应用类库相互隔离，避免依赖库或者应用包相互影响，比如有两个Web应用，一个采用了Spring 4，一个采用了Spring 5，如果采用同一个类加载器，Web应用将会由于jar包覆盖而无法启动成功。</p>
+<p><strong>灵活性</strong>：Web应用之间的类加载器相互独立，如果一个Web应用重新部署时，该应用的类加载器重新加载，不能影响其他web应用。</p>
+<p><strong>性能</strong>：如果在一个Tomcat部署多个应用，多个应用中都有相同的类库依赖。那么可以把这相同的类库让Common类加载器进行加载。</p>
+<h2 id="tomcat中的类加载器"><a href="#tomcat中的类加载器" class="headerlink" title="tomcat中的类加载器"></a>tomcat中的类加载器</h2><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>Tomcat提供3个基础类加载器（common、catalina、shared）和Web应用类加载器。</p>
+<ul>
+<li><strong>Common Loader</strong>：Tomcat最基本的类加载器，加载<code>/common/*</code>路径中的class可以被Tomcat容器本身以及各个Webapp访问；</li>
+<li><strong>Catalina Loader</strong>：Tomcat容器私有的类加载器，加载<code>/server/*</code>路径中的class对于Webapp不可见；</li>
+<li><strong>Shared Loader</strong>：各个Webapp共享的类加载器，加载<code>/WebApp/WEB-INF/*</code>路径中的class对于所有Webapp可见，但是对于Tomcat容器不可见；</li>
+<li><strong>WebappClass Loader</strong>：各个Webapp私有的类加载器，加载路径中的class只对当前Webapp可见；</li>
+</ul>
+<p>Tomcat通过Common类加载器实现了Jar包在应用服务器与Web应用之间的共享，通过Shared类加载器实现了Jar包在Web应用之间的共享，再过Catalina类加载器加载服务器依赖的类。</p>
+<p>当应用需要到某个类时，则会按照下面的顺序进行类加载</p>
+<ol>
+<li>使用BootStrap ClassLoader加载</li>
+<li>使用system系统类加载器加载</li>
+<li>使用Webapp ClassLoader在WEB-INF/classes中加载</li>
+<li>使用Webapp ClassLoader在WEB-INF/lib中加载</li>
+<li>使用Common ClassLoader在CATALINA_HOME/lib中加载</li>
+</ol>
+<h3 id="类加载器的创建"><a href="#类加载器的创建" class="headerlink" title="类加载器的创建"></a>类加载器的创建</h3><p>3个基础类加载器的加载路径在catalina.properties配置，默认情况下，3个基础类加载器的实例都是一个。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">init</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+
+    <span class="hljs-comment">//类加载器初始化</span>
+    initClassLoaders();
+
+    <span class="hljs-comment">//设置线程上下文类加载器，来解决有可能的ClassNotFoundException问题</span>
+    Thread.currentThread().setContextClassLoader(catalinaLoader);
+
+    SecurityClassLoad.securityClassLoad(catalinaLoader);
+
+    <span class="hljs-comment">// 加载启动类Catalina并调用其process()方法</span>
+    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+        log.debug(<span class="hljs-string">&quot;Loading startup class&quot;</span>);
+    Class&lt;?&gt; startupClass = catalinaLoader.loadClass(<span class="hljs-string">&quot;org.apache.catalina.startup.Catalina&quot;</span>);
+    Object startupInstance = startupClass.getConstructor().newInstance();
+
+    <span class="hljs-comment">// 设置共享类加载器sharedLoader</span>
+    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+        log.debug(<span class="hljs-string">&quot;Setting startup class properties&quot;</span>);
+    String methodName = <span class="hljs-string">&quot;setParentClassLoader&quot;</span>;
+    Class&lt;?&gt; paramTypes[] = <span class="hljs-keyword">new</span> Class[<span class="hljs-number">1</span>];
+    paramTypes[<span class="hljs-number">0</span>] = Class.forName(<span class="hljs-string">&quot;java.lang.ClassLoader&quot;</span>);
+    Object paramValues[] = <span class="hljs-keyword">new</span> Object[<span class="hljs-number">1</span>];
+    <span class="hljs-comment">// 把shared加载器传递给catalina</span>
+    paramValues[<span class="hljs-number">0</span>] = sharedLoader;
+    Method method =
+        startupInstance.getClass().getMethod(methodName, paramTypes);
+    method.invoke(startupInstance, paramValues);
+
+    catalinaDaemon = startupInstance;
+&#125;</code></pre>
+
+<h3 id="类加载器初始化"><a href="#类加载器初始化" class="headerlink" title="类加载器初始化"></a>类加载器初始化</h3><p>Bootstartp的initClassLoaders()方法会在Boostrap的init()方法中调用，初始化三个类加载器以及确定父子关系。</p>
+<pre><code class="hljs java"><span class="hljs-comment">//初始化三个类加载器以及确定父子关系</span>
+<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initClassLoaders</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-comment">// commonLoader的加载路径为common.loader</span>
+        commonLoader = createClassLoader(<span class="hljs-string">&quot;common&quot;</span>, <span class="hljs-keyword">null</span>);
+        <span class="hljs-keyword">if</span> (commonLoader == <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-comment">// no config file, default to this loader - we might be in a &#x27;single&#x27; env.</span>
+            commonLoader = <span class="hljs-keyword">this</span>.getClass().getClassLoader();
+        &#125;
+        <span class="hljs-comment">// 加载路径为server.loader，默认为空，父类加载器为commonLoader</span>
+        catalinaLoader = createClassLoader(<span class="hljs-string">&quot;server&quot;</span>, commonLoader);
+        <span class="hljs-comment">// 加载路径为shared.loader，默认为空，父类加载器为commonLoader</span>
+        sharedLoader = createClassLoader(<span class="hljs-string">&quot;shared&quot;</span>, commonLoader);
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        handleThrowable(t);
+        log.error(<span class="hljs-string">&quot;Class loader creation threw exception&quot;</span>, t);
+        System.exit(<span class="hljs-number">1</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>initClassLoaders()方法会调用createClassLoader()方法会根据catalina.properties中的内容创建对应的类加载器，如果为空则返回传入的父加载器。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> ClassLoader <span class="hljs-title">createClassLoader</span><span class="hljs-params">(String name, ClassLoader parent)</span></span>
+<span class="hljs-function">    <span class="hljs-keyword">throws</span> Exception </span>&#123;
+
+    String value = CatalinaProperties.getProperty(name + <span class="hljs-string">&quot;.loader&quot;</span>);
+    <span class="hljs-keyword">if</span> ((value == <span class="hljs-keyword">null</span>) || (value.equals(<span class="hljs-string">&quot;&quot;</span>)))
+        <span class="hljs-keyword">return</span> parent;
+
+    value = replace(value);
+
+    List&lt;Repository&gt; repositories = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
+
+    String[] repositoryPaths = getPaths(value);
+
+    <span class="hljs-keyword">for</span> (String repository : repositoryPaths) &#123;
+        <span class="hljs-comment">// Check for a JAR URL repository</span>
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-meta">@SuppressWarnings(&quot;unused&quot;)</span>
+            URL url = <span class="hljs-keyword">new</span> URL(repository);
+            repositories.add(<span class="hljs-keyword">new</span> Repository(repository, RepositoryType.URL));
+            <span class="hljs-keyword">continue</span>;
+        &#125; <span class="hljs-keyword">catch</span> (MalformedURLException e) &#123;
+            <span class="hljs-comment">// Ignore</span>
+        &#125;
+
+        <span class="hljs-comment">// Local repository</span>
+        <span class="hljs-keyword">if</span> (repository.endsWith(<span class="hljs-string">&quot;*.jar&quot;</span>)) &#123;
+            repository = repository.substring
+                (<span class="hljs-number">0</span>, repository.length() - <span class="hljs-string">&quot;*.jar&quot;</span>.length());
+            repositories.add(<span class="hljs-keyword">new</span> Repository(repository, RepositoryType.GLOB));
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (repository.endsWith(<span class="hljs-string">&quot;.jar&quot;</span>)) &#123;
+            repositories.add(<span class="hljs-keyword">new</span> Repository(repository, RepositoryType.JAR));
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            repositories.add(<span class="hljs-keyword">new</span> Repository(repository, RepositoryType.DIR));
+        &#125;
+    &#125;
+
+    <span class="hljs-keyword">return</span> ClassLoaderFactory.createClassLoader(repositories, parent);
+&#125;</code></pre>
+
+<p>catalina.properties中的内容</p>
+<pre><code class="hljs properties"><span class="hljs-meta">common.loader</span>=<span class="hljs-string">&quot;$&#123;catalina.base&#125;/lib&quot;,&quot;$&#123;catalina.base&#125;/lib/*.jar&quot;,&quot;$&#123;catalina.home&#125;/lib&quot;,&quot;$&#123;catalina.home&#125;/lib/*.jar&quot;</span>
+<span class="hljs-meta">server.loader</span>=<span class="hljs-string"></span>
+<span class="hljs-meta">shared.loader</span>=<span class="hljs-string"></span></code></pre>
+
+<p>所以默认情况这三个类加载器是同一个实例，可以通过修改配置创建3个不同的类加载机制，使它们各司其职，如果不希望这些包对Web应用可见，因此我们可以配置server.loader，创建独立的Catalina类加载器。</p>
+<h3 id="类加载工厂"><a href="#类加载工厂" class="headerlink" title="类加载工厂"></a>类加载工厂</h3><p>因为类加载需要做很多事情，比如读取字节数组、验证、解析、初始化等。Java提供的URLClassLoader类能够方便的将Jar、Class或者网络资源加载到内存中。Tomcat中使用一个工厂类，ClassLoaderFactory把创建类加载器的细节进行封装，可以通过它方便的创建自定义类加载器。</p>
+<p>上述createClassLoader()方法中的<code> return ClassLoaderFactory.createClassLoader(repositories, parent);</code>方法就是使用类加载工厂来创建类加载器。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> ClassLoader <span class="hljs-title">createClassLoader</span><span class="hljs-params">(List&lt;Repository&gt; repositories,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                            <span class="hljs-keyword">final</span> ClassLoader parent)</span></span>
+<span class="hljs-function">    <span class="hljs-keyword">throws</span> Exception </span>&#123;
+
+    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+        log.debug(<span class="hljs-string">&quot;Creating new class loader&quot;</span>);
+
+    <span class="hljs-comment">// Construct the &quot;class path&quot; for this class loader</span>
+    Set&lt;URL&gt; set = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;();
+
+    <span class="hljs-keyword">if</span> (repositories != <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">for</span> (Repository repository : repositories)  &#123;
+            <span class="hljs-keyword">if</span> (repository.getType() == RepositoryType.URL) &#123;
+                URL url = buildClassLoaderUrl(repository.getLocation());
+                <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+                    log.debug(<span class="hljs-string">&quot;  Including URL &quot;</span> + url);
+                set.add(url);
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (repository.getType() == RepositoryType.DIR) &#123;
+                File directory = <span class="hljs-keyword">new</span> File(repository.getLocation());
+                directory = directory.getCanonicalFile();
+                <span class="hljs-keyword">if</span> (!validateFile(directory, RepositoryType.DIR)) &#123;
+                    <span class="hljs-keyword">continue</span>;
+                &#125;
+                URL url = buildClassLoaderUrl(directory);
+                <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+                    log.debug(<span class="hljs-string">&quot;  Including directory &quot;</span> + url);
+                set.add(url);
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (repository.getType() == RepositoryType.JAR) &#123;
+                File file=<span class="hljs-keyword">new</span> File(repository.getLocation());
+                file = file.getCanonicalFile();
+                <span class="hljs-keyword">if</span> (!validateFile(file, RepositoryType.JAR)) &#123;
+                    <span class="hljs-keyword">continue</span>;
+                &#125;
+                URL url = buildClassLoaderUrl(file);
+                <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+                    log.debug(<span class="hljs-string">&quot;  Including jar file &quot;</span> + url);
+                set.add(url);
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (repository.getType() == RepositoryType.GLOB) &#123;
+                File directory=<span class="hljs-keyword">new</span> File(repository.getLocation());
+                directory = directory.getCanonicalFile();
+                <span class="hljs-keyword">if</span> (!validateFile(directory, RepositoryType.GLOB)) &#123;
+                    <span class="hljs-keyword">continue</span>;
+                &#125;
+                <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+                    log.debug(<span class="hljs-string">&quot;  Including directory glob &quot;</span>
+                        + directory.getAbsolutePath());
+                String filenames[] = directory.list();
+                <span class="hljs-keyword">if</span> (filenames == <span class="hljs-keyword">null</span>) &#123;
+                    <span class="hljs-keyword">continue</span>;
+                &#125;
+                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> j = <span class="hljs-number">0</span>; j &lt; filenames.length; j++) &#123;
+                    String filename = filenames[j].toLowerCase(Locale.ENGLISH);
+                    <span class="hljs-keyword">if</span> (!filename.endsWith(<span class="hljs-string">&quot;.jar&quot;</span>))
+                        <span class="hljs-keyword">continue</span>;
+                    File file = <span class="hljs-keyword">new</span> File(directory, filenames[j]);
+                    file = file.getCanonicalFile();
+                    <span class="hljs-keyword">if</span> (!validateFile(file, RepositoryType.JAR)) &#123;
+                        <span class="hljs-keyword">continue</span>;
+                    &#125;
+                    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+                        log.debug(<span class="hljs-string">&quot;    Including glob jar file &quot;</span>
+                            + file.getAbsolutePath());
+                    URL url = buildClassLoaderUrl(file);
+                    set.add(url);
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-comment">// Construct the class loader itself</span>
+    <span class="hljs-keyword">final</span> URL[] array = set.toArray(<span class="hljs-keyword">new</span> URL[set.size()]);
+    <span class="hljs-keyword">if</span> (log.isDebugEnabled())
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; array.length; i++) &#123;
+            log.debug(<span class="hljs-string">&quot;  location &quot;</span> + i + <span class="hljs-string">&quot; is &quot;</span> + array[i]);
+        &#125;
+
+    <span class="hljs-keyword">return</span> AccessController.doPrivileged(
+            <span class="hljs-keyword">new</span> PrivilegedAction&lt;URLClassLoader&gt;() &#123;
+                <span class="hljs-meta">@Override</span>
+                <span class="hljs-function"><span class="hljs-keyword">public</span> URLClassLoader <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+                    <span class="hljs-keyword">if</span> (parent == <span class="hljs-keyword">null</span>)
+                        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> URLClassLoader(array);
+                    <span class="hljs-keyword">else</span>
+                        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> URLClassLoader(array, parent);
+                &#125;
+            &#125;);
+&#125;</code></pre>
+
+<p>createClassLoader()方法会依据RepositoryType来执行不同的创建方法。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">enum</span> <span class="hljs-title">RepositoryType</span> </span>&#123;
+    DIR, <span class="hljs-comment">//表示整个目录下的资源，包括所有Class、jar包以及其他类型资源</span>
+    GLOB, <span class="hljs-comment">//表示整个目录下的所有jar包资源</span>
+    JAR, <span class="hljs-comment">//表示单个jar包资源</span>
+    URL <span class="hljs-comment">//表示从URL上获取jar包资源</span>
+&#125;</code></pre>
+
+<p>使用加载器工厂的好处</p>
+<ol>
+<li>ClassLoadFactory有一个内部Repository，它就是表示资源的类，资源的类型用一个RepositoryType的枚举表示。</li>
+<li>在检查jar包的时候，如果检查的URL地址有异常就忽略掉，可以确保部分类加载正确。</li>
+</ol>
+<h3 id="类加载器绑定到线程"><a href="#类加载器绑定到线程" class="headerlink" title="类加载器绑定到线程"></a>类加载器绑定到线程</h3><p>JVM提供了java.lang.Thread类的setContextClassLoader方法来绑定一个线程上下文类加载器（Thread Context ClassLoader），用于在运行时动态载入其他类，如果创建线程时未设置，将会从父线程中继承一个，所以大部分情况下，都是系统默认的ContextClassLoad。</p>
+<p>一般在实际的系统上，使用线程上下文类加载器，可以设置不同的加载方式，这个也是Java灵活的类加载方式的体现，也可以很轻松的打破双亲委派模式，同时也会避免类加载的异常。</p>
+<p>tomcat也使用了这种方式，来解决Commons ClassLoader需要Webapp ClassLoader中的类的情况。WebappLoader只会加载自己目录下的class文件，不会传递给父容器，所以tomcat将Webapp ClassLoader与线程绑定，使用线程上下文加载器，可以让父类加载器请求子类加载器去完成类加载的动作，不得不说，这是个巧妙的设计。</p>
+<h3 id="tomcat的热加载"><a href="#tomcat的热加载" class="headerlink" title="tomcat的热加载"></a>tomcat的热加载</h3><p>StandardContext.startInternal()方法中还会调用threadStart()方法，threadStart()方法将创建一个线程，这个线程的while循环中，不断的调用方法，然后进行睡眠，以这种类似于定时器的方式，来执行任务，如重新加载等。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">threadStart</span><span class="hljs-params">()</span> </span>&#123;
+
+    <span class="hljs-keyword">if</span> (thread != <span class="hljs-keyword">null</span>)
+        <span class="hljs-keyword">return</span>;
+    <span class="hljs-keyword">if</span> (backgroundProcessorDelay &lt;= <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">return</span>;
+
+    threadDone = <span class="hljs-keyword">false</span>;
+    String threadName = <span class="hljs-string">&quot;ContainerBackgroundProcessor[&quot;</span> + toString() + <span class="hljs-string">&quot;]&quot;</span>;
+    thread = <span class="hljs-keyword">new</span> Thread(<span class="hljs-keyword">new</span> ContainerBackgroundProcessor(), threadName);
+    thread.setDaemon(<span class="hljs-keyword">true</span>);
+    thread.start();
+
+&#125;</code></pre>
+
+<p>threadStart()方法调用链比较长，这里只分析WebappLoader的backgroudProcess()方法，该方法将完成类的重新加载。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">backgroundProcess</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">if</span> (reloadable &amp;&amp; modified()) &#123;
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">//设置线程类加载器的类加载器WebappClassLoader</span>
+            Thread.currentThread().setContextClassLoader
+                (WebappLoader.class.getClassLoader());
+            <span class="hljs-keyword">if</span> (context != <span class="hljs-keyword">null</span>) &#123;
+                <span class="hljs-comment">//重新加载的方法</span>
+                context.reload();
+            &#125;
+        &#125; <span class="hljs-keyword">finally</span> &#123;
+            <span class="hljs-keyword">if</span> (context != <span class="hljs-keyword">null</span> &amp;&amp; context.getLoader() != <span class="hljs-keyword">null</span>) &#123;
+                Thread.currentThread().setContextClassLoader
+                    (context.getLoader().getClassLoader());
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Tomcat%E8%A7%A3%E6%9E%90/">Tomcat解析</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/tomcat/">tomcat</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">tomcat嵌入式与性能优化</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/">
+                        <span class="hidden-mobile">tomcat体系架构</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

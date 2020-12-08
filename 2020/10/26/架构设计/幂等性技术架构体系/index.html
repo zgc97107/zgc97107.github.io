@@ -1,0 +1,564 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>幂等性技术架构体系 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="幂等性技术架构体系">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-10-26 16:12" pubdate>
+        2020年10月26日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.7k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      48
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">幂等性技术架构体系</h1>
+            
+            <div class="markdown-body">
+              <h3 id="幂等性介绍"><a href="#幂等性介绍" class="headerlink" title="幂等性介绍"></a>幂等性介绍</h3><p>在微服务系统中，由于服务间的相互通信调用存在延迟或失败的问题，服务端会进行重试等操作，客户端也有可能会进行多次点击提交，这样就会产生重复请求，重复请求会对一些业务的最终结果产生影响，比如支付。此时就需要通过保证业务幂等性方案来保证结果的正确性。</p>
+<p>幂等性的定义为：无论对某一个资源操作了多少次，其影响都应是相同的，简单来说就是在接口重复调用的情况下，对系统产生的影响是一样的，但是返回值允许不同。</p>
+<p>在业务开发与分布式系统设计中，幂等性是一个非常重要的概念，有非常多的场景需要考虑幂等性的问题，如</p>
+<ul>
+<li><p>当用户购物进行下单操作，用户点击多次下单，但订单系统对于本次操作只能产生一个订单。 </p>
+</li>
+<li><p>当用户对订单进行付款，支付系统不管出现什么问题，应该只对用户扣一次款。 </p>
+</li>
+<li><p>当支付成功对库存扣减时，库存系统对订单中商品的库存数量也只能扣减一次。 </p>
+</li>
+<li><p>当对商品进行发货时，也需保证物流系统有且只能发一次货。</p>
+</li>
+</ul>
+<p>在实现幂等时，会将并行执行的功能改为串行化，降低了执行效率。 </p>
+<p>HTTP协议语义幂等性</p>
+<p>HTTP协议有两种方式：RESTFUL、SOA。现在对于WEB API，更多的会使用RESTFUL风格定义。为了更好的完成接口语义定义，HTTP对于常用的四种请求方式也定义了幂等性的语义。 </p>
+<ul>
+<li><p>GET：用于获取资源，多次操作不会对数据产生影响，具有幂等性。注意不是结果。 </p>
+</li>
+<li><p>POST：用于新增资源，对同一个URI进行两次POST操作会在服务端创建两个资源，不具有幂等性。 </p>
+</li>
+<li><p>PUT：用于修改资源，对同一个URI进行多次PUT操作，产生的影响和第一次相同，具备幂等性。 </p>
+</li>
+<li><p>DELETE：用于删除资源，对同一个URI进行多次DELETE操作，产生的影响和第一次相同，具备幂等性。 </p>
+</li>
+</ul>
+<p>这些仅仅只是HTTP协议建议在基于RESTFUL风格定义WEB API时的语义，并非强制性，幂等性的实现，同样需要通过前端或服务端完成。 </p>
+<h3 id="前端幂等"><a href="#前端幂等" class="headerlink" title="前端幂等"></a>前端幂等</h3><h4 id="前端防重"><a href="#前端防重" class="headerlink" title="前端防重"></a>前端防重</h4><p>通过前端防重保证幂等是最简单的实现方式，前端相关属性和JS代码即可完成设置。可靠性并不好，有经验的人员可以通过工具跳过页面仍能重复提交。主要适用于表单重复提交或按钮重复点击。</p>
+<h4 id="PRG模式"><a href="#PRG模式" class="headerlink" title="PRG模式"></a>PRG模式</h4><p>PRG模式即POST-REDIRECT-GET。当用户进行表单提交时，会重定向到另外一个提交成功页面，而不是停留在原先的表单页面。这样就避免了用户刷新导致重复提交。同时防止了通过浏览器按钮前进/后退导致表单重复提交。是一种比较常见的前端防重策略。 </p>
+<h4 id="token机制"><a href="#token机制" class="headerlink" title="token机制"></a>token机制</h4><p>通过token机制来保证幂等是一种非常常见的解决方案，同时也适合绝大部分场景。该方案需要前后端进行一定程度的交互来完成。</p>
+<img src="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>交互流程：</p>
+<ol>
+<li><p>服务端提供获取token接口，供客户端进行使用。服务端生成token后，如果当前为分布式架构，将token存放于redis中，如果是单体架构，可以保存在jvm缓存中。 </p>
+</li>
+<li><p>当客户端获取到token后，会携带着token发起请求。 </p>
+</li>
+<li><p>服务端接收到客户端请求后，首先会判断该token在redis中是否存在。如果存在，则完成进行业务处理，业务处理完成后，再删除token。如果不存在，代表当前请求是重复请求，直接向客户端返回对应标识。</p>
+</li>
+</ol>
+<p>存在的问题：</p>
+<p>如果先执行业务再删除token。在高并发下场景下，很有可能出现在首次请求未处理完业务逻辑时，客户端再次请求，这时token还没有被删除，期间无论客户端有多少次请求，都会验证通过。 将并行变为串行可以解决这个问题，但会造成一定性能损耗与吞吐量下降。 </p>
+<p>第一种方案：对于业务代码执行和删除token整体加线程锁。当后续线程再来访问时，则阻塞排队。 </p>
+<p>第二种方案：借助redis单线程和incr是原子性的特点。当第一次获取token时，以token作为key，对其进行自增。然后将token进行返回，当客户端携带token访问执行业务代码时，对于判断token是否存在不用删除，而是对其继续incr。如果incr后的返回值为2。则是一个合法请求允许执行，如果是其他值，则代表是非法请求，直接返回。</p>
+<p>如果先删除token再执行业务也会存在问题，假设具体业务代码执行超时或失败，没有向客户端返回明确结果，那客户端就很有可能会进行重试，但此时之前的token已经被删除了，则会被认为是重复请求，不再进行业务处理。</p>
+<p>这种方案无需进行额外处理，一个token只能代表一次请求。一旦业务执行出现异常，则让客户端重新获取令牌，重新发起一次访问即可。推荐使用先删除token方案。</p>
+<p>但是无论先删token还是后删token，都会有一个相同的问题。每次业务请求都回产生一个额外的请求去获取token。但是，业务失败或超时，在生产环境下，一万个里最多也就十个左右会失败，那为了这十来个请求，让其他九千九百多个请求都产生额外请求，就有一些得不偿失了。虽然redis性能好，但是这也是一种资源的浪费。</p>
+<h3 id="服务端幂等"><a href="#服务端幂等" class="headerlink" title="服务端幂等"></a>服务端幂等</h3><h4 id="防重表"><a href="#防重表" class="headerlink" title="防重表"></a>防重表</h4><p>防重表的实现思路就是创建一张表作为防重表，同时在该表中建立一个或多个字段的唯一索引作为防重字段，用于保证并发情况下，数据只有一条。在向业务表中插入数据之前先向防重表插入，如果插入失败则表示是重复数据。</p>
+<img src="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>对于防重表的解决方案，可能有人会说为什么不使用悲观锁。悲观锁在使用的过程中也是会发生死锁的。悲观锁是通过锁表的方式实现的。 假设现在一个用户A访问表A（锁住了表A），然后试图访问表B； 另一个用户B访问表B（锁住了表B），然后试图访问表A。 这时对于用户A来说，由于表B已经被用户B锁住了，所以用户A必须等到用户B释放表B才能访问。 同时对于用户B来说，由于表A已经被用户A锁住了，所以用户B必须等到用户A释放表A才能访问。此时死锁就已经产生了。 </p>
+<h4 id="select-insert"><a href="#select-insert" class="headerlink" title="select+insert"></a>select+insert</h4><p>select+insert适用于并发量并不高的情况，在业务执行前，先判断是否已经操作过，如果没有则执行，否则判断为重复操作。</p>
+<img src="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>注意：此时需要将id设置为唯一索引，否则在并发情况下可能会重复插入，产生脏数据同时该方案无法用于分库分表情况。</p>
+<p>只适用于单表情况。 </p>
+<h4 id="MySQL乐观锁"><a href="#MySQL乐观锁" class="headerlink" title="MySQL乐观锁"></a>MySQL乐观锁</h4><p>MySQL乐观锁是利用MySQL行锁完成分布式锁的一种实现，实现的方式有两种：基于版本号、基于条件。</p>
+<p>MySQL乐观锁更适用于一些需要计数的表上，而且在竞争不激烈，出现并发冲突几率较小时，推荐使用乐观锁。虽然通过MySQL乐观锁可以完成并发控制，但锁的操作是直接作用于数据库上，这样就会在一定程度上对数据库性能产生影响。并且mysql的连接数量是有限的，如果出现大量锁操作占用连接时，也会造成MySQL的性能瓶颈。 </p>
+<h5 id="基于版本号实现"><a href="#基于版本号实现" class="headerlink" title="基于版本号实现"></a>基于版本号实现</h5><img src="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>修改数据库表，增加version字段，默认为0</p>
+<p>修改update语句，如<code>update tb_stock set amount=amount‐#&#123;num&#125;,version=version+1 where goods_id=#&#123;goodsId&#125; and version=#&#123;version&#125;</code></p>
+<h5 id="基于条件实现"><a href="#基于条件实现" class="headerlink" title="基于条件实现"></a>基于条件实现</h5><p>基于版本号控制时，可能会出现商品仍有库存可以购买，但购买失败的情况，这种情况并不是很合理。其实最终只要保证商品库存不发生超卖就可以，那此时就可以通过条件来进行控制。</p>
+<p>实现也比较简单，只需要修改update语句即可，如<code>update tb_stock set amount=amount‐#&#123;num&#125; where goods_id=#&#123;goodsId&#125; and amount‐#&#123;num&#125;&gt;=0</code></p>
+<h4 id="zookeeper分布式锁"><a href="#zookeeper分布式锁" class="headerlink" title="zookeeper分布式锁"></a>zookeeper分布式锁</h4><h5 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h5><p>主要是利用zookeeper的znode节点特性和watch机制完成。 </p>
+<p>znode节点分类：</p>
+<ul>
+<li><p>持久节点：一旦创建，则永久存在于zookeeper中，除非手动删除。 </p>
+</li>
+<li><p>持久有序节点：一旦创建，则永久存在于zookeeper中，除非手动删除。同时每个节点都会默认存在节点序号，每个节点的序号都是有序递增的。如demo000001、demo000002…..demo00000N。 </p>
+</li>
+<li><p>临时节点：当节点创建后，一旦服务器重启或宕机，则被自动删除。 </p>
+</li>
+<li><p>临时有序节点：当节点创建后，一旦服务器重启或宕机，则被自动删除。同时每个节点都会默认存在节点序号，每个节点的序号都是有序递增的。如demo000001、demo000002…..demo00000N。 </p>
+</li>
+</ul>
+<p>watch监听机制主要用于监听节点状态变更，用于后续事件触发，假设当B节点监听A节点时，一旦A节点发生修改、删除、子节点列表发生变更等事件，B节点则会收到A节点改变的通知，接着完成其他额外事情。 </p>
+<p>当某个线程要对方法加锁时，首先会在zookeeper中创建一个与当前方法对应的父节点，接着每个要获取当前方法的锁的线程，都会在父节点下创建一个临时有序节点，因为节点序号是递增的，所以后续要获取锁的线程在zookeeper中的序号也是逐次递增的。根据这个特性，当前序号最小的节点一定是首先要获取锁的线程，因此可以规定序号最小的节点获得锁。所以，每个线程再要获取锁时，可以判断自己的节点序号是否是最小的，如果是则获取到锁。当释放锁时，只需将自己的临时有序节点删除即可。</p>
+<img src="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>在并发下，每个线程都会在对应方法节点下创建属于自己的临时节点，且每个节点都是临时且有序的。 每当添加一个新的临时节点时，监听着它本身的前一个节点等待前一个节点的通知。</p>
+<h4 id="redis分布式锁"><a href="#redis分布式锁" class="headerlink" title="redis分布式锁"></a>redis分布式锁</h4><p>分布式锁的一个很重要的特性就是互斥性，同一时间内多个调用方加锁竞争，只能有一个调用方加锁成功。而redis是基于单线程模型的，可以利用这个特性让调用方的请求排队，对于并发请求，只会有一个请求能获取到锁。</p>
+<p>redis实现分布式锁也很简单，基于客户端的几个API就可以完成，主要涉及三个核心API： </p>
+<ul>
+<li><p>setNx()：向redis中存key-value，只有当key不存在时才会设置成功，否则返回0。用于体现互斥性。 </p>
+</li>
+<li><p>expire()：设置key的过期时间，用于避免死锁出现。 </p>
+</li>
+<li><p>delete()：删除key，用于释放锁。 </p>
+</li>
+</ul>
+<p>注意：如果业务时间过长，超过了锁的超时时间会导致锁失效，而且假设线程A加锁成功但是执行时间较长超过了锁的过期时间，这时线程B可以成功获取到锁，线程A执行完成再来释放锁时就会出问题，线程B的锁会被释放掉。 </p>
+<p>解决这个问题可以在加锁时的设置唯一ID，解锁时要判断当前锁键的value与传入的value是否相同，相同的话，则代表是同一个线程，可以解锁，否则不能解锁。但是这个操作并不具备原子性，需要借助lua脚本完成。 </p>
+<p>但是设置唯一ID并不能解决锁失效的问题，而且业务执行时间的影响因素太多，不能完全确定，要想解决这个问题可以通过锁续期来解决。在建锁的同时创建一个守护线程，同时定义一个定时任务每隔一段时间去为未释放的锁增加过期时间。当业务执行完，释放锁后，再关闭守护线程。</p>
+<p>当在单点redis中实现redis锁时，一旦redis服务器宕机，则无法进行锁操作。因此会考虑将redis配置为主从结构，但在主从结构中，数据复制是异步实现的。假设在主从结构中，master会异步将数据复制到slave中，一旦某个线程持有了锁，在还没有将数据复制到slave时，master宕机。则slave会被提升为master，但被提升为slave的master中并没有之前线程的锁信息，那么其他线程则又可以重新加锁。 </p>
+<p>redlock是一种基于多节点redis实现分布式锁的算法，可以有效解决redis单点故障的问题。官方建议搭建五台redis服务器对redlock算法进行实现。 </p>
+<p>在redis官网中，对于redlock算法的实现思想也做了详细的介绍。地址：<a target="_blank" rel="noopener" href="https://redis.io/topics/distlock%E3%80%82%E6%95%B4%E4%B8%AA%E5%AE%9E%E7%8E%B0%E8%BF%87%E7%A8%8B%E5%88%86%E4%B8%BA%E4%BA%94%E6%AD%A5%EF%BC%9A">https://redis.io/topics/distlock。整个实现过程分为五步：</a> </p>
+<ol>
+<li><p>记录获取锁前的当前时间 </p>
+</li>
+<li><p>使用相同的key，value获取所有redis实例中的锁，并且设置获取锁的时间要远远小于锁自动释放的时间。假设锁自动释放时间是10秒，则获取时间应在5-50毫秒之间。通过这种方式避免客户端长时间等待一个已经关闭的实例，如果一个实例不可用了，则尝试获取下一个实例。 </p>
+</li>
+<li><p>客户端通过获取所有实例的锁后的时间减去第一步的时间，得到的差值要小于锁自动释放时间，避免拿到一个 已经过期的锁。并且要有超过半数的redis实例成功获取到锁，才算最终获取锁成功。如果不是超过半数，有可能出现多个客户端重复获取到锁，导致锁失效。 </p>
+</li>
+<li><p>当已经获取到锁，那么它的真正失效时间应该为：过期时间-第三步的差值。 </p>
+</li>
+<li><p>如果客户端获取锁失败，则在所有redis实例中释放掉锁。为了保证更高效的获取锁，还可以设置重试策略，在一定时间后重新尝试获取锁，但不能是无休止的，要设置重试次数。 </p>
+</li>
+</ol>
+<p>虽然通过redlock能够更加有效的防止redis单点问题，但是仍然是存在隐患的。假设redis没有开启持久化，clientA获取锁后，所有redis故障重启，则会导致clientA锁记录消失，clientB仍然能够获取到锁。这种情况虽然发生几率极低，但并不能保证肯定不会发生。 </p>
+<p>保证的方案就是开始AOF持久化，但是要注意同步的策略，使用每秒同步，如果在一秒内重启，仍然数据丢失。使用always又会造成性能急剧下降。官方推荐使用默认的AOF策略即每秒同步，且在redis停掉后，要在ttl时间后再重启。 缺点就是ttl时间内redis无法对外提供服务。 </p>
+<h3 id="消息幂等"><a href="#消息幂等" class="headerlink" title="消息幂等"></a>消息幂等</h3><h4 id="消息重试问题"><a href="#消息重试问题" class="headerlink" title="消息重试问题"></a>消息重试问题</h4><p>消息队列的消息幂等性，主要是由MQ重试机制引起的。因为消息生产者将消息发送到MQ-Server后，MQ-Server会将消息推送到具体的消息消费者。当网络抖动或出现异常时，MQ-Server根据重试机制就会将消息重新向消息消费者推送，造成消息消费者多次收到相同消息，造成数据不一致。 </p>
+<p>在RabbitMQ中，消息重试机制是默认开启的，但只会在consumer出现异常时，才会重复推送。比如消费方接收到消息后又去调用第三方接口，由于网络抖动而产生异常，但这个异常是暂时的。所以当消费者出现异常，可以让其重试几次，如果重试几次后，仍然有异常，则需要进行数据补偿。 </p>
+<p>数据补偿方案：当重试多次后仍然出现异常，则让此条消息进入死信队列，最终进入到数据库中，接着设置定时job查询这些数据，进行手动补偿。 </p>
+<h4 id="消息幂等解决"><a href="#消息幂等解决" class="headerlink" title="消息幂等解决"></a>消息幂等解决</h4><p>消息幂等与服务端幂等解决思路基本一致，其实就是保证多次操作造成的影响是相同的。最常见的解决方案就是用防重表跟redis。</p>
+<img src="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="消息缓冲区"><a href="#消息缓冲区" class="headerlink" title="消息缓冲区"></a>消息缓冲区</h4><p>对于RabbitMQ的使用，默认情况下，每条消息都会进行分别的ack通知，消费完一条后，再来消费下一条。但是这样就会造成大量消息的阻塞情况。所以为了提升消费者对于消息的消费速度，可以增加consumer数据或者对消息进行批量消费。MQ接收到producer发送的消息后，不会直接推送给consumer。而是积攒到一定数量后，再进行消息的发送。 这种方式的实现，可以理解为是一种缓冲区的实现，提升了消息的消费速度，但是会在一定程度上舍弃结果返回的实时性。 </p>
+<p>对于批量消费来说，也是需要考虑幂等的</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E4%B8%9A%E5%8A%A1%E8%AE%BE%E8%AE%A1/">业务设计</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E5%B9%82%E7%AD%89%E6%80%A7/">幂等性</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">MySQL的InnoDB存储引擎分析</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/">
+                        <span class="hidden-mobile">零热数据收集和隔离</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

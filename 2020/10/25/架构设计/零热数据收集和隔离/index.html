@@ -1,0 +1,1130 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>零热数据收集和隔离 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="零热数据收集和隔离">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-10-25 14:24" pubdate>
+        2020年10月25日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5.6k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      74
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">零热数据收集和隔离</h1>
+            
+            <div class="markdown-body">
+              <h3 id="热点数据收集"><a href="#热点数据收集" class="headerlink" title="热点数据收集"></a>热点数据收集</h3><p>热点数据又分为离线热点数据和实时热点数据，离线热点数据主要是分析过往热点商品信息，这个统计起来并无难度，可以直接从历史数据库中查询分析。根据用户访问实时数据进行分析是一个比较困难的事，首先要存储大量的访问信息，同时还能高效的实时统计访问日志信息，从中获取热点数据信息。</p>
+<h4 id="业务分析"><a href="#业务分析" class="headerlink" title="业务分析"></a>业务分析</h4><img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>本次以常见的商城系统为例，用户访问数据收集流程如上图，用户请求经过nginx后，使用lua脚本将用户访问的商品信息发送到kafka，再使用大数据实时分析工具 Apache Druid 实时存储访问信息，再通过程序分析计算访问情况。</p>
+<h4 id="Kafka"><a href="#Kafka" class="headerlink" title="Kafka"></a>Kafka</h4><p>单机版的kafka搭建非常简单，本次采用Docker搭建kafka。Kafka使用Zookeeper存储Consumer、 Broker信息，安装kafa的时候，需要先安装Zookeeper。 </p>
+<p>Zookeeper安装：</p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> /etc/localtime:/etc/localtime:使容器与宿主机时间能够同步</span>
+
+docker run -d --name zookeeper -p 2181:2181 -v /etc/localtime:/etc/localtime wurstmeister/zookeeper</code></pre>
+
+<p>Kafka安装：</p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> KAFKA_BROKER_ID:当前Kafka的唯一ID</span>
+<span class="hljs-meta">#</span><span class="bash"> KAFKA_ZOOKEEPER_CONNECT:当前Kafka使用的Zookeeper配置信息</span>
+<span class="hljs-meta">#</span><span class="bash"> KAFKA_ADVERTISED_LISTENERS:对外发布(暴露)的监听器，对外发布监听端口、地址</span>
+<span class="hljs-meta">#</span><span class="bash"> KAFKA_LISTENERS:监听器，告诉外部连接者要通过什么协议访问指定主机名和端口开放的 Kafka 服务。</span>
+
+docker run -d --name kafka -p 9092:9092 -e KAFKA_BROKER_ID=0 -e KAFKA_ZOOKEEPER_CONNECT=172.17.0.5:2181/kafka -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://172.17.0.5:9092 -e KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 -v /etc/localtime:/etc/localtime wurstmeister/kafka</code></pre>
+
+<p>IP更改：</p>
+<p>外部程序如果想链接Kafka，需要根据IP链接，所以我们可以给Kafka一个IP名字，编辑： /opt/kafka_2.12-2.4.1/config/server.properties，在文件最末尾添加如下代码： </p>
+<pre><code class="hljs properties"><span class="hljs-comment"># 设置为外部程序可以访问到的本机地址</span>
+<span class="hljs-meta">host.name</span>=<span class="hljs-string">192.168.211.137</span></code></pre>
+
+<p><strong>队列创建</strong></p>
+<p>进入kafka容器，创建队列: </p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 使用kafka-topics.sh创建队列</span>
+<span class="hljs-meta">#</span><span class="bash"> --create:执行创建一个新的队列操作</span>
+<span class="hljs-meta">#</span><span class="bash"> --bootstrap-server：需要链接的kafka配置，必填</span>
+<span class="hljs-meta">#</span><span class="bash"> --replication-factor 1:设置分区的副本数量</span>
+<span class="hljs-meta">#</span><span class="bash"> --topic itemaccess：队列的名字叫itemaccess</span>
+
+docker exec -it kafka /bin/sh
+cd /opt/kafka_2.12-2.4.1/bin
+./kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic itheima</code></pre>
+
+<p><strong>消息发送</strong></p>
+<p>在kafka容器中执行消息发送（接着上面的步骤执行）： </p>
+<pre><code class="hljs sh"><span class="hljs-comment"># 使用kafka-console-producer.sh实现向kafka的test队列发送消息</span>
+<span class="hljs-comment"># --broker-list：指定将消息发给指定的Kafka服务的链接列表配置  HOST1:Port1,HOST2:Port2</span>
+<span class="hljs-comment"># --topic itemaccess：指定要发送消息的队列名字</span>
+
+./kafka-console-producer.sh --broker-list localhost:9092 --topic itemaccess</code></pre>
+
+<pre><code class="hljs sh"><span class="hljs-comment"># 发送的消息如下</span>
+&#123;<span class="hljs-string">&quot;actime&quot;</span>:<span class="hljs-string">&quot;2022-5-11 11:50:10&quot;</span>,<span class="hljs-string">&quot;uri&quot;</span>:<span class="hljs-string">&quot;http://www-seckill.itheima.net/items/555.html&quot;</span>,<span class="hljs-string">&quot;IP&quot;</span>:<span class="hljs-string">&quot;119.123.33.231&quot;</span>,<span class="hljs-string">&quot;Token&quot;</span>:<span class="hljs-string">&quot;Bearer itheima&quot;</span>&#125;</code></pre>
+
+<p><strong>消息订阅</strong></p>
+<pre><code class="hljs sh"><span class="hljs-comment"># 使用kafka‐console‐consumer.sh 从kafka中消费test队列的数据 </span>
+<span class="hljs-comment"># ‐‐bootstrap‐server:从指定的kafka中读取消息</span>
+<span class="hljs-comment"># ‐‐topic itemaccess:读取队列的名字</span>
+<span class="hljs-comment"># ‐‐from‐beginning:从最开始的数据读取，也就是读取所有数据的意思</span>
+
+./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic itemaccess --from-beginning</code></pre>
+
+<p><strong>其他指令</strong></p>
+<pre><code class="hljs sh"><span class="hljs-comment"># 查看已经存在的主题</span>
+./kafka-topics.sh --zookeeper localhost:3181 --list
+<span class="hljs-comment"># 删除主题</span>
+./kafka-topics.sh --zookeeper localhost:3181 --delete --topic itemaccess
+<span class="hljs-comment"># 查看主题信息</span>
+./kafka-topics.sh --zookeeper localhost:3181 --describe --topic itemaccess</code></pre>
+
+<h4 id="OpenResty"><a href="#OpenResty" class="headerlink" title="OpenResty"></a>OpenResty</h4><p>关于OpenRestry的学习，可以参考：<a target="_blank" rel="noopener" href="http://openresty.org/cn/">http://openresty.org/cn/</a> </p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 下载OpenRestry</span>
+wget https://openresty.org/download/openresty-1.11.2.5.tar.gz
+<span class="hljs-meta">#</span><span class="bash"> 解压</span>
+tar -xf openresty-1.11.2.5.tar.gz
+<span class="hljs-meta">#</span><span class="bash"> 安装（进入到解压目录进行安装）</span>
+cd openresty-1.11.2.5
+./configure --prefix=/usr/local/openresty --with-luajit --without-http_redis2_module --with-http_stub_status_module --with-http_v2_module --with-http_gzip_static_module --with-http_sub_module
+make
+make install</code></pre>
+
+<p>会安装到<code>/usr/local/openresty</code>，这里面会包含nginx。</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic20.png" srcset="/blog/img/loading.gif" class>
+
+<p>配置环境变量： </p>
+<pre><code class="hljs sh">vi /etc/profile
+<span class="hljs-built_in">export</span> PATH=/usr/<span class="hljs-built_in">local</span>/openresty/nginx/sbin:<span class="hljs-variable">$PATH</span>
+<span class="hljs-built_in">source</span> /etc/profile</code></pre>
+
+<p>静态网页以使用Nginx直接发布，配置内容如下：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic21.png" srcset="/blog/img/loading.gif" class>
+
+<p>启动nginx，并访问测试：<a target="_blank" rel="noopener" href="http://192.168.211.137/items/S1235433012716498944.html">http://192.168.211.137/items/S1235433012716498944.html</a> </p>
+<h4 id="Lua日志收集"><a href="#Lua日志收集" class="headerlink" title="Lua日志收集"></a>Lua日志收集</h4><p>使用Lua实现日志收集，并向Kafka发送访问的详情页信息，此时需要安装一个依赖组件 lua-restry-kafka 。 </p>
+<p>关于 lua-restry-kafka 的下载和使用，可以参考 <a target="_blank" rel="noopener" href="https://github.com/doujiang24/lua-resty-kafka">https://github.com/doujiang24/lua-resty-kafka</a></p>
+<p>收集流程如下：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic22.png" srcset="/blog/img/loading.gif" class>
+
+<p>用户请求/web/items/1.html，进入到nginx第1个location中，在该location中向Kafka发送请求日志信息，并将请求中的/web去掉，跳转到另一个location中，并查找本地文件，这样既可以完成日志收集，也能完成文件的访问。</p>
+<p>插件配置</p>
+<p>首先需要下载lua-restry-kafka，地址为：<a target="_blank" rel="noopener" href="https://github.com/doujiang24/lua-resty-kafka">https://github.com/doujiang24/lua-resty-kafka</a> </p>
+<p>下载后解压至<code>/usr/local/openresty/</code>下</p>
+<p>修改nginx.conf</p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"> 设置为lua-resty-kafka所在的位置</span>
+lua_package_path &quot;/usr/local/openresty/lua‐resty‐kafka‐master/lib/?.lua;;&quot;;</code></pre>
+
+<p>日志收集</p>
+<p>用户访问详情页的时候，需要实现日志收集，日志收集采用Lua将当前访问信息发布到Kafka中，因此这里要实现 </p>
+<p>Kafka消息生产者。 我们定义一个消息格式： </p>
+<pre><code class="hljs json">&#123;
+  <span class="hljs-attr">&quot;actime&quot;</span>: <span class="hljs-string">&quot;2020-4-10 9:50:30&quot;</span>,
+  <span class="hljs-attr">&quot;uri&quot;</span>: <span class="hljs-string">&quot;http://192.168.211.137/items/S1235433012716498944.html&quot;</span>,
+  <span class="hljs-attr">&quot;ip&quot;</span>: <span class="hljs-string">&quot;119.123.33.231&quot;</span>,
+  <span class="hljs-attr">&quot;token&quot;</span>: <span class="hljs-string">&quot;Bearer ITHEIMAOOPJAVAITCAST&quot;</span>
+&#125;</code></pre>
+
+<p>定义好了消息格式后，创建一个生产者，往Kafka中发送详情页的访问信息。我们创建一个lua脚本, items-access.lua ，脚本内容如下： </p>
+<pre><code class="hljs lua"><span class="hljs-comment">--引入json解析库</span>
+<span class="hljs-keyword">local</span> cjson = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;cjson&quot;</span>)
+<span class="hljs-comment">--kafka依赖库</span>
+<span class="hljs-keyword">local</span> client = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;resty.kafka.client&quot;</span>
+<span class="hljs-keyword">local</span> producer = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;resty.kafka.producer&quot;</span>
+<span class="hljs-comment">--配置kafka的链接地址</span>
+<span class="hljs-keyword">local</span> broker_list = &#123;
+      &#123; host = <span class="hljs-string">&quot;docker.for.mac.host.internal&quot;</span>, port = <span class="hljs-number">9092</span> &#125;
+&#125;
+<span class="hljs-comment">--创建生产者</span>
+<span class="hljs-keyword">local</span> pro = producer:new(broker_list,&#123; producer_type=<span class="hljs-string">&quot;async&quot;</span>&#125;)
+
+<span class="hljs-comment">--获取IP</span>
+<span class="hljs-keyword">local</span> headers=ngx.req.get_headers()
+<span class="hljs-keyword">local</span> ip=headers[<span class="hljs-string">&quot;X-REAL-IP&quot;</span>] <span class="hljs-keyword">or</span> headers[<span class="hljs-string">&quot;X_FORWARDED_FOR&quot;</span>] <span class="hljs-keyword">or</span> ngx.var.remote_addr <span class="hljs-keyword">or</span> <span class="hljs-string">&quot;0.0.0.0&quot;</span>
+
+<span class="hljs-comment">--定义消息内容</span>
+<span class="hljs-keyword">local</span> logjson = &#123;&#125;
+logjson[<span class="hljs-string">&quot;uri&quot;</span>]=ngx.var.uri
+logjson[<span class="hljs-string">&quot;ip&quot;</span>]=ip
+logjson[<span class="hljs-string">&quot;token&quot;</span>]=<span class="hljs-string">&quot;Bearer ITHEIMA&quot;</span>
+logjson[<span class="hljs-string">&quot;actime&quot;</span>]=<span class="hljs-built_in">os</span>.<span class="hljs-built_in">date</span>(<span class="hljs-string">&quot;%Y-%m-%d %H:%m:%S&quot;</span>)
+
+<span class="hljs-comment">--发送消息</span>
+<span class="hljs-keyword">local</span> offset, err = pro:send(<span class="hljs-string">&quot;itemaccess&quot;</span>, <span class="hljs-literal">nil</span>, cjson.encode(logjson))
+
+<span class="hljs-comment">--页面跳转</span>
+<span class="hljs-keyword">local</span> uri = nginx.var.uri
+uri=<span class="hljs-built_in">string</span>.<span class="hljs-built_in">gsub</span>(uri,<span class="hljs-string">&quot;/web&quot;</span>,<span class="hljs-string">&quot;&quot;</span>)
+ngx.exec(uri);</code></pre>
+
+<p>nginx配置</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic22.png" srcset="/blog/img/loading.gif" class>
+
+<p>按照上面的流程图，需要配置nginx的2个location，修改nginx.conf,代码如下：</p>
+<pre><code class="hljs gradle">server &#123;
+    listen       <span class="hljs-number">80</span>;
+    server_name  localhost;
+
+    #/web开始的请求，做日志记录，然后跳转到下面的location
+    location <span class="hljs-regexp">/web/i</span>tems/ &#123;
+    content_by_lua_file <span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/openresty/</span>nginx<span class="hljs-regexp">/lua/i</span>tems-access.lua;
+    &#125;
+
+
+    #商品详情页,以<span class="hljs-regexp">/items/</span>开始的请求，直接在详情页目录下找文件
+    location <span class="hljs-regexp">/items/</span> &#123;
+    #日志处理
+    #content_by_lua_file <span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/openresty/</span>nginx<span class="hljs-regexp">/lua/i</span>tems-access.lua;
+    root <span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/server/</span>web/;
+    &#125;
+&#125;</code></pre>
+
+<p>日志收集测试</p>
+<p>请求地址：<a target="_blank" rel="noopener" href="http://192.168.211.137/web/items/S1235433012716498944.html">http://192.168.211.137/web/items/S1235433012716498944.html</a></p>
+<p>查看Kafka的itemaccess队列数据</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic23.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="Apache-Druid"><a href="#Apache-Druid" class="headerlink" title="Apache Druid"></a>Apache Druid</h4><h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><p>Apache Druid 是一个分布式的、支持实时多维 <strong>OLAP</strong> 分析的数据处理系统。它既支持高速的数据实时摄入，也支持实时且灵活的多维数据分析查询。因此 Druid 最常用的场景是大数据背景下、灵活快速的多维 <strong>OLAP</strong> 分析。 另外，Druid 还有一个关键的特点：它支持根据时间戳对数据进行预聚合摄入和聚合分析，因此也有用户经常在有时序数据处理分析的场景中用到它。 </p>
+<p><strong>OLTP</strong>与<strong>OLAP</strong>的区别： </p>
+<p>OLTP是传统的关系型数据库的主要应用，主要是基本的、日常的事务处理。 </p>
+<p>OLAP是数据仓库系统的主要应用，支持复杂的分析操作，侧重决策支持，并且提供直观易懂的分析查询结果。 </p>
+<p>OLAP和OLTP区别：</p>
+<table>
+<thead>
+<tr>
+<th>不同点</th>
+<th>OLTP</th>
+<th>OLAP</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>用户</td>
+<td>面向操作人员，支持日常操作</td>
+<td>面向决策人员，支持管理需要</td>
+</tr>
+<tr>
+<td>功能</td>
+<td>日常数据操作</td>
+<td>分析决策</td>
+</tr>
+<tr>
+<td>DB设计</td>
+<td>面向应用，事务驱动</td>
+<td>面向主题，分析驱动</td>
+</tr>
+<tr>
+<td>数据</td>
+<td>当前的，最新的细节的</td>
+<td>历史的，聚集的，多维的，集成的，统一的</td>
+</tr>
+<tr>
+<td>存取</td>
+<td>可更新，读/写数十条记录</td>
+<td>不可更新，但周期性刷新，读上百万条记录</td>
+</tr>
+<tr>
+<td>工作单位</td>
+<td>简单的事务</td>
+<td>复杂的查询（海量数据）</td>
+</tr>
+<tr>
+<td>DB大小</td>
+<td>100MB-GB</td>
+<td>100GB-TB/PB</td>
+</tr>
+</tbody></table>
+<p><strong>特性</strong></p>
+<ul>
+<li><p>亚秒响应的交互式查询，支持较高并发。 </p>
+</li>
+<li><p>支持实时导入，导入即可被查询，支持高并发导入。 </p>
+</li>
+<li><p>采用分布式 shared‐nothing 的架构，可以扩展到PB级。 </p>
+</li>
+<li><p>支持聚合函数，count 和 sum，以及使用 javascript 实现自定义 UDF。 </p>
+</li>
+<li><p>支持复杂的 Aggregator，近似查询的 Aggregator 例如 HyperLoglog 以及 Yahoo 开源的 DataSketches。 </p>
+</li>
+<li><p>支持Groupby，Select，Search查询。</p>
+</li>
+</ul>
+<p>开源OLAP数据处理系统性能方面对比：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Druid</th>
+<th>Kylin</th>
+<th>Elasticsearch</th>
+<th>Spark SQL</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>数据规模</td>
+<td>超大</td>
+<td>超大</td>
+<td>中单</td>
+<td>超大</td>
+</tr>
+<tr>
+<td>查询效率</td>
+<td>高</td>
+<td>高</td>
+<td>中等</td>
+<td>低</td>
+</tr>
+<tr>
+<td>并发度</td>
+<td>高</td>
+<td>高</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>SQL支持</td>
+<td>中</td>
+<td>高</td>
+<td>中</td>
+<td>高</td>
+</tr>
+<tr>
+<td>灵活度</td>
+<td>中</td>
+<td>低</td>
+<td>高</td>
+<td>高</td>
+</tr>
+</tbody></table>
+<p><strong>Apache Druid 架构设计</strong></p>
+<p>Druid自身包含下面4类节点：</p>
+<ol>
+<li><p>Realtime Node：即时摄入实时数据，生成Segment（LSM‐Tree实现与Hbase基本一致）文件。 </p>
+</li>
+<li><p>Historical Node：加载已生成好的数据文件，以供数据查询。 </p>
+</li>
+<li><p>Broker Node：对外提供数据查询服务，并同时从Realtime Node和Historical Node查询数据，合并后返回给调用方。</p>
+</li>
+<li><p>Coordinator Node：负责Historical Node的数据负载均衡，以及通过Rule管理数据生命周期。</p>
+</li>
+</ol>
+<p>同时，Druid集群还包含以下3类外部依赖：</p>
+<ol>
+<li><p>元数据库（Metastore）：存储druid集群的元数据信息，如Segment的相关信息，一般使用MySQL或PostgreSQL </p>
+</li>
+<li><p>分布式协调服务（Coordination）：为Druid集群提供一致性服务，通常为zookeeper </p>
+</li>
+<li><p>数据文件存储（DeepStorage）：存储生成的Segment文件，供Historical Node下载，一般为使用HDFS </p>
+</li>
+</ol>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p><strong>数据摄入</strong></p>
+<p>Apache Druid同时支持流式和批量数据摄入。通常通过像 Kafka 这样的消息总线（加载流式数据）或通过像HDFS 这样的分布式文件系统（加载批量数据）来连接原始数据源。</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h5><p>下载地址：<a target="_blank" rel="noopener" href="https://druid.apache.org/downloads.html">https://druid.apache.org/downloads.html</a> </p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>解压该压缩包</p>
+<pre><code class="hljs shell">tar ‐xf apache‐druid‐0.17.0‐bin.tar.gz
+cd apache‐druid‐0.17.0</code></pre>
+
+<p>包文件如下：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs sh"><span class="hljs-comment"># 启动单机版Apache Druid</span>
+./bin/start‐micro‐quickstart</code></pre>
+
+<p>启动后，访问：<a target="_blank" rel="noopener" href="http://localhsot:8888/">http://localhsot:8888</a></p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="离线数据摄入"><a href="#离线数据摄入" class="headerlink" title="离线数据摄入"></a>离线数据摄入</h5><p>从一个文件中将数据加载到 Apache Druid ，参考地址： <a target="_blank" rel="noopener" href="https://druid.apache.org/docs/latest/tutorials/tutorial-batch.html">https://druid.apache.org/docs/latest/tutorials/tutorial-batch.html</a></p>
+<p>如下操作：</p>
+<ol>
+<li><p>点击Load data-&gt;Local disk-&gt;Connect data </p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic7.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>选择要导入的数据</p>
+<p>要导入的数据在 /usr/local/server/apache-druid-0.17.0/quickstart/tutorial/wikiticker-2015-09-12-sampled.json.gz ,需要把该文件的相对路径填写到右边表单中，再点击Apply，如下图：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic8.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>解析数据</p>
+<p>在上一个步骤上点击Next:Parse data,此时会解析导入的数据，如下图： </p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic9.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>解析时间 </p>
+<p>在上一个步骤上点击Next: Parse time，Apache Druid要求每条数据都有一个time列，如果我们导入的数据没有该列，Apache Druid会自动帮助我们创建该列，如下图：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic10.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>数据分区设置</p>
+<p>点击下一步一直到Partition，我们根据需要设置数据分区方式，如下图：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li><p>Type:数据粒度使用的类型 </p>
+</li>
+<li><p>Segment granularity：分片文件每个segment包含的时间戳范围 </p>
+</li>
+<li><p>Force guaranteed rollup：是否启用批量推送模式 </p>
+</li>
+<li><p>Partitioning type：分区类型 </p>
+</li>
+<li><p>Max rows per segment：用于分片。确定每个段中的行数。 </p>
+</li>
+</ul>
+</li>
+<li><p>设置数据源 </p>
+<p>Publish设置，注意设置数据源名字，这里类似数据库中数据库名字。</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic12.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>提交配置</p>
+<p>最后一步需要提交配置，如下图，点击submit即可。 </p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic13.png" srcset="/blog/img/loading.gif" class>
+
+</li>
+</ol>
+<h5 id="实时数据摄入"><a href="#实时数据摄入" class="headerlink" title="实时数据摄入"></a>实时数据摄入</h5><p>参考地址：<a target="_blank" rel="noopener" href="https://druid.apache.org/docs/latest/tutorials/tutorial-kafka.html">https://druid.apache.org/docs/latest/tutorials/tutorial-kafka.html</a> </p>
+<ol>
+<li><p>load data</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic14.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>配置kafka源</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic15.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>配置数据源名字 </p>
+<p>其他的步骤和之前文件摄入一样，直到配置数据源名字，我们配置数据源名字叫itemlogs，最后一步submit和之前一样，如下图： </p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic16.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic17.png" srcset="/blog/img/loading.gif" class>
+
+<p>查询效果如下：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic18.png" srcset="/blog/img/loading.gif" class>
+
+</li>
+</ol>
+<h4 id="Druid-SQL"><a href="#Druid-SQL" class="headerlink" title="Druid SQL"></a>Druid SQL</h4><h5 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h5><p>Apache Druid SQL是一个内置的SQL层，是Druid基于JSON的查询语言的替代品，由基于Apache Calcite的解析器和规划器提供支持。Druid SQL将SQL转换为Broker本机Druid查询，然后将其传递给数据进程。除了在Broker上转换SQL的（轻微）开销之外，与本机查询相比，没有额外的性能损失。</p>
+<h5 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h5><p>每个Druid数据源都显示为“Druid”模式,这也是默认模式，Druid数据源引用为 druid.dataSourceName 或者简单引用 dataSourceName 。 </p>
+<p>可以选择使用双引号引用数据源和列名等标识符。要在标识符中转义双引号，请使用另一个双引号，例如 “My “”cat”” identifier”，所有标识符都区分大小写。 </p>
+<p>文字字符串应引用单引号，如 ‘foo’，文字数字可以用 100（表示整数），100.0（表示浮点值）或1.0e5（科学记数法）等形式编写。时间戳可以写成 TIMESTAMP ‘2000-01-01 00:00:00’ 。时间算法，可以这样写 INTERVAL ‘1’ HOUR ， INTERVAL ‘1 02:03’ DAY TO MINUTE ， INTERVAL ‘1-2’ YEAR TO MONTH ，等等。 </p>
+<p>Druid SQL支持具有以下结构的SELECT查询： </p>
+<pre><code class="hljs sql">[ <span class="hljs-keyword">EXPLAIN</span> PLAN <span class="hljs-keyword">FOR</span> ] 
+[ <span class="hljs-keyword">WITH</span> tableName [ ( column1, column2, ... ) ] <span class="hljs-keyword">AS</span> ( <span class="hljs-keyword">query</span> ) ] 
+<span class="hljs-keyword">SELECT</span> [ <span class="hljs-keyword">ALL</span> | <span class="hljs-keyword">DISTINCT</span> ] &#123; * | exprs &#125; 
+<span class="hljs-keyword">FROM</span> <span class="hljs-keyword">table</span> 
+[ <span class="hljs-keyword">WHERE</span> expr ] 
+[ <span class="hljs-keyword">GROUP</span> <span class="hljs-keyword">BY</span> exprs ] 
+[ <span class="hljs-keyword">HAVING</span> expr ] 
+[ <span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> expr [ <span class="hljs-keyword">ASC</span> | <span class="hljs-keyword">DESC</span> ], expr [ <span class="hljs-keyword">ASC</span> | <span class="hljs-keyword">DESC</span> ], ... ] 
+[ <span class="hljs-keyword">LIMIT</span> <span class="hljs-keyword">limit</span> ] 
+[ <span class="hljs-keyword">UNION</span> <span class="hljs-keyword">ALL</span> &lt;another <span class="hljs-keyword">query</span>&gt; ]</code></pre>
+
+<p>例如</p>
+<pre><code class="hljs sql"><span class="hljs-comment"># 查询所有</span>
+<span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span>
+<span class="hljs-comment"># 查询count列</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-string">&quot;count&quot;</span> <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span>
+<span class="hljs-comment"># 查询前5条</span>
+<span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span> <span class="hljs-keyword">LIMIT</span> <span class="hljs-number">5</span>
+<span class="hljs-comment"># 分组查询</span>
+<span class="hljs-keyword">SELECT</span> ip <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span> <span class="hljs-keyword">GROUP</span> <span class="hljs-keyword">BY</span> ip
+<span class="hljs-comment"># 排序</span>
+<span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span> <span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> __time <span class="hljs-keyword">DESC</span>
+<span class="hljs-comment"># 求和</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">SUM</span>(<span class="hljs-string">&quot;count&quot;</span>) <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span>
+<span class="hljs-comment"># 最大值</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">MAX</span>(<span class="hljs-string">&quot;count&quot;</span>) <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span>
+<span class="hljs-comment"># 平均值</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">AVG</span>(<span class="hljs-string">&quot;count&quot;</span>) <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;itemlogs&quot;</span>
+<span class="hljs-comment"># 查询6年前的数据</span>
+<span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;wikiticker&quot;</span> <span class="hljs-keyword">WHERE</span> <span class="hljs-string">&quot;__time&quot;</span> &gt;= <span class="hljs-keyword">CURRENT_TIMESTAMP</span> ‐ <span class="hljs-built_in">INTERVAL</span> <span class="hljs-string">&#x27;6&#x27;</span> <span class="hljs-keyword">YEAR</span>
+<span class="hljs-comment"># 去除重复查询</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">DISTINCT</span> <span class="hljs-string">&quot;count&quot;</span> <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;accessitem&quot;</span></code></pre>
+
+<h5 id="JDBC查询Apache-Druid"><a href="#JDBC查询Apache-Druid" class="headerlink" title="JDBC查询Apache Druid"></a>JDBC查询Apache Druid</h5><p>Apache Calcite是面向Hadoop新的查询引擎，它提供了标准的SQL语言、多种查询优化和连接各种数据源的能力，除此之外，Calcite还提供了OLAP和流处理的查询引擎。 </p>
+<p>如果使用java，可以使用Calcite JDBC驱动程序进行Druid SQL查询。可以下载Avatica客户端jar后，将其添加到类路径并使用连接字符串 jdbc:avatica:remote:url=<a target="_blank" rel="noopener" href="http://192.168.211.137:8082/druid/v2/sql/avatica/">http://192.168.211.137:8082/druid/v2/sql/avatica/</a> </p>
+<p>如果是Maven项目，需要引入 avatica-core 包，如下： </p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.calcite.avatica<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>avatica‐core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.15.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>使用案例</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception</span>&#123;
+    <span class="hljs-comment">//链接地址</span>
+    String url = <span class="hljs-string">&quot;jdbc:avatica:remote:url=http://192.168.211.137:8082/druid/v2/sql/avatica/&quot;</span>;
+    AvaticaConnection connection = (AvaticaConnection) DriverManager.getConnection(url);
+
+    <span class="hljs-comment">//SQL语句,查询2020-4-10 11:50:30之后的访问uri和访问数量</span>
+    String sql=<span class="hljs-string">&quot;SELECT uri,count(*) AS \&quot;viewcount\&quot; FROM(SELECT * FROM \&quot;itemlogs\&quot; WHERE __time&gt;&#x27;2020-4-10 11:50:30&#x27; ORDER BY __time DESC) GROUP BY uri LIMIT 100&quot;</span>;
+
+    <span class="hljs-comment">//创建Statment</span>
+    AvaticaStatement statement = connection.createStatement();
+
+    <span class="hljs-comment">//执行查询</span>
+    ResultSet resultSet = statement.executeQuery(sql);
+
+    <span class="hljs-keyword">while</span> (resultSet.next()) &#123;
+        <span class="hljs-comment">//获取uri</span>
+        String uri = resultSet.getString(<span class="hljs-string">&quot;uri&quot;</span>);
+        String viewcount = resultSet.getString(<span class="hljs-string">&quot;viewcount&quot;</span>);
+        System.out.println(uri+<span class="hljs-string">&quot;---------&gt;&quot;</span>+viewcount);
+    &#125;
+&#125;</code></pre>
+
+<p>Druid的时区和国内时区不一致，会比我们的少8个小时，我们需要修改配置文件，批量将时间+8，代码如下： </p>
+<pre><code class="hljs sh">sed ‐i <span class="hljs-string">&quot;s/Duser.timezone=UTC/Duser.timezone=UTC+8/g&quot;</span> `grep Duser.timezone=UTC ‐rl ./`</code></pre>
+
+<h3 id="热点数据隔离"><a href="#热点数据隔离" class="headerlink" title="热点数据隔离"></a>热点数据隔离</h3><p>热点数据收集主要是为了找出热点数据，找出热点数据后，需要对热点数据采取各种措施。</p>
+<p>针对热点数据的处理，有这么几种思路，一是优化，二是限制，三是隔离。 </p>
+<ul>
+<li><p>优化：优化热点数据最有效的办法就是缓存热点数据。</p>
+</li>
+<li><p>限制：限制其实是一种削峰手段，可以把热点商品抢单采用队列来存储用户抢单信息，将热点抢单限制在一个队列里，防止热点商品抢单占用太多的资源服务，而使得其他服务无法获取抢单机会。 </p>
+</li>
+<li><p>隔离：隔离其实就是将热点商品和非热点商品进行数据源的隔离、操作流程的隔离，不要因为1%的热点数据影响到另外的99%数据。我们可以把热点商品数据存储到缓存中和非热点数据分开，抢单程序也可以和非热点抢单分开。</p>
+</li>
+</ul>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic24.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="流程分析"><a href="#流程分析" class="headerlink" title="流程分析"></a>流程分析</h4><p>可以以小时为单位，算出平均每小时访问量最高的商品信息，并对该商品信息进行隔离，下单方式也单独处理，流程如下图：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic25.png" srcset="/blog/img/loading.gif" class>
+
+<ol>
+<li><p>实时读取Apache Druid的数据 </p>
+</li>
+<li><p>分析哪些数据访问频率高 </p>
+</li>
+<li><p>对访问频率高的数据进行隔离处理，可以把数据单独放到Redis缓存中 </p>
+</li>
+<li><p>用户每次下单的时候，可以先到Redis缓存中检测该商品是否是热点商品，如果不是热点商品，则直接走订单系统下单，如果是热点商品，则走Kafka排队，不直接下单。</p>
+</li>
+</ol>
+<h4 id="实时热点数据分析"><a href="#实时热点数据分析" class="headerlink" title="实时热点数据分析"></a>实时热点数据分析</h4><p>在热点数据分析系统中查询Druid，然后将热点数据存入到Redis缓存进行隔离。可以采用elastic-job每5秒钟查询一次被访问的商品信息，如果访问量超过1000，可以认为是热点数据，并且这里不能查历史访问量，应该查询近期一段时间，比如最近1天最近1小时最近一分钟等。热点数据查询出来后，我们需要将热点数据隔离，隔离的方式我们可以直接采用将数据单独存储到Redis的方式隔离。 </p>
+<p>热点数据隔离： </p>
+<ol>
+<li><p>编写定时任务‐&gt;定时查询Druid </p>
+</li>
+<li><p>配置Redis集群‐&gt;热点商品存入到Redis实现隔离 </p>
+</li>
+<li><p>每次定时查询热点商品的时候，需要排除之前已经成为热点商品的数据</p>
+</li>
+</ol>
+<p>热点数据查询：</p>
+<p>查询最近5小时访问量超过1000的商品，真实环境中时间粒度会更小，每次查询的时候，之前已经被定为热点商品的数据要排除。</p>
+<p>SQL语句如下：</p>
+<pre><code class="hljs properties"><span class="hljs-attr">SELECT</span> <span class="hljs-string">uri,count(*) AS &quot;viewcount&quot; FROM(SELECT * FROM &quot;itemlogs&quot; WHERE __time&gt;&#x27;2020-04-10 14:01:46&#x27; ORDER BY __time DESC) GROUP BY uri HAVING &quot;viewcount&quot;&gt;1000  LIMIT 1000</span></code></pre>
+
+<p>接着我们用代码把上面的语句实现定时查询即可，每次查询出来的热点数据需要存入到Redis中进行隔离，存入到Redis中的数据我们给个固定前缀方便查询，key的规则定为： SKU_id ，例如：商品id=S990，key= SKU_S990 。 </p>
+<p>另外一种参考：</p>
+<pre><code class="hljs sql"><span class="hljs-keyword">SELECT</span> <span class="hljs-keyword">COUNT</span>(*) <span class="hljs-keyword">AS</span> <span class="hljs-string">&quot;ViewCount&quot;</span>,<span class="hljs-string">&quot;uri&quot;</span> <span class="hljs-keyword">FROM</span> <span class="hljs-string">&quot;logsitems&quot;</span> <span class="hljs-keyword">WHERE</span> __time&gt;=<span class="hljs-keyword">CURRENT_TIMESTAMP</span> - <span class="hljs-built_in">INTERVAL</span> <span class="hljs-string">&#x27;1&#x27;</span> <span class="hljs-keyword">HOUR</span> <span class="hljs-keyword">GROUP</span> <span class="hljs-keyword">BY</span> <span class="hljs-string">&quot;uri&quot;</span> <span class="hljs-keyword">HAVING</span>  <span class="hljs-string">&quot;ViewCount&quot;</span>&gt;<span class="hljs-number">3</span></code></pre>
+
+<p>在bootstrap.yml中配置druid地址： </p>
+<pre><code class="hljs properties"><span class="hljs-comment">#Druid</span>
+<span class="hljs-attr">druidurl</span>: <span class="hljs-string">jdbc:avatica:remote:url=http://192.168.211.137:8082/druid/v2/sql/avatica/</span></code></pre>
+
+<p>创建<code>com.seckill.monitor.hot.MonitorItemsAccess</code>,在该类中实现查询：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MonitorItemsAccess</span> </span>&#123;
+
+    <span class="hljs-meta">@Value(&quot;$&#123;druidurl&#125;&quot;)</span>
+    <span class="hljs-keyword">private</span> String druidurl;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RedisTemplate redisTemplate;
+
+    <span class="hljs-comment">/****</span>
+<span class="hljs-comment">     * 查询统计数据,1天以内的热点秒杀商品</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@throws</span> Exception</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;String&gt; <span class="hljs-title">loadData</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception</span>&#123;
+        <span class="hljs-comment">//获取连接对象</span>
+        AvaticaConnection connection = (AvaticaConnection) DriverManager.getConnection(druidurl);
+        <span class="hljs-comment">//创建Statment</span>
+        AvaticaStatement statement = connection.createStatement();
+        <span class="hljs-comment">//执行查询</span>
+        ResultSet resultSet = statement.executeQuery(druidSQL());
+        <span class="hljs-comment">//记录所有热点商品的ID</span>
+        List&lt;String&gt; ids = <span class="hljs-keyword">new</span> ArrayList&lt;String&gt;();
+
+        <span class="hljs-keyword">while</span> (resultSet.next()) &#123;
+            <span class="hljs-comment">//获取uri,格式：/web/items/S1235433012716498944.html</span>
+            String uri = resultSet.getString(<span class="hljs-string">&quot;uri&quot;</span>);
+            <span class="hljs-comment">//处理掉/web/items/和.html</span>
+            <span class="hljs-keyword">if</span>(uri.startsWith(<span class="hljs-string">&quot;/web/items/&quot;</span>) &amp;&amp; uri.endsWith(<span class="hljs-string">&quot;.html&quot;</span>))&#123;
+                uri=uri.replaceFirst(<span class="hljs-string">&quot;/web/items/&quot;</span>,<span class="hljs-string">&quot;&quot;</span>);
+                uri=uri.substring(<span class="hljs-number">0</span>,uri.length()-<span class="hljs-number">5</span>);
+                <span class="hljs-comment">//记录ID</span>
+                ids.add(uri);
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> ids;
+    &#125;
+
+    <span class="hljs-comment">/***</span>
+<span class="hljs-comment">     * 组装SQL</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">druidSQL</span><span class="hljs-params">()</span></span>&#123;
+        <span class="hljs-comment">//加载所有热点秒杀商品的ID</span>
+        Set&lt;String&gt; keys = redisTemplate.keys(<span class="hljs-string">&quot;SKU_*&quot;</span>);
+        <span class="hljs-comment">//1天前的时间</span>
+        String yesterday = TimeUtil.date2FormatYYYYMMDDHHmmss(TimeUtil.addDateHour(<span class="hljs-keyword">new</span> Date(), -<span class="hljs-number">72</span>));
+
+        <span class="hljs-comment">//SQL语句</span>
+        String sql=<span class="hljs-string">&quot;SELECT uri,count(*) AS \&quot;viewcount\&quot; FROM(SELECT * FROM \&quot;itemlogs\&quot; WHERE __time&gt;&#x27;&quot;</span>+yesterday+<span class="hljs-string">&quot;&#x27;&quot;</span>;
+
+        <span class="hljs-comment">//排除掉已经存在的数据</span>
+        <span class="hljs-keyword">if</span>(keys!=<span class="hljs-keyword">null</span> &amp;&amp; keys.size()&gt;<span class="hljs-number">0</span>)&#123;
+            StringBuffer buffer = <span class="hljs-keyword">new</span> StringBuffer();
+            <span class="hljs-keyword">for</span> (String key : keys) &#123;
+                buffer.append(<span class="hljs-string">&quot;&#x27;/web/items/&quot;</span>+key.substring(<span class="hljs-number">4</span>)+<span class="hljs-string">&quot;.html&#x27;,&quot;</span>);
+            &#125;
+            String ids = buffer.toString().substring(<span class="hljs-number">0</span>,buffer.toString().length()-<span class="hljs-number">1</span>);
+
+            <span class="hljs-comment">//组装SQL</span>
+            sql+=<span class="hljs-string">&quot; AND uri NOT IN(&quot;</span>+ids+<span class="hljs-string">&quot;)&quot;</span>;
+        &#125;
+
+        <span class="hljs-comment">//排序部分组装</span>
+        sql+=<span class="hljs-string">&quot; ORDER BY __time DESC) GROUP BY uri HAVING \&quot;viewcount\&quot;&gt;1  LIMIT 5000&quot;</span>;
+        <span class="hljs-keyword">return</span> sql;
+    &#125;
+&#125;</code></pre>
+
+<p>定时查询热点数据 </p>
+<p>采用 elastic-job 定时操作，创建 com.seckill.monitor.task.MonitorTask ,实现定时调用查询热点数据，代码如下： </p>
+<pre><code class="hljs java"><span class="hljs-meta">@ElasticSimpleJob(</span>
+<span class="hljs-meta">        cron = &quot;1/5 * * * * ?&quot;,</span>
+<span class="hljs-meta">        jobName = &quot;monitortask&quot;,</span>
+<span class="hljs-meta">        shardingTotalCount = 1</span>
+<span class="hljs-meta">)</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MonitorTask</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">SimpleJob</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> MonitorItemsAccess monitorItemsAccess;
+
+    <span class="hljs-comment">/***</span>
+<span class="hljs-comment">     * 执行任务</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> shardingContext</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">execute</span><span class="hljs-params">(ShardingContext shardingContext)</span> </span>&#123;
+        <span class="hljs-keyword">try</span> &#123;
+            List&lt;String&gt; ids = monitorItemsAccess.loadData();
+        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+            e.printStackTrace();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>实时热点数据隔离</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic26.png" srcset="/blog/img/loading.gif" class>
+
+<p>添加隔离方法</p>
+<p>service</p>
+<pre><code class="hljs java"><span class="hljs-comment">/***</span>
+<span class="hljs-comment"> * 热点商品隔离</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">hotIsolation</span><span class="hljs-params">(String id)</span></span>;</code></pre>
+
+<p>impl</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Autowired</span>
+<span class="hljs-keyword">private</span> RedisTemplate redisTemplate;
+
+<span class="hljs-comment">/***</span>
+<span class="hljs-comment"> * 热点商品隔离</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">hotIsolation</span><span class="hljs-params">(String id)</span> </span>&#123;
+    Sku sku = <span class="hljs-keyword">new</span> Sku();
+    sku.setIslock(<span class="hljs-number">2</span>);
+
+    Example example = <span class="hljs-keyword">new</span> Example(Sku.class);
+    Example.Criteria criteria = example.createCriteria();
+    criteria.andEqualTo(<span class="hljs-string">&quot;islock&quot;</span>,<span class="hljs-number">1</span>);
+    criteria.andEqualTo(<span class="hljs-string">&quot;id&quot;</span>,id);
+    <span class="hljs-comment">//执行锁定</span>
+    <span class="hljs-keyword">int</span> mcount = skuMapper.updateByExampleSelective(sku,example);
+
+    <span class="hljs-keyword">if</span>(mcount&gt;<span class="hljs-number">0</span>)&#123;
+        <span class="hljs-comment">//查询商品剩余库存</span>
+        Sku currentSku = skuMapper.selectByPrimaryKey(id);
+        <span class="hljs-comment">//剩余库存</span>
+        String prefix = <span class="hljs-string">&quot;SKU_&quot;</span>;
+        redisTemplate.boundHashOps(prefix+id).increment(<span class="hljs-string">&quot;num&quot;</span>,currentSku.getSeckillNum());
+
+        <span class="hljs-comment">//提取Sku的信息</span>
+        Map&lt;String,Object&gt; skuMap = <span class="hljs-keyword">new</span> HashMap&lt;String,Object&gt;();
+        skuMap.put(<span class="hljs-string">&quot;id&quot;</span>,id);
+        skuMap.put(<span class="hljs-string">&quot;price&quot;</span>,currentSku.getSeckillPrice());
+        skuMap.put(<span class="hljs-string">&quot;name&quot;</span>,currentSku.getName());
+        redisTemplate.boundHashOps(prefix+id).put(<span class="hljs-string">&quot;info&quot;</span>,skuMap);
+    &#125;
+&#125;</code></pre>
+
+<p>Controller</p>
+<pre><code class="hljs java"><span class="hljs-comment">/***</span>
+<span class="hljs-comment"> * 热点商品隔离</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@PostMapping(value = &quot;/hot/isolation&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Result <span class="hljs-title">hotIsolation</span><span class="hljs-params">(<span class="hljs-meta">@RequestParam</span> List&lt;String&gt; ids)</span></span>&#123;
+    <span class="hljs-keyword">if</span>(ids!=<span class="hljs-keyword">null</span> &amp;&amp; ids.size()&gt;<span class="hljs-number">0</span>)&#123;
+        <span class="hljs-keyword">for</span> (String id : ids) &#123;
+            skuService.hotIsolation(id);
+        &#125;
+    &#125;
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Result(<span class="hljs-keyword">true</span>,StatusCode.OK,<span class="hljs-string">&quot;热点商品隔离成功！&quot;</span>);
+&#125;</code></pre>
+
+<p>Feign</p>
+<pre><code class="hljs java"><span class="hljs-comment">/***</span>
+<span class="hljs-comment"> * 热点商品隔离</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@PostMapping(value = &quot;/sku/hot/isolation&quot;)</span>
+<span class="hljs-function">Result <span class="hljs-title">hotIsolation</span><span class="hljs-params">(<span class="hljs-meta">@RequestParam</span> List&lt;String&gt; ids)</span></span>;</code></pre>
+
+<p>调用</p>
+<p>添加隔离方法调用，代码如下：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic27.png" srcset="/blog/img/loading.gif" class>
+
+<p>Redis集群事务问题</p>
+<p>Redis集群是不具备事务的，单个节点是具备事务的，所以我们商品信息存储到Redis集群多个节点中是没法实现集群事务控制，上面的代码如下图：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic28.png" srcset="/blog/img/loading.gif" class>
+
+<p>我们观察上面代码，①和②处其实key相同，既然key相同，那么数据一定不是存储在不同节点上，如果把2次操作Redis合成一次操作Reids，就不会有事务问题了，我们可以把上面代码改造一下即可解决事务问题，改造代码如下图：</p>
+<img src="/blog/2020/10/25/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/pic29.png" srcset="/blog/img/loading.gif" class>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E4%B8%9A%E5%8A%A1%E8%AE%BE%E8%AE%A1/">业务设计</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/canal/">canal</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/lua/">lua</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/kafka/">kafka</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/apache-druid/">apache druid</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">幂等性技术架构体系</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/10/15/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/">
+                        <span class="hidden-mobile">配置中心设计</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

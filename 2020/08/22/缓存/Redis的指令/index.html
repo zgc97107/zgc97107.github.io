@@ -1,0 +1,569 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Redis的指令 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Redis的指令">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-08-22 23:36" pubdate>
+        2020年8月22日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      20
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Redis的指令</h1>
+            
+            <div class="markdown-body">
+              <h3 id="通用指令"><a href="#通用指令" class="headerlink" title="通用指令"></a>通用指令</h3><ol>
+<li>查看所有键：keys * </li>
+<li>键总数：dbsize //如果存在大量键，线上禁止使用此指令</li>
+<li>检查键是否存在：exists {key} //存在返回1，不存在返回0</li>
+<li>删除键：del {key} //返回删除键个数，删除不存在键返回0</li>
+<li>键过期：expire {key} {seconds}</li>
+<li>查看剩余过期时间：ttl {key}</li>
+<li>键的数据结构类型：type {key}</li>
+<li>切换数据库：select {0-15} //默认为0</li>
+</ol>
+<h3 id="字符串指令"><a href="#字符串指令" class="headerlink" title="字符串指令"></a>字符串指令</h3><ul>
+<li><p>设值指令：</p>
+<ul>
+<li><code>set &#123;key&#125; &#123;value&#125; ex|px &#123;time&#125;</code>：ex秒，px毫秒，设置键并指定过期时间</li>
+<li><code>setnx &#123;key&#125; &#123;value&#125;</code>：不存在key时，返回1设置成功，存在的话失败0，可做分布式锁。</li>
+<li><code>set &#123;key&#125; &#123;value&#125;</code> ：存在key时，返回1成功</li>
+<li><code>mset &#123;key1&#125; &#123;value1&#125; &#123;key2&#125; &#123;value2&#125;</code> ：批量设值</li>
+</ul>
+</li>
+<li><p>获值指令：</p>
+<ul>
+<li><code>get &#123;key&#125;</code>：存在则返回 value, 不存在返回 nil</li>
+<li><code>mget &#123;key1&#125; &#123;key2&#125; &#123;key3&#125;</code>：</li>
+</ul>
+</li>
+<li><p>计数指令：</p>
+<ul>
+<li><code>incr &#123;key&#125; </code>：key必须为整数，非整数返回错误，无 key键从将创建key加1，有key将加1</li>
+<li><code>decr &#123;key&#125; </code>：整数key减1</li>
+<li><code>incrby &#123;key&#125; &#123;num&#125;</code>：整数key+num</li>
+<li><code>decrby &#123;key&#125; &#123;num&#125;</code>：整数key-num</li>
+<li><code>incrbyfloat &#123;key&#125; &#123;score&#125;</code>：浮点型 key+score</li>
+</ul>
+</li>
+<li><p>追加指令：append {key} {value}：</p>
+</li>
+<li><p>获取长度：strlen {key}</p>
+</li>
+<li><p>截取字符串：getrange {key} {start} {end}</p>
+</li>
+<li><p>获取编码格式：object encodeing {key} \embstr小于等于39字符，raw大于39字符，int数字类型且字长小于8</p>
+</li>
+</ul>
+<h3 id="hash指令"><a href="#hash指令" class="headerlink" title="hash指令"></a>hash指令</h3><ul>
+<li>设值指令：<code>hset &#123;key&#125; &#123;hkey&#125; &#123;hvalue&#125;</code></li>
+<li>取值指令：<code>hget &#123;key&#125; &#123;hkey&#125;</code></li>
+<li>删值指令：<code>hdel &#123;key&#125; &#123;hkey&#125;</code></li>
+<li>计算个数：<code>hdel &#123;key&#125; &#123;hkey&#125;</code></li>
+<li>判断hkey是否存在：<code>hexists &#123;key&#125; &#123;hkey&#125;</code></li>
+<li>获取所有hkey：<code>hkeys &#123;key&#125;</code></li>
+<li>获取所有hvalue：<code>hvals &#123;key&#125;</code></li>
+<li>获取所有hkey跟hvalue：<code>hgetall &#123;key&#125;</code></li>
+<li>整型hvalue增加num：<code>hincrby &#123;key&#125; &#123;hkey&#125; &#123;num&#125;</code></li>
+<li>浮点型hvalue增加num：<code>hincrbyfloat &#123;key&#125; &#123;hkey&#125; &#123;num&#125;</code></li>
+<li>内部编码：<code> object encoding &#123;key&#125;</code> //当hkey个数少且没有大的hvalue时，内部编码为ziplist，当hvalue大于64字节，内部编码由ziplist变成hashtable。</li>
+</ul>
+<h3 id="列表指令"><a href="#列表指令" class="headerlink" title="列表指令"></a>列表指令</h3><ul>
+<li>添加命令<ul>
+<li><code>rpush &#123;key&#125; &#123;value1&#125; &#123;value2&#125; &#123;value3&#125; </code>：从右向左插入value，返回值为插入个数</li>
+<li><code>lpush &#123;key&#125; &#123;value1&#125; &#123;value2&#125; &#123;value3&#125; </code>：从左向右插入value</li>
+<li><code>linsert &#123;key&#125; before &#123;value1&#125; &#123;value2&#125;</code> ：在value1之前插入value2</li>
+</ul>
+</li>
+<li>查找指令<ul>
+<li><code>lrange &#123;key&#125; &#123;start&#125; &#123;end&#125;</code> ：从左到右获取列中的元素</li>
+<li><code>llen &#123;key&#125;</code>：返回当前列表长度</li>
+<li><code>lpop &#123;key&#125;</code>：删除最左边的元素</li>
+<li><code>rpop &#123;key&#125;</code>：删除最右边的元素</li>
+<li><code>lrem key &#123;count&#125; &#123;value&#125;</code>：删除指定元素</li>
+</ul>
+</li>
+<li>内部编码：在3.2版本以后，redis提供了quicklist内部编码，它结合了ziplist和linkedlist两者的优势，之前的ziplist是存在BUG的，使用quicklist内部编码效率更高。</li>
+</ul>
+<h3 id="集合指令"><a href="#集合指令" class="headerlink" title="集合指令"></a>集合指令</h3><ul>
+<li><p><code>exists &#123;key&#125;</code>：检查键值是否存在</p>
+</li>
+<li><p><code>sadd &#123;key&#125; &#123;value1&#125; &#123;value2&#125; &#123;value3&#125;</code>：插入元素，返回值为插入个数，若加入相同的元素，则不会加入插入个数。</p>
+</li>
+<li><p><code>smembers &#123;key&#125; </code>：获取key的所有元素，返回结果无序</p>
+</li>
+<li><p><code>srem &#123;key&#125; &#123;value&#125; </code>：返回 1，删除value</p>
+</li>
+<li><p><code>scard &#123;key&#125; </code>：计算元素个数</p>
+</li>
+<li><p><code>sismember &#123;key&#125; &#123;value&#125; </code>：判断元素是否在集合存在，存在返回 1，不存在 0</p>
+</li>
+<li><p><code>srandmember &#123;key&#125; &#123;num&#125;</code>：随机返回num个元素</p>
+</li>
+<li><p><code>spop &#123;key&#125; &#123;num&#125; </code>：随机返回num个元素并将元素从集合中删除</p>
+</li>
+<li><p><code>sinter &#123;key1&#125; &#123;key2&#125; &#123;key3&#125;</code>：求集合交集</p>
+</li>
+<li><p><code>sunion &#123;key1&#125; &#123;key2&#125; &#123;key3&#125;</code>：求集合并集</p>
+</li>
+<li><p><code>sdiff &#123;key1&#125; &#123;key2&#125;</code>：求key1和key2差集</p>
+</li>
+<li><p><code>sinterstore &#123;key3&#125; &#123;key1&#125; &#123;key2&#125;</code>：将key1、key2的交集保存到key3</p>
+</li>
+<li><p><code>sunionstore &#123;key3&#125; &#123;key1&#125; &#123;key2&#125;</code>：将key1、key2的并合集保存key3</p>
+</li>
+<li><p><code>sdiffstore &#123;key3&#125; &#123;key1&#125; &#123;key2&#125;</code>：将key1、key2的差集保存key3</p>
+</li>
+</ul>
+<p>内部编码：当元素个数少（小于512个）且都为整数，使用intset减少内存的使用，当超过512个或不为整数（比如ab）时，编码为hashtable。</p>
+<h3 id="有序集合"><a href="#有序集合" class="headerlink" title="有序集合"></a>有序集合</h3><ul>
+<li><code>zadd &#123;key&#125; &#123;score1&#125; &#123;skey1&#125; &#123;score2&#125; &#123;skey2&#125;</code>：添加到集合</li>
+<li><code>zadd &#123;key&#125; nx &#123;score&#125; &#123;skey&#125;</code>：键skey须不存在，主要用于添加</li>
+<li><code>zadd &#123;key&#125; xx incr &#123;score&#125; &#123;skey&#125;</code>：键skey必须存在，主要用于修改</li>
+<li><code>zadd &#123;key&#125; xx ch incr &#123;score&#125; &#123;skey&#125;</code>：返回score的和，此时的score可以为负</li>
+<li><code>zrange &#123;key&#125; 0 -1 withscores</code>：正序查看所有成员</li>
+<li><code>zrevrange &#123;key&#125; 0 -1 withscores</code>：倒序查看所有成员</li>
+<li><code>zcard &#123;key&#125;</code>：计算成员个数</li>
+<li><code>zrangebyscore &#123;key&#125; &#123;score1&#125; &#123;score2&#125; withscores</code>：正序返回指定分数范围的成员</li>
+<li><code>zrevrangebyscore &#123;key&#125; &#123;score2&#125; &#123;score1&#125; withscores</code>：倒序返回指定分数范围的成员</li>
+<li><code>zrangebyscore &#123;key&#125; &#123;score1&#125; +inf withscores</code>：正序返回score1到无限大</li>
+<li><code>zrevrangebyscore &#123;key&#125; &#123;score1&#125; -inf withscores</code>：倒序返回无限小到score1</li>
+<li><code>zcount &#123;key&#125; &#123;score1&#125; &#123;score2&#125;</code>：返回指定分数范围的成员个数</li>
+<li><code>zremrangebyrank &#123;key&#125; &#123;index1&#125; &#123;index2&#125;</code>：分数升序排列，删除第index1跟index2的数据</li>
+<li><code>zremrangebyscore &#123;key&#125; &#123;score1&#125; &#123;score2&#125;</code>：删除分数在score1到score2范围的成员</li>
+<li><code>zremrangebyscore &#123;key&#125; &#123;score1&#125; +inf</code>：删除分数大于score1的成员</li>
+<li><code>zinterstore destination numkeys key ... [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]</code>：有序集合交集，destination：交集产生新的元素存储键名称，numkeys：要做交集计算的键个数，key：元素键值，weights：每个被选中的键对应值乘weight,默认为1。</li>
+<li><code>zunionstore destination numkeys key ... [WEIGHTS weight] [AGGREGATE SUM|MIN|MAX]</code>：有序集合并集，destination:交集产生新的元素存储键名称，numkeys:要做交集计算的键个数，key:元素键值，weights：每个被选中的键对应值乘weight,默认为1。</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E7%BC%93%E5%AD%98/">缓存</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/redis/">redis</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/redis%E6%8C%87%E4%BB%A4/">redis指令</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/24/%E7%BC%93%E5%AD%98/Nginx%E7%BC%93%E5%AD%98/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Nginx缓存</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/">
+                        <span class="hidden-mobile">Redis的高可用</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

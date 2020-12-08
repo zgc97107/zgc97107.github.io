@@ -1,0 +1,614 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>缓存一致性 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="缓存一致性">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-08-26 17:35" pubdate>
+        2020年8月26日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      16
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">缓存一致性</h1>
+            
+            <div class="markdown-body">
+              <h3 id="缓存一致性解决方案"><a href="#缓存一致性解决方案" class="headerlink" title="缓存一致性解决方案"></a>缓存一致性解决方案</h3><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>用户每次操作数据库的时候，使用Canal监听数据库指定表的增量变化，在Java程序中消费Canal监听到的增量变化，并在Java程序中实现对Redis缓存或者Nginx缓存的更新。</p>
+<p>用户查询的时候，先通过Lua查询Nginx的缓存，如果Nginx缓存没有数据，则查询Redis缓存，Redis缓存如果也没有数据，可以去数据库查询。</p>
+<h3 id="Canal介绍"><a href="#Canal介绍" class="headerlink" title="Canal介绍"></a>Canal介绍</h3><p>Canal主要用途是基于 MySQL 数据库增量日志解析，并能提供增量数据订阅和消费，应用场景十分丰富。</p>
+<p>github地址：<a target="_blank" rel="noopener" href="https://github.com/alibaba/canal">https://github.com/alibaba/canal</a></p>
+<p>版本下载地址：<a target="_blank" rel="noopener" href="https://github.com/alibaba/canal/releases">https://github.com/alibaba/canal/releases</a></p>
+<p>文档地址：<a target="_blank" rel="noopener" href="https://github.com/alibaba/canal/wiki/Docker-QuickStart">https://github.com/alibaba/canal/wiki/Docker-QuickStart</a></p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="Canal应用场景"><a href="#Canal应用场景" class="headerlink" title="Canal应用场景"></a>Canal应用场景</h4><ol>
+<li>电商场景下商品实时更新同步到至Elasticsearch、solr等搜索引擎； </li>
+<li>价格、库存发生变更实时同步到redis； </li>
+<li>数据库异地备份、数据同步； </li>
+<li>代替使用轮询数据库方式来监控数据库变更，有效改善轮询耗费数据库资源。</li>
+</ol>
+<h4 id="MySQL主从复制原理"><a href="#MySQL主从复制原理" class="headerlink" title="MySQL主从复制原理"></a>MySQL主从复制原理</h4><ol>
+<li>MySQL master 将数据变更写入二进制日志( binary log , 其中记录叫做二进制日志事件 binary log events ，<br>可以通过 show binlog events 进行查看) </li>
+<li>MySQL slave 将 master 的 binary log events 拷贝到它的中继日志( relay log ) </li>
+<li>MySQL slave 重放 relay log 中事件，将数据变更反映它自己的数据</li>
+</ol>
+<h4 id="Canal工作原理"><a href="#Canal工作原理" class="headerlink" title="Canal工作原理"></a>Canal工作原理</h4><ol>
+<li><p>canal 模拟 MySQL slave 的交互协议，伪装自己为 MySQL slave ，向 MySQL master 发送dump 协议 </p>
+</li>
+<li><p>MySQL master 收到 dump 请求，开始推送 binary log 给 slave (即 canal ) </p>
+</li>
+<li><p>canal 解析 binary log 对象(原始为 byte流)</p>
+</li>
+</ol>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="Canal配置"><a href="#Canal配置" class="headerlink" title="Canal配置"></a>Canal配置</h3><p>开启MySQL的binlog日志功能：</p>
+<pre><code class="hljs sh"><span class="hljs-built_in">cd</span> /etc/mysql/mysql.conf.d 
+<span class="hljs-comment"># 在mysqld.cnf最下面添加如下配置 </span>
+<span class="hljs-comment"># 开启 binlog </span>
+log-bin=/var/lib/mysql/mysql-bin 
+<span class="hljs-comment"># 选择 ROW 模式 </span>
+binlog-format=ROW 
+<span class="hljs-comment"># 配置 MySQL replaction 需要定义，不要和 canal 的 slaveId 重复</span>
+server-id=12345</code></pre>
+
+<p>Canal安装</p>
+<pre><code class="hljs sh"><span class="hljs-comment"># 这里采用容器安装</span>
+docker run -p 11111:11111 --name canal -d docker.io/canal/canal-server</code></pre>
+
+<p>配置CanalServer</p>
+<p>修改 /home/admin/canal-server/conf/canal.properties ,将它的id属性修改成和mysql数据库中server-id不同的值，如下图：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>修改 /home/admin/canal-server/conf/example/instance.properties ,配置要监听的数据库服务地址和监听数据变化的数据库以及表，修改如下：</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>指定监听数据库表的配置如下 canal.instance.filter.regex ： </p>
+<pre><code class="hljs css"><span class="hljs-selector-tag">mysql</span> 数据解析关注的表，<span class="hljs-selector-tag">Perl</span>正则表达式。
+多个正则之间以逗号(,)分隔，转义符需要双斜杠(\\)
+常见例子：
+1.所有表：.* <span class="hljs-selector-tag">or</span> .*\\..* 
+2<span class="hljs-selector-class">.canal</span> <span class="hljs-selector-tag">schema</span>下所有表：<span class="hljs-selector-tag">canal</span>\\..* 
+3<span class="hljs-selector-class">.canal</span>下的以<span class="hljs-selector-tag">canal</span>打头的表：<span class="hljs-selector-tag">canal</span>\\<span class="hljs-selector-class">.canal</span>.* 
+4<span class="hljs-selector-class">.canal</span> <span class="hljs-selector-tag">schema</span>下的一张表：<span class="hljs-selector-tag">canal</span><span class="hljs-selector-class">.test1</span> 
+5.多个规则组合使用：<span class="hljs-selector-tag">canal</span>\\..*,<span class="hljs-selector-tag">mysql</span><span class="hljs-selector-class">.test1</span>,<span class="hljs-selector-tag">mysql</span><span class="hljs-selector-class">.test2</span> (逗号分隔) 
+注意：此过滤条件只针对<span class="hljs-selector-tag">row</span>模式的数据有效(<span class="hljs-selector-tag">ps</span>. <span class="hljs-selector-tag">mixed</span>/<span class="hljs-selector-tag">statement</span>因为不解析<span class="hljs-selector-tag">sql</span>，所以无法准确提取<span class="hljs-selector-tag">tableName</span>进行过滤)</code></pre>
+
+<p>重启canal</p>
+<pre><code class="hljs ebnf"><span class="hljs-attribute">docker restart canal</span></code></pre>
+
+<p>MySQL创建账号并授权</p>
+<pre><code class="hljs mysql">create user canal@&#39;%&#39; IDENTIFIED by &#39;canal&#39;;
+GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT,SUPER ON *.* TO &#39;canal&#39;@&#39;%&#39;; FLUSH PRIVILEGES;</code></pre>
+
+<h3 id="同步更新Redis缓存"><a href="#同步更新Redis缓存" class="headerlink" title="同步更新Redis缓存"></a>同步更新Redis缓存</h3><p>创建类 com.itheima.canal.MoneyLogSync ，实现消费Canal中监听到的增量数据，代码如下：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@CanalTable(value = &quot;money_log&quot;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MoneyLogAsync</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">EntryHandler</span>&lt;<span class="hljs-title">MoneyLog</span>&gt; </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RedisTemplate redisTemplate;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> MoneyLogDao moneyLogDao;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RestTemplate restTemplate;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 数据增加变更</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> moneyLog</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">insert</span><span class="hljs-params">(MoneyLog moneyLog)</span> </span>&#123;
+        <span class="hljs-comment">//查询数据</span>
+        List&lt;MoneyLog&gt; moneyLogs = moneyLogDao.list(moneyLog.getUsername());
+        <span class="hljs-comment">//将数据存入到Redis</span>
+        redisTemplate.boundHashOps(<span class="hljs-string">&quot;UserMoneyLog&quot;</span>).put(moneyLog.getUsername(), moneyLogs);
+    &#125;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 指定表发生删除数据的时候，触发执行</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> moneyLog</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">delete</span><span class="hljs-params">(MoneyLog moneyLog)</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;删除数据：&quot;</span> + moneyLog);
+    &#125;
+&#125;</code></pre>
+
+<p>application.yml中配置Canal的地址：</p>
+<pre><code class="hljs yaml"><span class="hljs-comment">#Canal配置</span>
+<span class="hljs-attr">canal:</span> 
+	<span class="hljs-attr">server:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span><span class="hljs-string">:11111</span> 
+	<span class="hljs-attr">destination:</span> <span class="hljs-string">example</span></code></pre>
+
+<p>关于微服务中如何消费Canal监听到的数据，参考参考地址：<a target="_blank" rel="noopener" href="https://github.com/NormanGyllenhaal/canal-client">https://github.com/NormanGyllenhaal/canal-client</a></p>
+<p>我们可以测试实现抢单，抢单后，数据会自动同步到Redis缓存中。</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="清理Nginx缓存"><a href="#清理Nginx缓存" class="headerlink" title="清理Nginx缓存"></a>清理Nginx缓存</h3><p>清理Nginx缓存，可以利用 purge 来清理,请求地址： <a target="_blank" rel="noopener" href="http://192.168.211.141/purge/mlog/top">http://192.168.211.141/purge/mlog/top</a> 。</p>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>我们现在要用程序访问，这里需要做相关操作，在java代码中访问上面地址即可,在这里大家可以把前面所学的基于Jwt令牌身份安全校验弄进去，实现安全清理缓存，也可以基于Nginx安全配置实现缓存清理操作。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@CanalTable(value = &quot;money_log&quot;)</span> <span class="hljs-comment">//监听哪张表变更</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MoneyLogAsync</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">EntryHandler</span>&lt;<span class="hljs-title">MoneyLog</span>&gt; </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RedisTemplate redisTemplate;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> MoneyLogDao moneyLogDao;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> RestTemplate restTemplate;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 数据增加变更</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> moneyLog</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">insert</span><span class="hljs-params">(MoneyLog moneyLog)</span> </span>&#123;
+        <span class="hljs-comment">//查询数据</span>
+        List&lt;MoneyLog&gt; moneyLogs = moneyLogDao.list(moneyLog.getUsername());
+        <span class="hljs-comment">//将数据存入到Redis</span>
+        redisTemplate.boundHashOps(<span class="hljs-string">&quot;UserMoneyLog&quot;</span>).put(moneyLog.getUsername(), moneyLogs);
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">//清理nginx缓存</span>
+            String url = <span class="hljs-string">&quot;http://192.168.211.141/purge/mlog/top&quot;</span>;
+            restTemplate.getForObject(url, String.class);
+        &#125; <span class="hljs-keyword">catch</span> (RestClientException e) &#123;
+            System.out.println(<span class="hljs-string">&quot;暂无缓存&quot;</span>);
+        &#125;
+    &#125;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 指定表发生删除数据的时候，触发执行</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> moneyLog</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">delete</span><span class="hljs-params">(MoneyLog moneyLog)</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;删除数据：&quot;</span> + moneyLog);
+    &#125;
+&#125;</code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E7%BC%93%E5%AD%98/">缓存</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/Canal/">Canal</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/">缓存一致性</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/26/%E7%BC%93%E5%AD%98/RESTful%E5%AE%89%E5%85%A8%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">RESTful安全解决方案</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/">
+                        <span class="hidden-mobile">缓存击穿</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

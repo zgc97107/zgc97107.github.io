@@ -1,0 +1,1429 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>RabbitMQ中消息发布与权衡 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="RabbitMQ中消息发布与权衡">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-05-08 15:17" pubdate>
+        2020年5月8日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      7.3k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      108
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">RabbitMQ中消息发布与权衡</h1>
+            
+            <div class="markdown-body">
+              <h2 id="使用Java客户端进行消息通信"><a href="#使用Java客户端进行消息通信" class="headerlink" title="使用Java客户端进行消息通信"></a>使用Java客户端进行消息通信</h2><p>客户端需要amqp-client-5.0.0.jar和slf4j-api-1.6.1.jar</p>
+<p>建议使用Maven：</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+ <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.rabbitmq<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+ <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>amqp-client<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+ <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>注意：5系列的版本最好使用JDK8及以上， 低于JDK8可以使用4.x(具体的版本号到Maven的中央仓库查)的版本。</p>
+<h3 id="Direct交换器"><a href="#Direct交换器" class="headerlink" title="Direct交换器"></a>Direct交换器</h3><img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="生产者和消费者的一般用法"><a href="#生产者和消费者的一般用法" class="headerlink" title="生产者和消费者的一般用法"></a>生产者和消费者的一般用法</h4><p>创建消息生产者</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DirectProducer</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 交换器名称</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;direct_logs&quot;</span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 路由键</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String[] ROUTE_KEYS =&#123;<span class="hljs-string">&quot;route_key_1&quot;</span>,<span class="hljs-string">&quot;route_key_2&quot;</span>,<span class="hljs-string">&quot;route_key_3&quot;</span>&#125;;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        <span class="hljs-comment">//创建连接、连接到RabbitMQ</span>
+        ConnectionFactory connectionFactory= <span class="hljs-keyword">new</span> ConnectionFactory();
+        <span class="hljs-comment">//设置下连接工厂的连接地址(使用默认端口5672)</span>
+        connectionFactory.setHost(<span class="hljs-string">&quot;localhost&quot;</span>);
+        <span class="hljs-comment">//创建连接</span>
+        Connection connection =connectionFactory.newConnection();
+        <span class="hljs-comment">//创建信道</span>
+        Channel channel =connection.createChannel();
+
+        <span class="hljs-comment">//在信道中设置交换器</span>
+        channel.exchangeDeclare(EXCHANGE_NAME,BuiltinExchangeType.DIRECT);
+
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>;i&lt;<span class="hljs-number">6</span>;i++)&#123;
+            String routeKey = ROUTE_KEYS[i%<span class="hljs-number">3</span>];
+            String msg = <span class="hljs-string">&quot;Hello,RabbitMQ&quot;</span>+(i+<span class="hljs-number">1</span>);
+            <span class="hljs-comment">//发布消息</span>
+            channel.basicPublish(EXCHANGE_NAME,routeKey,<span class="hljs-keyword">null</span>,msg.getBytes());
+            System.out.println(<span class="hljs-string">&quot;Sent:&quot;</span>+routeKey+<span class="hljs-string">&quot;:&quot;</span>+msg);
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+
+<p>创建消费者</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NormalConsumer</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        <span class="hljs-comment">//创建连接、连接到RabbitMQ</span>
+        ConnectionFactory connectionFactory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        <span class="hljs-comment">//设置下连接工厂的连接地址(使用默认端口5672)</span>
+        connectionFactory.setHost(<span class="hljs-string">&quot;localhost&quot;</span>);
+        <span class="hljs-comment">//创建连接</span>
+        Connection connection = connectionFactory.newConnection();
+        <span class="hljs-comment">//创建信道</span>
+        Channel channel = connection.createChannel();
+
+        <span class="hljs-comment">//在信道中设置交换器</span>
+        channel.exchangeDeclare(DirectProducer.EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+
+        <span class="hljs-comment">//申明队列</span>
+        String queueName = <span class="hljs-string">&quot;queue_1&quot;</span>;
+        channel.queueDeclare(queueName, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">null</span>);
+
+        <span class="hljs-comment">//绑定：将队列与交换器通过路由键绑定</span>
+        String routeKey = DirectProducer.ROUTE_KEYS[<span class="hljs-number">0</span>];
+        channel.queueBind(queueName, DirectProducer.EXCHANGE_NAME, routeKey);
+        System.out.println(<span class="hljs-string">&quot;waiting for message ......&quot;</span>);
+
+        <span class="hljs-comment">//申明一个消费者</span>
+        <span class="hljs-keyword">final</span> Consumer consumer = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String s, Envelope envelope, AMQP.BasicProperties basicProperties, <span class="hljs-keyword">byte</span>[] bytes)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(bytes, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot;Received[&quot;</span> + envelope.getRoutingKey() + <span class="hljs-string">&quot;]&quot;</span> + message);
+            &#125;
+        &#125;;
+
+        <span class="hljs-comment">//消息者正式开始在指定队列上消费。</span>
+        <span class="hljs-comment">//第二个参数是自动确认参数，如果是true则是自动确认</span>
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumer);
+    &#125;
+
+&#125;</code></pre>
+
+<p>通过测试发现，使用DirectProducer作为生产者，NormalConsumer作为消费者，消费者绑定一个队列，时只接收该队列绑定的路由键的消息。</p>
+<h4 id="队列和交换器的多重绑定"><a href="#队列和交换器的多重绑定" class="headerlink" title="队列和交换器的多重绑定"></a>队列和交换器的多重绑定</h4><h5 id="一个队列绑定多个路由键"><a href="#一个队列绑定多个路由键" class="headerlink" title="一个队列绑定多个路由键"></a>一个队列绑定多个路由键</h5><p>这时队列可以接收到绑定的所有路由键的消息。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiBindConsumer</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException,</span>
+<span class="hljs-function">            InterruptedException, TimeoutException </span>&#123;
+        <span class="hljs-comment">//连接工厂</span>
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        <span class="hljs-comment">//连接rabbitMq的地址</span>
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+
+        <span class="hljs-comment">// 打开连接和创建频道，与发送端一样</span>
+        Connection connection = factory.newConnection();
+        <span class="hljs-comment">//创建一个信道</span>
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        <span class="hljs-comment">//在信道中设置交换器</span>
+        channel.exchangeDeclare(DirectProducer.EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+
+        <span class="hljs-comment">//声明一个随机队列</span>
+        String queueName = channel.queueDeclare().getQueue();
+        <span class="hljs-comment">//队列绑定到交换器上时，是允许绑定多个路由键的，也就是多重绑定</span>
+        <span class="hljs-keyword">for</span> (String routekey : DirectProducer.ROUTE_KEYS) &#123;
+            channel.queueBind(queueName, DirectProducer.EXCHANGE_NAME, routekey);
+        &#125;
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages:&quot;</span>);
+
+        <span class="hljs-comment">// 创建队列消费者</span>
+        <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot; Received &quot;</span>
+                        + envelope.getRoutingKey() + <span class="hljs-string">&quot;:&#x27;&quot;</span> + message
+                        + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+    &#125;
+&#125;</code></pre>
+
+<h5 id="一个连接多个信道"><a href="#一个连接多个信道" class="headerlink" title="一个连接多个信道"></a>一个连接多个信道</h5><p>实现方法为使用多线程创建信道，然后生成随机的队列并绑定到信道。这时所有队列都可以接收到全部的消息。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiChannelConsumer</span> </span>&#123;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConsumerWorker</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Runnable</span> </span>&#123;
+        <span class="hljs-keyword">final</span> Connection connection;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ConsumerWorker</span><span class="hljs-params">(Connection connection)</span> </span>&#123;
+            <span class="hljs-keyword">this</span>.connection = connection;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-comment">//创建一个信道，意味着每个线程单独一个信道</span>
+                Channel channel = connection.createChannel();
+                channel.exchangeDeclare(DirectProducer.EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+                <span class="hljs-comment">// 声明一个随机队列</span>
+                String queueName = channel.queueDeclare().getQueue();
+                <span class="hljs-comment">//消费者名字，打印输出用</span>
+                <span class="hljs-keyword">final</span> String consumerName = Thread.currentThread().getName() + <span class="hljs-string">&quot;-all&quot;</span>;
+                <span class="hljs-keyword">for</span> (String routekey : DirectProducer.ROUTE_KEYS) &#123;
+                    channel.queueBind(queueName, DirectProducer.EXCHANGE_NAME,
+                            routekey);
+                &#125;
+                System.out.println(<span class="hljs-string">&quot;[&quot;</span> + consumerName + <span class="hljs-string">&quot;] Waiting for messages:&quot;</span>);
+                <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+                    <span class="hljs-meta">@Override</span>
+                    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               AMQP.BasicProperties</span></span>
+<span class="hljs-function"><span class="hljs-params">                                                       properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                            <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                        String message =
+                                <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                        System.out.println(consumerName
+                                + <span class="hljs-string">&quot; Received &quot;</span> + envelope.getRoutingKey()
+                                + <span class="hljs-string">&quot;:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+                    &#125;
+                &#125;;
+                channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                e.printStackTrace();
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> TimeoutException, IOException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;localhost&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++) &#123;
+            <span class="hljs-comment">//将连接作为参数，传递给每个线程</span>
+            Thread worker = <span class="hljs-keyword">new</span> Thread(<span class="hljs-keyword">new</span> ConsumerWorker(connection));
+            worker.start();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="一个队列多个消费者"><a href="#一个队列多个消费者" class="headerlink" title="一个队列多个消费者"></a>一个队列多个消费者</h5><p>也是利用多线程，只不过这是创建指定名称的队列，如果队列已存在不会重复绑定。这时会轮询将队列中的消息分发给消费者，所有消费者共享这个队列中的消息。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MultiConsumerOneQueue</span> </span>&#123;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConsumerWorker</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Runnable</span> </span>&#123;
+        <span class="hljs-keyword">final</span> Connection connection;
+        <span class="hljs-keyword">final</span> String queueName;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ConsumerWorker</span><span class="hljs-params">(Connection connection, String queueName)</span> </span>&#123;
+            <span class="hljs-keyword">this</span>.connection = connection;
+            <span class="hljs-keyword">this</span>.queueName = queueName;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+                channel.exchangeDeclare(DirectProducer.EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+                <span class="hljs-comment">//声明一个队列,rabbitmq，如果队列已存在，不会重复创建</span>
+                channel.queueDeclare(queueName, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">null</span>);
+                <span class="hljs-keyword">final</span> String consumerName = Thread.currentThread().getName();
+                <span class="hljs-keyword">for</span> (String routekey : DirectProducer.ROUTE_KEYS) &#123;
+                    channel.queueBind(queueName, DirectProducer.EXCHANGE_NAME,
+                            routekey);
+                &#125;
+                System.out.println(<span class="hljs-string">&quot; [&quot;</span> + consumerName + <span class="hljs-string">&quot;] Waiting for messages:&quot;</span>);
+                <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+                    <span class="hljs-meta">@Override</span>
+                    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               AMQP.BasicProperties</span></span>
+<span class="hljs-function"><span class="hljs-params">                                                       properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                               <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                            <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                        String message =
+                                <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                        System.out.println(consumerName
+                                + <span class="hljs-string">&quot; Received &quot;</span> + envelope.getRoutingKey()
+                                + <span class="hljs-string">&quot;:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+                    &#125;
+                &#125;;
+                channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                e.printStackTrace();
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        String queueName = <span class="hljs-string">&quot;focusAll&quot;</span>;
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">3</span>; i++) &#123;
+            <span class="hljs-comment">//将连接及队列名作为参数，传递给每个线程</span>
+            Thread worker = <span class="hljs-keyword">new</span> Thread(<span class="hljs-keyword">new</span> ConsumerWorker(connection, queueName));
+            worker.start();
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h3 id="Fanout交换器"><a href="#Fanout交换器" class="headerlink" title="Fanout交换器"></a>Fanout交换器</h3><img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>创建生产者</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FanoutProducer</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;fanout_logs&quot;</span>;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String[] ROUTE_KEYS = &#123;<span class="hljs-string">&quot;route_key_1&quot;</span>, <span class="hljs-string">&quot;route_key_2&quot;</span>, <span class="hljs-string">&quot;route_key_3&quot;</span>&#125;;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.FANOUT);
+
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">3</span>; i++) &#123;
+            String routekey = ROUTE_KEYS[i % <span class="hljs-number">3</span>];
+            String message = <span class="hljs-string">&quot;Hello World_&quot;</span> + (i + <span class="hljs-number">1</span>);
+            channel.basicPublish(EXCHANGE_NAME, routekey,
+                    <span class="hljs-keyword">null</span>, message.getBytes());
+            System.out.println(<span class="hljs-string">&quot; [x] Sent &#x27;&quot;</span> + routekey + <span class="hljs-string">&quot;&#x27;:&#x27;&quot;</span>
+                    + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+
+<p>创建消费者1，注意，此时消费者不受路由键的影响，就算不绑定生产者的路由键仍然可以接收到消息。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Consumer1</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(FanoutProducer.EXCHANGE_NAME,
+                BuiltinExchangeType.FANOUT);
+        String queueName = channel.queueDeclare().getQueue();
+        <span class="hljs-keyword">for</span> (String routekey : FanoutProducer.ROUTE_KEYS) &#123;
+            channel.queueBind(queueName, FanoutProducer.EXCHANGE_NAME,
+                    routekey);
+        &#125;
+        System.out.println(<span class="hljs-string">&quot; [&quot;</span> + queueName + <span class="hljs-string">&quot;] Waiting for messages:&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag, Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties, <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot;Received &quot;</span> + envelope.getRoutingKey() + <span class="hljs-string">&quot;&#x27;:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+    &#125;
+&#125;</code></pre>
+
+<p>消费者2，注意这时绑定的是一个不存在的路由键，广播交换器不会受路由键影响，此时消费者2仍然可以接收到所有消息。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Consumer2</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(FanoutProducer.EXCHANGE_NAME,
+                BuiltinExchangeType.FANOUT);
+        String queueName = channel.queueDeclare().getQueue();
+        <span class="hljs-comment">//设置一个不存在的路由键</span>
+        String routekey=<span class="hljs-string">&quot;xxx&quot;</span>;
+        channel.queueBind(queueName, FanoutProducer.EXCHANGE_NAME, routekey);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages......&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerB = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println( <span class="hljs-string">&quot;Received [&quot;</span>+ envelope.getRoutingKey()
+                        + <span class="hljs-string">&quot;] &quot;</span>+message);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerB);
+    &#125;
+&#125;</code></pre>
+
+<h3 id="Topic交换器"><a href="#Topic交换器" class="headerlink" title="Topic交换器"></a>Topic交换器</h3><img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>创建生产者</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TopicProducer</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;topic_course&quot;</span>;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        <span class="hljs-comment">//创建主题</span>
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.TOPIC);
+        String[] types = &#123;<span class="hljs-string">&quot;TYPE_A&quot;</span>, <span class="hljs-string">&quot;TYPE_B&quot;</span>, <span class="hljs-string">&quot;TYPE_C&quot;</span>&#125;;
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">3</span>; i++) &#123;
+            String[] modules = &#123;<span class="hljs-string">&quot;moduleA&quot;</span>, <span class="hljs-string">&quot;moduleB&quot;</span>, <span class="hljs-string">&quot;moduleC&quot;</span>&#125;;
+            <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> j = <span class="hljs-number">0</span>; j &lt; <span class="hljs-number">3</span>; j++) &#123;
+                String[] status = &#123;<span class="hljs-string">&quot;0&quot;</span>, <span class="hljs-string">&quot;1&quot;</span>, <span class="hljs-string">&quot;2&quot;</span>&#125;;
+                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> k = <span class="hljs-number">0</span>; k &lt; <span class="hljs-number">3</span>; k++) &#123;
+                    <span class="hljs-comment">// 发送的消息</span>
+                    String message = <span class="hljs-string">&quot;Hello Topic_[&quot;</span> + i + <span class="hljs-string">&quot;,&quot;</span> + j + <span class="hljs-string">&quot;,&quot;</span> + k + <span class="hljs-string">&quot;]&quot;</span>;
+                    String routeKey = types[i % <span class="hljs-number">3</span>] + <span class="hljs-string">&quot;.&quot;</span> + modules[j % <span class="hljs-number">3</span>]
+                            + <span class="hljs-string">&quot;.&quot;</span> + status[k % <span class="hljs-number">3</span>];
+                    channel.basicPublish(EXCHANGE_NAME, routeKey,
+                            <span class="hljs-keyword">null</span>, message.getBytes());
+                    System.out.println(<span class="hljs-string">&quot; [x] Sent &#x27;&quot;</span> + routeKey + <span class="hljs-string">&quot;:&#x27;&quot;</span>
+                            + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+                &#125;
+            &#125;
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+
+<p>创建<code>#</code>类型的消费者，该消费者将订阅所有消息</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AllConsumer</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(TopicProducer.EXCHANGE_NAME,
+                BuiltinExchangeType.TOPIC);
+        String queueName = channel.queueDeclare().getQueue();
+        <span class="hljs-comment">//绑定</span>
+        channel.queueBind(queueName,TopicProducer.EXCHANGE_NAME, <span class="hljs-string">&quot;#&quot;</span>);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages:&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot; AllConsumer Received &quot;</span>
+                        + envelope.getRoutingKey()
+                        + <span class="hljs-string">&quot;&#x27;:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+    &#125;
+&#125;</code></pre>
+
+<p>创建<code>TYPE_A.#</code>类型的消费者，该消费者将接收所有第一位为<code>TYPE_A</code>的消息。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TypeConsumer</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(TopicProducer.EXCHANGE_NAME,
+                BuiltinExchangeType.TOPIC);
+        String queueName = channel.queueDeclare().getQueue();
+        channel.queueBind(queueName, TopicProducer.EXCHANGE_NAME,
+                <span class="hljs-string">&quot;TYPE_A.#&quot;</span>);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages:&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot; AllConsumer Received &quot;</span>
+                        + envelope.getRoutingKey()
+                        + <span class="hljs-string">&quot;&#x27;:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+    &#125;
+&#125;</code></pre>
+
+<p>创建<code>*.moduleA.*</code>类型的消费者，该消费者将接收所有第二位为<code>moduleA</code>的消息</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ModuleConsumer</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+
+        channel.exchangeDeclare(TopicProducer.EXCHANGE_NAME,
+                BuiltinExchangeType.TOPIC);
+        String queueName = channel.queueDeclare().getQueue();
+        channel.queueBind(queueName, TopicProducer.EXCHANGE_NAME, <span class="hljs-string">&quot;*.moduleA.*&quot;</span>);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages:&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerA = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot; AllConsumer Received &quot;</span>
+                        + envelope.getRoutingKey()
+                        + <span class="hljs-string">&quot;&#x27;:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerA);
+    &#125;
+&#125;</code></pre>
+
+<p>同样，还可以创建<code>#.0</code>、<code>*.moduleA.1</code>、<code>TYPE_B.moduleC.2</code>等类型的消费者，来匹配对应的消息。</p>
+<h2 id="消息发布时的权衡"><a href="#消息发布时的权衡" class="headerlink" title="消息发布时的权衡"></a>消息发布时的权衡</h2><p>不做任何配置的情况下，生产者是不知道消息是否真正到达了RabbitMQ，也就是说消息发布操作不返回任何信息给生产者，通常有以下几种方式来保证消息的可靠性。</p>
+<img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>在RabbitMQ中，有不同的投递机制（生产者），但是每一种机制都对性能有一定的影响。一般来讲速度快的可靠性低，可靠性好的性能差，具体怎么使用需要根据应用程序来定，所以说没有最好的方式，只有最合适的方式。</p>
+<p>在RabbitMQ中实际项目中，生产者和消费者都是客户端，它们都可以完成交换器、队列和绑定关系的申明，但是在使用过程中，通常在生产者代码中申明交换器，在消费者代码中申明队列和绑定关系。但生产者发布消息时不一定非得需要消费者，对于RabbitMQ来说，如果是单纯的生产者就只需要生产者客户端申明交换器、队列、确定绑定关系，就可以将消息发送至RabbitMQ。</p>
+<h3 id="无保障"><a href="#无保障" class="headerlink" title="无保障"></a>无保障</h3><p>在演示各种交换器中使用的就是无保障的方式，通过basicPublish发布你的消息并使用正确的交换器和路由信息，你的消息会被接收并发送到合适的队列中。但是如果有网络问题，或者消息不可路由，或者RabbitMQ自身有问题的话，这种方式就有风险。所以无保证的消息发送一般情况下不推荐。</p>
+<h3 id="失败确认"><a href="#失败确认" class="headerlink" title="失败确认"></a>失败确认</h3><p>在发送消息时设置mandatory标志，告诉RabbitMQ，如果消息不可路由，应该将消息返回给发送者，并通知失败。可以这样认为，开启mandatory是开启故障检测模式。<br>但是它只会让RabbitMQ向你通知失败，而不会通知成功。如果消息正确路由到队列，则发布者不会收到任何通知。带来的问题是无法确保发布消息一定是成功的，因为通知失败的消息可能会丢失。</p>
+<p>具体使用：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DirectProducer</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;direct_logs&quot;</span>;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String[] ROUTE_KEYS = &#123;<span class="hljs-string">&quot;route_key_1&quot;</span>, <span class="hljs-string">&quot;route_key_2&quot;</span>, <span class="hljs-string">&quot;route_key_3&quot;</span>&#125;;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException, InterruptedException </span>&#123;
+        ConnectionFactory connectionFactory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        connectionFactory.setHost(<span class="hljs-string">&quot;localhost&quot;</span>);
+        Connection connection = connectionFactory.newConnection();
+        Channel channel = connection.createChannel();
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+      
+        <span class="hljs-comment">//消息发送失败时回调</span>
+        channel.addReturnListener(<span class="hljs-keyword">new</span> ReturnListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleReturn</span><span class="hljs-params">(<span class="hljs-keyword">int</span> replyCode, String replyText, String exchange, String routeKey, AMQP.BasicProperties basicProperties, <span class="hljs-keyword">byte</span>[] bytes)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String string = <span class="hljs-keyword">new</span> String(bytes);
+                System.out.println(<span class="hljs-string">&quot;回调内容：replyCode：&quot;</span> + replyCode);
+                System.out.println(<span class="hljs-string">&quot;回调内容：replyText：&quot;</span> + replyText);
+                System.out.println(<span class="hljs-string">&quot;回调内容：exchange：&quot;</span> + exchange);
+                System.out.println(<span class="hljs-string">&quot;回调内容：routeKey：&quot;</span> + routeKey);
+                System.out.println(<span class="hljs-string">&quot;回调内容：content：&quot;</span> + string);
+            &#125;
+        &#125;);
+      
+        <span class="hljs-comment">//连接关闭时的回调</span>
+        connection.addShutdownListener(<span class="hljs-keyword">new</span> ShutdownListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">shutdownCompleted</span><span class="hljs-params">(ShutdownSignalException e)</span> </span>&#123;
+
+            &#125;
+        &#125;);
+        
+        <span class="hljs-comment">//信道关闭时的回掉</span>
+        channel.addShutdownListener(<span class="hljs-keyword">new</span> ShutdownListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">shutdownCompleted</span><span class="hljs-params">(ShutdownSignalException e)</span> </span>&#123;
+
+            &#125;
+        &#125;);
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">6</span>; i++) &#123;
+            String routeKey = ROUTE_KEYS[i % <span class="hljs-number">3</span>];
+            String msg = <span class="hljs-string">&quot;Hello,RabbitMQ&quot;</span> + (i + <span class="hljs-number">1</span>);
+            <span class="hljs-comment">//发布消息 第三个参数为true表示开启失败通知</span>
+            channel.basicPublish(EXCHANGE_NAME, routeKey, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">null</span>, msg.getBytes());
+            System.out.println(<span class="hljs-string">&quot;Sent:&quot;</span> + routeKey + <span class="hljs-string">&quot;:&quot;</span> + msg);
+            TimeUnit.MICROSECONDS.sleep(<span class="hljs-number">200</span>);
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h3><p>事务的实现主要是对信道（Channel）的设置，主要的方法有三个:</p>
+<ol>
+<li>channel.txSelect()声明启动事务模式;</li>
+<li>channel.txComment()提交事务;</li>
+<li>channel.txRollback()回滚事务;</li>
+</ol>
+<p>在发送消息之前，需要声明channel为事务模式，提交或者回滚事务即可。 开启事务后，客户端和RabbitMQ之间的通讯交互流程:</p>
+<ul>
+<li>客户端发送给服务器 Tx.Select(开启事务模式)</li>
+<li>服务器端返回 Tx.Select-Ok(开启事务模式 ok)  推送消息</li>
+<li>客户端发送给事务提交 Tx.Commit</li>
+</ul>
+<p>服务器端返回 Tx.Commit-Ok<br>以上就完成了事务的交互流程，如果其中任意一个环节出现问题，就会抛出 IoException，这样用户就可以拦截异常进行事务回滚，或决定要不要重复消息。</p>
+<p>但是事务机制本身也会带来问题：</p>
+<ol>
+<li><p>严重的性能问题，加入事务后将会导致2-10倍的性能下降。</p>
+</li>
+<li><p>使应用程序产生同步。</p>
+</li>
+</ol>
+<p>具体使用：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProducerTransaction</span> </span>&#123;
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;producer_transaction&quot;</span>;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException, InterruptedException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+        String[] routekeys=&#123;<span class="hljs-string">&quot;keys1&quot;</span>,<span class="hljs-string">&quot;keys2&quot;</span>,<span class="hljs-string">&quot;keys3&quot;</span>&#125;;
+        <span class="hljs-comment">//开启事务</span>
+        channel.txSelect();
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>;i&lt;<span class="hljs-number">3</span>;i++)&#123;
+                String routekey = routekeys[i%<span class="hljs-number">3</span>];
+                String message = <span class="hljs-string">&quot;Hello World_&quot;</span>+(i+<span class="hljs-number">1</span>)
+                        +(<span class="hljs-string">&quot;_&quot;</span>+System.currentTimeMillis());
+                channel.basicPublish(EXCHANGE_NAME, routekey, <span class="hljs-keyword">true</span>,
+                        <span class="hljs-keyword">null</span>, message.getBytes());
+                System.out.println(<span class="hljs-string">&quot;----------------------------------&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot; Sent Message: [&quot;</span> + routekey +<span class="hljs-string">&quot;]:&#x27;&quot;</span>
+                        + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+                Thread.sleep(<span class="hljs-number">200</span>);
+            &#125;
+            <span class="hljs-comment">//事务提交</span>
+            channel.txCommit();
+        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
+            e.printStackTrace();
+            <span class="hljs-comment">//事务回滚</span>
+            channel.txRollback();
+        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
+            e.printStackTrace();
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="发布者确认"><a href="#发布者确认" class="headerlink" title="发布者确认"></a>发布者确认</h3><p>基于事务的性能问题，RabbitMQ团队为我们拿出了更好的方案，即采用发送方确认模式，该模式比事务更轻量，性能影响几乎可以忽略不计。</p>
+<p>原理：生产者将信道设置成confirm模式，一旦信道进入confirm模式，所有在该信道上面发布的消息都将会被指派一个唯一的ID（从1开始），由这个id在生产者和RabbitMQ之间进行消息的确认。</p>
+<p>不可路由的消息，当交换器发现消息不能路由到任何队列，会进行失败确认操作，表示收到了消息。如果发送方设置了mandatory模式，则会调用addReturnListener()方法设置的监听器。</p>
+<p>可路由的消息，要等到消息被投递到所有匹配的队列之后，broker会发送一个确认给生产者（包含消息的唯一ID），如果消息和队列是可持久化的，那么确认消息会在将消息写入磁盘之后发出，broker回传给生产者的确认消息中的delivery-tag域包含了确认消息的序列号。</p>
+<img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>confirm模式最大的好处在于他可以是异步的，消息发送完成后生产者可以在等信道返回时，继续发送下一条消息，当消息最终得到确认之后，生产者可以通过回调方法来处理该确认消息，如果RabbitMQ因为自身内部错误导致消息丢失，就会发送一条nack消息，生产者应用程序同样可以在回调方法中处理该nack消息决定下一步的操作。 </p>
+<p>Confirm的三种实现方式：</p>
+<ul>
+<li><p>channel.waitForConfirms()普通发送方确认模式，消息到达交换器就会返回true。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProducerConfirm</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;producer_confirm&quot;</span>;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String ROUTE_KEY = <span class="hljs-string">&quot;test&quot;</span>;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException, InterruptedException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+        channel.addReturnListener(<span class="hljs-keyword">new</span> ReturnListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleReturn</span><span class="hljs-params">(<span class="hljs-keyword">int</span> replyCode, String replyText,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     String exchange, String routingKey,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的replyCode:  &quot;</span> + replyCode);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的replyText:  &quot;</span> + replyText);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的exchange:  &quot;</span> + exchange);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的routingKey:  &quot;</span> + routingKey);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的message:  &quot;</span> + message);
+            &#125;
+        &#125;);
+        <span class="hljs-comment">// 启用发送者确认模式</span>
+        channel.confirmSelect();
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">2</span>; i++) &#123;
+            String message = <span class="hljs-string">&quot;Hello World_&quot;</span> + (i + <span class="hljs-number">1</span>);
+            channel.basicPublish(EXCHANGE_NAME, ROUTE_KEY, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">null</span>, message.getBytes());
+            System.out.println(<span class="hljs-string">&quot; Sent Message: [&quot;</span> + ROUTE_KEY + <span class="hljs-string">&quot;]:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+            <span class="hljs-comment">//确认是否成功(true成功)</span>
+            <span class="hljs-keyword">if</span> (channel.waitForConfirms()) &#123;
+                System.out.println(<span class="hljs-string">&quot;send success&quot;</span>);
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                System.out.println(<span class="hljs-string">&quot;send failure&quot;</span>);
+            &#125;
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+</li>
+<li><p>channel.waitForConfirmsOrDie()批量确认模式，使用同步方式等所有的消息发送之后才会执行后面代码，只要有一个消息未到达交换器就会 抛出IOException异常。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProducerBatchConfirm</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;producer_wait_confirm&quot;</span>;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String ROUTE_KEY = <span class="hljs-string">&quot;test&quot;</span>;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException, InterruptedException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+        channel.addReturnListener(<span class="hljs-keyword">new</span> ReturnListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleReturn</span><span class="hljs-params">(<span class="hljs-keyword">int</span> replyCode, String replyText,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     String exchange, String routingKey,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的replyCode:  &quot;</span> + replyCode);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的replyText:  &quot;</span> + replyText);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的exchange:  &quot;</span> + exchange);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的routingKey:  &quot;</span> + routingKey);
+                System.out.println(<span class="hljs-string">&quot;RabbitMq返回的message:  &quot;</span> + message);
+            &#125;
+        &#125;);
+        <span class="hljs-comment">// 启用发送者确认模式</span>
+        channel.confirmSelect();
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;
+            String message = <span class="hljs-string">&quot;Hello World_&quot;</span> + (i + <span class="hljs-number">1</span>);
+            channel.basicPublish(EXCHANGE_NAME, ROUTE_KEY, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">null</span>, message.getBytes());
+            System.out.println(<span class="hljs-string">&quot; Sent Message: [&quot;</span> + ROUTE_KEY + <span class="hljs-string">&quot;]:&#x27;&quot;</span> + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+        &#125;
+        <span class="hljs-comment">// 批量确认，如果失败会抛出异常</span>
+        channel.waitForConfirmsOrDie();
+        channel.close();
+        connection.close();
+    &#125;
+&#125;</code></pre>
+</li>
+<li><p>channel.addConfirmListener()异步监听发送方确认模式。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProducerConfirmAsync</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;producer_async_confirm&quot;</span>;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> IOException, TimeoutException, InterruptedException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT);
+        <span class="hljs-comment">// 启用发送者确认模式</span>
+        channel.confirmSelect();
+        <span class="hljs-comment">// 添加发送者确认监听器</span>
+        channel.addConfirmListener(<span class="hljs-keyword">new</span> ConfirmListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleAck</span><span class="hljs-params">(<span class="hljs-keyword">long</span> deliveryTag, <span class="hljs-keyword">boolean</span> multiple)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                System.out.println(<span class="hljs-string">&quot;send_ACK:&quot;</span>+deliveryTag+<span class="hljs-string">&quot;,multiple:&quot;</span>+multiple);
+            &#125;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleNack</span><span class="hljs-params">(<span class="hljs-keyword">long</span> deliveryTag, <span class="hljs-keyword">boolean</span> multiple)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                System.out.println(<span class="hljs-string">&quot;Error----send_NACK:&quot;</span>+deliveryTag+<span class="hljs-string">&quot;,multiple:&quot;</span>+multiple);
+            &#125;
+        &#125;);
+      
+        channel.addReturnListener(<span class="hljs-keyword">new</span> ReturnListener() &#123;
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleReturn</span><span class="hljs-params">(<span class="hljs-keyword">int</span> replyCode, String replyText,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     String exchange, String routingKey,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                     <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body);
+                System.out.println(<span class="hljs-string">&quot;RabbitMQ路由失败:  &quot;</span>+routingKey+<span class="hljs-string">&quot;.&quot;</span>+message);
+            &#125;
+        &#125;);
+        String[] routekeys=&#123;<span class="hljs-string">&quot;test&quot;</span>,<span class="hljs-string">&quot;test2&quot;</span>&#125;;
+        <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>;i&lt;<span class="hljs-number">20</span>;i++)&#123;
+            String routekey = routekeys[i%<span class="hljs-number">2</span>];
+            String message = <span class="hljs-string">&quot;Hello World_&quot;</span>+(i+<span class="hljs-number">1</span>)+(<span class="hljs-string">&quot;_&quot;</span>+System.currentTimeMillis());
+            channel.basicPublish(EXCHANGE_NAME, routekey, <span class="hljs-keyword">true</span>,
+                    MessageProperties.PERSISTENT_BASIC, message.getBytes());
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+</li>
+</ul>
+<h3 id="备用交换器"><a href="#备用交换器" class="headerlink" title="备用交换器"></a>备用交换器</h3><p>在第一次声明交换器时被指定，用来提供一种预先存在的交换器，如果主交换器无法路由消息，那么消息将被路由到这个新的备用交换器。这时RabbitMQ也不会向发布者发送失败通知，因为消息已经发送至备用交换器，表示消息已经被路由了。注意，备用交换器就是普通的交换器，没有任何特殊的地方。</p>
+<p>使用备用交换器，向往常一样，声明Queue和备用交换器，把Queue绑定到备用交换器上。然后在声明主交换器时，通过交换器的参数，alternate-exchange，将备用交换器设置给主交换器。建议备用交换器设置为faout类型，Queue绑定时的路由键设置为“#”。</p>
+<img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BackupExProducer</span> </span>&#123;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String EXCHANGE_NAME = <span class="hljs-string">&quot;main-exchange&quot;</span>;
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> String BAK_EXCHANGE_NAME = <span class="hljs-string">&quot;ae&quot;</span>;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
+        Map&lt;String,Object&gt; argsMap = <span class="hljs-keyword">new</span> HashMap&lt;String,Object&gt;();
+        argsMap.put(<span class="hljs-string">&quot;alternate-exchange&quot;</span>,BAK_EXCHANGE_NAME);
+        <span class="hljs-comment">//主交换器</span>
+        channel.exchangeDeclare(EXCHANGE_NAME,<span class="hljs-string">&quot;direct&quot;</span>,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">false</span>,argsMap);
+        <span class="hljs-comment">//备用交换器</span>
+        channel.exchangeDeclare(BAK_EXCHANGE_NAME,BuiltinExchangeType.FANOUT,
+                <span class="hljs-keyword">true</span>,<span class="hljs-keyword">false</span>,<span class="hljs-keyword">null</span>);
+        String[] routekeys=&#123;<span class="hljs-string">&quot;test1&quot;</span>,<span class="hljs-string">&quot;test2&quot;</span>,<span class="hljs-string">&quot;test3&quot;</span>&#125;;
+        <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>;i&lt;<span class="hljs-number">3</span>;i++)&#123;
+            String routekey = routekeys[i%<span class="hljs-number">3</span>];
+            String message = <span class="hljs-string">&quot;Hello World_&quot;</span>+(i+<span class="hljs-number">1</span>);
+            channel.basicPublish(EXCHANGE_NAME, routekey,
+                    <span class="hljs-keyword">null</span>, message.getBytes());
+            System.out.println(<span class="hljs-string">&quot; [x] Sent &#x27;&quot;</span> + routekey +<span class="hljs-string">&quot;&#x27;:&#x27;&quot;</span>
+                    + message + <span class="hljs-string">&quot;&#x27;&quot;</span>);
+        &#125;
+        channel.close();
+        connection.close();
+    &#125;
+
+&#125;</code></pre>
+
+<p>主交换器绑定消费者</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MainConsumer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        String queueName = <span class="hljs-string">&quot;backupexchange&quot;</span>;
+        channel.queueDeclare(queueName,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">false</span>,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">null</span>);
+        <span class="hljs-comment">//只绑定test1路由键</span>
+        String routekey=<span class="hljs-string">&quot;test1&quot;</span>;
+        channel.queueBind(queueName,
+                BackupExProducer.EXCHANGE_NAME, routekey);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages......&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerB = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println( <span class="hljs-string">&quot;Received [&quot;</span>
+                        + envelope.getRoutingKey() + <span class="hljs-string">&quot;] &quot;</span>+message);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerB);
+    &#125;
+&#125;</code></pre>
+
+<p>副交换器绑定消费者</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BackupExConsumer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(BackupExProducer.BAK_EXCHANGE_NAME,
+                BuiltinExchangeType.FANOUT,
+                <span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">null</span>);
+        String queueName = <span class="hljs-string">&quot;fetchother&quot;</span>;
+        channel.queueDeclare(queueName,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">false</span>,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">null</span>);
+        channel.queueBind(queueName,
+                BackupExProducer.BAK_EXCHANGE_NAME, <span class="hljs-string">&quot;#&quot;</span>);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages......&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumerB = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span></span>
+<span class="hljs-function">                    <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println( <span class="hljs-string">&quot;Received [&quot;</span>
+                        + envelope.getRoutingKey() + <span class="hljs-string">&quot;] &quot;</span>+message);
+            &#125;
+        &#125;;
+        channel.basicConsume(queueName, <span class="hljs-keyword">true</span>, consumerB);
+    &#125;
+&#125;</code></pre>
+
+<h2 id="消息消费时的权衡"><a href="#消息消费时的权衡" class="headerlink" title="消息消费时的权衡"></a>消息消费时的权衡</h2><h3 id="消费的获取方式"><a href="#消费的获取方式" class="headerlink" title="消费的获取方式"></a>消费的获取方式</h3><ul>
+<li><p>拉取Get，消费者主动从队列中拉取消息。</p>
+<img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GetMessageConsumer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException, InterruptedException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(GetMessageProducer.EXCHANGE_NAME,
+                <span class="hljs-string">&quot;direct&quot;</span>);
+        String queueName = <span class="hljs-string">&quot;focuserror&quot;</span>;
+        channel.queueDeclare(queueName,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">false</span>,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">null</span>);
+        String routekey=<span class="hljs-string">&quot;test&quot;</span>;
+        channel.queueBind(queueName,
+                GetMessageProducer.EXCHANGE_NAME, routekey);
+        System.out.println(<span class="hljs-string">&quot; [*] Waiting for messages......&quot;</span>);
+        <span class="hljs-comment">//无限循环拉取</span>
+        <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
+            <span class="hljs-comment">//从指定队列中拉取一条消息，第二个参数为是否自动确认</span>
+            GetResponse getResponse = channel.basicGet(queueName, <span class="hljs-keyword">false</span>);
+            <span class="hljs-keyword">if</span>(<span class="hljs-keyword">null</span>!=getResponse)&#123;
+                System.out.println(<span class="hljs-string">&quot;received[&quot;</span>
+                        +getResponse.getEnvelope().getRoutingKey()+<span class="hljs-string">&quot;]&quot;</span>
+                        +<span class="hljs-keyword">new</span> String(getResponse.getBody()));
+            &#125;
+            <span class="hljs-comment">//消息手动确认，确认后消息会从队列中移除</span>
+            channel.basicAck(<span class="hljs-number">0</span>,<span class="hljs-keyword">true</span>);
+            Thread.sleep(<span class="hljs-number">1000</span>);
+        &#125;
+    &#125;
+&#125;</code></pre>
+</li>
+<li><p>推送Consume，rabbitMQ将队列中的消息主动推送给消费者，之前的消费者示例都是使用这种方式。</p>
+<img src="/blog/2020/05/08/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%AD%E6%B6%88%E6%81%AF%E5%8F%91%E5%B8%83%E4%B8%8E%E6%9D%83%E8%A1%A1/pic7.png" srcset="/blog/img/loading.gif" class>
+
+</li>
+</ul>
+<h3 id="消息的确认"><a href="#消息的确认" class="headerlink" title="消息的确认"></a>消息的确认</h3><ul>
+<li><p>自动确认：在使用<code>channel.basicConsume(queueName,false,consumer);</code>声明队列时，第二个参数为autoAck，当autoAck=true时，一旦消费者接收到了消息，就视为自动确认了消息。如果之后的处理过程中出现错误，也不会影响消息的确认。所以很多时候，需要在消息处理成功后再确认消息，这时就需要手动确认。</p>
+</li>
+<li><p>手动确认：当autoAck=false时，RabbitMQ会等待消费者显式发回ack信号后才从内存和磁盘中（如果是持久化消息的话，消息会被保存到磁盘中）中移去消息。采用消息确认机制后，只要令autoAck=false，消费者就有足够的时间处理消息，不用担心处理消息过程中消费者进程挂掉后消息丢失的问题，因为RabbitMQ会一直持有消息直到消费者显式调用basicAck为止。</p>
+<p>当autoAck=false时，对于RabbitMQ服务器端而言，队列中的消息分成了两部分：一部分是等待投递给消费者的消息，一部分是已经投递给消费者但是还没有收到消费者ack信号的消息。如果服务器端一直没有收到消费者的ack信号，并且消费此消息的消费者已经断开连接，则服务器端会安排该消息重新进入队列，等待投递给下一个消费者（也可能还是原来的那个消费者）。</p>
+</li>
+</ul>
+<h3 id="Qos预取模式"><a href="#Qos预取模式" class="headerlink" title="Qos预取模式"></a>Qos预取模式</h3><p>在确认消息被接收之前，消费者可以预先要求接收一定数量的消息，在处理完一定数量的消息后，可以进行批量确认。如果消费者应用程序在确认消息之前崩溃，则所有未确认的消息将被重新发送给其他消费者。这种机制一方面可以实现限速（将消息暂存到RabbitMQ内存中）的作用，一方面可以保证消息确认质量。</p>
+<p>注意：消费确认模式必须是非自动确认机制，这个是使用baseQos的前提条件，否则会Qos不生效，然后设置basicQos的值。另外，还可以基于consume和channel的粒度进行设置（global）。</p>
+<h4 id="批量确认"><a href="#批量确认" class="headerlink" title="批量确认"></a>批量确认</h4><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BatchQosConsumer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(DirectProducer.EXCHANGE_NAME,
+                <span class="hljs-string">&quot;direct&quot;</span>);
+        String queueName = <span class="hljs-string">&quot;focuserror&quot;</span>;
+        channel.queueDeclare(queueName, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>,
+                <span class="hljs-keyword">false</span>, <span class="hljs-keyword">null</span>);
+        String routekey = <span class="hljs-string">&quot;error&quot;</span>;
+        channel.queueBind(queueName, DirectProducer.EXCHANGE_NAME, routekey);
+        System.out.println(<span class="hljs-string">&quot;waiting for message........&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumer = <span class="hljs-keyword">new</span> DefaultConsumer(channel) &#123;
+            <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> meesageCount = <span class="hljs-number">0</span>;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot;批量消费者---Received[&quot;</span> + envelope.getRoutingKey()
+                        + <span class="hljs-string">&quot;]&quot;</span> + message);
+                meesageCount++;
+                <span class="hljs-comment">//批量确认50一批</span>
+                <span class="hljs-keyword">if</span> (meesageCount % <span class="hljs-number">50</span> == <span class="hljs-number">0</span>) &#123;
+                    <span class="hljs-keyword">this</span>.getChannel().basicAck(envelope.getDeliveryTag(), <span class="hljs-keyword">true</span>);
+                    System.out.println(<span class="hljs-string">&quot;批量消息费进行消息的确认------------&quot;</span>);
+                &#125;
+                <span class="hljs-comment">//如果是最后一条消息，则把剩余的消息都进行确认</span>
+                <span class="hljs-keyword">if</span> (message.equals(<span class="hljs-string">&quot;stop&quot;</span>)) &#123; 
+                    <span class="hljs-keyword">this</span>.getChannel().basicAck(envelope.getDeliveryTag(), <span class="hljs-keyword">true</span>);
+                    System.out.println(<span class="hljs-string">&quot;批量消费者进行最后业务消息的确认---------&quot;</span>);
+                &#125;
+            &#125;
+        &#125;;
+        <span class="hljs-comment">//150条预取</span>
+        channel.basicQos(<span class="hljs-number">500</span>, <span class="hljs-keyword">true</span>);
+        channel.basicConsume(queueName, <span class="hljs-keyword">false</span>, consumer);
+    &#125;
+&#125;</code></pre>
+
+<h4 id="单条确认"><a href="#单条确认" class="headerlink" title="单条确认"></a>单条确认</h4><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">QosConsumerMain</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] argv)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> IOException, TimeoutException </span>&#123;
+        ConnectionFactory factory = <span class="hljs-keyword">new</span> ConnectionFactory();
+        factory.setHost(<span class="hljs-string">&quot;127.0.0.1&quot;</span>);
+        Connection connection = factory.newConnection();
+        <span class="hljs-keyword">final</span> Channel channel = connection.createChannel();
+        channel.exchangeDeclare(DirectProducer.EXCHANGE_NAME,
+                <span class="hljs-string">&quot;direct&quot;</span>);
+        String queueName = <span class="hljs-string">&quot;focuserror&quot;</span>;
+        channel.queueDeclare(queueName,<span class="hljs-keyword">false</span>,<span class="hljs-keyword">false</span>,
+                <span class="hljs-keyword">false</span>,<span class="hljs-keyword">null</span>);
+        String routekey = <span class="hljs-string">&quot;test&quot;</span>;
+        channel.queueBind(queueName,DirectProducer.EXCHANGE_NAME,routekey);
+        System.out.println(<span class="hljs-string">&quot;waiting for message........&quot;</span>);
+        <span class="hljs-keyword">final</span> Consumer consumer = <span class="hljs-keyword">new</span> DefaultConsumer(channel)&#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">handleDelivery</span><span class="hljs-params">(String consumerTag,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       Envelope envelope,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       AMQP.BasicProperties properties,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                       <span class="hljs-keyword">byte</span>[] body)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+                String message = <span class="hljs-keyword">new</span> String(body, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+                System.out.println(<span class="hljs-string">&quot;Received[&quot;</span>+envelope.getRoutingKey()
+                        +<span class="hljs-string">&quot;]&quot;</span>+message);
+                <span class="hljs-comment">//TODO 单条确认</span>
+                channel.basicAck(envelope.getDeliveryTag(),<span class="hljs-keyword">false</span>);
+            &#125;
+        &#125;;
+        <span class="hljs-comment">//150条预取</span>
+        channel.basicQos(<span class="hljs-number">500</span>,<span class="hljs-keyword">true</span>);
+        channel.basicConsume(queueName,<span class="hljs-keyword">false</span>,consumer);
+    &#125;
+&#125;</code></pre>
+
+<h4 id="basicQos-方法参数详细解释"><a href="#basicQos-方法参数详细解释" class="headerlink" title="basicQos()方法参数详细解释"></a>basicQos()方法参数详细解释</h4><ul>
+<li>prefetchSize：最多传输内容的大小限制，0为不限制，但据说prefetchSize参数，rabbitmq没有实现。</li>
+<li>prefetchCount：表示不要同时给一个消费者推送多于N个消息，即一旦有N个消息还没有ack，则该consumer将阻塞掉，直到有消息ack。</li>
+<li>global：boolean类型表示是否将上面设置应用于channel，即上面的限制是channel级别的还是consumer级别。</li>
+</ul>
+<p>如果同时对channel和消费者进行设置，如</p>
+<pre><code class="hljs java">channel.basicQos(<span class="hljs-number">10</span>,<span class="hljs-keyword">false</span>);
+channel.basicQos(<span class="hljs-number">15</span>,<span class="hljs-keyword">true</span>);</code></pre>
+
+<p>AMQP规范中没有解释如果使用不同的全局值，多次调用basic.qos会发生什么。RabbitMQ认为两个预取限制应该彼此独立地强制执行。也就是说，整个通道加起来最多允许15条未确认的消息，每个消费者则最多有10条消息。消费者只有在未达到未确认消息限制时才会收到新消息。</p>
+<h3 id="消费者中的事务"><a href="#消费者中的事务" class="headerlink" title="消费者中的事务"></a>消费者中的事务</h3><p>使用方法和生产者一致。假设消费者模式中使用了事务，并且在消息确认之后进行了事务回滚，结果会分为两种情况：</p>
+<ol>
+<li><p>autoAck=false手动应对的时候是支持事务的，也就是说即使你已经手动确认了消息已经收到了，但 RabbitMQ对消息的确认会等事务的返回结果，最终决定是移除消息还是重新放回队列。如果你手动确认之后又回滚了事务，那么此条消息会重新放回队列。</p>
+</li>
+<li><p>autoAck=true如果自动确认为true的情况是不支持事务的，也就是说你即使在收到消息之后在回滚事务也是于事无补的，队列已经把消息移除了。</p>
+</li>
+</ol>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/RabbitMQ/">RabbitMQ</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/05/09/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E7%9A%84%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">RabbitMQ的高级特性</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/05/07/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E4%B8%8EAMQP%E5%8D%8F%E8%AE%AE/">
+                        <span class="hidden-mobile">RabbitMQ与AMQP</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

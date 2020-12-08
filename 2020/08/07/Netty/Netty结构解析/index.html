@@ -1,0 +1,1148 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Netty结构解析 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Netty结构解析">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-08-07 17:04" pubdate>
+        2020年8月7日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      6.4k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      80
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Netty结构解析</h1>
+            
+            <div class="markdown-body">
+              <h3 id="Java中的IO模型"><a href="#Java中的IO模型" class="headerlink" title="Java中的IO模型"></a>Java中的IO模型</h3><p>在JDK1.4之前，基于Java所有的socket通信都采⽤了同步阻塞模型（BIO），这种模型性能低下，当时⼤型的服务均采⽤C或C++开发，因为它们可以直接使⽤操作系统提供的异步IO或者AIO，使得性能得到⼤幅提升。</p>
+<p>2002年，JDK1.4发布，新增了java.nio包，提供了许多异步IO开发的API和类库。新增的NIO，极⼤的促进了基于Java的异步⾮阻塞的发展和应⽤。</p>
+<p>2011年，JDK7发布，将原有的NIO进⾏了升级，称为NIO2.0，其中也对AIO进⾏了⽀持。</p>
+<h4 id="BIO模型"><a href="#BIO模型" class="headerlink" title="BIO模型"></a>BIO模型</h4><p>java中的BIO是blocking I/O的简称，它是同步阻塞型IO，其相关的类和接⼝在java.io下。BIO模型简单来讲，就是服务端为每⼀个请求都分配⼀个线程进⾏处理，如下：</p>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>示例</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> org.example.bio;
+
+<span class="hljs-keyword">import</span> java.io.InputStream;
+<span class="hljs-keyword">import</span> java.net.ServerSocket;
+<span class="hljs-keyword">import</span> java.net.Socket;
+<span class="hljs-keyword">import</span> java.nio.charset.StandardCharsets;
+<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
+<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BIOServer</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        ServerSocket serverSocket = <span class="hljs-keyword">new</span> ServerSocket(<span class="hljs-number">6666</span>);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
+            System.out.println(<span class="hljs-string">&quot;等待客户端连接。。。。&quot;</span>);
+            Socket socket = serverSocket.accept(); <span class="hljs-comment">//阻塞</span>
+            executorService.execute(() -&gt; &#123;
+                <span class="hljs-keyword">try</span> &#123;
+                    InputStream inputStream = socket.getInputStream(); <span class="hljs-comment">//阻塞</span>
+                    <span class="hljs-keyword">byte</span>[] bytes = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[<span class="hljs-number">1024</span>];
+                    <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
+                        <span class="hljs-keyword">int</span> length = inputStream.read(bytes);
+                        <span class="hljs-keyword">if</span> (length == -<span class="hljs-number">1</span>) &#123;
+                            <span class="hljs-keyword">break</span>;
+                        &#125;
+                        System.out.println(<span class="hljs-keyword">new</span> String(bytes, <span class="hljs-number">0</span>, length, StandardCharsets.UTF_8));
+                    &#125;
+                &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                    e.printStackTrace();
+                &#125;
+            &#125;);
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>这种模式存在的问题：</p>
+<ul>
+<li>客户端的并发数与后端的线程数成1:1的⽐例，线程的创建、销毁是⾮常消耗系统资源的，随着并发量增⼤，服务端性能将显著下降，甚⾄会发⽣线程堆栈溢出等错误。</li>
+<li>当连接创建后，如果该线程没有操作时，会进⾏阻塞操作，这样极⼤的浪费了服务器资源。</li>
+</ul>
+<h4 id="NIO模型"><a href="#NIO模型" class="headerlink" title="NIO模型"></a>NIO模型</h4><p>NIO，称之为New IO 或是 non-block IO （⾮阻塞IO），这两种说法都可以，其实称之为⾮阻塞IO更恰当⼀些。</p>
+<p>NIO相关的代码都放在了java.nio包下，其三⼤核⼼组件：<strong>Buffer</strong>（缓冲区）、<strong>Channel</strong>（通道）、<strong>Selector</strong>（选择器/多路复⽤器）</p>
+<ul>
+<li><p>Buffer</p>
+<p>在NIO中，所有的读写操作都是基于缓冲区完成的，底层是通过数组实现的，常⽤的缓冲区是ByteBuffer，每⼀种java基本类型都有对应的缓冲区对象（除了Boolean类型），如：CharBuffer、IntBuffer、LongBuffer等。</p>
+</li>
+<li><p>Channel</p>
+<p>在BIO中是基于Stream实现，⽽在NIO中是基于通道实现，与流不同的是，通道是双向的，既可以读也可以写。</p>
+</li>
+<li><p>Selector</p>
+<p>Selector是多路复⽤器，它会不断的轮询注册在其上的Channel，如果某个Channel上发⽣读或写事件，这个Channel就处于就绪状态，会被Selector轮询出来，然后通过SelectionKey获取就绪Channel的集合，进⾏IO的读写操作。</p>
+</li>
+</ul>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>可以看出，NIO模型要优于BIO模型，主要是：</p>
+<ul>
+<li><p>通过多路复⽤器就可以实现⼀个线程处理多个通道，避免了多线程之间的上下⽂切换导致系统开销过⼤。</p>
+</li>
+<li><p>NIO⽆需为每⼀个连接开⼀个线程处理，并且只有通道真正有有事件时，才进⾏读写操作，这样⼤⼤的减少了系统开销。</p>
+</li>
+</ul>
+<p>示例代码：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.net.InetSocketAddress;
+<span class="hljs-keyword">import</span> java.net.ServerSocket;
+<span class="hljs-keyword">import</span> java.nio.ByteBuffer;
+<span class="hljs-keyword">import</span> java.nio.channels.SelectionKey;
+<span class="hljs-keyword">import</span> java.nio.channels.Selector;
+<span class="hljs-keyword">import</span> java.nio.channels.ServerSocketChannel;
+<span class="hljs-keyword">import</span> java.nio.channels.SocketChannel;
+<span class="hljs-keyword">import</span> java.util.Iterator;
+<span class="hljs-keyword">import</span> java.util.Set;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SelectorDemo</span> </span>&#123;
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 注册事件</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">private</span> Selector <span class="hljs-title">getSelector</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">//获取selector对象</span>
+        Selector selector = Selector.open();
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.configureBlocking(<span class="hljs-keyword">false</span>); <span class="hljs-comment">//⾮阻塞</span>
+        <span class="hljs-comment">//获取通道并且绑定端⼝</span>
+        ServerSocket socket = serverSocketChannel.socket();
+        socket.bind(<span class="hljs-keyword">new</span> InetSocketAddress(<span class="hljs-number">6677</span>));
+        <span class="hljs-comment">//注册感兴趣的事件</span>
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        <span class="hljs-keyword">return</span> selector;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">listen</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        Selector selector = <span class="hljs-keyword">this</span>.getSelector();
+        <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
+            selector.select(); <span class="hljs-comment">//该⽅法会阻塞，直到⾄少有⼀个事件的发⽣</span>
+            Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();
+            Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();
+            <span class="hljs-keyword">while</span> (iterator.hasNext()) &#123;
+                SelectionKey selectionKey = iterator.next();
+                process(selectionKey, selector);
+                iterator.remove();
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">process</span><span class="hljs-params">(SelectionKey key, Selector selector)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-keyword">if</span> (key.isAcceptable()) &#123; <span class="hljs-comment">//新连接请求</span>
+            ServerSocketChannel server = (ServerSocketChannel) key.channel();
+            SocketChannel channel = server.accept();
+            channel.configureBlocking(<span class="hljs-keyword">false</span>); <span class="hljs-comment">//⾮阻塞</span>
+            channel.register(selector, SelectionKey.OP_READ);
+        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (key.isReadable()) &#123; <span class="hljs-comment">//读数据</span>
+            SocketChannel channel = (SocketChannel) key.channel();
+            ByteBuffer byteBuffer = ByteBuffer.allocate(<span class="hljs-number">1024</span>);
+            channel.read(byteBuffer);
+            System.out.println(<span class="hljs-string">&quot;form 客户端 &quot;</span> + <span class="hljs-keyword">new</span> String(byteBuffer.array(),
+                    <span class="hljs-number">0</span>, byteBuffer.position()));
+        &#125;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-keyword">new</span> SelectorDemo().listen();
+    &#125;
+&#125;</code></pre>
+
+<h4 id="AIO模型"><a href="#AIO模型" class="headerlink" title="AIO模型"></a>AIO模型</h4><p>在NIO中，Selector多路复⽤器在做轮询时，如果没有事件发⽣，也会进⾏阻塞，如何能把这个阻塞也优化掉呢？那么AIO就在这样的背景下诞⽣了。</p>
+<p>AIO是asynchronous I/O的简称，是异步IO，该异步IO是需要依赖于操作系统底层的异步IO实现。</p>
+<p>AIO的基本流程是：⽤户线程通过系统调⽤，告知kernel内核启动某个IO操作，⽤户线程返回。kernel内核在整个IO操作（包括数据准备、数据复制）完成后，通知⽤户程序，⽤户执⾏后续的业务操作。</p>
+<blockquote>
+<p>kernel的数据准备</p>
+<p>将数据从⽹络物理设备（⽹卡）读取到内核缓冲区。</p>
+<p>kernel的数据复制</p>
+<p>将数据从内核缓冲区拷⻉到⽤户程序空间的缓冲区。</p>
+</blockquote>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>⽬前AIO模型存在的不⾜：</p>
+<ul>
+<li><p>需要完成事件的注册与传递，这⾥边需要底层操作系统提供⼤量的⽀持，去做⼤量的⼯作。</p>
+</li>
+<li><p>Windows 系统下通过 IOCP 实现了真正的异步 I/O。但是，就⽬前的业界形式来说，Windows 系统，很少作为百万级以上或者说⾼并发应⽤的服务器操作系统来使⽤。</p>
+</li>
+<li><p>⽽在 Linux 系统下，异步IO模型在2.6版本才引⼊，⽬前并不完善。所以，这也是在 Linux 下，实现⾼并发⽹络编程时都是以 NIO 多路复⽤模型模式为主。</p>
+</li>
+</ul>
+<h3 id="Reactor线程模型"><a href="#Reactor线程模型" class="headerlink" title="Reactor线程模型"></a>Reactor线程模型</h3><p>Reactor线程模型不是Java专属，也不是Netty专属，它其实是⼀种并发编程模型，是⼀种思想，具有指导意义。⽐如，Netty就是结合了NIO的特点，应⽤了Reactor线程模型所实现的。</p>
+<p>Reactor模型中定义的三种⻆⾊：</p>
+<ul>
+<li><p>Reactor：负责监听和分配事件，将I/O事件分派给对应的Handler。新的事件包含连接建⽴就绪、读就绪、写就绪等。</p>
+</li>
+<li><p>Acceptor：处理客户端新连接，并分派请求到处理器链中。</p>
+</li>
+<li><p>Handler：将⾃身与事件绑定，执⾏⾮阻塞读/写任务，完成channel的读⼊，完成处理业务逻辑后，负责将结果写出channel。</p>
+</li>
+</ul>
+<p>常⻅的Reactor线程模型有三种，如下：</p>
+<ul>
+<li><p>Reactor单线程模型 </p>
+</li>
+<li><p>Reactor多线程模型</p>
+</li>
+<li><p>主从Reactor多线程模型</p>
+</li>
+</ul>
+<h4 id="单Reactor单线程模型"><a href="#单Reactor单线程模型" class="headerlink" title="单Reactor单线程模型"></a>单Reactor单线程模型</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li><p>Reactor充当多路复⽤器⻆⾊，监听多路连接的请求，由单线程完成</p>
+</li>
+<li><p>Reactor收到客户端发来的请求时，如果是新建连接通过Acceptor完成，其他的请求由Handler完成。</p>
+</li>
+<li><p>Handler完成业务逻辑的处理，基本的流程是：Read –&gt; 业务处理 –&gt; Send 。</p>
+</li>
+</ul>
+<p>这种模型的优缺点：</p>
+<ul>
+<li><p>优点</p>
+<ul>
+<li>结构简单，由单线程完成，没有多线程、进程通信等问题。</li>
+<li>适合⽤在⼀些业务逻辑⽐较简单、对于性能要求不⾼的应⽤场景。</li>
+</ul>
+</li>
+<li><p>缺点</p>
+<ul>
+<li>由于是单线程操作，不能充分发挥多核CPU的性能。</li>
+<li>当Reactor线程负载过重之后，处理速度将变慢，这会导致⼤量客户端连接超时，超时之后往往会进⾏重发，这更加重Reactor线程的负载，最终会导致⼤量消息积压和处理超时，成为系统的性能瓶颈。</li>
+<li>可靠性差，如果该线程进⼊死循环或意外终⽌，就会导致整个通信系统不可⽤，容易造成单点故障。</li>
+</ul>
+</li>
+</ul>
+<h4 id="单Reactor多线程模型"><a href="#单Reactor多线程模型" class="headerlink" title="单Reactor多线程模型"></a>单Reactor多线程模型</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>说明：</p>
+<ul>
+<li><p>在Reactor多线程模型相⽐较单线程模型⽽⾔，不同点在于，Handler不会处理业务逻辑，只是负责响应⽤户请求，真正的业务逻辑，在另外的线程中完成。</p>
+</li>
+<li><p>这样可以降低Reactor的性能开销，充分利⽤CPU资源，从⽽更专注的做事件分发⼯作了，提升整个应⽤的吞吐。</p>
+</li>
+</ul>
+<p>但是这个模型存在的问题：</p>
+<ul>
+<li><p>多线程数据共享和访问⽐较复杂。如果⼦线程完成业务处理后，把结果传递给主线程Reactor进⾏发送，就会涉及共享数据的互斥和保护机制。</p>
+</li>
+<li><p>Reactor承担所有事件的监听和响应，只在主线程中运⾏，可能会存在性能问题。例如并发百万客户端连接，或者服务端需要对客户端握⼿进⾏安全认证，但是认证本身⾮常损耗性能。</p>
+</li>
+</ul>
+<p>为了解决性能问题，产⽣了第三种主从Reactor多线程模型。</p>
+<h4 id="主从Reactor多线程模型"><a href="#主从Reactor多线程模型" class="headerlink" title="主从Reactor多线程模型"></a>主从Reactor多线程模型</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>在主从模型中，将Reactor分成2部分：</p>
+<ul>
+<li><p>MainReactor负责监听server socket，⽤来处理⽹络IO连接建⽴操作，将建⽴的socketChannel指定注册给SubReactor。</p>
+</li>
+<li><p>SubReactor主要完成和建⽴起来的socket的数据交互和事件业务处理操作。</p>
+</li>
+</ul>
+<p>该模型的优点：</p>
+<ul>
+<li><p>响应快，不必为单个同步事件所阻塞，虽然Reactor本身依然是同步的。</p>
+</li>
+<li><p>可扩展性强，可以⽅便地通过增加SubReactor实例个数来充分利⽤CPU资源。</p>
+</li>
+<li><p>可复⽤性⾼，Reactor模型本身与具体事件处理逻辑⽆关，具有很⾼的复⽤性。</p>
+</li>
+</ul>
+<h4 id="Netty模型"><a href="#Netty模型" class="headerlink" title="Netty模型"></a>Netty模型</h4><p>Netty模型是基于Reactor模型实现的，对于以上三种模型都有⾮常好的⽀持，也⾮常的灵活，⼀般情况，在服务端会采⽤主从架构模型，基本示意图如下：</p>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>说明：</p>
+<ul>
+<li><p>在Netty模型中，负责处理新连接事件的是BossGroup，负责处理其他事件的是WorkGroup。Group就是线程池的概念。</p>
+</li>
+<li><p>NioEventLoop表示⼀个不断循环的执⾏处理任务的线程，⽤于监听绑定在其上的读/写事件。</p>
+</li>
+<li><p>通过Pipeline（管道）执⾏业务逻辑的处理，Pipeline中会有多个ChannelHandler，真正的业务逻辑是在ChannelHandler中完成的。</p>
+</li>
+</ul>
+<h3 id="Netty核⼼组件"><a href="#Netty核⼼组件" class="headerlink" title="Netty核⼼组件"></a>Netty核⼼组件</h3><h4 id="Channel"><a href="#Channel" class="headerlink" title="Channel"></a>Channel</h4><p>Channel可以理解为是socket连接，在客户端与服务端连接的时候就会建⽴⼀个Channel，它负责基本的IO操作，⽐如：bind()、connect()，read()，write() 等。</p>
+<p>Netty 的 Channel 接⼝所提供的 API，⼤⼤地降低了直接使⽤ Socket 类的复杂性。</p>
+<p>不同协议、不同的阻塞类型的连接都有不同的 Channel 类型与之对应，常⽤的 Channel 类型:</p>
+<ul>
+<li><p>NioSocketChannel，NIO的客户端 TCP Socket 连接。</p>
+</li>
+<li><p>NioServerSocketChannel，NIO的服务器端 TCP Socket 连接。</p>
+</li>
+<li><p>NioDatagramChannel，UDP 连接。</p>
+</li>
+<li><p>NioSctpChannel，客户端 Sctp 连接。</p>
+</li>
+<li><p>NioSctpServerChannel，Sctp 服务器端连接，这些通道涵盖了 UDP 和 TCP ⽹络 IO 以及⽂件IO。</p>
+</li>
+</ul>
+<h4 id="EventLoop、EventLoopGroup"><a href="#EventLoop、EventLoopGroup" class="headerlink" title="EventLoop、EventLoopGroup"></a>EventLoop、EventLoopGroup</h4><p>有了 Channel 连接服务，连接之间可以消息流动。如果服务器发出的消息称作“出站”消息，服务器接受的消息称作“⼊站”消息。那么消息的“出站”/“⼊站”就会产⽣事件（Event）。</p>
+<p>例如：连接已激活；数据读取；⽤户事件；异常事件；打开链接；关闭链接等等。</p>
+<p>有了事件，就需要⼀个机制去监控和协调事件，这个机制（组件）就是EventLoop。 </p>
+<p>在 Netty 中每个 Channel 都会被分配到⼀个 EventLoop。⼀个 EventLoop 可以服务于多个 Channel。每个 EventLoop 会占⽤⼀个 Thread，同时这个 Thread 会处理 EventLoop 上⾯发⽣的所有 IO 操作和事件。</p>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>EventLoopGroup 是⽤来⽣成 EventLoop 的，在前⾯的例⼦中，第⼀⾏代码就是 new NioEventLoopGroup();</p>
+<pre><code class="hljs java"><span class="hljs-comment">// 主线程，不处理任何业务逻辑，只是接收客户的连接请求</span>
+EventLoopGroup boss = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">1</span>);
+<span class="hljs-comment">// ⼯作线程，线程数默认是：cpu*2</span>
+EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();</code></pre>
+
+<p>如果没有指定线程数⼤⼩，默认线程数为：cpu核数*2，源码如下：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">static</span> &#123;
+	DEFAULT_EVENT_LOOP_THREADS = Math.max(<span class="hljs-number">1</span>, SystemPropertyUtil.getInt(
+		<span class="hljs-string">&quot;io.netty.eventLoopThreads&quot;</span>, NettyRuntime.availableProcessors()* <span class="hljs-number">2</span>)); <span class="hljs-comment">//可⽤cpu核数 * 2</span>
+	<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
+		logger.debug(<span class="hljs-string">&quot;-Dio.netty.eventLoopThreads: &#123;&#125;&quot;</span>,
+			DEFAULT_EVENT_LOOP_THREADS);
+ 	&#125;
+&#125;</code></pre>
+
+<p>关系为：</p>
+<ul>
+<li><p>⼀个 EventLoopGroup 包含⼀个或者多个 EventLoop;</p>
+</li>
+<li><p>⼀个 EventLoop 在它的⽣命周期内只和⼀个 Thread 绑定;</p>
+</li>
+<li><p>所有由 EventLoop 处理的 I/O 事件都将在它专有的 Thread 上被处理;</p>
+</li>
+<li><p>⼀个 Channel 在它的⽣命周期内只注册于⼀个 EventLoop;</p>
+</li>
+<li><p>⼀个 EventLoop 可能会被分配给⼀个或多个 Channel。</p>
+</li>
+</ul>
+<h4 id="ChannelHandler"><a href="#ChannelHandler" class="headerlink" title="ChannelHandler"></a>ChannelHandler</h4><p>ChannelHandler对使⽤者⽽⾔，可以说是最重要的组件了，因为对于数据的⼊站和出站的业务逻辑的编写都是在ChannelHandler中完成的。</p>
+<p>在前⾯的例⼦中，MyChannelHandler就是实现了channelRead⽅法，获取到客户端传来的数据。</p>
+<p>对于数据的出站和⼊站，有着不同的ChannelHandler类型与之对应：</p>
+<ul>
+<li><p>ChannelInboundHandler ⼊站事件处理器</p>
+</li>
+<li><p>ChannelOutBoundHandler 出站事件处理器</p>
+</li>
+</ul>
+<p>接⼝继承关系如下：</p>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>ChannelHandlerAdapter提供了⼀些⽅法的默认实现，可减少⽤户对于ChannelHandler的编写。</p>
+<blockquote>
+<p>ChannelInboundHandlerAdapter 与 SimpleChannelInboundHandler的区别：</p>
+<ul>
+<li><p>在服务端编写ChannelHandler时继承的是ChannelInboundHandlerAdapter</p>
+</li>
+<li><p>在客户端编写ChannelHandler时继承的是SimpleChannelInboundHandler</p>
+</li>
+<li><p>两者的区别在于，前者不会释放消息数据的引⽤，⽽后者会释放消息数据的引⽤。</p>
+</li>
+</ul>
+</blockquote>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="ChannelPipeline"><a href="#ChannelPipeline" class="headerlink" title="ChannelPipeline"></a>ChannelPipeline</h4><p>在Channel的数据传递过程中，对应着有很多的业务逻辑需要处理，⽐如：编码解码处理、读写操作等，那么对于每种业务逻辑实现都需要有个ChannelHandler完成，也就意味着，⼀个Channel对应着多个ChannelHandler，多个ChannelHandler如何去管理它们，它们的执⾏顺序⼜该是怎么样的，这就需要ChannelPipeline进⾏管理了。</p>
+<p>⼀个Channel包含了⼀个ChannelPipeline，⽽ChannelPipeline中维护了⼀个ChannelHandler的列表。</p>
+<p>ChannelHandler与Channel和ChannelPipeline之间的映射关系，由ChannelHandlerContext进⾏维护。</p>
+<p>它们关系如下：</p>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>ChannelHandler按照加⼊的顺序会组成⼀个双向链表，⼊站事件从链表的head往后传递到最后⼀个ChannelHandler，出站事件从链表的tail向前传递，直到最后⼀个ChannelHandler，两种类型的ChannelHandler相互不会影响。</p>
+<h4 id="Bootstrap"><a href="#Bootstrap" class="headerlink" title="Bootstrap"></a>Bootstrap</h4><p>Bootstrap是引导的意思，它的作⽤是配置整个Netty程序，将各个组件都串起来，最后绑定端⼝、启动Netty服务。</p>
+<p>Netty中提供了2种类型的引导类，⼀种⽤于客户端(Bootstrap)，⽽另⼀种(ServerBootstrap)⽤于服务器。</p>
+<p>它们的区别在于：</p>
+<ul>
+<li>ServerBootstrap 将绑定到⼀个端⼝，因为服务器必须要监听连接，⽽ Bootstrap 则是由想要连接到远程节点的客户端应⽤程序所使⽤的。</li>
+<li>引导⼀个客户端只需要⼀个EventLoopGroup，但是⼀个ServerBootstrap则需要两个。<ul>
+<li>因为服务器需要两组不同的 Channel</li>
+<li>第⼀组将只包含⼀个 ServerChannel，代表服务器⾃身的已绑定到某个本地端⼝的正在监听的套接字。</li>
+<li>第⼆组将包含所有已创建的⽤来处理传⼊客户端连接。</li>
+</ul>
+</li>
+</ul>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic12.png" srcset="/blog/img/loading.gif" class>
+
+<p>与ServerChannel相关联的EventLoopGroup 将分配⼀个负责为传⼊连接请求创建 Channel 的 EventLoop。⼀旦连接被接受，第⼆个 EventLoopGroup 就会给它的 Channel 分配⼀个 EventLoop。</p>
+<h4 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h4><p>Future提供了⼀种在操作完成时通知应⽤程序的⽅式。这个对象可以看作是⼀个异步操作的结果的占位符，它将在未来的某个时刻完成，并提供对其结果的访问。</p>
+<p>JDK 预置了 interface java.util.concurrent.Future，但是其所提供的实现，只允许⼿动检查对应的操作是否已经完成，或者⼀直阻塞直到它完成。这是⾮常繁琐的，所以 Netty 提供了它⾃⼰的实现——ChannelFuture，⽤于在执⾏异步操作的时候使⽤。</p>
+<ul>
+<li><p>ChannelFuture提供了⼏种额外的⽅法，这些⽅法使得我们能够注册⼀个或者多个ChannelFutureListener实例。</p>
+</li>
+<li><p>监听器的回调⽅法operationComplete()，将会在对应的 操作完成时被调⽤ 。然后监听器可以判断该操作是成功地完成了还是出错了。</p>
+</li>
+<li><p>每个 Netty 的出站 I/O 操作都将返回⼀个 ChannelFuture，也就是说，它们都不会阻塞。 所以说，Netty完全是异步和事件驱动的。</p>
+</li>
+</ul>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic13.png" srcset="/blog/img/loading.gif" class>
+
+<p>上图是 serverBootstrap.bind(port) ⽅法底层的逻辑实现。</p>
+<h4 id="关系图"><a href="#关系图" class="headerlink" title="关系图"></a>关系图</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic14.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="详解ByteBuf"><a href="#详解ByteBuf" class="headerlink" title="详解ByteBuf"></a>详解ByteBuf</h3><h4 id="⼯作原理"><a href="#⼯作原理" class="headerlink" title="⼯作原理"></a>⼯作原理</h4><p>Java NIO 提供了ByteBuffer 作为它的字节容器，但是这个类使⽤起来过于复杂，⽽且也有些繁琐。Netty 的 ByteBuffer 替代品是 ByteBuf，⼀个强⼤的实现，既解决了JDK API 的局限性， ⼜为⽹络应⽤程序的开发者提供了更好的API。</p>
+<p>从结构上来说，ByteBuf 由⼀串字节数组构成。数组中每个字节⽤来存放信息。</p>
+<p>ByteBuf 提供了两个索引，⼀个⽤于读取数据，⼀个⽤于写⼊数据。这两个索引通过在字节数组中移动，来定位需要读或者写信息的位置。</p>
+<p>当从 ByteBuf 读取时，它的 readerIndex（读索引）将会根据读取的字节数递增。</p>
+<p>同样，当写 ByteBuf 时，它的 writerIndex（写索引） 也会根据写⼊的字节数进⾏递增。</p>
+<pre><code class="hljs sh">+-------------------+------------------+------------------+
+| discardable bytes | readable bytes | writable bytes |
+| | (CONTENT) | |
++-------------------+------------------+------------------+
+| | | |
+0 &lt;= readerIndex &lt;= writerIndex &lt;= capacity
+<span class="hljs-comment">#discardable bytes -- 可丢弃的字节空间</span>
+<span class="hljs-comment">#readable bytes -- 可读的字节空间</span>
+<span class="hljs-comment">#writable bytes --可写的字节空间</span>
+<span class="hljs-comment">#capacity -- 最⼤的容量</span></code></pre>
+
+<p>如果 readerIndex 超过了 writerIndex 的时候，Netty 会抛出 IndexOutOf-BoundsException 异常。</p>
+<h4 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h4><h5 id="读取操作"><a href="#读取操作" class="headerlink" title="读取操作"></a>读取操作</h5><pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf01</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        <span class="hljs-comment">//构造</span>
+        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">&quot;hello world&quot;</span>,
+                CharsetUtil.UTF_8);
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+        <span class="hljs-keyword">while</span> (byteBuf.isReadable()) &#123; <span class="hljs-comment">//⽅法⼀：内部通过移动readerIndex进⾏读取</span>
+            System.out.println((<span class="hljs-keyword">char</span>) byteBuf.readByte());
+        &#125;
+        <span class="hljs-comment">//⽅法⼆：通过下标直接读取</span>
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; byteBuf.readableBytes(); i++) &#123;
+            System.out.println((<span class="hljs-keyword">char</span>) byteBuf.getByte(i));
+        &#125;
+        <span class="hljs-comment">//⽅法三：转化为byte[]进⾏读取</span>
+        <span class="hljs-keyword">byte</span>[] bytes = byteBuf.array();
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">byte</span> b : bytes) &#123;
+            System.out.println((<span class="hljs-keyword">char</span>) b);
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="写入操作"><a href="#写入操作" class="headerlink" title="写入操作"></a>写入操作</h5><pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf02</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        <span class="hljs-comment">//构造空的字节缓冲区，初始⼤⼩为10，最⼤为20</span>
+        ByteBuf byteBuf = Unpooled.buffer(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>);
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">5</span>; i++) &#123;
+            byteBuf.writeInt(i); <span class="hljs-comment">//写⼊int类型，⼀个int占4个字节</span>
+        &#125;
+        System.out.println(<span class="hljs-string">&quot;ok&quot;</span>);
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+        <span class="hljs-keyword">while</span> (byteBuf.isReadable()) &#123;
+            System.out.println(byteBuf.readInt());
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h5 id="丢弃已读字节"><a href="#丢弃已读字节" class="headerlink" title="丢弃已读字节"></a>丢弃已读字节</h5><pre><code class="hljs sh"><span class="hljs-comment">#通过discardReadBytes()⽅可以将已经读取的数据进⾏丢弃处理，就可以回收已经读取的字节空间</span>
+BEFORE discardReadBytes()
++-------------------+------------------+------------------+
+| discardable bytes | readable bytes | writable bytes |
++-------------------+------------------+------------------+
+| | | |
+0 &lt;= readerIndex &lt;= writerIndex &lt;= capacity
+AFTER discardReadBytes()
++------------------+--------------------------------------+
+| readable bytes | writable bytes (got more space) |
++------------------+--------------------------------------+
+| | |
+readerIndex (0) &lt;= writerIndex (decreased)</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf03</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">&quot;hello world&quot;</span>,
+                CharsetUtil.UTF_8);
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+        <span class="hljs-keyword">while</span> (byteBuf.isReadable()) &#123;
+            System.out.println((<span class="hljs-keyword">char</span>) byteBuf.readByte());
+        &#125;
+        byteBuf.discardReadBytes(); <span class="hljs-comment">//丢弃已读的字节空间</span>
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+    &#125;
+&#125;</code></pre>
+
+<h5 id="clear"><a href="#clear" class="headerlink" title="clear()"></a>clear()</h5><pre><code class="hljs sh"><span class="hljs-comment">#通过clear() 重置readerIndex 、 writerIndex 为0，需要注意的是，重置并没有删除真正的内容</span>
+BEFORE clear()
++-------------------+------------------+------------------+
+| discardable bytes | readable bytes | writable bytes |
++-------------------+------------------+------------------+
+| | | |
+0 &lt;= readerIndex &lt;= writerIndex &lt;= capacity
+AFTER clear()
++---------------------------------------------------------+
+| writable bytes (got more space) |
++---------------------------------------------------------+
+| |
+0 = readerIndex = writerIndex &lt;= capacity</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.test;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestByteBuf04</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        ByteBuf byteBuf = Unpooled.copiedBuffer(<span class="hljs-string">&quot;hello world&quot;</span>,
+                CharsetUtil.UTF_8);
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+        byteBuf.clear(); <span class="hljs-comment">//重置readerIndex 、 writerIndex 为0</span>
+        System.out.println(<span class="hljs-string">&quot;byteBuf的容量为：&quot;</span> + byteBuf.capacity());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可读容量为：&quot;</span> + byteBuf.readableBytes());
+        System.out.println(<span class="hljs-string">&quot;byteBuf的可写容量为：&quot;</span> + byteBuf.writableBytes());
+    &#125;
+&#125;</code></pre>
+
+<h4 id="ByteBuf-使⽤模式"><a href="#ByteBuf-使⽤模式" class="headerlink" title="ByteBuf 使⽤模式"></a>ByteBuf 使⽤模式</h4><p>根据存放缓冲区的不同分为三类：</p>
+<ul>
+<li><p>堆缓冲区（<strong>HeapByteBuf</strong>），内存的分配和回收速度⽐较快，可以被JVM⾃动回收，缺点是，如果进⾏socket的IO读写，需要额外做⼀次内存复制，将堆内存对应的缓冲区复制到内核Channel中，性能会有⼀定程度的下降。</p>
+<p>由于在堆上被 JVM 管理，在不被使⽤时可以快速释放。可以通过 ByteBuf.array() 来获取 byte[] 数据。</p>
+</li>
+<li><p>直接缓冲区（<strong>DirectByteBuf</strong>），⾮堆内存，它在对外进⾏内存分配，相⽐堆内存，它的分配和回收速度会慢⼀些，但是将它写⼊或从Socket Channel中读取时，由于减少了⼀次内存拷⻉，速度⽐堆内存块。</p>
+</li>
+<li><p>复合缓冲区，顾名思义就是将上述两类缓冲区聚合在⼀起。Netty 提供了⼀个 CompsiteByteBuf，可以将堆缓冲区和直接缓冲区的数据放在⼀起，让使⽤更加⽅便。</p>
+</li>
+</ul>
+<pre><code class="hljs java"><span class="hljs-comment">//默认使⽤的是DirectByteBuf，如果需要使⽤HeapByteBuf模式，则需要进⾏系统参数的设置</span>
+System.setProperty(<span class="hljs-string">&quot;io.netty.noUnsafe&quot;</span>, <span class="hljs-string">&quot;true&quot;</span>); <span class="hljs-comment">//netty中IO操作都是基于Unsafe完</span>
+成的
+<span class="hljs-comment">//ByteBuf 的分配要设置为⾮池化，否则不能切换到堆缓冲器模式</span>
+serverBootstrap.childOption(ChannelOption.ALLOCATOR,
+UnpooledByteBufAllocator.DEFAULT);</code></pre>
+
+<h4 id="ByteBuf-的分配"><a href="#ByteBuf-的分配" class="headerlink" title="ByteBuf 的分配"></a>ByteBuf 的分配</h4><p>Netty 提供了两种 ByteBufAllocator 的实现，分别是：</p>
+<ul>
+<li><p><strong>PooledByteBufAllocator</strong>，实现了 ByteBuf 的对象的池化，提⾼性能减少并最⼤限度地减少内存碎⽚。</p>
+</li>
+<li><p><strong>UnpooledByteBufAllocator</strong>，没有实现对象的池化，每次会⽣成新的对象实例。</p>
+</li>
+</ul>
+<pre><code class="hljs java"><span class="hljs-comment">//通过ChannelHandlerContext获取ByteBufAllocator实例</span>
+ctx.alloc();
+<span class="hljs-comment">//通过channel也可以获取</span>
+channel.alloc();
+<span class="hljs-comment">//Netty默认使⽤了PooledByteBufAllocator</span>
+<span class="hljs-comment">//可以在引导类中设置⾮池化模式</span>
+serverBootstrap.childOption(ChannelOption.ALLOCATOR,
+UnpooledByteBufAllocator.DEFAULT);
+<span class="hljs-comment">//或通过系统参数设置</span>
+System.setProperty(<span class="hljs-string">&quot;io.netty.allocator.type&quot;</span>, <span class="hljs-string">&quot;pooled&quot;</span>);
+System.setProperty(<span class="hljs-string">&quot;io.netty.allocator.type&quot;</span>, <span class="hljs-string">&quot;unpooled&quot;</span>);</code></pre>
+
+<h4 id="ByteBuf-的释放"><a href="#ByteBuf-的释放" class="headerlink" title="ByteBuf 的释放"></a>ByteBuf 的释放</h4><p>ByteBuf如果采⽤的是堆缓冲区模式的话，可以由GC回收，但是如果采⽤的是直接缓冲区，就不受GC的管理，就得⼿动释放，否则会发⽣内存泄露。</p>
+<p>关于ByteBuf的释放，分为⼿动释放与⾃动释放。</p>
+<h5 id="⼿动释放"><a href="#⼿动释放" class="headerlink" title="⼿动释放"></a>⼿动释放</h5><p>⼿动释放，就是在使⽤完成后，调⽤ReferenceCountUtil.release(byteBuf); 进⾏释放。</p>
+<p>通过release⽅法减去 byteBuf 的使⽤计数，Netty 会⾃动回收 byteBuf 。</p>
+<p>示例：</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 获取客户端发来的数据</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> ctx</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> msg</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> Exception</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead</span><span class="hljs-params">(ChannelHandlerContext ctx, Object msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">        Exception </span>&#123;
+    ByteBuf byteBuf = (ByteBuf) msg;
+    String msgStr = byteBuf.toString(CharsetUtil.UTF_8);
+    System.out.println(<span class="hljs-string">&quot;客户端发来数据：&quot;</span> + msgStr);
+    <span class="hljs-comment">//释放资源</span>
+    ReferenceCountUtil.release(byteBuf);
+&#125;</code></pre>
+
+<p>⼿动释放可以达到⽬的，但是这种⽅式会⽐较繁琐，如果⼀旦忘记释放就可能会造成内存泄露。</p>
+<h5 id="⾃动释放"><a href="#⾃动释放" class="headerlink" title="⾃动释放"></a>⾃动释放</h5><p>⾃动释放有三种⽅式，分别是：⼊站的TailHandler、继承SimpleChannelInboundHandler、HeadHandler的出站释放。</p>
+<p><strong>TailHandler</strong></p>
+<p>Netty的ChannelPipleline的流⽔线的末端是TailHandler，默认情况下如果每个⼊站处理器Handler都把消息往下传，TailHandler会释放掉ReferenceCounted类型的消息。</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * 获取客户端发来的数据</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> ctx</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> msg</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> Exception</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead</span><span class="hljs-params">(ChannelHandlerContext ctx, Object msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">        Exception </span>&#123;
+    ByteBuf byteBuf = (ByteBuf) msg;
+    String msgStr = byteBuf.toString(CharsetUtil.UTF_8);
+    System.out.println(<span class="hljs-string">&quot;客户端发来数据：&quot;</span> + msgStr);
+    <span class="hljs-comment">//向客户端发送数据</span>
+    ctx.writeAndFlush(Unpooled.copiedBuffer(<span class="hljs-string">&quot;ok&quot;</span>, CharsetUtil.UTF_8));
+    ctx.fireChannelRead(msg); <span class="hljs-comment">//将ByteBuf向下传递</span>
+&#125;</code></pre>
+
+<p>在DefaultChannelPipeline中的TailContext内部类会在最后执⾏：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead</span><span class="hljs-params">(ChannelHandlerContext ctx, Object msg)</span> </span>&#123;
+    onUnhandledInboundMessage(ctx, msg);
+&#125;
+
+<span class="hljs-comment">//最后会执⾏</span>
+<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onUnhandledInboundMessage</span><span class="hljs-params">(Object msg)</span> </span>&#123;
+    <span class="hljs-keyword">try</span> &#123;
+        logger.debug(
+                <span class="hljs-string">&quot;Discarded inbound message &#123;&#125; that reached at the tail of the</span>
+<span class="hljs-string">                pipeline.&quot;</span> +
+                <span class="hljs-string">&quot;Please check your pipeline configuration.&quot;</span>, msg);
+    &#125; <span class="hljs-keyword">finally</span> &#123;
+        ReferenceCountUtil.release(msg); <span class="hljs-comment">//释放资源</span>
+    &#125;
+&#125;</code></pre>
+
+<p>需要注意的是，如果没有进⾏向下传递，那么在TailHandler中是不会进⾏释放操作的。</p>
+<p><strong>SimpleChannelInboundHandler</strong></p>
+<p>当ChannelHandler继承了SimpleChannelInboundHandler后，在SimpleChannelInboundHandler的channelRead()⽅法中，将会进⾏资源的释放，我们的业务代码也需要写⼊到channelRead0()中。</p>
+<pre><code class="hljs java"><span class="hljs-comment">//SimpleChannelInboundHandler中的channelRead()</span>
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead</span><span class="hljs-params">(ChannelHandlerContext ctx, Object msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">        Exception </span>&#123;
+    <span class="hljs-keyword">boolean</span> release = <span class="hljs-keyword">true</span>;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-keyword">if</span> (acceptInboundMessage(msg)) &#123;
+            <span class="hljs-meta">@SuppressWarnings(&quot;unchecked&quot;)</span> I imsg = (I) msg;
+            channelRead0(ctx, imsg);
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            release = <span class="hljs-keyword">false</span>;
+            ctx.fireChannelRead(msg);
+        &#125;
+    &#125; <span class="hljs-keyword">finally</span> &#123;
+        <span class="hljs-keyword">if</span> (autoRelease &amp;&amp; release) &#123;
+            ReferenceCountUtil.release(msg); <span class="hljs-comment">//在这⾥释放</span>
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<p>使用</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.client.handler;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyClientHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">ByteBuf</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;接收到服务端的消息：&quot;</span> +
+                msg.toString(CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">// 向服务端发送数据</span>
+        String msg = <span class="hljs-string">&quot;hello&quot;</span>;
+        ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext ctx, Throwable cause)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        cause.printStackTrace();
+        ctx.close();
+    &#125;
+&#125;</code></pre>
+
+<p><strong>HeadHandler</strong></p>
+<p>出站处理流程中，申请分配到的 ByteBuf，通过 HeadHandler 完成⾃动释放。</p>
+<p>出站处理⽤到的 Bytebuf 缓冲区，⼀般是要发送的消息，通常由应⽤所申请。在出站流程开始的时候，通过调⽤ ctx.writeAndFlush(msg)，Bytebuf 缓冲区开始进⼊出站处理的 pipeline 流⽔线 。</p>
+<p>在每⼀个出站Handler中的处理完成后，最后消息会来到出站的最后⼀棒 HeadHandler，再经过⼀轮复杂的调⽤，在flush完成后终将被release掉。</p>
+<p>示例：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.client.handler;
+
+<span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;
+<span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;
+<span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;
+<span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;
+<span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;
+
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyClientHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">ByteBuf</span>&gt; </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span>
+<span class="hljs-function">            Exception </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;接收到服务端的消息：&quot;</span> +
+                msg.toString(CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-comment">// 向服务端发送数据</span>
+        String msg = <span class="hljs-string">&quot;hello&quot;</span>;
+        ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext ctx, Throwable cause)</span></span>
+<span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        cause.printStackTrace();
+        ctx.close();
+    &#125;
+&#125;</code></pre>
+
+<p>执⾏⽅法调⽤链：</p>
+<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic15.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
+<li><p>⼊站处理流程中，如果对原消息不做处理，调⽤ ctx.fireChannelRead(msg) 把原消息往下传，由流⽔线最后⼀棒 TailHandler 完成⾃动释放。</p>
+</li>
+<li><p>如果截断了⼊站处理流⽔线，则可以继承 SimpleChannelInboundHandler ，完成⼊站ByteBuf ⾃动释放。</p>
+</li>
+<li><p>出站处理过程中，申请分配到的 ByteBuf，通过 HeadHandler 完成⾃动释放。</p>
+</li>
+<li><p>⼊站处理中，如果将原消息转化为新的消息并调⽤ ctx.fireChannelRead(newMsg)往下传，那必须把原消息release掉;</p>
+</li>
+<li><p>⼊站处理中，如果已经不再调⽤ ctx.fireChannelRead(msg) 传递任何消息，也没有继承SimpleChannelInboundHandler 完成⾃动释放，那更要把原消息release掉;</p>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Netty/">Netty</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/Netty/">Netty</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/08/08/Netty/Netty%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Netty编解码器</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/08/07/Netty/Netty%E5%85%A5%E9%97%A8/">
+                        <span class="hidden-mobile">Netty入门</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

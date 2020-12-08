@@ -1,0 +1,696 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>MySQL的InnoDB存储引擎分析 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="MySQL的InnoDB存储引擎分析">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-11-21 15:11" pubdate>
+        2020年11月21日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5.8k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      61
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">MySQL的InnoDB存储引擎分析</h1>
+            
+            <div class="markdown-body">
+              <h3 id="MySQL体系架构"><a href="#MySQL体系架构" class="headerlink" title="MySQL体系架构"></a>MySQL体系架构</h3><p>{ asset_img pic1.png }</p>
+<p>整个MySQL Server由以下组成</p>
+<ul>
+<li><p>Connection Pool : 连接池组件</p>
+</li>
+<li><p>Management Services &amp; Utilities : 管理服务和工具组件</p>
+</li>
+<li><p>SQL Interface : SQL接口组件</p>
+</li>
+<li><p>Parser : 查询分析器组件</p>
+</li>
+<li><p>Optimizer : 优化器组件</p>
+</li>
+<li><p>Caches &amp; Buffers : 缓冲池组件</p>
+</li>
+<li><p>Pluggable Storage Engines : 存储引擎</p>
+</li>
+<li><p>File System : 文件系统</p>
+</li>
+</ul>
+<p>1） 连接层最上层是一些客户端和链接服务，包含本地sock 通信和大多数基于客户端/服务端工具实现的类似于TCP/IP的通信。主要完成一些类似于连接处理、授权认证、及相关的安全方案。在该层上引入了线程池的概念，为通过认证安全接入的客户端提供线程。同样在该层上可以实现基于SSL的安全链接。服务器也会为安全接入的每个客户端验证它所具有的操作权限。</p>
+<p>2） 服务层</p>
+<p>第二层架构主要完成大多数的核心服务功能，如SQL接口，并完成缓存的查询，SQL的分析和优化，部分内置函数的执行。所有跨存储引擎的功能也在这一层实现，如 过程、函数等。在该层，服务器会解析查询并创建相应的内部解析树，并对其完成相应的优化如确定表的查询的顺序，是否利用索引等，最后生成相应的执行操作。如果是select语句，服务器还会查询内部的缓存，如果缓存空间足够大，这样在解决大量读操作的环境中能够很好的提升系统的性能。</p>
+<p>3） 引擎层</p>
+<p>存储引擎层， 存储引擎真正的负责了MySQL中数据的存储和提取，服务器通过API和存储引擎进行通信。不同的存储引擎具有不同的功能，这样我们可以根据自己的需要，来选取合适的存储引擎。</p>
+<p>4）存储层</p>
+<p>数据存储层， 主要是将数据存储在文件系统之上，并完成与存储引擎的交互。和其他数据库相比，MySQL有点与众不同，它的架构可以在多种不同场景中应用并发挥良好作用。主要体现在存储引擎上，插件式的存储引擎架构，将查询处理和其他的系统任务以及数据的存储提取分离。这种架构可以根据业务的需求和实际需要选择合适的存储引擎。</p>
+<h3 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h3><h4 id="存储引擎的介绍"><a href="#存储引擎的介绍" class="headerlink" title="存储引擎的介绍"></a>存储引擎的介绍</h4><p>和大多数的数据库不同, MySQL中有一个存储引擎的概念, 针对不同的存储需求可以选择最优的存储引擎。存储引擎就是存储数据，建立索引，更新查询数据等等技术的实现方式 。存储引擎是基于表的，而不是基于库的。所以存储引擎也可被称为表类型。</p>
+<p>MySQL中支持的存储引擎比较多, 可以通过SQL(show engines)查看当前数据库支持的存储引擎 :</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="存储引擎的特点"><a href="#存储引擎的特点" class="headerlink" title="存储引擎的特点"></a>存储引擎的特点</h4><p>MySQL中支持的存储引擎比较多,我们这里重点讲解两种, InnoDB 与 MyISAM 。</p>
+<table>
+<thead>
+<tr>
+<th>特点</th>
+<th>InnoDB</th>
+<th>MyISAM</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>存储限制</td>
+<td>64TB</td>
+<td>256TB</td>
+</tr>
+<tr>
+<td>事务安全</td>
+<td>支持</td>
+<td>-</td>
+</tr>
+<tr>
+<td>锁机制</td>
+<td>行锁（适合高并发）</td>
+<td>表锁</td>
+</tr>
+<tr>
+<td>B树索引</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>哈希索引</td>
+<td>-（具有自适应哈希索引功能）</td>
+<td>-</td>
+</tr>
+<tr>
+<td>全文索引</td>
+<td>支持(5.6版本之后)</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>集群索引</td>
+<td>支持</td>
+<td>-</td>
+</tr>
+<tr>
+<td>数据索引</td>
+<td>支持</td>
+<td>-</td>
+</tr>
+<tr>
+<td>索引缓存</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>数据可压缩</td>
+<td>支持</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>空间使用</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>内存使用</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>批量插入速度</td>
+<td>低</td>
+<td>高</td>
+</tr>
+<tr>
+<td>支持外键</td>
+<td>支持</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<h4 id="InnoDB存储引擎深度剖析"><a href="#InnoDB存储引擎深度剖析" class="headerlink" title="InnoDB存储引擎深度剖析"></a>InnoDB存储引擎深度剖析</h4><h5 id="体系结构"><a href="#体系结构" class="headerlink" title="体系结构"></a>体系结构</h5><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p><strong>缓冲池</strong></p>
+<p>1). 介绍</p>
+<p>InnoDB存储引擎基于磁盘文件存储，访问物理硬盘和在内存中进行访问，速度相差很大，为了尽可能弥补这两者之间的I/O效率的差值，就需要把经常使用的数据加载到缓冲池中，避免每次访问都进行磁盘I/O。 </p>
+<p>在InnoDB的缓冲池中不仅缓存了索引页和数据页，还包含了undo页、插入缓存、自适应哈希索引以及InnoDB的锁信息等等。</p>
+<p>2). 读取</p>
+<p>在数据库中进行读取页的操作时， 首先将磁盘中读取到的页数据存放在缓冲池中， 下一次再读相同的页时， 首先判断缓冲池中是否存在，如果缓冲池被命中，则直接读取数据， 如果没有，则读取磁盘中的页数据。</p>
+<p>3). 更新</p>
+<p>而对于数据库中页的修改操作，则首先修改在缓冲池中的页，然后再以一定的频率刷新到磁盘上，从而保证缓冲池中的数据与磁盘中的数据一致。页从缓冲池刷新回磁盘的操作并不是在每次页发生更新时，都需要触发，出于整体的性能考虑，而是通过checkpoint机制刷新回磁盘。</p>
+<p>4). 参数配置</p>
+<p>查看缓冲池大小</p>
+<pre><code class="hljs mysql">#查看 单位为字节
+show variables like &#39;innodb_buffer_pool_size&#39;;</code></pre>
+
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>设置方式</p>
+<pre><code class="hljs sh">vi /etc/my.conf
+<span class="hljs-comment">#设置</span>
+innodb_buffer_pool_size=268435456</code></pre>
+
+<p>在专用的数据库服务器上，可以将80％的物理内存分配给缓冲池以提高效率。</p>
+<p>在InnoDB引擎中，允许有多个缓冲池实例，根据页的哈希值分配到不同的缓冲池实例中，从而减少数据库内部的资源竞争， 提升并发处理能力。</p>
+<pre><code class="hljs mysql">#缓冲池数量查看
+show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
+
+<p><strong>后台线程</strong></p>
+<ol>
+<li><p>Master Thread</p>
+<p>主要负责将缓冲池中的数据异步刷新到磁盘中, 保持数据的一致性， 还包括脏页（缓冲池中与磁盘文件不一致的数据）的刷新、合并插入缓存、undo页的回收 。</p>
+</li>
+<li><p>IO Thread</p>
+<p>在InnoDB存储引擎中大量使用了AIO来处理IO请求, 这样可以极大地提高数据库的性能，而IO Thread主要负责这些IO请求的回调。</p>
+</li>
+<li><p>Purge Thread</p>
+<p>主要用于回收事务已经提交了的undo log，在事务提交之后，undo log可能不用了，就用它来回收。</p>
+</li>
+<li><p>Pager Cleaner Thread</p>
+<p>新引入的一个用于协助 Master Thread 刷新脏页到磁盘的线程，它可以减轻 Master Thread 的工作压力，减少阻塞。</p>
+</li>
+</ol>
+<p><strong>文件</strong></p>
+<p>1). frm文件</p>
+<p>该文件是用来保存每个表的元数据信息的， 主要包含表结构定义 。</p>
+<p>2). 系统表空间</p>
+<p>系统表空间是InnoDB数据字典，二次写缓冲区，更改缓冲区和undo_log的存储区 。系统表空间可以具有一个或多个数据文件， 默认情况下会在数据存放目录中创建一个名为 ibdata1 表空间数据文件。该文件名称可以通过参数 innodb_data_file_path 指定。</p>
+<p>file_name:file_size[:autoextend[:max:max_file_size]]</p>
+<p>3). 独占表空间</p>
+<p>innodb中设置了参数 innodb_file_per_table 为 1/ON，则会将存储的数据、索引等信息单独存储在一个独占表空间，因此也会产生一个独占表空间文件（ibd）</p>
+<p>4). redo log</p>
+<p>重做日志， 用于恢复提交事务修改的页操作 ， 用来保证事务的原子性和持久性。主要是解决 提交的事务没有执行完成但是数据库崩溃了，当数据库恢复之后，可以完整的恢复数据。在执行操作时，InnoDB存储引擎会首先将重做日志信息放到这个缓冲区 redo log buffer,然后按照不同的策略和频率将buffer中的数据刷新到重做日志中。redo log在磁盘中保存的名称为 ib_logfile0，ib_logfile1。</p>
+<p>5). bin log</p>
+<p>二进制日志，其中记录表结构中的数据变更，包含DDL与DML。</p>
+<p>6). 其他</p>
+<p>错误日志、查询日志、慢查询日志等。</p>
+<h4 id="InnoDB逻辑存储结构"><a href="#InnoDB逻辑存储结构" class="headerlink" title="InnoDB逻辑存储结构"></a>InnoDB逻辑存储结构</h4><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>1). 表空间</p>
+<p>表空间是InnoDB存储引擎逻辑结构的最高层， 大部分数据都存在于共享表空间ibdata1中。如果用户启用了参数 innodb_file_per_table ，则每张表都会有一个表空间（xxx.ibd）,里面存放表中的数据、索引和插入缓存Bitmap页。其他的数据如undo log、插入缓存索引页、系统事务信息、二次写缓存都是在共享表空间中。</p>
+<p>2). 段</p>
+<p>表空间是由各个段组成的， 常见的段有数据段、索引段、回滚段等。InnoDB存储引擎是基于索引组织的，因此数据即是索引，索引即数据。数据段就是B+树的叶子节点， 索引段即为B+树的非叶子节点。InnoDB中对于段的管理，都是引擎自身完成，不需要人为对其控制。</p>
+<p>3). 区</p>
+<p>区是表空间的单元结构，每个区的大小为1M。 默认情况下， InnoDB存储引擎页大小为16K， 即一个区中一共有64个连续的页。4). 页页是组成区的最小单元，页也是InnoDB 存储引擎磁盘管理的最小单元，每个页的大小默认为 16KB。为了保证页的连续性，InnoDB 存储引擎每次从磁盘申请 4-5 个区。</p>
+<p>5). 行</p>
+<p>InnoDB 存储引擎是面向行的（row-oriented)，也就是说数据是按行进行存放的，每个页存放的行记录也是有硬性定义的，最多允许存放 16KB/2-200 行，即 7992 行记录。</p>
+<h4 id="checkpoint"><a href="#checkpoint" class="headerlink" title="checkpoint"></a>checkpoint</h4><p>1). 介绍</p>
+<p>由于日常的DML语句操作时，首先操作的是缓冲池，并没有直接写入到磁盘，这有可能会导致内存中的数据与磁盘中的数据产生不一致的情况，而与磁盘中数据不一致的页我们成为”脏页”。 而checkpoint的工作，就是将内存中的脏页，在<strong>一定条件</strong>下刷新到磁盘。</p>
+<p>如果在从缓冲池将页数据刷新到磁盘的过程中发生宕机，那么数据就无法恢复了；为了避免这种情况的发生，采用了Write Ahead Log(WAL)策略，即当事务提交时，先写重做日志(redo log)，再修改缓冲池数据页，最后通过Checkpoint刷新到磁盘（事务提交会触发checkpoint）。这样正在执行的事务，因为存在日志都可以被恢复，没有日志的事务还没有执行也不会丢失数据。</p>
+<p>2). 作用</p>
+<p>A. 缩短数据恢复时间. </p>
+<p>当数据库发生宕机时，数据库不用重做所有的日志，因为Checkpoint之前的页都已经刷新会磁盘了，故数据库只需要重做Checkpoint之后的日志就好，这样就大大缩短了恢复时间。</p>
+<p>B. 缓冲池不够用时，需要先将脏页数据刷新到磁盘中；</p>
+<p>当缓冲池不够用时, 根据LRU算法溢出最近最少使用的页, 如果此页是脏页,则强制执行Checkpoint, 刷新脏页到磁盘。</p>
+<p>C. 重做日志不可用时，刷新脏页到磁盘；</p>
+<p>redo log大小是固定的, 当前的InnoDB引擎中， 重做日志的设计都是循环使用的，并不是无限增大的。重做日志可以被重用的部分是已经不再需要的， 数据库发生宕机也不需要这部分的重做日志，因此可以被覆盖使用， 如果此时重做日志还需要使用，那么必须强制执行Checkpoint，将缓冲池中的页至少刷新磁盘, checkpoint移动到当前重做日志的位置。</p>
+<p>write pos表示日志当前记录的位置，当ib_logfile_1写满后，会从ib_logfile_0从头开始记录；check point表示将日志记录的修改写进磁盘，完成数据落盘，数据落盘后checkpoint会将日志上的相关记录擦除掉，即write position -&gt;checkpoint 之间的部分是redo log空着的部分，用于记录新的记录，checkpoint-&gt;write position 之间是redo log待落盘的数据修改记录。当write postion追上checkpoint时，得先停下记录，先推动checkpoint向前移动，空出位置记录新的日志。</p>
+<p>3). 分类</p>
+<p>A. Sharp Checkpoint</p>
+<p>Sharp Checkpoint 发生在数据库关闭时，将所有的脏页都刷新回磁盘，这是默认的工作方式，参数：innodb_fast_shutdown=1。</p>
+<p>B. Fuzzy Checkpoint</p>
+<p>在InnoDB存储引擎运行时，使用Fuzzy Checkpoint进行页刷新，只刷新一部分脏页。</p>
+<h4 id="InnoDB关键特性"><a href="#InnoDB关键特性" class="headerlink" title="InnoDB关键特性"></a>InnoDB关键特性</h4><h5 id="插入缓存"><a href="#插入缓存" class="headerlink" title="插入缓存"></a>插入缓存</h5><p>插入缓冲是InnoDB存储引擎关键特性中最令人激动的。</p>
+<p>主键是行唯一的标识符，在应用程序中行记录的插入顺序一般是按照主键递增的顺序进行插入的。因此，插入聚集索引一般是顺序的，不需要磁盘的随机读取。因此，在这样的情况下，插入操作一般很快就能完成。</p>
+<p>但是，不可能每张表上只有一个聚集索引，在更多的情况下，一张表上有多个非聚集的辅助索引（secondary index）。比如，我们还需要按照name这个字段进行查找，并且name这个字段不是唯一的, 这样的情况下产生了一个非聚集的并且不是唯一的索引。在进行插入操作时，数据页的存放还是按主键id的执行顺序存放，但是对于非聚集索引，叶子节点的插入不再是顺序的了。这时就需要离散地访问非聚集索引页，插入性能在这里变低了。然而这并不是这个name字段上索引的错误，因为B+树的特性决定了非聚集索引插入的离散性。</p>
+<p>InnoDB存储引擎开创性地设计了插入缓冲，对于非聚集索引的插入或更新操作，不是每一次直接插入索引页中，而是先判断插入的非聚集索引页是否在缓冲池中。如果在，则直接插入；如果不在，则先放入一个插入缓冲区中，好似欺骗数据库这个非聚集的索引已经插到叶子节点了，然后再以一定的频率执行插入缓冲和非聚集索引叶子节点的合并操作，这时通常能将多个插入合并到一个操作中（因为在一个索引页中），这就大大提高了对非聚集索引执行插入和修改操作的性能。</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="两次写"><a href="#两次写" class="headerlink" title="两次写"></a>两次写</h5><p>当数据库写物理页时，如果宕机了，那么可能会导致物理页的一致性被破坏。</p>
+<p>可能有人会说，重做日志不是可以恢复物理页吗？实际上是的，但是要求是在物理页一致的情况下。也就是说，如果物理页完全是未写之前的状态，则可以用重做日志恢复。如果物理页已经完全写完了，那么也可以用重做日志恢复。但是如果物理页前面2K写了新的数据，但是后面2K还是旧的数据，则种情况下就无法使用重做日志恢复了。</p>
+<p>这里的两次写就是保证了物理页的一致性，使得即使宕机，也可以用重做日志恢复。</p>
+<p>在写物理页时，并不是直接写到真正的物理页上去，而是先写到一个临时页上去，临时页写完后，再写物理页。这样一来：</p>
+<p>A. 如果写临时页时宕机了，物理页还是完全未写之前的状态，可以用重做日志恢复</p>
+<p>B. 如果写物理页时宕机了，则可以使用临时页来恢复物理页</p>
+<p>InnoDB中共享表空间中划了2M的空间，叫做double write，专门存放临时页。</p>
+<p>InnoDB还从内存中划出了2M的缓存空间，叫做double write buffer，专门缓存临时页。每次写物理页时，先写到double write buffer中，然后从double write buffer写到double write上去。最后再从double write buffer写到物理页上去。</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="自适应hash索引"><a href="#自适应hash索引" class="headerlink" title="自适应hash索引"></a>自适应hash索引</h5><p>在InnoDB中默认支持的索引结构为 B+ 树，B+ 树索引可以使用到范围查找，同时是按照顺序的方式对数据进行存储，因此很容易对数据进行排序操作，在联合索引中也可以利用部分索引键进行查询 。而对于Hash索引则只能满足 =，&lt;&gt;,in查询，不能使用范围查询， 而且数据的存储是没有顺序的。</p>
+<p>MySQL 默认使用 B+ 树作为索引，因为 B+ 树有着 Hash 索引没有的优点，那么为什么还需要自适应 Hash 索引呢？</p>
+<p>这是因为B+树的查找次数，取决于B+树的高度，在生产环境中，B+树的高度一般为3-4层，故需要3-4次查询。而 Hash 索引在进行数据检索的时候效率非常高，通常只需要 O(1) 的复杂度，也就是一次就可以完成数据的检索。虽然 Hash 索引的使用场景有很多限制，但是优点也很明显。InnoDB存储引擎会监控对表上各索引页的查询，如果观察到hash索引可以提升速度，则建立hash索引，称之为自适应hash索引（Adaptive Hash Index，AHI）。</p>
+<p>注意，这里的自适应指的是不需要人工来指定，系统会根据情况自动完成。</p>
+<p>什么情况下才会使用自适应 Hash 索引呢？如果某个数据经常被访问，当满足一定条件的时候，就会将这个数据页的地址存放到 Hash 表中。这样下次查询的时候，就可以直接找到这个页面的所在位置。值得注意的是，hash索引只能用于= ，in的查询，对于其他的查询类型，如范围匹配等是不能使用hash索引的。而且自适应 Hash 索引只保存热数据（经常被使用到的数据），并非全表数据。因此数据量并不会很大，因此自适应 Hash 也是存放到缓冲池中，这样也进一步提升了查找效率。</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="异步IO"><a href="#异步IO" class="headerlink" title="异步IO"></a>异步IO</h5><p>为了提高磁盘的操作性能，在InnoDB存储引擎中使用异步非阻塞AIO的方式来操作磁盘。</p>
+<p>与AIO对应的是Sync IO，如果是同步IO操作，则每进行一次IO操作，需要等待此次操作结束后才可以进行接下来的操作。但是如果用户发出的是一条索引扫描的查询，那么这条SQL查询语句可能需要扫描多个索引页，也就是需要进行多次的IO操作。每扫描一个页并等待其完成之后，再进行下一次扫描，这是没有必要的。</p>
+<p>用户可以在发出一个IO请求后立即再发出另一个IO请求，当全部的IO请求发送完毕后，等待所有的IO操作完成，这就是AIO。</p>
+<h5 id="刷新临接页"><a href="#刷新临接页" class="headerlink" title="刷新临接页"></a>刷新临接页</h5><p>InnoDB提供刷新临近页功能：当刷新一脏页时，同时检测所在区(extent)的所有页，如果有脏页则一并刷新，好处则是通过AIO特性合并写IO请求，缺点则是有些页不怎么脏也好被刷新，而且频繁的更改那些不怎么脏的页又很快变成脏页，造成频繁刷新。对于固态磁盘则考虑关闭此功能（将innodb_flush_neighbors设置为0）。</p>
+<h4 id="InnoDB事务"><a href="#InnoDB事务" class="headerlink" title="InnoDB事务"></a>InnoDB事务</h4><h5 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h5><p>redo log</p>
+<p>redo log叫做重做日志，是用来实现事务的持久性。该日志文件由两部分组成：重做日志缓冲（redo log buffer）以及重做日志文件（redo log）,前者是在内存中，后者在磁盘中。当事务提交之后会把所有修改信息都会存到该日志中, 用于在刷新脏页到磁盘时,发生错误时, 进行数据恢复使用。</p>
+<p>例：</p>
+<p>原始数据内容：</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs mysql">start transaction;
+select balance from bank where name&#x3D;&quot;Tom&quot;;
+-- 生成 重做日志 balance&#x3D;8000 
+update bank set balance &#x3D; balance - 2000;
+-- 生成 重做日志 account&#x3D;2000
+update finance set account &#x3D; account + 2000;
+commit;</code></pre>
+
+<p>流程：</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p>mysql 为了提升性能不会把每次的修改都实时同步到磁盘，而是会先存到Buffer Pool(缓冲池)里头，把这个当作缓存来用。然后使用后台线程将缓存池刷新到磁盘。</p>
+<p>当在执行刷新时，宕机或者断电，可能会丢失部分数据。所以引入了redo log来记录已成功提交事务的修改信息，并且在事务提交时会把redo log持久化到磁盘，系统重启之后在读取redo log恢复最新数据。</p>
+<p>简单来说，redo log是用来恢复数据的，用于保障，已提交事务的持久化特性 ;</p>
+<p>undo log</p>
+<p>undo log 叫做回滚日志，用于记录数据被修改前的信息。他正好跟前面所说的重做日志所记录的相反，重做日志记录数据被修改后的信息。undo log主要记录的是数据的逻辑变化，为了在发生错误时回滚之前的操作，需要将之前的操作都记录下来，然后在发生错误时才可以回滚。</p>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>undo log 记录事务修改之前版本的数据信息，因此假如由于系统错误或者rollback操作而回滚的话可以根据undo log的信息来进行回滚到没被修改前的状态。</p>
+<h4 id="存储引擎应用场景"><a href="#存储引擎应用场景" class="headerlink" title="存储引擎应用场景"></a>存储引擎应用场景</h4><p>在选择存储引擎时，应该根据应用系统的特点选择合适的存储引擎。对于复杂的应用系统，还可以根据实际情况选择多种存储引擎进行组合。以下是几种常用的存储引擎的使用环境 。</p>
+<ul>
+<li><p>InnoDB : 是Mysql的默认存储引擎，用于事务处理应用程序，支持外键, 行锁。如果应用对事务的完整性有比较高的要求，在并发条件下要求数据的一致性，数据操作除了插入和查询以外，还包含很多的更新、删除操作，那么InnoDB存储引擎是比较合适的选择。InnoDB存储引擎除了有效的降低由于删除和更新导致的锁定， 还可以确保事务的完整提交和回滚，对于电商系统中的商品（SPU、SKU、分类、品牌）、订单、用户等信息的存储，InnoDB是最合适的选择。</p>
+</li>
+<li><p>MyISAM ： 如果应用是以读操作和插入操作为主，只有很少的更新和删除操作，并且对事务的完整性、并发性要求不是很高，那么选择这个存储引擎是非常合适的。对于电商系统中，系统的操作日志、用户评价、足迹等信息的存储，MyISAM是合适的选择。</p>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/">InnoDB存储引擎</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">数据库架构体系及平滑扩容简述</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/10/26/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/">
+                        <span class="hidden-mobile">幂等性技术架构体系</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,782 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>tomcat体系架构 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="tomcat体系架构">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-30 14:34" pubdate>
+        2020年4月30日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      44
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">tomcat体系架构</h1>
+            
+            <div class="markdown-body">
+              <h2 id="web容器"><a href="#web容器" class="headerlink" title="web容器"></a>web容器</h2><p>Web服务器一般指网站服务器，是指驻留于因特网上某种类型计算机的程序，可以向浏览器等Web客户端提供文档，也可以放置网站文件，提供给用户浏览或下载。</p>
+<img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>Web服务器的特点：</p>
+<ul>
+<li><p>服务器是一种被动程序：只有当Internet上运行其他计算机中的浏览器发出的请求时，服务器才会响应。</p>
+</li>
+<li><p>服务器一般使用HTTP（超文本传输协议）与客户机浏览器进行信息交流，这就是人们常把它们称为HTTP服务器的原因。</p>
+</li>
+<li><p>Web服务器不仅能够存储信息，还能在用户通过Web浏览器提供的信息的基础上运行脚本和程序。</p>
+</li>
+</ul>
+<h2 id="tomcat介绍"><a href="#tomcat介绍" class="headerlink" title="tomcat介绍"></a>tomcat介绍</h2><p>tomcat是一款开源轻量级Web应用服务器,是一款优秀的Servlet容器实现。</p>
+<p>Servlet（Server Applet）是Java Servlet的简称，称为小服务程序或服务连接器，用Java编写的服务器端程序，具有独立于平台和协议的特性，主要功能在于交互式地浏览和生成数据，生成动态Web内容。</p>
+<p>Servlet严格来讲是指Java语言实现的一个接口，一般情况下我们说的Servlet是指任何实现了这个Servlet接口的类。</p>
+<ul>
+<li>实例化并调用init()方法初始化该Servlet，一般Servlet只初始化一次(只有一个对象)</li>
+<li>service()（根据请求方法不同调用doGet() 或者 doPost()，此外还有doHead()、doPut()、doTrace()、doDelete()、doOptions()、destroy())。</li>
+<li>当 Server 不再需要 Servlet 时（一般当 Server 关闭时），Server调用Servlet的destroy()方法。</li>
+</ul>
+<h3 id="tomcat版本对照"><a href="#tomcat版本对照" class="headerlink" title="tomcat版本对照"></a>tomcat版本对照</h3><table>
+<thead>
+<tr>
+<th></th>
+<th><strong>6.X</strong></th>
+<th><strong>7.X</strong></th>
+<th><strong>8.X</strong></th>
+<th><strong>8.5X</strong></th>
+<th><strong>9.X</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>JDK</td>
+<td>&gt;=1.5</td>
+<td>&gt;=1.6</td>
+<td>&gt;=1.7</td>
+<td>&gt;=1.7</td>
+<td>&gt;=1.8</td>
+</tr>
+<tr>
+<td>Servlet</td>
+<td>2.5</td>
+<td>3.0</td>
+<td>3.1</td>
+<td>3.1</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>JSP</td>
+<td>2.1</td>
+<td>2.2</td>
+<td>2.3</td>
+<td>2.3</td>
+<td>2.3</td>
+</tr>
+<tr>
+<td>WebSocket</td>
+<td>N</td>
+<td>1.1</td>
+<td>1.1</td>
+<td>1.1</td>
+<td>1.1</td>
+</tr>
+</tbody></table>
+<p>8.5版本特点：</p>
+<ul>
+<li>支持Servlet3.1</li>
+<li>默认采用NIO，移除BIO</li>
+<li>支持NIO2(AIO)</li>
+<li>支持HTTP/2协议</li>
+<li>默认采用异步日志处理</li>
+</ul>
+<h2 id="tomcat部署方式"><a href="#tomcat部署方式" class="headerlink" title="tomcat部署方式"></a>tomcat部署方式</h2><h3 id="隐式部署"><a href="#隐式部署" class="headerlink" title="隐式部署"></a>隐式部署</h3><p>直接丢文件夹、war、jar到webapps目录，tomcat会根据文件夹名称自动生成虚拟路径，简单，但是需要重启Tomcat服务器，包括要修改端口和访问路径的也需要重启。</p>
+<h3 id="显式部署"><a href="#显式部署" class="headerlink" title="显式部署"></a>显式部署</h3><p>添加context元素</p>
+<p>server.xml中的Host加入一个Context（指定路径和文件地址），例如：</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">path</span>=<span class="hljs-string">&quot;/comet&quot;</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;D:\work_tomcat\ref-comet.war&quot;</span> /&gt;</span></code></pre>
+
+<p>即/comet 这个虚拟路径映射到了D:\work_tomcat\ref-comet目录下(war会解压成文件)，修改完servler.xml需要重启tomcat 服务器。</p>
+<p>创建xml文件</p>
+<p>在conf/Catalina/localhost中创建xml文件，访问路径为文件名，例如：</p>
+<p>在localhost目录下新建demo.xml，内容为：</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;D:\work_tomcat\ref-comet&quot;</span> /&gt;</span></code></pre>
+
+<p>这时不需要指定路径，虚拟目录就是文件名demo，path默认为/demo，添加demo.xml不需要重启 tomcat服务器。</p>
+<p>三种方式比较：</p>
+<ul>
+<li><p>隐式部署：部署速度比较快，需要手动移动Web应用到webapps下，在实际操作中不是很人性化。</p>
+</li>
+<li><p>添加context元素：需要配置两个路径，如果path为空字符串，则为缺省配置，每次修改server.xml文件后都要重新启动Tomcat服务器，重新部署。</p>
+</li>
+<li><p>创建xml文件：服务器后台会自动部署，修改一次后台部署一次，不用重复启动Tomcat服务器，该方式显得更为智能化。</p>
+</li>
+</ul>
+<h2 id="tomcat目录结构"><a href="#tomcat目录结构" class="headerlink" title="tomcat目录结构"></a>tomcat目录结构</h2><h3 id="bin目录"><a href="#bin目录" class="headerlink" title="bin目录"></a>bin目录</h3><ul>
+<li><p>startup文件，主要是检查catalina.bat/sh 执行所需环境，并调用catalina.bat 批处理文件。启动tomcat。</p>
+</li>
+<li><p>catalina文件，真正启动Tomcat文件，可以在里面设置jvm参数。后面性能调优会重点讲</p>
+</li>
+<li><p>shutdown文件，关闭Tomcat</p>
+</li>
+<li><p>version文件：查看当前tomcat的版本号，</p>
+</li>
+<li><p>configtest文件：校验tomcat配置文件server.xml的格式、内容等是否合法、正确。</p>
+</li>
+<li><p>service文件：安装tomcat服务，可用net start tomcat 启动</p>
+</li>
+</ul>
+<p>脚本version.sh、startup.sh、shutdown.sh、configtest.sh都是对catalina.sh的包装，内容大同小异，差异在于功能介绍和调用catalina.sh时的参数不同。</p>
+<h3 id="config目录"><a href="#config目录" class="headerlink" title="config目录"></a>config目录</h3><ul>
+<li><p>web.xml</p>
+<p>Tomcat中所有应用默认的部署描述文件，主要定义了基础的Servlet和MIME映射(mime-mapping 文件类型，其实就是Tomcat处理的文件类型),如果部署的应用中不包含Web.xml，那么Tomcat将使用此文件初始化部署描述，反之，Tomcat会在启动时将默认描述与定义描述配置进行合并。常用于：</p>
+<ul>
+<li><p>加载一些tomcat内置的servlet</p>
+</li>
+<li><p>DefaultServlet默认的,加载静态文件 html,js,jpg等静态文件。</p>
+</li>
+<li><p>JspServlet专门处理jsp。</p>
+</li>
+</ul>
+</li>
+<li><p>context.xml</p>
+<p>用于自定义所有Web应用均需要加载的Context配置，如果Web应用指定了自己的context.xml，那么该文件的配置将被覆盖。</p>
+<p>context.xml与server.xml中配置context的区别：server.xml是不可动态重加载的资源，服务器一旦启动了以后，要修改这个文件，就得重启服务器才能重新加载。而context.xml文件则不然，tomcat服务器会定时去扫描这个文件。一旦发现文件被修改（时间戳改变了），就会自动重新加载这个文件，而不需要重启服务器。</p>
+</li>
+<li><p>catalina.policy</p>
+<p>权限相关Permission ，Tomcat是跑在jvm上的，所以有些默认的权限。</p>
+</li>
+<li><p>tomcat-users.xml</p>
+<p>配置Tomcat的server的manager信息。</p>
+<pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">tomcat-users</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://tomcat.apache.org/xml&quot;</span></span>
+<span class="hljs-tag">              <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span>
+<span class="hljs-tag">              <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://tomcat.apache.org/xml tomcat-users.xsd&quot;</span></span>
+<span class="hljs-tag">              <span class="hljs-attr">version</span>=<span class="hljs-string">&quot;1.0&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">role</span> <span class="hljs-attr">rolename</span>=<span class="hljs-string">&quot;manager-gui&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">user</span> <span class="hljs-attr">username</span>=<span class="hljs-string">&quot;manager&quot;</span> <span class="hljs-attr">password</span>=<span class="hljs-string">&quot;manager&quot;</span> <span class="hljs-attr">roles</span>=<span class="hljs-string">&quot;manager-gui&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">tomcat-users</span>&gt;</span></code></pre>
+</li>
+<li><p>logging.properties</p>
+<p>设置tomcat日志，控制输出或者不输出内容到文件，但不能阻止生成文件，阻止生成文件可以注释掉。</p>
+</li>
+</ul>
+<h3 id="webapps目录"><a href="#webapps目录" class="headerlink" title="webapps目录"></a>webapps目录</h3><p>存放web项目的目录，其中每个文件夹都是一个项目；如果这个目录下已经存在了目录，那么都是tomcat自带的。项目。其中ROOT是一个特殊的项目，在地址栏中没有给出项目目录时，对应的就是ROOT项目。<a target="_blank" rel="noopener" href="http://localhost:8080/examples%EF%BC%8C%E8%BF%9B%E5%85%A5%E7%A4%BA%E4%BE%8B%E9%A1%B9%E7%9B%AE%E3%80%82%E5%85%B6%E4%B8%ADexamples%E5%B0%B1%E6%98%AF%E9%A1%B9%E7%9B%AE%E5%90%8D%EF%BC%8C%E5%8D%B3%E6%96%87%E4%BB%B6%E5%A4%B9%E7%9A%84%E5%90%8D%E5%AD%97%E3%80%82">http://localhost:8080/examples，进入示例项目。其中examples就是项目名，即文件夹的名字。</a></p>
+<h3 id="lib目录"><a href="#lib目录" class="headerlink" title="lib目录"></a>lib目录</h3><p>Tomcat的类库，里面是一大堆jar文件。如果需要添加Tomcat依赖的jar文件，可以把它放到这个目录中，当然也可以把应用依赖的jar文件放到这个目录中，这个目录中的jar所有项目都可以共享，但这样你的应用放到其他Tomcat下时就不能再共享这个目录下的Jar包了，所以建议只把Tomcat需要的Jar包放到这个目录下；</p>
+<h3 id="work目录"><a href="#work目录" class="headerlink" title="work目录"></a>work目录</h3><p>运行时生成的文件，最终运行的文件都在这里。通过webapps中的项目生成的！可以把这个目录下的内容删除，再次运行时会生再次生成work目录。当客户端用户访问一个JSP文件时，Tomcat会通过JSP生成Java文件，然后再编译Java文件生成class文件，生成的java和class文件都会存放到这个目录下。</p>
+<h3 id="temp目录"><a href="#temp目录" class="headerlink" title="temp目录"></a>temp目录</h3><p>存放Tomcat的临时文件，这个目录下的东西在停止Tomcat后会删除！</p>
+<h3 id="logs目录"><a href="#logs目录" class="headerlink" title="logs目录"></a>logs目录</h3><p>这个目录中都是日志文件，记录了Tomcat启动和关闭的信息，如果启动Tomcat时有错误，异常也会记录在日志文件中</p>
+<p>localhost-xxx.log    Web应用的内部程序日志，建议保留</p>
+<p>catalina-xxx.log    控制台日志</p>
+<p>host-manager.xxx.log    Tomcat管理页面中的host-manager的操作日志，建议关闭</p>
+<p>localhost_access_log_xxx.log    用户请求Tomcat的访问日志（这个文件在conf/server.xml里配置），建议关闭</p>
+<h3 id="server-xml文件"><a href="#server-xml文件" class="headerlink" title="server.xml文件"></a>server.xml文件</h3><pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+
+<span class="hljs-comment">&lt;!-- Server代表一个 Tomcat 实例。可以包含一个或多个 Services，其中每个Service都有自己的Engines和Connectors。</span>
+<span class="hljs-comment">       port=&quot;8005&quot;指定一个端口，这个端口负责监听关闭tomcat的请求</span>
+<span class="hljs-comment">  --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Server</span> <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;8005&quot;</span> <span class="hljs-attr">shutdown</span>=<span class="hljs-string">&quot;SHUTDOWN&quot;</span>&gt;</span>
+<span class="hljs-comment">&lt;!-- 监听器 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Listener</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.startup.VersionLoggerListener&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Listener</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.core.AprLifecycleListener&quot;</span> <span class="hljs-attr">SSLEngine</span>=<span class="hljs-string">&quot;on&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Listener</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.core.JreMemoryLeakPreventionListener&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Listener</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.mbeans.GlobalResourcesLifecycleListener&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Listener</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.core.ThreadLocalLeakPreventionListener&quot;</span> /&gt;</span>
+<span class="hljs-comment">&lt;!-- 全局命名资源，定义了UserDatabase的一个JNDI(java命名和目录接口)，通过pathname的文件得到一个用户授权的内存数据库 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">GlobalNamingResources</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Resource</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;UserDatabase&quot;</span> <span class="hljs-attr">auth</span>=<span class="hljs-string">&quot;Container&quot;</span></span>
+<span class="hljs-tag">               <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;org.apache.catalina.UserDatabase&quot;</span></span>
+<span class="hljs-tag">               <span class="hljs-attr">description</span>=<span class="hljs-string">&quot;User database that can be updated and saved&quot;</span></span>
+<span class="hljs-tag">               <span class="hljs-attr">factory</span>=<span class="hljs-string">&quot;org.apache.catalina.users.MemoryUserDatabaseFactory&quot;</span></span>
+<span class="hljs-tag">               <span class="hljs-attr">pathname</span>=<span class="hljs-string">&quot;conf/tomcat-users.xml&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">GlobalNamingResources</span>&gt;</span>
+<span class="hljs-comment">&lt;!-- Service它包含一个&lt;Engine&gt;元素,以及一个或多个&lt;Connector&gt;,这些Connector元素共享用同一个Engine元素 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Service</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;Catalina&quot;</span>&gt;</span>
+<span class="hljs-comment">&lt;!-- </span>
+<span class="hljs-comment">         每个Service可以有一个或多个连接器&lt;Connector&gt;元素，</span>
+<span class="hljs-comment">         第一个Connector元素定义了一个HTTP Connector,它通过8080端口接收HTTP请求;第二个Connector元素定</span>
+<span class="hljs-comment">         义了一个JD Connector,它通过8009端口接收由其它服务器转发过来的请求.</span>
+<span class="hljs-comment">     --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Connector</span> <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;8080&quot;</span> <span class="hljs-attr">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Connector</span> <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;8009&quot;</span> <span class="hljs-attr">protocol</span>=<span class="hljs-string">&quot;AJP/1.3&quot;</span> <span class="hljs-attr">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> /&gt;</span>
+<span class="hljs-comment">&lt;!-- 每个Service只能有一个&lt;Engine&gt;元素 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Engine</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;Catalina&quot;</span> <span class="hljs-attr">defaultHost</span>=<span class="hljs-string">&quot;localhost&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Realm</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.realm.LockOutRealm&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Realm</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.realm.UserDatabaseRealm&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">resourceName</span>=<span class="hljs-string">&quot;UserDatabase&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Realm</span>&gt;</span>
+<span class="hljs-comment">&lt;!-- 默认host配置，有几个域名就配置几个Host，但是这种只能是同一个端口号 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Host</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;localhost&quot;</span>  <span class="hljs-attr">appBase</span>=<span class="hljs-string">&quot;webapps&quot;</span></span>
+<span class="hljs-tag">             <span class="hljs-attr">unpackWARs</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">autoDeploy</span>=<span class="hljs-string">&quot;true&quot;</span>&gt;</span>
+     　　<span class="hljs-comment">&lt;!-- Tomcat的访问日志，默认可以关闭掉它，它会在logs文件里生成localhost_access_log的访问日志 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Valve</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.valves.AccessLogValve&quot;</span> <span class="hljs-attr">directory</span>=<span class="hljs-string">&quot;logs&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">prefix</span>=<span class="hljs-string">&quot;localhost_access_log&quot;</span> <span class="hljs-attr">suffix</span>=<span class="hljs-string">&quot;.txt&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;%h %l %u %t &quot;</span>%<span class="hljs-attr">r</span>&quot; %<span class="hljs-attr">s</span> %<span class="hljs-attr">b</span>&quot; /&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Host</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Host</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;www.hzg.com&quot;</span>  <span class="hljs-attr">appBase</span>=<span class="hljs-string">&quot;webapps&quot;</span></span>
+<span class="hljs-tag">             <span class="hljs-attr">unpackWARs</span>=<span class="hljs-string">&quot;true&quot;</span> <span class="hljs-attr">autoDeploy</span>=<span class="hljs-string">&quot;true&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">path</span>=<span class="hljs-string">&quot;&quot;</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;/myweb1&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">Valve</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.valves.AccessLogValve&quot;</span> <span class="hljs-attr">directory</span>=<span class="hljs-string">&quot;logs&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">prefix</span>=<span class="hljs-string">&quot;hzg_access_log&quot;</span> <span class="hljs-attr">suffix</span>=<span class="hljs-string">&quot;.txt&quot;</span></span>
+<span class="hljs-tag">                <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;%h %l %u %t &quot;</span>%<span class="hljs-attr">r</span>&quot; %<span class="hljs-attr">s</span> %<span class="hljs-attr">b</span>&quot; /&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Host</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Engine</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Service</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Server</span>&gt;</span></code></pre>
+
+<h4 id="server-xml中日志的patter解释"><a href="#server-xml中日志的patter解释" class="headerlink" title="server.xml中日志的patter解释"></a>server.xml中日志的patter解释</h4><p>有效的日志格式模式可以参见下面内容，如下字符串，其对应的信息由指定的响应内容取代：</p>
+<ul>
+<li><p>％a - 远程IP地址</p>
+</li>
+<li><p> ％A - 本地IP地址</p>
+</li>
+<li><p>％b - 发送的字节数，不包括HTTP头，或“ - ”如果没有发送字节</p>
+</li>
+<li><p>％B - 发送的字节数，不包括HTTP头</p>
+</li>
+<li><p>％h - 远程主机名</p>
+</li>
+<li><p>％H - 请求协议</p>
+</li>
+<li><p>％l (小写的L)- 远程逻辑从identd的用户名（总是返回’ - ‘）</p>
+</li>
+<li><p>％m - 请求方法</p>
+</li>
+<li><p>％p - 本地端口</p>
+</li>
+<li><p>％q - 查询字符串（在前面加上一个“？”如果它存在，否则是一个空字符串</p>
+</li>
+<li><p>％r - 第一行的要求</p>
+</li>
+<li><p>％s - 响应的HTTP状态代码</p>
+</li>
+<li><p>％S - 用户会话ID</p>
+</li>
+<li><p>％t - 日期和时间，在通用日志格式</p>
+</li>
+<li><p>％u - 远程用户身份验证</p>
+</li>
+<li><p>％U - 请求的URL路径</p>
+</li>
+<li><p>％v - 本地服务器名</p>
+</li>
+<li><p>％D - 处理请求的时间（以毫秒为单位）</p>
+</li>
+<li><p>％T - 处理请求的时间（以秒为单位）</p>
+</li>
+<li><p>％I （大写的i） - 当前请求的线程名称</p>
+</li>
+</ul>
+<h2 id="tomcat组件及架构"><a href="#tomcat组件及架构" class="headerlink" title="tomcat组件及架构"></a>tomcat组件及架构</h2><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<table>
+<thead>
+<tr>
+<th><strong>组件名称</strong></th>
+<th><strong>说明</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Server</td>
+<td>代表整个tomcat服务器，一个Tomcat只有一个Servcer。</td>
+</tr>
+<tr>
+<td>Service</td>
+<td>Server中的一个逻辑功能层，维护多个Connector和一个Container，一个Server可以包含多个Service。</td>
+</tr>
+<tr>
+<td>Connector</td>
+<td>连接器，监听转换Socket请求，将请求交给Container处理，支持不同协议以及不同的I/O方式，是Service的核心组件之一，一个Service可以有多个Connector。</td>
+</tr>
+<tr>
+<td>Container</td>
+<td>Service的另一个核心组件，按照层级有Engine、Host、Context、Wrapper四种，一个Service只有一个Engine，主要作用是执行业务逻辑。</td>
+</tr>
+<tr>
+<td>Engine</td>
+<td>Servler中层级最高的容器对象</td>
+</tr>
+<tr>
+<td>Host</td>
+<td>Servlet引擎中的虚拟机，主要与域名有关，一个服务器有多个域名是可以使用多个Host</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>用于表示ServletContext,一个ServletContext表示一个独立的Web应用</td>
+</tr>
+<tr>
+<td>Wrapper</td>
+<td>用于表示Web应用中定义的Servlet</td>
+</tr>
+<tr>
+<td>Executor</td>
+<td>Tomcat组件间可以共享的线程池</td>
+</tr>
+</tbody></table>
+<h3 id="请求的运行过程"><a href="#请求的运行过程" class="headerlink" title="请求的运行过程"></a>请求的运行过程</h3><img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h3 id="connector连接器"><a href="#connector连接器" class="headerlink" title="connector连接器"></a>connector连接器</h3><p>Connector链接器封装了底层的网络请求(Socket请求及相应处理),提供了统一的接口，使Container容器与具体的请求协议以及I/O方式解耦。Connector将Socket输入转换成Request对象，交给Container容器进行处理，处理请求后，Container通过Connector提供的Response对象将结果写入输出流。因为无论是Request对象还是Response对象都没有实现Servlet规范对应的接口，Container会将它们进一步分装成ServletRequest和ServletResponse.</p>
+<img src="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>三种传输协议</p>
+<ul>
+<li>HTTP：HTTP/1.1协议</li>
+<li>AJP协议：主要与Apache HTTP Server集成，主要用于处理静态资源，AJP采用二进制传输可读性文本，使用保持持久性的TCP链接，使得AJP占用更少的带宽，并且链接开销要小得多，但是由于AJP采用持久化链接，因此有效的连接数较HTTP要更多。</li>
+<li>HTTP2：HTTP/2.0协议，下一代HTTP协议，目前市场不成熟。</li>
+</ul>
+<p>三种I/O方式</p>
+<ul>
+<li>NIO：采用JDK的NIO类库实现</li>
+<li>NIO2(AIO)：采用JDK1.7的NIO2类库实现</li>
+<li>APR：采用APR(Apache可移植运行库)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th><strong>protocol</strong></th>
+<th><strong>描述</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HTTP/1.1</td>
+<td>默认值</td>
+</tr>
+<tr>
+<td>org.apache.coyote.http11.Http11NioProtocol</td>
+<td>http+Nio的方式</td>
+</tr>
+<tr>
+<td>org.apache.coyote.http11.Http11Nio2Protocol</td>
+<td>http+Nio2的方式（AIO）</td>
+</tr>
+<tr>
+<td>org.apache.coyote.http11.Http11AprProtocol</td>
+<td>http+Apr的方式</td>
+</tr>
+</tbody></table>
+<p>对于I/0选择，要根据业务场景来定，一般高并发场景下，APR和NIO2的性能要优于NIO和BIO，（linux操作系统支持的NIO2由于是一个假的，并没有真正实现AIO，所以一般linux上推荐使用NIO，如果是APR的话，需要安装APR库，而Windows上默认安装了），所以在8.5的版本中默认是NIO。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Tomcat%E8%A7%A3%E6%9E%90/">Tomcat解析</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/tomcat/">tomcat</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/04/30/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">tomcat源码解析</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/04/28/SpringCloud%E6%BA%90%E7%A0%81/actuator%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">Actuator源码解读</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

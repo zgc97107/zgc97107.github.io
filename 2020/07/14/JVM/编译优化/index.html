@@ -1,0 +1,546 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>编译优化 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="编译优化">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-07-14 19:28" pubdate>
+        2020年7月14日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.7k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      18
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">编译优化</h1>
+            
+            <div class="markdown-body">
+              <h3 id="前端编译器"><a href="#前端编译器" class="headerlink" title="前端编译器"></a>前端编译器</h3><p>前端编译器就是将*.java文件编译成*.class文件的过程。</p>
+<p>前端编译器能够做的优化是非常有限的，主要的优化工作在后端编译器完成。</p>
+<h4 id="javac编译过程"><a href="#javac编译过程" class="headerlink" title="javac编译过程"></a>javac编译过程</h4><p>javac的编译过程大致可以分为1个准备过程和3个处理过程，它们分别如下所示。</p>
+<ol>
+<li><p>准备过程：初始化插入式注解处理器。</p>
+</li>
+<li><p>解析与填充符号表过程</p>
+<ul>
+<li>词法、语法分析。将源代码的字符流转变为标记集合，构造出抽象语法树。</li>
+<li>填充符号表。产生符号地址和符号信息。<ul>
+<li>符号表（Symbol Table）是由一组符号地址和符号信息构成的数据结构。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>插入式注解处理器的注解处理过程。</p>
+</li>
+<li><p>分析与字节码生成过程</p>
+<ul>
+<li>标注检查。对语法的静态信息进行检查。</li>
+<li>数据流及控制流分析。对程序动态运行过程进行检查。</li>
+<li>解语法糖。将简化代码编写的语法糖还原为原有的形式。</li>
+<li>字节码生成。将前面各个步骤所生成的信息转化成字节码。</li>
+</ul>
+</li>
+</ol>
+<img src="/blog/2020/07/14/JVM/%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>上图是Javac编译动作的入口是com.sun.tools.javac.main.JavaCompiler类主要执行流程，页反应出javac的执行流程。</p>
+<h3 id="后端编译与优化"><a href="#后端编译与优化" class="headerlink" title="后端编译与优化"></a>后端编译与优化</h3><p>后端编译器是指把Class文件转换成与本地基础设施（硬件指令集、操作系统）相关的二进制机器码的过程。</p>
+<p>后端编译器一般分为即时编译器与提前编译器：</p>
+<ul>
+<li>即时编译器：在HotSpot中有三种编译器<ul>
+<li>客户端编译器”（Client Compiler）</li>
+<li>服务端编译器”（Server Compiler）</li>
+<li>Graal编译器（JDK10中出现）</li>
+</ul>
+</li>
+<li>提前编译器<ul>
+<li>Android中的ART就是提前编译器</li>
+</ul>
+</li>
+</ul>
+<h4 id="编译器的优化"><a href="#编译器的优化" class="headerlink" title="编译器的优化"></a>编译器的优化</h4><p>编译器的目标虽然是做由程序代码翻译为本地机器码的工作，但其实难点并不在于能不能成功翻译出机器码，输出代码优化质量的高低才是决定编译器优秀与否的关键。</p>
+<p>OpenJDK的官方Wiki上，HotSpot虚拟机设计团队列出了一个相对比较全面的、即时编译器中采用的优化技术列表，地址：<a target="_blank" rel="noopener" href="https://wiki.openjdk.java.net/display/HotSpot/PerformanceTacticIndex">https://wiki.openjdk.java.net/display/HotSpot/PerformanceTacticIndex</a></p>
+<img src="/blog/2020/07/14/JVM/%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>一般来讲，最具代表性的优化技术有四种，分别是：</p>
+<ul>
+<li>方法内联</li>
+<li>逃逸分析</li>
+<li>公共子表达式消除</li>
+<li>数组边界检查消除</li>
+</ul>
+<h4 id="方法内联"><a href="#方法内联" class="headerlink" title="方法内联"></a>方法内联</h4><p>方法内联，是指JVM在运行时将调用次数达到一定阈值的方法调用替换为方法体本身，从而消除调用成本，并为接下来进一步的代码性能优化提供基础，是JVM的一个重要优化手段之一。</p>
+<h4 id="逃逸分析"><a href="#逃逸分析" class="headerlink" title="逃逸分析"></a>逃逸分析</h4><p>逃逸分析（Escape Analysis）是目前Java虚拟机中比较前沿的优化技术，它并不是直接优化代码的手段，而是为其他优化措施提供依据的分析技术。</p>
+<p>逃逸分析的基本原理是：</p>
+<ul>
+<li>分析对象动态作用域，当一个对象在方法里面被定义后，它可能被外部方法所引用，例如作为调用参数传递到其他方法中，这种称为方法逃逸；</li>
+<li>甚至还有可能被外部线程访问到，譬如赋值给可以在其他线程中访问的实例变量，这种称为线程逃逸；</li>
+<li>从不逃逸、方法逃逸到线程逃逸，称为对象由低到高的不同逃逸程度。</li>
+</ul>
+<p>如果能证明一个对象不会逃逸到方法或线程之外，或者逃逸程度比较低，则可能为这个对象实例采取不同程度的优化。</p>
+<blockquote>
+<p>从JDK 7时服务端编译器默认开启了这项优化服务。</p>
+</blockquote>
+<p>示例（伪代码）：</p>
+<pre><code class="hljs java"><span class="hljs-comment">// 完全未优化的代码 </span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">test</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x)</span> </span>&#123;
+    <span class="hljs-keyword">int</span> xx = x + <span class="hljs-number">2</span>;
+    Point p = <span class="hljs-keyword">new</span> Point(xx, <span class="hljs-number">42</span>); <span class="hljs-comment">//包含x和y坐标的POJO return p.getX(); </span>
+&#125;
+<span class="hljs-comment">//第一步，将Point的构造函数和getX()方法进行内联优化： </span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">test</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x)</span> </span>&#123; 
+    <span class="hljs-keyword">int</span> xx = x + <span class="hljs-number">2</span>; 
+    Point p = point_memory_alloc(); <span class="hljs-comment">// 在堆中分配P对象的示意方法 </span>
+    p.x = xx; <span class="hljs-comment">// Point构造函数被内联后的样子 </span>
+    p.y = <span class="hljs-number">42</span> 
+    <span class="hljs-keyword">return</span> p.x; <span class="hljs-comment">// Point::getX()被内联后的样子 </span>
+&#125;
+<span class="hljs-comment">//第二步，经过逃逸分析，发现在整个test()方法的范围内Point对象实例不会发生任何程度的逃逸 </span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">test</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x)</span> </span>&#123; 
+    <span class="hljs-keyword">int</span> xx = x + <span class="hljs-number">2</span>; 
+    <span class="hljs-keyword">int</span> px = xx; 
+    <span class="hljs-keyword">int</span> py = <span class="hljs-number">42</span>;
+    <span class="hljs-keyword">return</span> px; 
+&#125;
+<span class="hljs-comment">//第二步的优化，将内存的开销从堆转移到栈，内存空间会随着线程销毁而释放，省去了堆中垃圾回收 等操作 </span>
+<span class="hljs-comment">//第三步，通过数据流分析，发现py的值其实对方法不会造成任何影响，那就可以放心地去做无效代码 消除得到最终优化结果 </span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">test</span><span class="hljs-params">(<span class="hljs-keyword">int</span> x)</span> </span>&#123; 
+    <span class="hljs-keyword">return</span> x + <span class="hljs-number">2</span>;
+&#125;</code></pre>
+
+<h4 id="公共子表达式消除"><a href="#公共子表达式消除" class="headerlink" title="公共子表达式消除"></a>公共子表达式消除</h4><p>公共子表达式消除是一项非常经典的、普遍应用于各种编译器的优化技术。</p>
+<p>它的含义是：如果一个表达式E之前已经被计算过了，并且从先前的计算到现在E中所有变量的值都没有发生变化，那么E的这次出现就称为公共子表达式。</p>
+<p>对于这种表达式，没有必要花时间再对它重新进行计算，只需要直接用前面计算过的表达式结果代替E。 </p>
+<h4 id="数组边界检查消除"><a href="#数组边界检查消除" class="headerlink" title="数组边界检查消除"></a>数组边界检查消除</h4><p>数组边界检查消除是即时编译器中的一项语言相关的经典优化技术。</p>
+<p>如果有一个数组foo[]，在Java语言中访问数组元素foo[i]的时候系统将会自动进行上下界的范围检查，即i必须满足“i&gt;=0&amp;&amp;i&lt;foo.length”的访问条件，否则将抛出一个运行时异常：java.lang.ArrayIndexOutOfBoundsException。</p>
+<p>对于虚拟机的执行子系统来说，每次数组元素的读写都带有一次隐含的条件判定操作，对于拥有大量数组访问的程序代码，这必定是一种性能负担。</p>
+<p>对于编译器而言，根据数据流分析来确定是否越界，如果没有越界，那么执行时就不需要再判断了。</p>
+<p>如果在循环中，本身就是通过循环变量来控制对数组的访问，执行时也就不用再判断了，</p>
+<p>这样就可以把整个数组的上下界检查消除掉，这可以节省很多次的条件判断操作。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/JVM%E8%99%9A%E6%8B%9F%E6%9C%BA/">JVM虚拟机</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E7%BC%96%E8%AF%91%E5%99%A8/">编译器</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/07/16/%E6%9C%AA%E5%88%86%E7%B1%BB/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">设计模式</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/07/14/JVM/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/">
+                        <span class="hidden-mobile">类加载机制</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

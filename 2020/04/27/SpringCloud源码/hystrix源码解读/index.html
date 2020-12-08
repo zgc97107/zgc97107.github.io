@@ -1,0 +1,1181 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Hystrix源码解读 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Hystrix源码解读">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-04-27 22:11" pubdate>
+        2020年4月27日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      71
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Hystrix源码解读</h1>
+            
+            <div class="markdown-body">
+              <h2 id="Hystrix源码"><a href="#Hystrix源码" class="headerlink" title="Hystrix源码"></a>Hystrix源码</h2><p>首先分析下开启Hystrix的注解@EnableCircuitBreaker</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span>
+<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
+<span class="hljs-meta">@Documented</span>
+<span class="hljs-meta">@Inherited</span>
+<span class="hljs-meta">@Import(EnableCircuitBreakerImportSelector.class)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableCircuitBreaker &#123;
+
+&#125;</code></pre>
+
+<p>该注解会引入EnableCircuitBreakerImportSelector类，SpringFactoryImportSelector是它的的父类，该类selectImports()方法通过springboot的SPI机制引入spring.factories中以@EnableCircuitBreaker为key的所有类。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> String[] selectImports(AnnotationMetadata metadata) &#123;
+   <span class="hljs-keyword">if</span> (!isEnabled()) &#123;
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> String[<span class="hljs-number">0</span>];
+   &#125;
+   AnnotationAttributes attributes = AnnotationAttributes.fromMap(
+         metadata.getAnnotationAttributes(<span class="hljs-keyword">this</span>.annotationClass.getName(), <span class="hljs-keyword">true</span>));
+
+   Assert.notNull(attributes, <span class="hljs-string">&quot;No &quot;</span> + getSimpleName() + <span class="hljs-string">&quot; attributes found. Is &quot;</span>
+         + metadata.getClassName() + <span class="hljs-string">&quot; annotated with @&quot;</span> + getSimpleName() + <span class="hljs-string">&quot;?&quot;</span>);
+
+   <span class="hljs-comment">// Find all possible auto configuration classes, filtering duplicates</span>
+   List&lt;String&gt; factories = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;(SpringFactoriesLoader
+         .loadFactoryNames(<span class="hljs-keyword">this</span>.annotationClass, <span class="hljs-keyword">this</span>.beanClassLoader)));
+
+   <span class="hljs-keyword">if</span> (factories.isEmpty() &amp;&amp; !hasDefaultFactory()) &#123;
+      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Annotation @&quot;</span> + getSimpleName()
+            + <span class="hljs-string">&quot; found, but there are no implementations. Did you forget to include a starter?&quot;</span>);
+   &#125;
+
+   <span class="hljs-keyword">if</span> (factories.size() &gt; <span class="hljs-number">1</span>) &#123;
+      <span class="hljs-comment">// there should only ever be one DiscoveryClient, but there might be more than</span>
+      <span class="hljs-comment">// one factory</span>
+      <span class="hljs-keyword">this</span>.log.warn(<span class="hljs-string">&quot;More than one implementation &quot;</span> + <span class="hljs-string">&quot;of @&quot;</span> + getSimpleName()
+            + <span class="hljs-string">&quot; (now relying on @Conditionals to pick one): &quot;</span> + factories);
+   &#125;
+
+   <span class="hljs-keyword">return</span> factories.toArray(<span class="hljs-keyword">new</span> String[factories.size()]);
+&#125;</code></pre>
+
+<p>HystrixCircuitBreakerConfiguration类再上一步中被引入，该类会创建hystrixCommand注解的切面类HystrixCommandAspect。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HystrixCircuitBreakerConfiguration</span> </span>&#123;
+
+   <span class="hljs-meta">@Bean</span>
+   <span class="hljs-function"><span class="hljs-keyword">public</span> HystrixCommandAspect <span class="hljs-title">hystrixCommandAspect</span><span class="hljs-params">()</span> </span>&#123;
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> HystrixCommandAspect();
+   &#125;
+   &#123;...&#125;
+&#125;</code></pre>
+
+<p>HystrixCommandAspect类，会判断类上是否有@HystrixCommand或者@HystrixCollapser注解，如果有就会进入methodsAnnotatedWithHystrixCommand()环绕增强方法。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Around(&quot;hystrixCommandAnnotationPointcut() || hystrixCollapserAnnotationPointcut()&quot;)</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">methodsAnnotatedWithHystrixCommand</span><span class="hljs-params">(<span class="hljs-keyword">final</span> ProceedingJoinPoint joinPoint)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
+    Method method = getMethodFromTarget(joinPoint);
+    Validate.notNull(method, <span class="hljs-string">&quot;failed to get method from joinPoint: %s&quot;</span>, joinPoint);
+    <span class="hljs-keyword">if</span> (method.isAnnotationPresent(HystrixCommand.class) &amp;&amp; method.isAnnotationPresent(HystrixCollapser.class)) &#123;
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;method cannot be annotated with HystrixCommand and HystrixCollapser &quot;</span> +
+                <span class="hljs-string">&quot;annotations at the same time&quot;</span>);
+    &#125;
+    MetaHolderFactory metaHolderFactory = META_HOLDER_FACTORY_MAP.get(HystrixPointcutType.of(method));
+    MetaHolder metaHolder = metaHolderFactory.create(joinPoint);
+    HystrixInvokable invokable = HystrixCommandFactory.getInstance().create(metaHolder);
+    ExecutionType executionType = metaHolder.isCollapserAnnotationPresent() ?
+            metaHolder.getCollapserExecutionType() : metaHolder.getExecutionType();
+
+    Object result;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-keyword">if</span> (!metaHolder.isObservable()) &#123;
+            result = CommandExecutor.execute(invokable, executionType, metaHolder);
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            result = executeObservable(invokable, executionType, metaHolder);
+        &#125;
+    &#125; <span class="hljs-keyword">catch</span> (HystrixBadRequestException e) &#123;
+        <span class="hljs-keyword">throw</span> e.getCause();
+    &#125; <span class="hljs-keyword">catch</span> (HystrixRuntimeException e) &#123;
+        <span class="hljs-keyword">throw</span> hystrixRuntimeExceptionToThrowable(metaHolder, e);
+    &#125;
+    <span class="hljs-keyword">return</span> result;
+&#125;</code></pre>
+
+<p>methodsAnnotatedWithHystrixCommand()方法会调用execute()方法，这里涉及到同步及异步调用。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Object <span class="hljs-title">execute</span><span class="hljs-params">(HystrixInvokable invokable, ExecutionType executionType, MetaHolder metaHolder)</span> <span class="hljs-keyword">throws</span> RuntimeException </span>&#123;
+    Validate.notNull(invokable);
+    Validate.notNull(metaHolder);
+
+    <span class="hljs-keyword">switch</span> (executionType) &#123;
+        <span class="hljs-keyword">case</span> SYNCHRONOUS: &#123;
+            <span class="hljs-keyword">return</span> castToExecutable(invokable, executionType).execute();
+        &#125;
+        <span class="hljs-keyword">case</span> ASYNCHRONOUS: &#123;
+            HystrixExecutable executable = castToExecutable(invokable, executionType);
+            <span class="hljs-keyword">if</span> (metaHolder.hasFallbackMethodCommand()
+                    &amp;&amp; ExecutionType.ASYNCHRONOUS == metaHolder.getFallbackExecutionType()) &#123;
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> FutureDecorator(executable.queue());
+            &#125;
+            <span class="hljs-keyword">return</span> executable.queue();
+        &#125;
+        <span class="hljs-keyword">case</span> OBSERVABLE: &#123;
+            HystrixObservable observable = castToObservable(invokable);
+            <span class="hljs-keyword">return</span> ObservableExecutionMode.EAGER == metaHolder.getObservableExecutionMode() ? observable.observe() : observable.toObservable();
+        &#125;
+        <span class="hljs-keyword">default</span>:
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;unsupported execution type: &quot;</span> + executionType);
+    &#125;
+&#125;</code></pre>
+
+<h3 id="同步调用"><a href="#同步调用" class="headerlink" title="同步调用"></a>同步调用</h3><p>HystrixCommand类中的execute()方法，HystrixCommand类是实现了Hystrix功能的类。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> R <span class="hljs-title">execute</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-keyword">return</span> queue().get();
+    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+        <span class="hljs-keyword">throw</span> Exceptions.sneakyThrow(decomposeException(e));
+    &#125;
+&#125;</code></pre>
+
+<p>queue()</p>
+<pre><code class="hljs java"> <span class="hljs-function"><span class="hljs-keyword">public</span> Future&lt;R&gt; <span class="hljs-title">queue</span><span class="hljs-params">()</span> </span>&#123;
+     <span class="hljs-comment">/*</span>
+<span class="hljs-comment">      * The Future returned by Observable.toBlocking().toFuture() does not implement the</span>
+<span class="hljs-comment">      * interruption of the execution thread when the &quot;mayInterrupt&quot; flag of Future.cancel(boolean) is set to true;</span>
+<span class="hljs-comment">      * thus, to comply with the contract of Future, we must wrap around it.</span>
+<span class="hljs-comment">      */</span>
+     <span class="hljs-keyword">final</span> Future&lt;R&gt; delegate = toObservable().toBlocking().toFuture();
+   
+     <span class="hljs-keyword">final</span> Future&lt;R&gt; f = <span class="hljs-keyword">new</span> Future&lt;R&gt;() &#123;
+
+         <span class="hljs-meta">@Override</span>
+         <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">cancel</span><span class="hljs-params">(<span class="hljs-keyword">boolean</span> mayInterruptIfRunning)</span> </span>&#123;
+             <span class="hljs-keyword">if</span> (delegate.isCancelled()) &#123;
+                 <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+             &#125;
+
+             <span class="hljs-keyword">if</span> (HystrixCommand.<span class="hljs-keyword">this</span>.getProperties().executionIsolationThreadInterruptOnFutureCancel().get()) &#123;
+                 <span class="hljs-comment">/*</span>
+<span class="hljs-comment">                  * The only valid transition here is false -&gt; true. If there are two futures, say f1 and f2, created by this command</span>
+<span class="hljs-comment">                  * (which is super-weird, but has never been prohibited), and calls to f1.cancel(true) and to f2.cancel(false) are</span>
+<span class="hljs-comment">                  * issued by different threads, it&#x27;s unclear about what value would be used by the time mayInterruptOnCancel is checked.</span>
+<span class="hljs-comment">                  * The most consistent way to deal with this scenario is to say that if *any* cancellation is invoked with interruption,</span>
+<span class="hljs-comment">                  * than that interruption request cannot be taken back.</span>
+<span class="hljs-comment">                  */</span>
+                 interruptOnFutureCancel.compareAndSet(<span class="hljs-keyword">false</span>, mayInterruptIfRunning);
+          &#125;
+
+             <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> res = delegate.cancel(interruptOnFutureCancel.get());
+
+             <span class="hljs-keyword">if</span> (!isExecutionComplete() &amp;&amp; interruptOnFutureCancel.get()) &#123;
+                 <span class="hljs-keyword">final</span> Thread t = executionThread.get();
+                 <span class="hljs-keyword">if</span> (t != <span class="hljs-keyword">null</span> &amp;&amp; !t.equals(Thread.currentThread())) &#123;
+                     t.interrupt();
+                 &#125;
+             &#125;
+
+             <span class="hljs-keyword">return</span> res;
+&#125;
+
+         <span class="hljs-meta">@Override</span>
+         <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isCancelled</span><span class="hljs-params">()</span> </span>&#123;
+             <span class="hljs-keyword">return</span> delegate.isCancelled();
+&#125;
+
+         <span class="hljs-meta">@Override</span>
+         <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isDone</span><span class="hljs-params">()</span> </span>&#123;
+             <span class="hljs-keyword">return</span> delegate.isDone();
+&#125;
+
+         <span class="hljs-meta">@Override</span>
+         <span class="hljs-function"><span class="hljs-keyword">public</span> R <span class="hljs-title">get</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> InterruptedException, ExecutionException </span>&#123;
+             <span class="hljs-keyword">return</span> delegate.get();
+         &#125;
+
+         <span class="hljs-meta">@Override</span>
+         <span class="hljs-function"><span class="hljs-keyword">public</span> R <span class="hljs-title">get</span><span class="hljs-params">(<span class="hljs-keyword">long</span> timeout, TimeUnit unit)</span> <span class="hljs-keyword">throws</span> InterruptedException, ExecutionException, TimeoutException </span>&#123;
+             <span class="hljs-keyword">return</span> delegate.get(timeout, unit);
+         &#125;
+       
+     &#125;;
+
+     <span class="hljs-comment">/* special handling of error states that throw immediately */</span>
+     <span class="hljs-keyword">if</span> (f.isDone()) &#123;
+         <span class="hljs-keyword">try</span> &#123;
+             f.get();
+             <span class="hljs-keyword">return</span> f;
+         &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+             Throwable t = decomposeException(e);
+             <span class="hljs-keyword">if</span> (t <span class="hljs-keyword">instanceof</span> HystrixBadRequestException) &#123;
+                 <span class="hljs-keyword">return</span> f;
+             &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (t <span class="hljs-keyword">instanceof</span> HystrixRuntimeException) &#123;
+                 HystrixRuntimeException hre = (HystrixRuntimeException) t;
+                 <span class="hljs-keyword">switch</span> (hre.getFailureType()) &#123;
+      <span class="hljs-keyword">case</span> COMMAND_EXCEPTION:
+      <span class="hljs-keyword">case</span> TIMEOUT:
+         <span class="hljs-comment">// we don&#x27;t throw these types from queue() only from queue().get() as they are execution errors</span>
+         <span class="hljs-keyword">return</span> f;
+      <span class="hljs-keyword">default</span>:
+         <span class="hljs-comment">// these are errors we throw from queue() as they as rejection type errors</span>
+         <span class="hljs-keyword">throw</span> hre;
+      &#125;
+             &#125; <span class="hljs-keyword">else</span> &#123;
+                 <span class="hljs-keyword">throw</span> Exceptions.sneakyThrow(t);
+             &#125;
+         &#125;
+     &#125;
+
+     <span class="hljs-keyword">return</span> f;
+ &#125;</code></pre>
+
+<p>toObservable()方法中使用了RxJava的写法，会定义多个action然后使用defer()方法调用action中的call()方法。这里重点关注applyHystrixSemantics的call()方法。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;R&gt; <span class="hljs-title">toObservable</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">final</span> AbstractCommand&lt;R&gt; _cmd = <span class="hljs-keyword">this</span>;
+
+    <span class="hljs-comment">//doOnCompleted handler already did all of the SUCCESS work</span>
+    <span class="hljs-comment">//doOnError handler already did all of the FAILURE/TIMEOUT/REJECTION/BAD_REQUEST work</span>
+    <span class="hljs-keyword">final</span> Action0 terminateCommandCleanup = <span class="hljs-keyword">new</span> Action0() &#123;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">if</span> (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.TERMINAL)) &#123;
+                handleCommandEnd(<span class="hljs-keyword">false</span>); <span class="hljs-comment">//user code never ran</span>
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.TERMINAL)) &#123;
+                handleCommandEnd(<span class="hljs-keyword">true</span>); <span class="hljs-comment">//user code did run</span>
+            &#125;
+        &#125;
+    &#125;;
+
+    <span class="hljs-comment">//mark the command as CANCELLED and store the latency (in addition to standard cleanup)</span>
+    <span class="hljs-keyword">final</span> Action0 unsubscribeCommandCleanup = <span class="hljs-keyword">new</span> Action0() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">if</span> (_cmd.commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.UNSUBSCRIBED)) &#123;
+                <span class="hljs-keyword">if</span> (!_cmd.executionResult.containsTerminalEvent()) &#123;
+                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                    <span class="hljs-keyword">try</span> &#123;
+                        executionHook.onUnsubscribe(_cmd);
+                    &#125; <span class="hljs-keyword">catch</span> (Throwable hookEx) &#123;
+                        logger.warn(<span class="hljs-string">&quot;Error calling HystrixCommandExecutionHook.onUnsubscribe&quot;</span>, hookEx);
+                    &#125;
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((<span class="hljs-keyword">int</span>) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                &#125;
+                handleCommandEnd(<span class="hljs-keyword">false</span>); <span class="hljs-comment">//user code never ran</span>
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (_cmd.commandState.compareAndSet(CommandState.USER_CODE_EXECUTED, CommandState.UNSUBSCRIBED)) &#123;
+                <span class="hljs-keyword">if</span> (!_cmd.executionResult.containsTerminalEvent()) &#123;
+                    _cmd.eventNotifier.markEvent(HystrixEventType.CANCELLED, _cmd.commandKey);
+                    <span class="hljs-keyword">try</span> &#123;
+                        executionHook.onUnsubscribe(_cmd);
+                    &#125; <span class="hljs-keyword">catch</span> (Throwable hookEx) &#123;
+                        logger.warn(<span class="hljs-string">&quot;Error calling HystrixCommandExecutionHook.onUnsubscribe&quot;</span>, hookEx);
+                    &#125;
+                    _cmd.executionResultAtTimeOfCancellation = _cmd.executionResult
+                            .addEvent((<span class="hljs-keyword">int</span>) (System.currentTimeMillis() - _cmd.commandStartTimestamp), HystrixEventType.CANCELLED);
+                &#125;
+                handleCommandEnd(<span class="hljs-keyword">true</span>); <span class="hljs-comment">//user code did run</span>
+            &#125;
+        &#125;
+    &#125;;
+
+    <span class="hljs-keyword">final</span> Func0&lt;Observable&lt;R&gt;&gt; applyHystrixSemantics = <span class="hljs-keyword">new</span> Func0&lt;Observable&lt;R&gt;&gt;() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;R&gt; <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">if</span> (commandState.get().equals(CommandState.UNSUBSCRIBED)) &#123;
+                <span class="hljs-keyword">return</span> Observable.never();
+            &#125;
+            <span class="hljs-keyword">return</span> applyHystrixSemantics(_cmd);
+        &#125;
+    &#125;;
+
+    <span class="hljs-keyword">final</span> Func1&lt;R, R&gt; wrapWithAllOnNextHooks = <span class="hljs-keyword">new</span> Func1&lt;R, R&gt;() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> R <span class="hljs-title">call</span><span class="hljs-params">(R r)</span> </span>&#123;
+            R afterFirstApplication = r;
+
+            <span class="hljs-keyword">try</span> &#123;
+                afterFirstApplication = executionHook.onComplete(_cmd, r);
+            &#125; <span class="hljs-keyword">catch</span> (Throwable hookEx) &#123;
+                logger.warn(<span class="hljs-string">&quot;Error calling HystrixCommandExecutionHook.onComplete&quot;</span>, hookEx);
+            &#125;
+
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-keyword">return</span> executionHook.onEmit(_cmd, afterFirstApplication);
+            &#125; <span class="hljs-keyword">catch</span> (Throwable hookEx) &#123;
+                logger.warn(<span class="hljs-string">&quot;Error calling HystrixCommandExecutionHook.onEmit&quot;</span>, hookEx);
+                <span class="hljs-keyword">return</span> afterFirstApplication;
+            &#125;
+        &#125;
+    &#125;;
+
+    <span class="hljs-keyword">final</span> Action0 fireOnCompletedHook = <span class="hljs-keyword">new</span> Action0() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">try</span> &#123;
+                executionHook.onSuccess(_cmd);
+            &#125; <span class="hljs-keyword">catch</span> (Throwable hookEx) &#123;
+                logger.warn(<span class="hljs-string">&quot;Error calling HystrixCommandExecutionHook.onSuccess&quot;</span>, hookEx);
+            &#125;
+        &#125;
+    &#125;;
+
+    <span class="hljs-keyword">return</span> Observable.defer(<span class="hljs-keyword">new</span> Func0&lt;Observable&lt;R&gt;&gt;() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;R&gt; <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+             <span class="hljs-comment">/* this is a stateful object so can only be used once */</span>
+            <span class="hljs-keyword">if</span> (!commandState.compareAndSet(CommandState.NOT_STARTED, CommandState.OBSERVABLE_CHAIN_CREATED)) &#123;
+                IllegalStateException ex = <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;This instance can only be executed once. Please instantiate a new instance.&quot;</span>);
+                <span class="hljs-comment">//TODO make a new error type for this</span>
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> HystrixRuntimeException(FailureType.BAD_REQUEST_EXCEPTION, _cmd.getClass(), getLogMessagePrefix() + <span class="hljs-string">&quot; command executed multiple times - this is not permitted.&quot;</span>, ex, <span class="hljs-keyword">null</span>);
+            &#125;
+
+            commandStartTimestamp = System.currentTimeMillis();
+
+            <span class="hljs-keyword">if</span> (properties.requestLogEnabled().get()) &#123;
+                <span class="hljs-comment">// log this command execution regardless of what happened</span>
+                <span class="hljs-keyword">if</span> (currentRequestLog != <span class="hljs-keyword">null</span>) &#123;
+                    currentRequestLog.addExecutedCommand(_cmd);
+                &#125;
+            &#125;
+
+            <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> requestCacheEnabled = isRequestCachingEnabled();
+            <span class="hljs-keyword">final</span> String cacheKey = getCacheKey();
+
+            <span class="hljs-comment">/* try from cache first */</span>
+            <span class="hljs-keyword">if</span> (requestCacheEnabled) &#123;
+                HystrixCommandResponseFromCache&lt;R&gt; fromCache = (HystrixCommandResponseFromCache&lt;R&gt;) requestCache.get(cacheKey);
+                <span class="hljs-keyword">if</span> (fromCache != <span class="hljs-keyword">null</span>) &#123;
+                    isResponseFromCache = <span class="hljs-keyword">true</span>;
+                    <span class="hljs-keyword">return</span> handleRequestCacheHitAndEmitValues(fromCache, _cmd);
+                &#125;
+            &#125;
+
+            Observable&lt;R&gt; hystrixObservable =
+                    Observable.defer(applyHystrixSemantics)
+                            .map(wrapWithAllOnNextHooks);
+
+            Observable&lt;R&gt; afterCache;
+
+            <span class="hljs-comment">// put in cache</span>
+            <span class="hljs-keyword">if</span> (requestCacheEnabled &amp;&amp; cacheKey != <span class="hljs-keyword">null</span>) &#123;
+                <span class="hljs-comment">// wrap it for caching</span>
+                HystrixCachedObservable&lt;R&gt; toCache = HystrixCachedObservable.from(hystrixObservable, _cmd);
+                HystrixCommandResponseFromCache&lt;R&gt; fromCache = (HystrixCommandResponseFromCache&lt;R&gt;) requestCache.putIfAbsent(cacheKey, toCache);
+                <span class="hljs-keyword">if</span> (fromCache != <span class="hljs-keyword">null</span>) &#123;
+                    <span class="hljs-comment">// another thread beat us so we&#x27;ll use the cached value instead</span>
+                    toCache.unsubscribe();
+                    isResponseFromCache = <span class="hljs-keyword">true</span>;
+                    <span class="hljs-keyword">return</span> handleRequestCacheHitAndEmitValues(fromCache, _cmd);
+                &#125; <span class="hljs-keyword">else</span> &#123;
+                    <span class="hljs-comment">// we just created an ObservableCommand so we cast and return it</span>
+                    afterCache = toCache.toObservable();
+                &#125;
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                afterCache = hystrixObservable;
+            &#125;
+
+            <span class="hljs-keyword">return</span> afterCache
+                    .doOnTerminate(terminateCommandCleanup)     <span class="hljs-comment">// perform cleanup once (either on normal terminal state (this line), or unsubscribe (next line))</span>
+                    .doOnUnsubscribe(unsubscribeCommandCleanup) <span class="hljs-comment">// perform cleanup once</span>
+                    .doOnCompleted(fireOnCompletedHook);
+        &#125;
+    &#125;);
+&#125;</code></pre>
+
+<p>call()方法中会调用applyHystrixSemantics()方法，会通过allowRequest()方法来判断是否允许请求，如果是信号量策略，会调用getExecutionSemaphore()方法拿到信号量，再调用tryAcquire()判断是否超过最大请求数，然后执行executeCommandAndObserve()方法。如果不是信号量策略tryAcquire()方法会直接返回true，然后在executeCommandAndObserve()方法进行判断。不允许或者已超过最大请求数都会走到handleShortCircuitViaFallback()降级方法。降级方法的逻辑与正常方法基本一致，此处不在赘述，唯一不同的是，如果降级方法超过了设置的最大请求数，会直接拒绝请求抛出异常，所以hystrix能够接收的请求数为二倍的最大请求数，超过就会直接拒绝。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> Observable&lt;R&gt; <span class="hljs-title">applyHystrixSemantics</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractCommand&lt;R&gt; _cmd)</span> </span>&#123;
+    <span class="hljs-comment">// mark that we&#x27;re starting execution on the ExecutionHook</span>
+    <span class="hljs-comment">// if this hook throws an exception, then a fast-fail occurs with no fallback.  No state is left inconsistent</span>
+    executionHook.onStart(_cmd);
+
+    <span class="hljs-comment">/* determine if we&#x27;re allowed to execute */</span>
+    <span class="hljs-keyword">if</span> (circuitBreaker.allowRequest()) &#123;
+        <span class="hljs-keyword">final</span> TryableSemaphore executionSemaphore = getExecutionSemaphore();
+        <span class="hljs-keyword">final</span> AtomicBoolean semaphoreHasBeenReleased = <span class="hljs-keyword">new</span> AtomicBoolean(<span class="hljs-keyword">false</span>);
+        <span class="hljs-keyword">final</span> Action0 singleSemaphoreRelease = <span class="hljs-keyword">new</span> Action0() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+                <span class="hljs-keyword">if</span> (semaphoreHasBeenReleased.compareAndSet(<span class="hljs-keyword">false</span>, <span class="hljs-keyword">true</span>)) &#123;
+                    executionSemaphore.release();
+                &#125;
+            &#125;
+        &#125;;
+
+        <span class="hljs-keyword">final</span> Action1&lt;Throwable&gt; markExceptionThrown = <span class="hljs-keyword">new</span> Action1&lt;Throwable&gt;() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">(Throwable t)</span> </span>&#123;
+                eventNotifier.markEvent(HystrixEventType.EXCEPTION_THROWN, commandKey);
+            &#125;
+        &#125;;
+
+        <span class="hljs-keyword">if</span> (executionSemaphore.tryAcquire()) &#123;
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-comment">/* used to track userThreadExecutionTime */</span>
+                executionResult = executionResult.setInvocationStartTime(System.currentTimeMillis());
+                <span class="hljs-keyword">return</span> executeCommandAndObserve(_cmd)
+                        .doOnError(markExceptionThrown)
+                        .doOnTerminate(singleSemaphoreRelease)
+                        .doOnUnsubscribe(singleSemaphoreRelease);
+            &#125; <span class="hljs-keyword">catch</span> (RuntimeException e) &#123;
+                <span class="hljs-keyword">return</span> Observable.error(e);
+            &#125;
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-keyword">return</span> handleSemaphoreRejectionViaFallback();
+        &#125;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+        <span class="hljs-keyword">return</span> handleShortCircuitViaFallback();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="判断是否允许请求"><a href="#判断是否允许请求" class="headerlink" title="判断是否允许请求"></a>判断是否允许请求</h3><p>allowRequest()方法，刚方法首先会判断熔断器是否开启，如果开启就会返回false，如果关闭会调用isOpen()方法判断是否要开启熔断器，最后根据isOpen()方法及allowSingleTest()方法的返回值决定是否允许请求。allowSingleTest()方法用于判断本次请求是否允许，即熔断器半开状态。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">allowRequest</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-comment">// 判断熔断器是否开启</span>
+    <span class="hljs-keyword">if</span> (properties.circuitBreakerForceOpen().get()) &#123;
+        <span class="hljs-comment">// properties have asked us to force the circuit open so we will allow NO requests</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+    &#125;
+    <span class="hljs-comment">// 熔断器关闭，继续判断</span>
+    <span class="hljs-keyword">if</span> (properties.circuitBreakerForceClosed().get()) &#123;
+        <span class="hljs-comment">// we still want to allow isOpen() to perform it&#x27;s calculations so we simulate normal behavior</span>
+        isOpen();
+        <span class="hljs-comment">// properties have asked us to ignore errors so we will ignore the results of isOpen and just allow all traffic through</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+    &#125;
+    <span class="hljs-keyword">return</span> !isOpen() || allowSingleTest();
+&#125;</code></pre>
+
+<h4 id="判断是否开启熔断器"><a href="#判断是否开启熔断器" class="headerlink" title="判断是否开启熔断器"></a>判断是否开启熔断器</h4><p>isOpen()方法首先会根据请求数及错误率决定是否开启熔断器，设置熔断器的状态时使用了cas保证线程安全。</p>
+<pre><code class="hljs java">    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isOpen</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">if</span> (circuitOpen.get()) &#123;
+            <span class="hljs-comment">// if we&#x27;re open we immediately return true and don&#x27;t bother attempting to &#x27;close&#x27; ourself as that is left to allowSingleTest and a subsequent successful test to close</span>
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+        &#125;
+
+        <span class="hljs-comment">// we&#x27;re closed, so let&#x27;s see if errors have made us so we should trip the circuit open</span>
+        HealthCounts health = metrics.getHealthCounts();
+
+        <span class="hljs-comment">// check if we are past the statisticalWindowVolumeThreshold</span>
+        <span class="hljs-comment">// 判断请求数</span>
+        <span class="hljs-keyword">if</span> (health.getTotalRequests() &lt; properties.circuitBreakerRequestVolumeThreshold().get()) &#123;
+            <span class="hljs-comment">// we are not past the minimum volume threshold for the statisticalWindow so we&#x27;ll return false immediately and not calculate anything</span>
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+        &#125;
+        <span class="hljs-comment">// 判断错误率</span>
+        <span class="hljs-keyword">if</span> (health.getErrorPercentage() &lt; properties.circuitBreakerErrorThresholdPercentage().get()) &#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-comment">// our failure rate is too high, trip the circuit</span>
+            <span class="hljs-keyword">if</span> (circuitOpen.compareAndSet(<span class="hljs-keyword">false</span>, <span class="hljs-keyword">true</span>)) &#123;
+                <span class="hljs-comment">// if the previousValue was false then we want to set the currentTime</span>
+                circuitOpenedOrLastTestedTime.set(System.currentTimeMillis());
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                <span class="hljs-comment">// How could previousValue be true? If another thread was going through this code at the same time a race-condition could have</span>
+                <span class="hljs-comment">// caused another thread to set it to true already even though we were in the process of doing the same</span>
+                <span class="hljs-comment">// In this case, we know the circuit is open, so let the other thread set the currentTime and report back that the circuit is open</span>
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+            &#125;
+        &#125;
+    &#125;
+
+&#125;</code></pre>
+
+<h4 id="是否允许本次请求（半开状态）"><a href="#是否允许本次请求（半开状态）" class="headerlink" title="是否允许本次请求（半开状态）"></a>是否允许本次请求（半开状态）</h4><p>allowSingleTest()方法用于判断是否允许本次请求，即熔断器半开状态的判断。该方法首先会判断熔断器的状态，即当前时间是否大于熔断器开启时间+熔断器转为半开状态时间。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">allowSingleTest</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">long</span> timeCircuitOpenedOrWasLastTested = circuitOpenedOrLastTestedTime.get();
+    <span class="hljs-comment">// 1) if the circuit is open</span>
+    <span class="hljs-comment">// 2) and it&#x27;s been longer than &#x27;sleepWindow&#x27; since we opened the circuit</span>
+    <span class="hljs-keyword">if</span> (circuitOpen.get() &amp;&amp; System.currentTimeMillis() &gt; timeCircuitOpenedOrWasLastTested + properties.circuitBreakerSleepWindowInMilliseconds().get()) &#123;
+        <span class="hljs-comment">// We push the &#x27;circuitOpenedTime&#x27; ahead by &#x27;sleepWindow&#x27; since we have allowed one request to try.</span>
+        <span class="hljs-comment">// If it succeeds the circuit will be closed, otherwise another singleTest will be allowed at the end of the &#x27;sleepWindow&#x27;.</span>
+        <span class="hljs-keyword">if</span> (circuitOpenedOrLastTestedTime.compareAndSet(timeCircuitOpenedOrWasLastTested, System.currentTimeMillis())) &#123;
+            <span class="hljs-comment">// if this returns true that means we set the time so we&#x27;ll return true to allow the singleTest</span>
+            <span class="hljs-comment">// if it returned false it means another thread raced us and allowed the singleTest before we did</span>
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+        &#125;
+    &#125;
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+&#125;</code></pre>
+
+<h3 id="判断最大请求数"><a href="#判断最大请求数" class="headerlink" title="判断最大请求数"></a>判断最大请求数</h3><pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">tryAcquire</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">int</span> currentCount = count.incrementAndGet();
+    <span class="hljs-keyword">if</span> (currentCount &gt; numberOfPermits.get()) &#123;
+        count.decrementAndGet();
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+    &#125; <span class="hljs-keyword">else</span> &#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
+    &#125;
+&#125;</code></pre>
+
+<h3 id="业务方法的执行"><a href="#业务方法的执行" class="headerlink" title="业务方法的执行"></a>业务方法的执行</h3><p>主要是通过executeCommandAndObserve()方法中注册的匿名内部类完成的，包括超时时间的判断，线程数的判断，还有具体的业务方法执行。</p>
+<h4 id="超时时间及线程数的判断"><a href="#超时时间及线程数的判断" class="headerlink" title="超时时间及线程数的判断"></a>超时时间及线程数的判断</h4><p>executeCommandAndObserve()中创建HystrixObservableTimeoutOperator类，并调用其call()方法，该方法会创建一个TimeListener并设置超时时间，然后调用addTimerListener()方法创建线程。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-keyword">public</span> Subscriber&lt;? <span class="hljs-keyword">super</span> R&gt; call(<span class="hljs-keyword">final</span> Subscriber&lt;? <span class="hljs-keyword">super</span> R&gt; child) &#123;
+    <span class="hljs-keyword">final</span> CompositeSubscription s = <span class="hljs-keyword">new</span> CompositeSubscription();
+    <span class="hljs-comment">// if the child unsubscribes we unsubscribe our parent as well</span>
+    child.add(s);
+
+    <span class="hljs-comment">/*</span>
+<span class="hljs-comment">     * Define the action to perform on timeout outside of the TimerListener to it can capture the HystrixRequestContext</span>
+<span class="hljs-comment">     * of the calling thread which doesn&#x27;t exist on the Timer thread.</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-keyword">final</span> HystrixContextRunnable timeoutRunnable = <span class="hljs-keyword">new</span> HystrixContextRunnable(originalCommand.concurrencyStrategy, <span class="hljs-keyword">new</span> Runnable() &#123;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+            child.onError(<span class="hljs-keyword">new</span> HystrixTimeoutException());
+        &#125;
+    &#125;);
+
+    TimerListener listener = <span class="hljs-keyword">new</span> TimerListener() &#123;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">tick</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-comment">// if we can go from NOT_EXECUTED to TIMED_OUT then we do the timeout codepath</span>
+            <span class="hljs-comment">// otherwise it means we lost a race and the run() execution completed or did not start</span>
+            <span class="hljs-keyword">if</span> (originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.TIMED_OUT)) &#123;
+                <span class="hljs-comment">// report timeout failure</span>
+                originalCommand.eventNotifier.markEvent(HystrixEventType.TIMEOUT, originalCommand.commandKey);
+
+                <span class="hljs-comment">// shut down the original request</span>
+                s.unsubscribe();
+
+                timeoutRunnable.run();
+                <span class="hljs-comment">//if it did not start, then we need to mark a command start for concurrency metrics, and then issue the timeout</span>
+            &#125;
+        &#125;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getIntervalTimeInMilliseconds</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">return</span> originalCommand.properties.executionTimeoutInMilliseconds().get();
+        &#125;
+    &#125;;
+
+    <span class="hljs-keyword">final</span> Reference&lt;TimerListener&gt; tl = HystrixTimer.getInstance().addTimerListener(listener);
+
+    <span class="hljs-comment">// set externally so execute/queue can see this</span>
+    originalCommand.timeoutTimer.set(tl);
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * If this subscriber receives values it means the parent succeeded/completed</span>
+<span class="hljs-comment">     */</span>
+    Subscriber&lt;R&gt; parent = <span class="hljs-keyword">new</span> Subscriber&lt;R&gt;() &#123;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onCompleted</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">if</span> (isNotTimedOut()) &#123;
+                <span class="hljs-comment">// stop timer and pass notification through</span>
+                tl.clear();
+                child.onCompleted();
+            &#125;
+        &#125;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onError</span><span class="hljs-params">(Throwable e)</span> </span>&#123;
+            <span class="hljs-keyword">if</span> (isNotTimedOut()) &#123;
+                <span class="hljs-comment">// stop timer and pass notification through</span>
+                tl.clear();
+                child.onError(e);
+            &#125;
+        &#125;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onNext</span><span class="hljs-params">(R v)</span> </span>&#123;
+            <span class="hljs-keyword">if</span> (isNotTimedOut()) &#123;
+                child.onNext(v);
+            &#125;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">isNotTimedOut</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-comment">// if already marked COMPLETED (by onNext) or succeeds in setting to COMPLETED</span>
+            <span class="hljs-keyword">return</span> originalCommand.isCommandTimedOut.get() == TimedOutStatus.COMPLETED ||
+                    originalCommand.isCommandTimedOut.compareAndSet(TimedOutStatus.NOT_EXECUTED, TimedOutStatus.COMPLETED);
+        &#125;
+
+    &#125;;
+
+    <span class="hljs-comment">// if s is unsubscribed we want to unsubscribe the parent</span>
+    s.add(parent);
+
+    <span class="hljs-keyword">return</span> parent;
+&#125;</code></pre>
+
+<p>addTimerListener()方法主要是获取到配置的线程池然后创建线程。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Reference&lt;TimerListener&gt; <span class="hljs-title">addTimerListener</span><span class="hljs-params">(<span class="hljs-keyword">final</span> TimerListener listener)</span> </span>&#123;
+    startThreadIfNeeded();
+    <span class="hljs-comment">// add the listener</span>
+
+    Runnable r = <span class="hljs-keyword">new</span> Runnable() &#123;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">try</span> &#123;
+                listener.tick();
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                logger.error(<span class="hljs-string">&quot;Failed while ticking TimerListener&quot;</span>, e);
+            &#125;
+        &#125;
+    &#125;;
+
+    ScheduledFuture&lt;?&gt; f = executor.get().getThreadPool().scheduleAtFixedRate(r, listener.getIntervalTimeInMilliseconds(), listener.getIntervalTimeInMilliseconds(), TimeUnit.MILLISECONDS);
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> TimerReference(listener, f);
+&#125;</code></pre>
+
+<h4 id="业务方法的执行-1"><a href="#业务方法的执行-1" class="headerlink" title="业务方法的执行"></a>业务方法的执行</h4><p>executeCommandWithSpecifiedIsolation()方法</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> Observable&lt;R&gt; <span class="hljs-title">executeCommandWithSpecifiedIsolation</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractCommand&lt;R&gt; _cmd)</span> </span>&#123;
+    <span class="hljs-keyword">if</span> (properties.executionIsolationStrategy().get() == ExecutionIsolationStrategy.THREAD) &#123;
+        <span class="hljs-comment">// mark that we are executing in a thread (even if we end up being rejected we still were a THREAD execution and not SEMAPHORE)</span>
+        <span class="hljs-keyword">return</span> Observable.defer(<span class="hljs-keyword">new</span> Func0&lt;Observable&lt;R&gt;&gt;() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;R&gt; <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+                executionResult = executionResult.setExecutionOccurred();
+                <span class="hljs-keyword">if</span> (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) &#123;
+                    <span class="hljs-keyword">return</span> Observable.error(<span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;execution attempted while in state : &quot;</span> + commandState.get().name()));
+                &#125;
+
+                metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.THREAD);
+
+                <span class="hljs-keyword">if</span> (isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT) &#123;
+                    <span class="hljs-comment">// the command timed out in the wrapping thread so we will return immediately</span>
+                    <span class="hljs-comment">// and not increment any of the counters below or other such logic</span>
+                    <span class="hljs-keyword">return</span> Observable.error(<span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;timed out before executing run()&quot;</span>));
+                &#125;
+                <span class="hljs-keyword">if</span> (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.STARTED)) &#123;
+                    <span class="hljs-comment">//we have not been unsubscribed, so should proceed</span>
+                    HystrixCounters.incrementGlobalConcurrentThreads();
+                    threadPool.markThreadExecution();
+                    <span class="hljs-comment">// store the command that is being run</span>
+                    endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                    executionResult = executionResult.setExecutedInThread();
+                    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">                     * If any of these hooks throw an exception, then it appears as if the actual execution threw an error</span>
+<span class="hljs-comment">                     */</span>
+                    <span class="hljs-keyword">try</span> &#123;
+                        executionHook.onThreadStart(_cmd);
+                        executionHook.onRunStart(_cmd);
+                        executionHook.onExecutionStart(_cmd);
+                        <span class="hljs-keyword">return</span> getUserExecutionObservable(_cmd);
+                    &#125; <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
+                        <span class="hljs-keyword">return</span> Observable.error(ex);
+                    &#125;
+                &#125; <span class="hljs-keyword">else</span> &#123;
+                    <span class="hljs-comment">//command has already been unsubscribed, so return immediately</span>
+                    <span class="hljs-keyword">return</span> Observable.error(<span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;unsubscribed before executing run()&quot;</span>));
+                &#125;
+            &#125;
+        &#125;).doOnTerminate(<span class="hljs-keyword">new</span> Action0() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+                <span class="hljs-keyword">if</span> (threadState.compareAndSet(ThreadState.STARTED, ThreadState.TERMINAL)) &#123;
+                    handleThreadEnd(_cmd);
+                &#125;
+                <span class="hljs-keyword">if</span> (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.TERMINAL)) &#123;
+                    <span class="hljs-comment">//if it was never started and received terminal, then no need to clean up (I don&#x27;t think this is possible)</span>
+                &#125;
+                <span class="hljs-comment">//if it was unsubscribed, then other cleanup handled it</span>
+            &#125;
+        &#125;).doOnUnsubscribe(<span class="hljs-keyword">new</span> Action0() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+                <span class="hljs-keyword">if</span> (threadState.compareAndSet(ThreadState.STARTED, ThreadState.UNSUBSCRIBED)) &#123;
+                    handleThreadEnd(_cmd);
+                &#125;
+                <span class="hljs-keyword">if</span> (threadState.compareAndSet(ThreadState.NOT_USING_THREAD, ThreadState.UNSUBSCRIBED)) &#123;
+                    <span class="hljs-comment">//if it was never started and was cancelled, then no need to clean up</span>
+                &#125;
+                <span class="hljs-comment">//if it was terminal, then other cleanup handled it</span>
+            &#125;
+        &#125;).subscribeOn(threadPool.getScheduler(<span class="hljs-keyword">new</span> Func0&lt;Boolean&gt;() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> Boolean <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+                <span class="hljs-keyword">return</span> properties.executionIsolationThreadInterruptOnTimeout().get() &amp;&amp; _cmd.isCommandTimedOut.get() == TimedOutStatus.TIMED_OUT;
+            &#125;
+        &#125;));
+    &#125; <span class="hljs-keyword">else</span> &#123;
+        <span class="hljs-keyword">return</span> Observable.defer(<span class="hljs-keyword">new</span> Func0&lt;Observable&lt;R&gt;&gt;() &#123;
+            <span class="hljs-meta">@Override</span>
+            <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;R&gt; <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+                executionResult = executionResult.setExecutionOccurred();
+                <span class="hljs-keyword">if</span> (!commandState.compareAndSet(CommandState.OBSERVABLE_CHAIN_CREATED, CommandState.USER_CODE_EXECUTED)) &#123;
+                    <span class="hljs-keyword">return</span> Observable.error(<span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;execution attempted while in state : &quot;</span> + commandState.get().name()));
+                &#125;
+
+                metrics.markCommandStart(commandKey, threadPoolKey, ExecutionIsolationStrategy.SEMAPHORE);
+                <span class="hljs-comment">// semaphore isolated</span>
+                <span class="hljs-comment">// store the command that is being run</span>
+                endCurrentThreadExecutingCommand = Hystrix.startCurrentThreadExecutingCommand(getCommandKey());
+                <span class="hljs-keyword">try</span> &#123;
+                    executionHook.onRunStart(_cmd);
+                    executionHook.onExecutionStart(_cmd);
+                    <span class="hljs-keyword">return</span> getUserExecutionObservable(_cmd);  <span class="hljs-comment">//the getUserExecutionObservable method already wraps sync exceptions, so this shouldn&#x27;t throw</span>
+                &#125; <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
+                    <span class="hljs-comment">//If the above hooks throw, then use that as the result of the run method</span>
+                    <span class="hljs-keyword">return</span> Observable.error(ex);
+                &#125;
+            &#125;
+        &#125;);
+    &#125;
+&#125;</code></pre>
+
+<p>getUserExecutionObservable()</p>
+<p>该方法最终会调用到HystrixCommand的getExecutionObservable()方法，该方法会调用到HystrixCommand中run()方法，该方法是比较重要的一个钩子方法。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">final</span> <span class="hljs-keyword">protected</span> Observable&lt;R&gt; <span class="hljs-title">getExecutionObservable</span><span class="hljs-params">()</span> </span>&#123;
+    <span class="hljs-keyword">return</span> Observable.defer(<span class="hljs-keyword">new</span> Func0&lt;Observable&lt;R&gt;&gt;() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;R&gt; <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">try</span> &#123;
+                <span class="hljs-keyword">return</span> Observable.just(run());
+            &#125; <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
+                <span class="hljs-keyword">return</span> Observable.error(ex);
+            &#125;
+        &#125;
+    &#125;).doOnSubscribe(<span class="hljs-keyword">new</span> Action0() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">call</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-comment">// Save thread on which we get subscribed so that we can interrupt it later if needed</span>
+            executionThread.set(Thread.currentThread());
+        &#125;
+    &#125;);
+&#125;</code></pre>
+
+<p>run()方法会调用到GenericCommand的run()方法，该方法最终会通过反射调用到业务方法。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">run</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+    LOGGER.debug(<span class="hljs-string">&quot;execute command: &#123;&#125;&quot;</span>, getCommandKey().name());
+    <span class="hljs-keyword">return</span> process(<span class="hljs-keyword">new</span> Action() &#123;
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-function">Object <span class="hljs-title">execute</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">return</span> getCommandAction().execute(getExecutionType());
+        &#125;
+    &#125;);
+&#125;</code></pre>
+
+
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/SpringCloud%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">SpringCloud源码解析</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/hystrix/">hystrix</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/04/28/SpringCloud%E6%BA%90%E7%A0%81/feign%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Feign源码解读</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/04/27/SpringCloud%E6%BA%90%E7%A0%81/ribbon%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">
+                        <span class="hidden-mobile">Ribbon源码解读</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

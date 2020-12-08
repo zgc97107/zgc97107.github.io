@@ -1,0 +1,659 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Kafka的深入理解 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Kafka的深入理解">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-05-14 22:09" pubdate>
+        2020年5月14日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      16.2k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      167
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Kafka的深入理解</h1>
+            
+            <div class="markdown-body">
+              <h2 id="集群成员间关系"><a href="#集群成员间关系" class="headerlink" title="集群成员间关系"></a>集群成员间关系</h2><img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>Kafka使用zookeeper来维护集群成员的信息。每个broker都有个唯一标识符，这个标识符可以在配置文件里指定，也可以自动生成。在broker启动的时候，它通过创建临时节点把自己的ID注册到zookeeper。Kafka组件订阅Zookeeper的/brokers/ids路径（broker在zookeeper上的注册路径），当有broker加入集群或退出集群时，这些组件就可以获得通知。</p>
+<p>如果启动另一个具有相同ID的broker，会得到一个错误。新broker会试着进行注册，但不会成功，因为zookeeper里已经有一个具有相同ID的broker。</p>
+<p>在broker停机、出现网络分区或长时间垃圾回收停顿时，broker会从Zookeeper上断开连接，此时broker在启动时创建的临时节点会自动从Zookeeper上移除。监听broker列表的Kafka组件会被告知该broker已移除。</p>
+<p>在关闭broker时，它对应的节点也会消失，不过它的ID会继续存在于其他数据结构中。例如，主题的副本列表里就可能包含这些ID。在完全关闭一个broker之后，如果使用相同的ID启动另一个全新的broker，它会立刻加入集群,并拥有与旧broker相同的分区和主题。</p>
+<h2 id="控制器"><a href="#控制器" class="headerlink" title="控制器"></a>控制器</h2><p>控制器其实就是一个broker，只不过它除了具有一般broker的功能之外，还负责分区首领的选举。集群里第一个启动的broker通过在Zookeeper里创建一个临时节点/controuer让自己成为控制器。其他broker在启动时也会尝试创建这个节点，不过它们会收到一个“节点已存在”的异常，然后“意识”到控制器节点已存在，也就是说集群里已经有一个控制器了。其他broker在控制器节点上创建Zookeeperwatch对象，这样它们就可以收到这个节点的变更通知。这种方式可以确保集群里一次只有一个控制器存在。</p>
+<p>如果控制器被关闭或者与Zookeeper断开连接，zookeeper上的临时节点就会消失。集群里的其他broker通过watch对象得到控制器节点消失的通知，它们会尝试让自己成为新的控制器。第一个在Zookeeper里成功创建控制器节点的broker就会成为新的控制器，其他节点会收到“节点已存在”的异常,然后在新的控制器节点上再次创建watch对象。</p>
+<p>当控制器发现一个broker已经离开集群，它就知道，那些失去首领的分区需要一个新首领（这些分区的首领刚好是这个broker）。控制器遍历这些分区，并确定谁应该成为新首领（简单来说就是分区副本列表里的下一个副本），然后向所有包含新首领或现有跟随者的broker发送请求。该请求消息包含了谁是新首领以及谁是分区跟随者的信息。随后，新首领开始处理来自生产者和消费者的请求，而跟随者开始从新首领那里复制消息。</p>
+<p>当控制器发现一个broker加入集群时，它会使用brokerID来检査新加入的broker是否包含现有分区的副本。如果有，控制器就把变更通知发送给新加入的broker和其他broker，新broker上的副本开始从首领那里复制消息。</p>
+<p>简而言之，Kafka使用Zookeeper的临时节点来选举控制器，并在节点加入集群或退出集群时通知控制器。控制器负责在节点加入或离开集群时进行分区首领选举。</p>
+<h2 id="复制-Kafka的核心"><a href="#复制-Kafka的核心" class="headerlink" title="复制-Kafka的核心"></a>复制-Kafka的核心</h2><p>复制功能是Kafka架构的核心。在Kafka的文档里，Kafka把自己描述成“一个分布式的、可分区的、可复制的提交日志服务”。复制之所以这么关键，是因为它可以在个别节点失效时仍能保证Kafka的可用性和持久性。</p>
+<p>Kafka使用主题来组织数据，每个主题被分为若干个分区，每个分区有多个副本。那些副本被保存在broker上，每个broker可以保存成百上千个属于不同主题和分区的副本。</p>
+<h3 id="replication-factor"><a href="#replication-factor" class="headerlink" title="replication-factor"></a>replication-factor</h3><p>用来设置主题的副本数。每个主题可以有多个副本，副本位于集群中不同的broker上，也就是说副本的数量不能超过broker的数量，否则创建主题时会失败。</p>
+<p>比如有两个Broker，replicationFactor设置为2，每个broker都会有所有分区的副本存在，如果设置为1，分区会被均匀分布在Broker。</p>
+<pre><code class="hljs brainfuck"><span class="hljs-comment">kafka</span><span class="hljs-literal">-</span><span class="hljs-comment">topics</span><span class="hljs-string">.</span><span class="hljs-comment">bat</span>--<span class="hljs-comment">zookeeperlocalhost:2181/kafka</span>--<span class="hljs-comment">create</span>--<span class="hljs-comment">topictopicA</span>--<span class="hljs-comment">replication</span><span class="hljs-literal">-</span><span class="hljs-comment">factor2</span>--<span class="hljs-comment">partitions2</span></code></pre>
+
+<h3 id="副本类型"><a href="#副本类型" class="headerlink" title="副本类型"></a>副本类型</h3><ul>
+<li><strong>首领副本</strong>：每个分区都有一个首领副本。为了保证一致性,所有生产者请求和消费者请求都会经过这个副本 ；</li>
+<li><strong>跟随者副本</strong>：首领以外的副本都是跟随者副本。跟随者副本不处理来自客户端的请求，它们唯一的任务就是从首领那里复制消息，保持与首领一致的状态 。如果首领发生崩溃,，其中的一个跟随者会被提升为新首领 。</li>
+<li><strong>优先副本</strong>：如果一个分区有3个副本，且这3个副本的优先级别分别为0、1、2，根据优先副本的概念，0会作为首领副本 。当0节点挂掉时，会启动1节点的跟随者副本作为首领副本。当0节点再次启动后，会自动触发首领选举，让0节点的副本作为此分区的首领副本。不会导致负载不均衡和资源浪费，这就是leader的均衡机制。可以通过auto.leader.rebalance.enabl参数设置，默认为true开启状态。</li>
+</ul>
+<h3 id="工作机制"><a href="#工作机制" class="headerlink" title="工作机制"></a>工作机制</h3><p>首领的另一个任务是搞清楚哪个跟随者的状态与自己是一致的。跟随者为了保持与首领的状态一致，在有新消息到达时会尝试从首领那里复制消息，不过可能有各种原因会导致同步失败。例如，网络拥塞导致复制变慢，broker发生崩溃导致复制滞后，直到重启broker后复制才会继续。</p>
+<p>为了与首领保持同步，跟随者会向首领发送获取数据的请求，这种请求与消费者为了读取消息而发送的请求是一样的。首领将响应消息发给跟随者。请求消息里包含了跟随者想要获取消息的偏移量，而且这些偏移量总是有序的。</p>
+<p>一个跟随者副本先请求消息1，接着请求消息2，然后请求消息3，在收到这3个请求的响应之前，它是不会发送第4个请求消息的。如果跟随者发送了请求消息4，那么首领就知道它已经收到了前面3个请求的响应。通过査看每个跟随者请求的最新偏移量，首领就会知道每个跟随者复制的进度。如果跟随者在10s内没有请求任何消息，或者虽然在请求消息，但在10s内没有请求最新的数据，那么它就会被认为是不同步的。如果一个副本无法与首领保持一致，在首领发生失效时，它就不可能成为新首领，因为它没有包含全部的消息。</p>
+<h2 id="处理请求的内部机制"><a href="#处理请求的内部机制" class="headerlink" title="处理请求的内部机制"></a>处理请求的内部机制</h2><p>broker的大部分工作是处理客户端、分区副本和控制器发送给分区首领的请求。Kafka提供了一个二进制协议（基于TCP），指定了请求消息的格式以及broker如何对请求作出响应——包括成功处理请求或在处理请求过程中遇到错误。</p>
+<p>客户端发起连接并发送请求，broker处理请求并作出响应。broker按照请求到达的顺序来处理它们这种顺序保证让Kaka具有了消息队列的特性，同时保证保存的消息也是有序的。</p>
+<p>所有的请求消息都包含一个标准消息头：RequestType也就是APIkey、RequestVersion用于broker处理不同版本的客户端请求，并根据客户端版本作出不同的响应。Correlationid具有唯一性的数字，用于标识请求消息，同时也会出现在响应消息和错误日志里，用于诊断问题，ClientId用于标识发送请求的客户端。</p>
+<p>broker会在它所监听的每一个端口上运行一个Acceptor线程，这个线程会创建一个连接并把它交给Processor线程（也被叫作“网络线程”）去处理。Processor线程的数量是可配置的。网络线程负责从客户端获取请求消息，把它们放进请求队列，然后从响应队列获取响应消息，把它们发送给客户端。</p>
+<p>请求消息被放到请求队列后，IO线程会负责处理它们，处理方式为为NIO。比较常见的请求类型有：</p>
+<ul>
+<li>生产请求：生产者发送的请求，它包含客户端要写入 broker 的消息。 </li>
+<li>获取请求：在消费者和跟随者副本需要从broker读取消息时发送的请求。</li>
+</ul>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<p>生产请求和获取请求都必须发送给分区的首领副本。如果broker收到一个针对特定分区的请求，而该分区的首领在另一个broker上，那么发送请求的客户端会收到一个“非分区首领”的错误响应。当针对特定分区的获取请求被发送到一个不含有该分区首领的broker上，也会出现同样的错误。Kafka客户端要自己负责把生产请求和获取请求发送到正确的broker上。</p>
+<p>所以客户端使用了另一种请求类型，也就是元数据请求。这种请求包含了客户端订阅的主题列表。服务器端的响应消息里指明了这些主题所包含的分区、每个分区都有哪些副本，以及哪个副本是首领。元数据请求可以发送给任意一个broker，因为所有broker都缓存了这些信息。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<p>一般情况下，客户端会把这些信息缓存起来，并直接往目标broker上发送生产请求和获取请求。它们需要时不时地通过发送元数据请求来刷新这些信息（刷新的时间间隔通过metadata.max.age.ms参数来配置，2.1.3的客户端默认参数30S），从而知道元数据是否发生了变更，比如在新broker加入集群时，部分副本会被移动到新的broker上。另外，如果客户端收到“非首领”错误，它会在尝试重发请求之前先刷新元数据，因为这个错误说明了客户端正在使用过期的元数据信息，之前的请求被发到了错误的broker上。</p>
+<h3 id="生产请求"><a href="#生产请求" class="headerlink" title="生产请求"></a>生产请求</h3><p>acks这个配置参数指定了需要多少个broker确认才可以认为一个消息写入是成功的。不同的配置对“写入成功”的界定是不一样的，如果acks=1，那么只要首领收到消息就认为写入成功；如果acks=all，那么需要所有同步副本收到消息才算写入成功；如果acks=0，那么生产者在把消息发出去之后，完全不需要等待broker的响应。</p>
+<p>包含首领副本的broker在收到生产请求时，会对请求做一些验证：</p>
+<ul>
+<li>发送数据的用户是否有主题写入权限</li>
+<li>请求里包含的acks值是否有效（只允许出现0、1或all，ack=-1等同于ack=all）</li>
+<li>如果acks=all是否有足够多的同步副本保证消息已经被安全写入</li>
+</ul>
+<p>之后，消息被写入本地磁盘。在Linux系统上，消息会被写到文件系统缓存里，并不保证它们何时会被刷新到磁盘上。Kafka不会一直等待数据被写到磁盘上，它依赖复制功能来保证消息的持久性。</p>
+<p>在消息被写入分区的首领之后，broker开始检査acks配置参数。如果acks被设为0或1，那么broker立即返回响应；如果acks被设为all，那么请求会被保存在一个叫作炼狱的缓冲区里，直到首领发现所有跟随者副本都复制了消息，响应才会被返回给客户端。</p>
+<h3 id="获取请求"><a href="#获取请求" class="headerlink" title="获取请求"></a>获取请求</h3><p>broker处理获取请求的方式与处理生产请求的方式很相似。客户端发送请求，向broker请求主题分区里具有特定偏移量的消息。类似于“请把主题Test分区0偏移量从53开始的消息，以及主题Test分区3偏移量从64开始的消息发给我。”</p>
+<p>客户端还可以指定broker最多可以从一个分区里返回多少数据。这个限制是非常重要的，因为客户端需要为broker返回的数据分配足够的内存。如果没有这个限制，broker返回的大量数据有可能耗尽客户端的内存。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<p>请求需要先到达指定的分区首领上，然后客户端通过査询元数据来确保请求的路由是正确的。首领在收到请求时，它会先检査请求是否有效，比如指定的偏移量在分区上是否存在。如果客户端请求的是已经被删除的数据，或者请求的偏移量不存在，那么broker将返回一个错误。如果请求的偏移量存在，broker将按照客户端指定的数量上限从分区里读取消息，再把消息返回给客户端。</p>
+<p>Kafka使用零复制技术向客户端发送消息一一也就是说，Kafka直接把消息从文件（或者更确切地说是Linux文件系统缓存）里发送到网络通道，而不需要经过任何中间缓冲区。这是Kafka与其他大部分数据库系统不一样的地方，其他数据库在将数据发送给客户端之前会先把它们保存在本地缓存里。这项技术避免了字节复制，也不需要管理内存缓冲区，从而获得更好的性能。</p>
+<p>客户端除了可以设置broker返回数据的上限，也可以设置下限。例如把下限设置为10KB，就好像是在告诉broker：“等到有10KB数据的时候再把它们发送给我。”在主题消息流量不是很大的情况下，这样可以减少CPU和网络开销。客户端发送一个请求，broker等到有足够的数据时才把它们返回给客户端，然后客户端再发出请求，而不是让客户端每隔几毫秒就发送一次请求，每次只能得到很少的数据甚至没有数据。对比这两种情况，它们最终读取的数据总量是一样的，但前者的来回传送次数更少，因此开销也更小。当然，我们不会让客户端一直等待broker累积数据。在等待了一段时间之后，就可以把可用的数据拿回处理，而不是一直等待下去。所以，客户端可以定义一个超时时间，告诉broker：“如果你无法在K毫秒内累积满足要求的数据量,那么就把当前这些数据返回给我。”</p>
+<h2 id="ISR"><a href="#ISR" class="headerlink" title="ISR"></a>ISR</h2><p>在客户端获取消息时，并不是所有保存在分区首领上的数据都可以被客户端读取。大部分客户端只能读取已经被写入所有同步副本的消息。分区首领知道每个消息会被复制到哪个副本上，在消息还没有被写入所有同步副本之前，是不会发送给消费者的，尝试获取这些消息的请求会得到空的响应而不是错误。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>因为还没有被足够多副本复制的消息被认为是“不安全”的，如果首领发生崩溃，另一个副本成为新首领，那么这些消息就丢失了。如果我们允许消费者读取这些消息，可能就会破坏一致性。可能会出现一个消费者读取并处理了这样的一个消息，而另一个消费者发现这个消息其实并不存在的情况。所以，我们会等到所有同步副本复制了这些消息，才允许消费者读取它们。这也意味着，如果broker间的消息复制因为某些原因变慢，那么消息到达消费者的时间也会随之变长（因为我们会先等待消息复制完毕）。延迟时间可以通过参数replica.lag.time.max.ms来配置，它指定了副本在复制消息时可被允许的最大延迟时间。</p>
+<p>Kafka的数据复制是以Partition为单位的。而多个备份间的数据复制，通过Follower向Leader拉取数据完成。从一这点来讲，有点像Master-Slave方案。不同的是，Kafka既不是完全的同步复制，也不是完全的异步复制，而是基于ISR的动态复制方案，这个方案允许有适当的丢失。</p>
+<p>ISR，即In-SyncReplica。每个Partition的Leader都会维护这样一个列表，该列表中，包含了所有与之同步的Replica（包含Leader自己）。每次数据写入时，只有ISR中的所有Replica都复制完，Leader才会将其置为Commit，它才能被Consumer所消费。</p>
+<p>这种方案，与同步复制非常接近。但不同的是，这个ISR是由Leader动态维护的。如果Follower不能紧跟上Leader，它将被Leader从ISR中移除，待它又重新跟上Leader后，会被Leader再次加入ISR中。每次改变ISR后，Leader都会将最新的ISR持久化到Zookeeper中。</p>
+<p>至于如何判断某个Follower是否跟上Leader，不同版本的Kafka的策略稍微有些区别。从0.9.0.0版本开始，replica.lag.max.messages被移除，故Leader不再考虑Follower落后的消息条数。另外，Leader不仅会判断Follower是否在replica.lag.time.max.ms时间内向其发送Fetch请求，同时还会考虑Follower是否在该时间内与之保持同步。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<p>在第一步中，LeaderA总共收到3条消息，但由于ISR中的Follower只同步了第1条消息m1，故只有m1被Commit，也就是说只有m1可被Consumer消费。此时FollowerB与LeaderA的差距是1，而FollowerC与LeaderA的差距是2，虽然有消息的差距，但是满足同步副本的要求保留在ISR中。</p>
+<p>在第二步中，由于旧的LeaderA宕机，新的LeaderB在replica.lag.time.max.ms时间内未收到来自A的Fetch请求，故将A从ISR中移除，此时ISR={B，C}。同时，由于此时新的LeaderB中只有2条消息，并未包含m3（m3从未被任何Leader所Commit），所以m3无法被Consumer消费。上图中就是因为acks不为all或者-1,不全部复制，就会导致单台服务器宕机时的数据丢失m3丢失了。</p>
+<h3 id="使用ISR方案的原因"><a href="#使用ISR方案的原因" class="headerlink" title="使用ISR方案的原因"></a>使用ISR方案的原因</h3><p>由于Leader可移除不能及时与之同步的Follower，故与同步复制相比可避免最慢的Follower拖慢整体速度，提高了系统可用性。ISR中的所有Follower都包含了所有Commit过的消息，而只有Commit过的消息才会被Consumer消费，故从Consumer的角度而言，ISR中的所有Replica都始终处于同步状态，从而与异步复制方案相比提高了数据一致性。</p>
+<h3 id="ISR相关配置说明"><a href="#ISR相关配置说明" class="headerlink" title="ISR相关配置说明"></a>ISR相关配置说明</h3><p>Broker的min.insync.replicas参数指定了Broker所要求的ISR最小长度，默认值为1。也即极限情况下ISR可以只包含Leader。但此时如果Leader宕机，则该Partition不可用，可用性得不到保证。</p>
+<p>只有被ISR中所有Replica同步的消息才被Commit，但Producer发布数据时，Leader并不需要ISR中的所有Replica同步该数据才确认收到数据。Producer可以通过acks参数指定最少需要多少个Replica确认收到该消息才视为该消息发送成功。acks的默认值是1，即Leader收到该消息后立即告诉Producer收到该消息，此时如果在ISR中的消息复制完该消息前Leader宕机，那该条消息会丢失。而如果将该值设置为0，则Producer发送完数据后，立即认为该数据发送成功，不作任何等待，而实际上该数据可能发送失败，并且Producer的Retry机制将不生效。更推荐的做法是，将acks设置为all或者-1，此时只有ISR中的所有Replica都收到该数据（也即该消息被Commit），Leader才会告诉Producer该消息发送成功，从而保证不会有未知的数据丢失。</p>
+<h2 id="物理存储机制"><a href="#物理存储机制" class="headerlink" title="物理存储机制"></a>物理存储机制</h2><p>Kafka的基本存储单元是分区。分区无法在多个broker间进行再细分，也无法在同一个broker的多个磁盘上进行再细分。在配置Kafka的时候，管理员指定了一个用于存储分区的目录清单，也就是log.dirs参数的值（不要把它与存放错误日志的目录混淆了，日志目录是配置在1og4j.properties文件里的）。该参数一般会包含每个挂载点的目录。</p>
+<h3 id="分区分配"><a href="#分区分配" class="headerlink" title="分区分配"></a>分区分配</h3><p>在创建主题时，Kafka首先会决定如何在broker间分配分区。假设你有6个broker，打算创建一个包含10个分区的主题，并且复制系数为3（确保至少有3台broker）。那么Kafka就会有30个分区副本，它们可以被分配给6个broker。在进行分区分配时，我们要达到如下的目标：</p>
+<ul>
+<li>在broker间平均地分布分区副本。对于我们的例子来说，就是要保证每个broker可以分到5个副本。</li>
+<li>确保每个分区的每个副本分布在不同的broker上。假设分区0的首领副本在broker2上，那么可以把跟随者副本放在broker3和broker4上，但不能放在broker2上，也不能两个都放在broker3上。</li>
+<li>如果为broker指定了机架信息，那么尽可能把每个分区的副本分配到不同机架的broker上。这样做是为了保证一个机架的不可用不会导致整体的分区不可用。</li>
+</ul>
+<p>为了实现这个目标，我们先随机选择一个broker（假设是4），然后使用轮询的方式给每个broker分配分区来确定首领分区的位置。于是，首领分区0会在broker4上，首领分区l会在broker5上，首领分区2会在broker0上（只有6个broker），并以此类推。然后，我们从分区首领开始，依次分配跟随者副本。如果分区0的首领在broker4上，那么它的第一个跟随者副本会在broker5上，第二个跟随者副本会在broker0上。分区1的首领在broker5上，那么它的第一个跟随者副本在broker0上，第二个跟随者副本在broker1上。</p>
+<p>为分区和副本选好合适的broker之后，接下来要决定这些分区应该使用哪个目录。我们单独为每个分区分配目录，规则很简单计算每个目录里的分区数量，新的分区总是被添加到数量最小的那个目录里。也就是说，如果添加了一个新磁盘，所有新的分区都会被创建到这个磁盘上。因为在完成分配工作之前，新磁盘的分区数量总是最少的（最少使用原则）。</p>
+<h3 id="文件管理"><a href="#文件管理" class="headerlink" title="文件管理"></a>文件管理</h3><p>数据持久化是Kafka的一个基本特性，Kafka不会一直保留数据，也不会等到所有消费者都读取了消息之后才删除消息。相反，Kafka管理员为每个主题配置了数据保留期限，规定数据被删除之前可以保留多长时间，或者清理数据之前可以保留的数据量大小。</p>
+<p>因为在一个大文件里査找和删除消息是很费时的，也很容易出错，所以分区分成若干个片段。默认情况下，每个片段包含1GB或一周的数据，以较小的那个为准。在broker往分区写入数据时，如果达到片段上限，就关闭当前文件，并打开一个新文件。</p>
+<p>当前正在写入数据的片段叫作活跃片段。活动片段永远不会被删除，所以如果你要保留数据1天，但片段里包含了5天的数据，那么这些数据会被保留5天，因为在片段被关闭之前这些数据无法被删除。如果你要保留数据一周，而且每天使用一个新片段，那么你就会看到，每天在使用一个新片段的同时会删除一个最老的片段，所以大部分时间该分区会有7个片段存在。</p>
+<h3 id="文件格式"><a href="#文件格式" class="headerlink" title="文件格式"></a>文件格式</h3><p>Kafka的消息和偏移量保存在文件里。保存在磁盘上的数据格式与从生产者发送过来或者发送给消费者的消息格式是一样的。因为使用了相同的消息格式，在进行磁盘存储和网络传输，Kafka可以使用零复制技术给消费者发送消息，同时避免了对生产者已经压缩过的消息进行解压和再圧缩。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<p>除了键、值和偏移量外，消息里还包含了消息大小、校验、消息格式、版本号、压缩算法（snappy、Gzip或Lz4）和时间戳(在0.10.0版本里引入的)。时间戳可以是生产者发送消息的时间,也可以是消息到达broker的时间,这个是可配置的。</p>
+<p>如果生产者发送的是圧缩过的消息，那么同一个批次的消息会被压缩在一起，被当作“包装消息”进行发送。broker收到这样的消息然后再把它发送给消费者。消费者在解压这个消息之后，会看到整个批次的消息，它们都有自己的时间戳和偏移量。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>如果在生产者端使用了压缩功能（极力推荐），那么发送的批次越大，就意味着在网络传输和磁盘存储方面会获得越好的压缩性能，同时意味着如果修改了消费者使用的消息格式（例如，在消息里增加了时间戳），那么网络传输和磁盘存储的格式也要随之修改，而且broker要知道如何处理包含了两种消息格式的文件。一种是普通消息，一种是包装消息。</p>
+<h3 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h3><p>消费者可以从Kafka的任意可用偏移量位置开始读取消息。假设消费者要读取从偏移量100开始的1MB消息，那么broker必须立即定位到偏移量100（可能是在分区的任意一个片段里），然后开始从这个位置读取消息。为了帮助broker更快地定位到指定的偏移量，Kafka为每个分区维护了一个索引。索引把偏移量映射到片段文件和偏移量在文件里的位置。</p>
+<p>索引也被分成片段，所以在删除消息时，也可以删除相应的索引。Kafka不维护索引的校验和。如果索引出现损坏，Kafka会通过重新读取消息并录制偏移量和位置来重新生成索引。如果有必要，管理员可以删除索引，这样做是绝对安全的，Kafka会自动重新生成这些索引。</p>
+<h3 id="超时数据的清理机制"><a href="#超时数据的清理机制" class="headerlink" title="超时数据的清理机制"></a>超时数据的清理机制</h3><p>注意， 超时数据的清理并不是过期文件的清理，一般情况下，Kafka会根据设置的时间保留数据，把超过时效的旧数据删除掉。比如一个应用程序使用Kafka保存它的状态，每次状态发生变化就把状态写入Kafka。在应用程序从崩演中恢复时，它从Kafka读取消息来恢复最近的状态。在这种情况下，应用程序只关心它在崩溃前的那个状态，而不关心运行过程中的那些状态。Kafka通过改变主题的保留策略来满足这些使用场景。早于保留时间的事件会被删除，为每个键保留最新的值，从而达到清理的效果。</p>
+<p>每个日志片段可以分为以下两个部分：</p>
+<ul>
+<li>干净的部分，这些消息之前被清理过，每个键只有一个对应的，这个值是上一次清理时保留下来的。</li>
+<li>污浊的部分，这些消息是在上一次清理之后写入的。</li>
+</ul>
+<p>为了清理分区，清理线程会读取分区的污浊部分，并在内存里创建一个map。map里的每个元素包含了消息键的散列值和消息的偏移量，键的散列值是16B，加上偏移量总共是24B。如果要清理一个1GB的日志片段，并假设每个消息大小为1KB，那么这个片段就包含一百万个消息，而我们只需要用24MB的map就可以清理这个片段。如果有重复的键,可以重用散列项,从而使用更少的内存。</p>
+<p>清理线程在创建好偏移量map后，开始从干净的片段处读取消息，从最旧的消息开始，把它们的内容与map里的内容进行比对。它会检査消息的键是否存在于map中，如果不存在，那么说明消息的值是最新的，就把消息复制到替換片段上。如果键已存在，消息会被忽略，因为在分区的后部已经有一个具有相同键的消息存在。在复制完所有的消息之后，我们就将替換片段与原始片段进行交换，然后开始清理下一个片段。完成整个清理过程之后，每个键对应一个不同的消息一这些消息的值都是最新的。清理前后的分区片段如图所示。</p>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>清理的思想就是根据Key的重复来进行整理，注意，它不是数据删除策略，而是类似于压缩策略，如果key送入了值，对于业务来说，key的值应该是最新的value才有意义，所以进行清理后只会保存key的最新value，这个适用于一些业务场景，比如说key代表用户ID，Value用户名称，如果使用清理功能就能够达到最新的用户的名称的消息（这个功能有限，请参考使用）。</p>
+<h2 id="可靠的数据"><a href="#可靠的数据" class="headerlink" title="可靠的数据"></a>可靠的数据</h2><h3 id="Kafka提供的可靠性保证和架构上的权衡"><a href="#Kafka提供的可靠性保证和架构上的权衡" class="headerlink" title="Kafka提供的可靠性保证和架构上的权衡"></a>Kafka提供的可靠性保证和架构上的权衡</h3><p>可靠性时，我们一般会使用保证这个词，它是指确保系统在各种不同的环境下能够发生一致的行为。ACID大概是大家最熟悉的一个例子，它是关系型数据库普遍支持的标准可靠性保证。ACID指的是原子性、一致性、隔离性和持久性。如果一个供应商说他们的数据库遵循ACID规范，其实就是在说他们的数据库支持与事务相关的行为。有了这些保证，我们才能相信关系型数据库的事务特性可以确保应用程序的安全。我们知道系统承诺可以做到些什么，也知道在不同条件下它们会发生怎样的行为。我们了解这些保证机制，就可以基于这些保证机制开发安全的应用程序。</p>
+<p>所以，了解系统的保证机制对于构建可靠的应用程序来说至关重要，这也是能够在不同条件下解释系统行为的前提。那么Kafka可以在哪些方面作出保证呢？</p>
+<ul>
+<li>Kafka可以保证分区消息的顺序。如果使用同一个生产者往同一个分区写入消息，而且消息B在消息A之后写入，那么Kafka可以保证消息B的偏移量比消息A的偏移量大，而且消费者会先读取消息A再读取消息B。</li>
+<li>只有当消息被写入分区的所有同步副本时（但不一定要写入磁盘），它才被认为是“已提交”的。生产者可以选择接收不同类型的确认（acks），比如在消息被完全提交时的确认，或者在消息被写入首领副本时的确认，或者在消息被发送到网络时的确认。</li>
+<li>只要还有一个副本是活跃的，那么已经提交的消息就不会丢失。消费者只能读取已经提交的消息。</li>
+</ul>
+<p>这些基本的保证机制可以用来构建可靠的系统，但仅仅依赖它们是无法保证系统完全可靠的。构建一个可靠的系统需要作出一些权衡，Kafka管理员和开发者可以在配置参数上作出权衡，从而得到他们想要达到的可靠性。这种权衡一般是指消息存储的可靠性和一致性的重要程度与可用性、高吞吐量、低延迟和硬件成本的重要程度之间的权衡。</p>
+<h3 id="复制"><a href="#复制" class="headerlink" title="复制"></a>复制</h3><p>Kafka的复制机制和分区的多副本架构是Kafka可靠性保证的核心。把消息写入多个副本可以使Kafka在发生崩溃时仍能保证消息的持久性。</p>
+<p>Kafka的主题被分为多个分区，分区是基本的数据块。分区存储在单个磁盘上，Kafka可以保证分区里的事件是有序的，分区可以在线（可用），也可以离线（不可用）。每个分区可以有多个副本，其中一个副本是首领。所有的事件都直接发送给首领副本，或者直接从首领副本读取事件。其他副本只需要与首领保持同步，并及时复制最新的事件。当首领副本不可用时，其中一个同步副本将成为新首领。</p>
+<p>分区首领是同步副本，而对于跟随者副本来说，它需要满足以下条件才能被认为是同步的。</p>
+<ul>
+<li>与Zookeeper之间有一个活跃的会话，也就是说，它在过去的6秒（可配置）内向Zookeeper发送过心跳。</li>
+<li>在过去的10s内（可配置）从首领那里获取过消息。</li>
+<li>在过去的10s内从首领那里获取过最新的消息。但光从首领那里获取消息是不够的，它还必须是近乎零延迟的。</li>
+</ul>
+<p>如果跟随者副本不能满足以上任何一点，比如与Zookeeper断开连接，或者不再获取新消息，或者获取消息滞后了10s以上，那么它就被认为是不同步的。一个不同步的副本通过与Zookeeper重新建立连接，井从首领那里获取最新消息，可以重新变成同步的。这个过程在网络出现临时问题井很快得到修复的情况下会很快完成，但如果broker发生崩溃就需要较长的时间。</p>
+<p>注意：如果一个或多个副本在同步和非同步状态之间快速切换，说明集群内部出现了问题，通常是Java不恰当的垃圾回收配置导致的。不恰当的垃圾回收配置会造成几秒钟的停顿，从而让broker与Zookeeper之间断开连接，最后变成不同步的，进而发生状态切换。</p>
+<h3 id="Broker配置对可靠性的影响"><a href="#Broker配置对可靠性的影响" class="headerlink" title="Broker配置对可靠性的影响"></a>Broker配置对可靠性的影响</h3><h4 id="复制系数"><a href="#复制系数" class="headerlink" title="复制系数"></a>复制系数</h4><p>主题级别的配置参数是replication.factor，而在broker级别则可以通过default.replication.factor来配置自动创建的主题。Kafka的默认复制系数就是3，不过用户可以修改它。如果复制系数为N，那么在N-1个broker失效的情况下，仍然能够从主题读取数据或向主题写入数据。所以，更高的复制系数会带来更高的可用性、可靠性和更少的故障。另一方面，复制系数N需要至少N个broker，而且会有N个数据副本，也就是说它们会占用N倍的磁盘空间。我们一般会在可用性和存储硬件之间作出权衡。</p>
+<p>一般主题需要的副本数跟主题的重要程度、以及可以付出多少成本有关来保证可靠性有关。</p>
+<p>如果因broker重启导致的主题不可用是可接受的（这在集群里是很正常的行为），把复制系数设为1就可以了。在作出这个权衡的时候，要确保这样不会对你的组织和用户造成影响，因为你在节省了硬件成本的同时也降低了可用性。复制系数为2意味着可以容忍1个broker发生失效，看起来已经足够了。不过要记住，有时候1个broker发生失效会导致集群不稳定（通常是旧版的Kafka），迫使你重启另一个broker作为集群控制器。也就是说，如果将复制系数设为2，就有可能因为重启等问题导致集群不可用。基于以上几点原因，在要求可用性的场景里把复制系数设为3。在大多数情况下，这已经足够安全了，不过要求更可靠时，可以设为更高，比如5个副本，以防不测。</p>
+<p>副本的分布也很重要。默认情况下，Kafka会确保分区的每个副本被放在不同的broker上。不过，有时候这样仍然不够安全。如果这些broker处于同一个机架上，一旦机架的交换机发生故障，分区就会不可用，这时候把复制系数设为多少都不管用。为了避免机架级别的故障，我们建议把broker分布在多个不同的机架上。</p>
+<h4 id="不完全的首领选举"><a href="#不完全的首领选举" class="headerlink" title="不完全的首领选举"></a>不完全的首领选举</h4><p>unclean.leader.election只能在broker级别（实际上是在集群范围内）进行配置，它的默认值是true。</p>
+<p>当分区首领不可用时，一个同步副本会被选为新首领。如果在选举过程中没有丢失数据，也就是说提交的数据同时存在于所有的同步副本上，那么这个选举就是“完全”的。<br>如果在首领不可用时其他副本都是不同步的，我们该怎么办呢?</p>
+<p>这种情况会在以下两种场景里出现。</p>
+<ul>
+<li>分区有3个副本，其中的两个跟随者副本不可用（比如有两个broker发生崩溃）。这个时候，如果生产者继续往首领写入数据，所有消息都会得到确认井被提交（因为此时首领是唯一的同步副本）。现在我们假设首领也不可用了（又一个broker发生崩溃），这个时候，如果之前的一个跟随者重新启动，它就成为了分区的唯一不同步副本。</li>
+<li>分区有3个副本，因为网络问题导致两个跟随者副本复制消息滞后，所以尽管它们还在复制消息，但已经不同步了。首领作为唯一的同步副本继续接收消息。这个时候，如果首领变为不可用，另外两个副本就再也无法变成同步的了。</li>
+</ul>
+<p>对于这两种场景，我们要作出一个两难的选择。</p>
+<ul>
+<li><p>如果不同步的副本不能被提升为新首领，那么分区在旧首领（最后一个同步副本）恢复之前是不可用的。有时候这种状态会持续数小时（比如更换内存芯片）。</p>
+</li>
+<li><p>如果不同步的副本可以被提升为新首领，那么在这个副本变为不同步之后写入旧首领的消息、会全部丢失，导致数据不一致。</p>
+</li>
+</ul>
+<p>比如在副本0和副本1不可用时，偏移量100-200的消息被写入副本2（首领）。现在副本2变为不可用的，而副本0变为可用的。副本0只包含偏移量0<del>100的消息，不包含偏移量100</del>200的悄息。如果我们允许副本0成为新首领，生产者就可以继续写人数据，消费者可以继续读取数据。于是，新首领就有了偏移量100<del>200的新消息。这样，部分消费者会读取到偏移量100</del>200的旧消息，部分消费者会读取到偏移量100~200的新消息，还有部分消费者读取的是二者的混合。这样会导致非常不好的结果，比如生成不准确的报表。另外，副本2可能会重新变为可用，并成为新首领的跟随者。这个时候，它会把比当前首领旧的消息全部删除，而这些消息对于所有消费者来说都是不可用的。</p>
+<p>简而言之，如果我们允许不同步的副本成为首领，那么就要承担丢失数据和出现数据不一致的风险。如果不允许它们成为首领，那么就要接受较低的可用性，因为我们必须等待原先的首领恢复到可用状态。</p>
+<p>如果把unclean.leader.election设为true，就是允许不同步的副本成为首领（也就是“不完全的选举”），那么我们将面临丢失消息的风险。如果把这个参数设为false，就要等待原先的首领重新上线，从而降低了可用性。</p>
+<p>我们经常看到一些对数据质量和数据一致性要求较高的系统会禁用这种不完全的首领选举（把这个参数设为false）。比如银行系统，大部分银行系统宁愿选择在几分钟甚至几个小时内不处理信用卡支付事务，也不会冒险处理错误的消息。不过在对可用性要求较高的系统里，比如实时点击流分析系统，一般会启用不完全的首领选举。</p>
+<h4 id="最少同步副本"><a href="#最少同步副本" class="headerlink" title="最少同步副本"></a>最少同步副本</h4><p>在主题级别和broker级别上，这个参数都叫min.insync.replicas。</p>
+<p>我们知道，尽管为一个主题配置了3个副本，还是会出现只有一个同步副本的情况（acks=0或1）。如果这个同步副本变为不可用，我们必须在可用性和一致性之间作出选择，这又是一个两难的选择。根据Kafka对可靠性保证的定义，消息只有在被写入到所有同步副本之后才被认为是已提交的。但如果这里的“所有副本”只包含一个同步副本，那么在这个副本变为不可用时，数据就会丢失。</p>
+<p>如果要确保已提交的数据被写入不止一个副本，就需要把最少同步副本数量设置为大一点的值。对于一个包含3个副本的主题，如果min.insync.replicas被设为2，那么至少要存在两个同步副本才能向分区写入数据。如果3个副本都是同步的，或者其中一个副本变为不可用，都不会有什么问题。不过，如果有两个副本变为不可用，那么broker就会停止接受生产者的请求。尝试发送数据的生产者会收到NotEnoughReplicasException异常。消费者仍然可以继续读取已有的数据。实际上，如果使用这样的配置，那么当只剩下一个同步副本时，它就变成只读了，这是为了避免在发生不完全选举时数据的写入和读取出现非预期的行为。为了从只读状态中恢复，必须让两个不可用分区中的一个重新变为可用的（比如重启broker），并等待它变为同步的。</p>
+<h2 id="可靠系统里的生产者"><a href="#可靠系统里的生产者" class="headerlink" title="可靠系统里的生产者"></a>可靠系统里的生产者</h2><p>即使我们尽可能把broker配置得很可靠，但如果没有对生产者进行可靠性方面的配置，整个系统仍然有可能出现突发性的数据丢失。</p>
+<p>比如为broker配置了3个副本，井且禁用了不完全首领选举，这样应该可以保证万无一失。我们把生产者发送消息的acks设为1（只要首领接收到消息就可以认为消息写入成功）。生产者发送一个消息给首领，首领成功写入，但跟随者副本还没有接收到这个消息。首领向生产者发送了一个响应，告诉它“消息写入成功”，然后它崩溃了，而此时消息还没有被其他副本复制过去。另外两个副本此时仍然被认为是同步的（毕竟判断一个副本不同步需要一小段时间），而且其中的一个副本成了新的首领。因为消息还没有被写入这个副本，所以就丢失了，但发送消息的客户端却认为消息已成功写入。因为消费者看不到丢失的消息，所以此时的系统仍然是一致的（因为副本没有收到这个消息，所以消息不算已提交），但从生产者角度来看，它丢失了一个消息。</p>
+<p>再比如为broker配置了3个副本，并且禁用了不完全首领选举。我们接受了之前的教训，把生产者的acks设为all。假设现在往Kafka发送消息，分区的首领刚好崩溃，新的首领正在选举当中，Kafka会向生产者返回“首领不可用”的响应。在这个时候，如果生产者没能正确处理这个错误，也没有重试发送消息直到发送成功，那么消息也有可能丢失。这算不上是broker的可靠性问题，因为broker并没有收到这个消息。这也不是一致性问题，因为消费者并没有读到这个消息。问题在于如果生产者没能正确处理这些错误。</p>
+<h3 id="发送确认"><a href="#发送确认" class="headerlink" title="发送确认"></a>发送确认</h3><p>生产者可以选择以下3种不同的确认模式。</p>
+<ul>
+<li>acks=0意味着如果生产者能够通过网络把消息发送出去，那么就认为消息已成功写入Kafka。在这种情况下还是有可能发生错误，比如发送的对象无法被序列化或者网卡发生故障，但如果是分区离线或整个集群长时间不可用，那就不会收到任何错误。即使是在发生完全首领选举的情况下，这种模式仍然会丢失消息，因为在新首领选举过程中它并不知道首领已经不可用了。在acks=0模式下的运行速度是非常快的（这就是为什么很多基准测试都是基于这个模式），你可以得到惊人的吞吐量和带宽利用率，不过如果选择了这种模式，一定会丢失一些消息。</li>
+<li>acks=1意味若首领在收到消息并把它写入到分区数据文件（不一定同步到磁盘上）时会返回确认或错误响应。在这个模式下，如果发生正常的首领选举，生产者会在选举时收到一个LeadeNotAvailableExcepti.on异常，如果生产者能恰当地处理这个错误，它会重试发送消息，最终消息会安全到达新的首领那里。不过在这个模式下仍然有可能丢失数据，比如消息已经成功写入首领，但在消息被复制到跟随者副本之前首领发生崩溃。</li>
+<li>acks=all意味着首领在返回确认或错误响应之前，会等待所有同步副本都收到悄息。如果和min.insync.replicas参数结合起来，就可以决定在返回确认前至少有多少个副本能够收到消息。这是最保险的做法，生产者会一直重试直到消息被成功提交。不过这也是最慢的做法，生产者在继续发送其他消息之前需要等待所有副本都收到当前的消息。可以通过使用异步模式和更大的批次来加快速度，但这样做通常会降低吞吐量。</li>
+</ul>
+<h3 id="配置生产者的重试参数"><a href="#配置生产者的重试参数" class="headerlink" title="配置生产者的重试参数"></a>配置生产者的重试参数</h3><p>如果broker返回的错误可以通过重试来解决，那么生产者会自动处理这些错误。生产者向broker发送消息时，broker可以返回一个成功响应码或者一个错误响应码。错误响应码可以分为两种，一种是在重试之后可以解决的，还有一种是无法通过重试解决的。例如，如果broker返回的是LEADER_NOT_AVAILABLE错误，生产者可以尝试重新发送消息。也许在这个时候一个新的首领被选举出来了，那么这次发送就会成功。也就是说，LEADER_NOT_AVAILABLE是一个可重试错误。</p>
+<p>另一方面，如果broker返回的是INVALID_CONFIG错误，即使通过重试也无能改变配置选项，所以这样的重试是没有意义的。这种错误是不可重试错误。</p>
+<p>一般情况下，如果你的目标是不丢失任何消息，那么最好让生产者在遇到可重试错误时能够保持重试，因为像首领选举或网络连接这类问题都可以在几秒钟之内得到解决，如果让生产者保持重试，就不需要额外去处理这些问题了。</p>
+<p>生产者配置多少重试次数要看在生产者放弃重试并抛出异常之后想做些什么。如果你想抓住异常并再多重试几次，那么就可以把重试次数设置得多一点，让生产者继续重试；如果你想直接丢弃消息，多次重试造成的延迟已经失去发送消息的意义；如果你想把消息保存到某个地方然后回过头来再继续处理，那就可以停止重试。</p>
+<p>Kafka的跨数据中心复制工具（MirrorMaker）默认会进行无限制的重试。作为一个具有高可靠性的复制工具，它决不会丢失消息。</p>
+<p>要注意，重试发送一个已经失败的消息会带来一些风险，如果两个消息都写入成功，会导致消息重复。例如，生产者因为网络问题没有收到broker的确认，但实际上消息已经写入成功，生产者会认为网络出现了临时故障，就重试发送该消息（因为它不知道消息已经写入成功）。在这种情况下，broker会收到两个相同的消息。重试和恰当的错误处理可以保证每个消息“至少被保存一次”，但无法保证每个消息“只被保存一次”。现实中的很多应用程序在消息里加入唯一标识符，用于检测重复消息，消费者在读取消息时可以对它们进行清理。还要一些应用程序可以做到消息的“幕等”，也就是说，即使出现了重复消息，也不会对处理结果的正确性造成负面影响。</p>
+<h3 id="额外的错误处理"><a href="#额外的错误处理" class="headerlink" title="额外的错误处理"></a>额外的错误处理</h3><p>使用生产者内置的重试机制可以在不造成消息丢失的情况下轻松地处理大部分错误，不过对于开发人员来说，仍然需要处理其他类型的错误，包括:</p>
+<ul>
+<li><p>不可重试的 broker 错误，例如消息大小错误、认证错误等 . 在消息发送之前发生的错误，例如序列化错误；</p>
+</li>
+<li><p>在生产者达到重试次数上限时或者在消息占用的内存达到上限时发生的错误。</p>
+</li>
+</ul>
+<p>错误处理器的代码逻辑与具体的应用程序及其目标有关。可以丢弃使用“不合理的消息”、把错误记录下来或者把这些消息保存在本地磁盘上等逻辑，具体使用哪一种逻辑要根据具体的架构来决定。如果错误处理只是为了重试发送消息，那么最好还是使用生产者内置的重试机制。</p>
+<h2 id="可靠系统里的消费者"><a href="#可靠系统里的消费者" class="headerlink" title="可靠系统里的消费者"></a>可靠系统里的消费者</h2><p>可以看到，只有那些被提交到Kafka的数据，也就是那些已经被写入所有同步副本的数据，对消费者是可用的，这意味着消费者得到的消息已经具备了一致性。</p>
+<p>消费者唯一要做的是跟踪哪些消息是已经读取过的，哪些是还没有读取过的。这是在读取消息时不丢失消息的关键。</p>
+<p>在从分区读取数据时，消费者会获取一批消息，检查这批消息里最大的偏移量，然后从这个偏移量开始读取另外一批消息。这样可以保证消费者总能以正确的顺序获取新数据，不会错过任何消息。</p>
+<p>如果一个消费者退出，另一个消费者需要知道从什么地方开始继续处理，它需要知道前一个消费者在退出前处理的最后一个偏移量是多少。所谓的“另一个”消费者，也可能就是它自己重启之后重新回来工作。这也就是为什么消费者要“提交”它们的偏移量。它们把当前读取的偏移量保存起来，在退出之后，同一个群组里的其他消费者就可以接手它们的工作。如果消费者提交了偏移量却未能处理完消息，那么就有可能造成消息丢失，这也是消费者丢失消息的主要原因。在这种情况下，如果其他消费者接手了工作，那些没有被处理完的消息就会被忽略，永远得不到处理。所以我们要重视偏移量提交的时间点和提交的方式。</p>
+<h3 id="消费者的可靠性配置"><a href="#消费者的可靠性配置" class="headerlink" title="消费者的可靠性配置"></a>消费者的可靠性配置</h3><p>为了保证消费者行为的可靠性，需要注意以下4个非常重要的配置参数。</p>
+<ul>
+<li>group.id：如果两个消费者具有相同的group.id，并且订阅了同一个主题，那么每个消费者会分到这个主题下所有分区的中的一个，也就是说它们只能读到所有消息的一个子集。如果希望消费者可以看到主题的所有消息，那么需要为它们设置唯一的group.id。</li>
+<li>auto.offset.reset：这个参数指定了在没有偏移量可提交时（比如消费者第1次启动时）或者请求的偏移量在broker上不存在时，消费者会做些什么。这个参数有两种配置。一种是earliest，如果选择了这种配置，消费者会从分区的开始位置读取数据，不管偏移量是否有效，这样会导致消费者读取大量的重复数据，但可以保证最少的数据丢失。一种是latest，如果选择了这种配置，消费者会从分区的末尾开始读取数据，这样可以减少重复处理消息，但很有可能会错过一些消息。</li>
+<li>enable.auto.commit：这是一个非常重要的配置参数，你可以让消费者基于任务调度自动提交偏移量，也可以在代码里手动提交偏移量。自动提交的一个最大好处是，在实现消费者逻辑时可以少考虑一些问题。如果你在消费者轮询操作里处理所有的数据，那么自动提交可以保证只提交已经处理过的偏移量。自动提交的主要缺点是，无法控制重复处理消息（比如消费者在自动提交偏移量之前停止处理消息），而且如果把消息交给另外一个后台线程去处理，自动提交机制可能会在消息还没有处理完毕就提交偏移量。</li>
+<li>auto.commit.interval.ms：与enable.auto.commit有直接的联系。如果选择了自动提交偏移量，可以通过该参数配置提交的频度，默认值是每5秒钟提交一次。一般来说，频繁提交会增加额外的开销，但也会降低重复处理消息的概率。</li>
+</ul>
+<h3 id="显式提交偏移量"><a href="#显式提交偏移量" class="headerlink" title="显式提交偏移量"></a>显式提交偏移量</h3><p>如果选择了自动提交偏移量，就不需要关心显式提交的问题。不过如果希望能够更多地控制偏移量提交的时间点，那么就要仔细想想该如何提交偏 移量了一一要么是为了减少重复处理消息，要么是因为把消息处理逻辑放在了轮询之外。</p>
+<p>在开发具有可靠性的消费者应用程序时需要注意的事项。我们先从简单的开始，再逐步深入。</p>
+<ol>
+<li><p>总是在处理完事件后再提交偏移量</p>
+<p>如果所有的处理都是在轮询里完成，而且消息处理总是幂等的，或者少量消息丢失无关紧要，那么可以使用自动提交，或者在轮询结束时进行手动提交。</p>
+</li>
+<li><p>提交频度是性能和重复消息数量之间的权衡</p>
+<p>即使是在最简单的场景里，比如所有的处理都在轮询里完成，并且不需要在轮询之间维护状态，你仍然可以在一个循环里多次提交偏移量（甚至可以在每处理完一个事件之后），或者多个循环里只提交一次，这完全取决于你在性能和重复处理消息之间作出的权衡。</p>
+</li>
+<li><p>确认提交的偏移量</p>
+<p>在轮询过程中提交偏移量有一个不好的地方，就是提交的偏移量有可能是读取到的最新偏移量，而不是处理过的最新偏移量。要记住，在处理完消息后再提交偏移量是非常关键的，否则会导致消费者错过消息。</p>
+</li>
+<li><p>再均衡</p>
+<p>在设计应用程序时要注意处理消费者的再均衡问题。一般要在分区被撤销之前提交偏移量，井在分配到新分区时清理之前的状态。</p>
+</li>
+<li><p>消费者可能需要重试</p>
+<p>有时候，在进行轮询之后，有些消息不会被完全处理，可能稍后再来处理。假设要把Kafka的数据写到数据库里，不过那个时候数据库不可用，于是你想稍后重试。要注意，你提交的是偏移量，而不是对消息的“确认”，这个与传统的发布和订阅消息系统不太一样。如果记录的#30处理失败，但记录的#31处理成功，那么你不应该提交#31，否则会导致的#31以内的偏移量都被提交，包括的#30在内。不过可以采用下面这种模式来解决这个问题。</p>
+<p>在遇到可重试错误时，把错误写入一个独立的主题，然后继续。一个独立的消费者群组负责从该主题上读取错误消息，并进行重试，或者使用其中的一个消费者同时从该主题上读取错误消息并进行重试，不过在重试时需要暂停该主题。这种模式有点像其他消息系统里的死信队列。</p>
+</li>
+<li><p>消费者可能需要维护状态</p>
+<p>有时候你希望在多个轮询之间维护状态，例如，你想计算消息的移动平均数，希望在首次轮询之后计算平均数，然后在后续的轮询中更新这个结果。如果进程重启，你不仅需要从上一个偏移量开始处理数据，还要恢复移动平均数。有一种办法是在提交偏移量的同时把最近计算的平均数写到一个“结果”主题上。消费者线程在重新启动之后，它就可以拿到最近的平均数并接着计算。不过这并不能完全地解决问题，因为Kafka并没有提供事务支持。消费者有可能在写入平均数之后来不及提交偏移量就崩溃了，或者反过来也一样。这是一个很复杂的问题，你不应该尝试自己去解决这个问题，建议尝试一下Kafka流计算，它为聚合、连接、时间窗和其他复杂的分析提供了高级的API。</p>
+</li>
+<li><p>长时间处理</p>
+<p>有时候处理数据需要很长时间，你可能会从发生阻塞的外部系统获取信息，或者把数据写到外部系统，或者进行一个非常复杂的计算，但是我们要尽量保持轮询。在这种情况下，一种常见的做法是使用一个线程池来处理数据，因为使用多个线程可以进行并行处理，从而加快处理速度。在把数据移交给线程地去处理之后，你就可以暂停消费者，然后保持轮询，但不获取新数据，直到工作线程处理完成。在工作线程处理完成之后，可以让消费者继续获取新数据。</p>
+</li>
+<li><p>仅一次传递</p>
+<p>有些应用程序不仅仅需要“至少一次”(意味着没有数据丢失)，还需要“仅一次”语义。Kafka 现在还不能完全支持仅一次语义，消费者还是有一些办法可以保证 Kafka 里的每个消息只被写到外部系统一次（但不会处理向 Kafka 写入数据时可能出现的重复数据）。</p>
+<p>实现仅一次处理最简单且最常用的办能是把结果写到一个支持唯一键的系统里，比如键值存储引擎、关系型数据库、ElasticSearch 或其他数据存储引 擎。在这种情况下，要么消息本身包含一个唯一键（通常都是这样），要么使用主题、分区和偏移量的组合来创建唯一键，它们的组合可以唯一标识一条Kafka消息。如果你把消息和一个唯一键写入系统，然后碰巧又读到一个相同的消息，只要把原先的键值覆盖掉即可。数据存储引擎会覆盖已经存在的键值对，就像没有出现过重复数据一样。这个模式被叫作幂等性写入，它是一种很常见也很有用的模式。</p>
+<p>如果写入消息的系统支持事务，那么就可以使用另一种方法。最简单的是使用关系型数据库。我们把消息和偏移量放在同一个事务里，这样它们就 能保持同步。在消费者启动时，它会获取最近处理过的消息偏移量，然后调用seek()方法也从该偏移量位置继续读取数据。</p>
+</li>
+</ol>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/Kafka/">Kafka</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/05/15/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%95%B0%E6%8D%AE%E7%AE%A1%E9%81%93%E5%92%8C%E6%B5%81%E5%BC%8F%E5%A4%84%E7%90%86/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Kafka的数据管道和流式处理</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/">
+                        <span class="hidden-mobile">Kafka的消费者</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>

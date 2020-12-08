@@ -1,0 +1,746 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>RabbitMQ与spring的集成 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="RabbitMQ与spring的集成">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-05-10 21:18" pubdate>
+        2020年5月10日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      2.2k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      39
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">RabbitMQ与spring的集成</h1>
+            
+            <div class="markdown-body">
+              <h2 id="与spring的集成"><a href="#与spring的集成" class="headerlink" title="与spring的集成"></a>与spring的集成</h2><h3 id="pom文件"><a href="#pom文件" class="headerlink" title="pom文件"></a>pom文件</h3><p>项目中使用的spring版本为4.3.11，所以引入的是2.0.0，兼容性可以在spring官网中查到。</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.amqp<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-rabbit<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.0.0.RELEASE<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<h3 id="消息的发送"><a href="#消息的发送" class="headerlink" title="消息的发送"></a>消息的发送</h3><h4 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h4><pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="hljs-comment">&lt;!-- 查找最新的schemaLocation 访问 http://www.springframework.org/schema/ --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">beans</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/beans&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xmlns:rabbit</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/rabbit&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xmlns:context</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/context&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/beans</span></span>
+<span class="hljs-tag"><span class="hljs-string">          http://www.springframework.org/schema/beans/spring-beans-4.0.xsd</span></span>
+<span class="hljs-tag"><span class="hljs-string">      http://www.springframework.org/schema/rabbit</span></span>
+<span class="hljs-tag"><span class="hljs-string">      http://www.springframework.org/schema/rabbit/spring-rabbit-2.0.xsd</span></span>
+<span class="hljs-tag"><span class="hljs-string">      http://www.springframework.org/schema/context</span></span>
+<span class="hljs-tag"><span class="hljs-string">      http://www.springframework.org/schema/context/spring-context.xsd&quot;</span>&gt;</span>
+
+     <span class="hljs-comment">&lt;!-- 配置扫描路径 --&gt;</span>
+     <span class="hljs-tag">&lt;<span class="hljs-name">context:component-scan</span> <span class="hljs-attr">base-package</span>=<span class="hljs-string">&quot;cn.enjoyedu&quot;</span>&gt;</span>
+       <span class="hljs-tag">&lt;<span class="hljs-name">context:exclude-filter</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;annotation&quot;</span> <span class="hljs-attr">expression</span>=<span class="hljs-string">&quot;org.springframework.stereotype.Controller&quot;</span>/&gt;</span>
+     <span class="hljs-tag">&lt;/<span class="hljs-name">context:component-scan</span>&gt;</span>
+
+   <span class="hljs-comment">&lt;!-- rabbitMQ配置 --&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span></span>
+<span class="hljs-tag">        <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.amqp.rabbit.connection.CachingConnectionFactory&quot;</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">constructor-arg</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;127.0.0.1&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;username&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;guest&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;password&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;guest&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;channelCacheSize&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;8&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;port&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;5672&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span>
+   <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
+   <span class="hljs-comment">&lt;!--Spring的rabbitmq admin--&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:admin</span> <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span>/&gt;</span>
+
+    <span class="hljs-comment">&lt;!-- 创建rabbitTemplate 消息模板类 --&gt;</span>
+	  <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:template</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;rabbitTemplate&quot;</span> <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span>/&gt;</span>
+  
+    <span class="hljs-comment">&lt;!--生产者创建队列--&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;h4_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:queue</span>&gt;</span>
+
+   <span class="hljs-comment">&lt;!--fanout交换器--&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:fanout-exchange</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;fanout-exchange&quot;</span></span>
+<span class="hljs-tag">          <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/rabbit&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">bindings</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">binding</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;h4_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">binding</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">bindings</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:fanout-exchange</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">beans</span>&gt;</span></code></pre>
+
+<h4 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h4><p>注意：生产者和消费者中都可以完成交换器、队列的申明，以及绑定关系的建立，但建议在生产者和消费者中都进行设置，这样可以保证在其中一方没有启动的情况下，另一方可以完成自己的功能，不会受影响。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Controller</span>
+<span class="hljs-meta">@RequestMapping(&quot;/rabbitmq&quot;)</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RabbitMqController</span> </span>&#123;
+
+    <span class="hljs-keyword">private</span> Logger logger = LoggerFactory.getLogger(RabbitMqController.class);
+
+    <span class="hljs-meta">@Autowired</span>
+    RabbitTemplate rabbitTemplate;
+
+    <span class="hljs-meta">@ResponseBody</span>
+    <span class="hljs-meta">@RequestMapping(&quot;/fanoutSender&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">fanoutSender</span><span class="hljs-params">(<span class="hljs-meta">@RequestParam(&quot;message&quot;)</span>String message)</span></span>&#123;
+        String opt=<span class="hljs-string">&quot;&quot;</span>;
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>;i&lt;<span class="hljs-number">3</span>;i++)&#123;
+                String str = <span class="hljs-string">&quot;Fanout,the message_&quot;</span>+i+<span class="hljs-string">&quot; is : &quot;</span>+message;
+                logger.info(<span class="hljs-string">&quot;**************************Send Message:[&quot;</span>+str+<span class="hljs-string">&quot;]&quot;</span>);
+                rabbitTemplate.send(<span class="hljs-string">&quot;fanout-exchange&quot;</span>,<span class="hljs-string">&quot;&quot;</span>,
+                        <span class="hljs-keyword">new</span> Message(str.getBytes(),<span class="hljs-keyword">new</span> MessageProperties()));
+            &#125;
+            opt = <span class="hljs-string">&quot;suc&quot;</span>;
+        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+            opt = e.getCause().toString();
+        &#125;
+        <span class="hljs-keyword">return</span> opt;
+    &#125;
+
+    <span class="hljs-meta">@ResponseBody</span>
+    <span class="hljs-meta">@RequestMapping(&quot;/topicSender&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">topicSender</span><span class="hljs-params">(<span class="hljs-meta">@RequestParam(&quot;message&quot;)</span>String message)</span></span>&#123;
+        String opt=<span class="hljs-string">&quot;&quot;</span>;
+        <span class="hljs-keyword">try</span> &#123;
+            String[] routekeys=&#123;<span class="hljs-string">&quot;king&quot;</span>,<span class="hljs-string">&quot;mark&quot;</span>,<span class="hljs-string">&quot;james&quot;</span>&#125;;
+            String[] modules=&#123;<span class="hljs-string">&quot;kafka&quot;</span>,<span class="hljs-string">&quot;jvm&quot;</span>,<span class="hljs-string">&quot;redis&quot;</span>&#125;;
+            <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>;i&lt;routekeys.length;i++)&#123;
+                <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> j=<span class="hljs-number">0</span>;j&lt;modules.length;j++)&#123;
+                    String routeKey = routekeys[i]+<span class="hljs-string">&quot;.&quot;</span>+modules[j];
+                    String str = <span class="hljs-string">&quot;Topic,the message_[&quot;</span>+i+<span class="hljs-string">&quot;,&quot;</span>+j+<span class="hljs-string">&quot;] is [rk:&quot;</span>+routeKey+<span class="hljs-string">&quot;][msg:&quot;</span>+message+<span class="hljs-string">&quot;]&quot;</span>;
+                    logger.info(<span class="hljs-string">&quot;**************************Send Message:[&quot;</span>+str+<span class="hljs-string">&quot;]&quot;</span>);
+                    MessageProperties messageProperties = <span class="hljs-keyword">new</span> MessageProperties();
+                    rabbitTemplate.send(<span class="hljs-string">&quot;topic-exchange&quot;</span>,
+                            routeKey,
+                            <span class="hljs-keyword">new</span> Message(str.getBytes(), messageProperties));
+                &#125;
+            &#125;
+            opt = <span class="hljs-string">&quot;suc&quot;</span>;
+        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+            opt = e.getCause().toString();
+        &#125;
+        <span class="hljs-keyword">return</span> opt;
+    &#125;
+&#125;</code></pre>
+
+<h3 id="消息的接收"><a href="#消息的接收" class="headerlink" title="消息的接收"></a>消息的接收</h3><h4 id="配置文件-1"><a href="#配置文件-1" class="headerlink" title="配置文件"></a>配置文件</h4><pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="hljs-comment">&lt;!-- 查找最新的schemaLocation 访问 http://www.springframework.org/schema/ --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">beans</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/beans&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xmlns:context</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/context&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xmlns:rabbit</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/rabbit&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;</span></span>
+<span class="hljs-tag"><span class="hljs-string">           http://www.springframework.org/schema/beans</span></span>
+<span class="hljs-tag"><span class="hljs-string">           http://www.springframework.org/schema/beans/spring-beans-4.0.xsd</span></span>
+<span class="hljs-tag"><span class="hljs-string">           http://www.springframework.org/schema/context</span></span>
+<span class="hljs-tag"><span class="hljs-string">           http://www.springframework.org/schema/context/spring-context-4.0.xsd</span></span>
+<span class="hljs-tag"><span class="hljs-string">           http://www.springframework.org/schema/rabbit</span></span>
+<span class="hljs-tag"><span class="hljs-string">           http://www.springframework.org/schema/rabbit/spring-rabbit-2.0.xsd&quot;</span>&gt;</span>
+
+     <span class="hljs-comment">&lt;!-- 配置扫描路径 --&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">context:component-scan</span> <span class="hljs-attr">base-package</span>=<span class="hljs-string">&quot;cn.enjoyedu&quot;</span>&gt;</span>
+       <span class="hljs-comment">&lt;!-- 只扫描Service，也可以添加Repostory，但是要把Controller排除在外，Controller由spring-mvc.xml去加载 --&gt;</span>
+       <span class="hljs-comment">&lt;!-- &lt;context:include-filter type=&quot;annotation&quot; expression=&quot;org.springframework.stereotype.Service&quot; /&gt; --&gt;</span>
+       <span class="hljs-comment">&lt;!-- &lt;context:include-filter type=&quot;annotation&quot; expression=&quot;org.springframework.stereotype.Repository&quot; /&gt; --&gt;</span>
+        <span class="hljs-comment">&lt;!--&lt;context:include-filter type=&quot;annotation&quot; expression=&quot;org.springframework.stereotype.Component&quot; /&gt;--&gt;</span>
+         <span class="hljs-tag">&lt;<span class="hljs-name">context:exclude-filter</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;annotation&quot;</span> <span class="hljs-attr">expression</span>=<span class="hljs-string">&quot;org.springframework.stereotype.Controller&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">context:component-scan</span>&gt;</span>
+
+<span class="hljs-comment">&lt;!-- rabbitMQ配置 --&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span></span>
+<span class="hljs-tag">        <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.amqp.rabbit.connection.CachingConnectionFactory&quot;</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">constructor-arg</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;127.0.0.1&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;username&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;guest&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;password&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;guest&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;channelCacheSize&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;8&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;port&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;5672&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span>
+   <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:admin</span> <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span>/&gt;</span>
+
+    <span class="hljs-comment">&lt;!-- fanout交换器 begin--&gt;</span>
+    <span class="hljs-comment">&lt;!-- 定义队列 --&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;h1_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;h2_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;h3_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+
+    <span class="hljs-comment">&lt;!-- 把需要数据的队列与交换器绑定一起 --&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:fanout-exchange</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;fanout-exchange&quot;</span></span>
+<span class="hljs-tag">        <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/rabbit&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:bindings</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:binding</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;h1_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:binding</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:binding</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;h2_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:binding</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:binding</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;h3_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:binding</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:bindings</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:fanout-exchange</span>&gt;</span>
+    <span class="hljs-comment">&lt;!-- fanout交换器 end--&gt;</span>
+
+    <span class="hljs-comment">&lt;!-- topic交换器 begin--&gt;</span>
+    <span class="hljs-comment">&lt;!-- 定义队列 --&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;all_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;all_kafka_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;king_kafka_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:queue</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;king_all_queue&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>/&gt;</span>
+
+    <span class="hljs-comment">&lt;!-- 把需要数据的队列通过路由键与topic交换器绑定一起 --&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:topic-exchange</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;topic-exchange&quot;</span></span>
+<span class="hljs-tag">           <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.springframework.org/schema/rabbit&quot;</span> <span class="hljs-attr">durable</span>=<span class="hljs-string">&quot;false&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:bindings</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">binding</span> <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;#&quot;</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;all_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">binding</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">binding</span> <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;*.kafka&quot;</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;all_kafka_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">binding</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">binding</span> <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;king.kafka&quot;</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;king_kafka_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">binding</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">binding</span> <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;king.*&quot;</span> <span class="hljs-attr">queue</span>=<span class="hljs-string">&quot;king_all_queue&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">binding</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:bindings</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:topic-exchange</span>&gt;</span>
+    <span class="hljs-comment">&lt;!-- topic交换器 end--&gt;</span>
+
+    <span class="hljs-comment">&lt;!--消费者定义--&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;h1_Service&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;cn.enjoyedu.service.fanout.H1_Service&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;h2_Service&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;cn.enjoyedu.service.fanout.H2_Service&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;h3_Service&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;cn.enjoyedu.service.fanout.H3_Service&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
+
+    <span class="hljs-comment">&lt;!--监听容器--&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener-container</span> <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;h1_Service&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;h1_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;h2_Service&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;h2_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;h3_Service&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;h3_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;allTopicService&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;all_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;allKafkaTopicService&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;all_kafka_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;kingKafkaTopicService&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;king_kafka_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;kingAllTopicService&quot;</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;king_all_queue&quot;</span></span>
+<span class="hljs-tag">                         <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:listener-container</span>&gt;</span>
+
+<span class="hljs-tag">&lt;/<span class="hljs-name">beans</span>&gt;</span></code></pre>
+
+<h4 id="代码-1"><a href="#代码-1" class="headerlink" title="代码"></a>代码</h4><p>其他消费者代码与此相同，不再赘述。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">H2_Service</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">MessageListener</span></span>&#123;
+    <span class="hljs-keyword">private</span> Logger logger = LoggerFactory.getLogger(H2_Service.class);
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onMessage</span><span class="hljs-params">(Message message)</span> </span>&#123;
+        logger.info(<span class="hljs-string">&quot;Get message: &quot;</span>+<span class="hljs-keyword">new</span> String( message.getBody()));
+    &#125;
+&#125;</code></pre>
+
+<h3 id="高级特性"><a href="#高级特性" class="headerlink" title="高级特性"></a>高级特性</h3><h4 id="生产者的失败通知及发送者确认"><a href="#生产者的失败通知及发送者确认" class="headerlink" title="生产者的失败通知及发送者确认"></a>生产者的失败通知及发送者确认</h4><p>配置文件</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">rabbit:template</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;rabbitTemplate&quot;</span> </span>
+<span class="hljs-tag">   <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span></span>
+<span class="hljs-tag">   <span class="hljs-attr">mandatory</span>=<span class="hljs-string">&quot;true&quot;</span></span>
+<span class="hljs-tag">   <span class="hljs-attr">return-callback</span>=<span class="hljs-string">&quot;sendReturnCallback&quot;</span></span>
+<span class="hljs-tag">   <span class="hljs-attr">confirm-callback</span>=<span class="hljs-string">&quot;confirmCallback&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:template</span>&gt;</span></code></pre>
+
+<p>失败通知的回调</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SendReturnCallback</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">RabbitTemplate</span>.<span class="hljs-title">ReturnCallback</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">returnedMessage</span><span class="hljs-params">(Message message, <span class="hljs-keyword">int</span> replyCode,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                String replyText, String exchange,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                String routingKey)</span> </span>&#123;
+        String msg = <span class="hljs-keyword">new</span> String(message.getBody());
+        System.out.println(<span class="hljs-string">&quot;返回的replyText ：&quot;</span>+replyText);
+        System.out.println(<span class="hljs-string">&quot;返回的exchange ：&quot;</span>+exchange);
+        System.out.println(<span class="hljs-string">&quot;返回的routingKey ：&quot;</span>+routingKey);
+        System.out.println(<span class="hljs-string">&quot;返回的message ：&quot;</span>+message);
+
+    &#125;
+&#125;</code></pre>
+
+<p>发送者确认的回调</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfirmCallback</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">RabbitTemplate</span>.<span class="hljs-title">ConfirmCallback</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">confirm</span><span class="hljs-params">(CorrelationData correlationData,</span></span>
+<span class="hljs-function"><span class="hljs-params">                        <span class="hljs-keyword">boolean</span> ack, String cause)</span> </span>&#123;
+        <span class="hljs-keyword">if</span>(ack)&#123;
+            System.out.println(<span class="hljs-string">&quot;消息发送给mq成功&quot;</span>);
+        &#125;<span class="hljs-keyword">else</span>&#123;
+            System.out.println(<span class="hljs-string">&quot;消息发送给mq失败，原因：&quot;</span>+cause);
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h4 id="消费者手动确认"><a href="#消费者手动确认" class="headerlink" title="消费者手动确认"></a>消费者手动确认</h4><p>配置文件</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- 设置acknowledge属性 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener-container</span> <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span></span>
+<span class="hljs-tag">        <span class="hljs-attr">acknowledge</span>=<span class="hljs-string">&quot;manual&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;depot_queue&quot;</span></span>
+<span class="hljs-tag">            <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;processDepot&quot;</span></span>
+<span class="hljs-tag">            <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:listener-container</span>&gt;</span></code></pre>
+
+<p>代码，注意此时的接口为ChannelAwareMessageListener</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Service</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProcessDepot</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ChannelAwareMessageListener</span> </span>&#123;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Logger logger = LoggerFactory.getLogger(ProcessDepot.class);
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> DepotManager depotManager;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Gson gson = <span class="hljs-keyword">new</span> Gson();
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onMessage</span><span class="hljs-params">(Message message, Channel channel)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+        <span class="hljs-keyword">try</span> &#123;
+            String msg = <span class="hljs-keyword">new</span> String(message.getBody());
+            logger.info(<span class="hljs-string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;接收到消息:&quot;</span>+msg);
+            GoodTransferVo goodTransferVo = gson.fromJson(msg,GoodTransferVo.class);
+            <span class="hljs-keyword">try</span> &#123;
+                depotManager.operDepot(goodTransferVo);
+                channel.basicAck(message.getMessageProperties().getDeliveryTag(),
+                        <span class="hljs-keyword">false</span>);
+                logger.info(<span class="hljs-string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;库存处理完成，应答Mq服务&quot;</span>);
+            &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+                logger.error(e.getMessage());
+                channel.basicNack(message.getMessageProperties().getDeliveryTag(),
+                        <span class="hljs-keyword">false</span>,<span class="hljs-keyword">true</span>);
+                logger.info(<span class="hljs-string">&quot;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;库存处理失败，拒绝消息，要求Mq重新派发&quot;</span>);
+                <span class="hljs-keyword">throw</span> e;
+            &#125;
+
+        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
+            logger.error(e.getMessage());
+        &#125;
+    &#125;
+&#125;</code></pre>
+
+<h4 id="消费者预取模式"><a href="#消费者预取模式" class="headerlink" title="消费者预取模式"></a>消费者预取模式</h4><pre><code class="hljs xml"><span class="hljs-comment">&lt;!-- prefetch表示预取的数量 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener-container</span> <span class="hljs-attr">connection-factory</span>=<span class="hljs-string">&quot;rabbitConnectionFactory&quot;</span></span>
+<span class="hljs-tag">        <span class="hljs-attr">acknowledge</span>=<span class="hljs-string">&quot;manual&quot;</span> <span class="hljs-attr">prefetch</span>=<span class="hljs-string">&quot;150&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">rabbit:listener</span> <span class="hljs-attr">queues</span>=<span class="hljs-string">&quot;depot_queue&quot;</span></span>
+<span class="hljs-tag">            <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;processDepot&quot;</span></span>
+<span class="hljs-tag">            <span class="hljs-attr">method</span>=<span class="hljs-string">&quot;onMessage&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">rabbit:listener-container</span>&gt;</span></code></pre>
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/RabbitMQ/">RabbitMQ</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/blog/2020/05/11/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E7%9A%84%E7%AE%A1%E7%90%86/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">RabbitMQ的管理</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/05/09/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/RabbitMQ%E7%9A%84%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7/">
+                        <span class="hidden-mobile">RabbitMQ的高级特性</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>
