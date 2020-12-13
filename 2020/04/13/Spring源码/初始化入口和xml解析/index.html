@@ -184,7 +184,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      7.8k 字
+      8.2k 字
     </span>
   
 
@@ -194,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      116
+      121
        分钟
     </span>
   
@@ -315,15 +315,28 @@
 <li><p>springboot 加载容器 ApplicationContext applicationContext = new<br>EmbeddedWebApplicationContext();</p>
 </li>
 </ul>
-<h2 id="Spring容器加载的核心方法"><a href="#Spring容器加载的核心方法" class="headerlink" title="Spring容器加载的核心方法"></a>Spring容器加载的核心方法</h2><p>AbstractApplicationContext.refresh()方法</p>
-<p>refresh()方法是spring容器启动过程中的核心方法，spring容器要加载必须执行该方法。</p>
+<h2 id="Spring容器加载的核心方法"><a href="#Spring容器加载的核心方法" class="headerlink" title="Spring容器加载的核心方法"></a>Spring容器加载的核心方法</h2><p>AbstractApplicationContext中的refresh()方法是spring容器启动过程中的核心方法，spring容器要加载必须执行该方法。</p>
+<p>ClassPathXmlApplicationContext中对该方法的调用</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ClassPathXmlApplicationContext</span><span class="hljs-params">(</span></span>
+<span class="hljs-function"><span class="hljs-params">		String[] configLocations, <span class="hljs-keyword">boolean</span> refresh, <span class="hljs-meta">@Nullable</span> ApplicationContext parent)</span></span>
+<span class="hljs-function">		<span class="hljs-keyword">throws</span> BeansException </span>&#123;
+
+	<span class="hljs-keyword">super</span>(parent);
+
+	<span class="hljs-comment">//创建解析器，解析configLocations</span>
+	setConfigLocations(configLocations);
+	<span class="hljs-keyword">if</span> (refresh) &#123;
+		refresh();
+	&#125;
+&#125;</code></pre>
+
+<p>refresh()方法内容，xml解析在obtainFreshBeanFactory()中进行，本篇也着重分析这个方法，其他内容在接下来的Spring源码解析中进行分析。</p>
 <pre><code class="hljs java"><span class="hljs-meta">@Override</span>
 <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">refresh</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException, IllegalStateException </span>&#123;
 	<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>.startupShutdownMonitor) &#123;
 		<span class="hljs-comment">//为容器初始化做准备，重要程度：0</span>
 		<span class="hljs-comment">//Prepare this context for refreshing.</span>
 		prepareRefresh();
-
 		<span class="hljs-comment">/**</span>
 <span class="hljs-comment">		* 重要程度：5</span>
 <span class="hljs-comment">		* 1、创建BeanFactory对象</span>
@@ -341,18 +354,14 @@
 <span class="hljs-comment">		* */</span>
 		<span class="hljs-comment">// Tell the subclass to refresh the internal bean factory.</span>
 		ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
-
 		<span class="hljs-comment">/*</span>
 <span class="hljs-comment">		* 给beanFactory设置一些属性值，可以不看</span>
 <span class="hljs-comment">		* */</span>
 		<span class="hljs-comment">// Prepare the bean factory for use in this context.</span>
 		prepareBeanFactory(beanFactory);
-
 		<span class="hljs-keyword">try</span> &#123;
-			<span class="hljs-comment">//TODO</span>
 			<span class="hljs-comment">// Allows post-processing of the bean factory in context subclasses.</span>
 			postProcessBeanFactory(beanFactory);
-
 			<span class="hljs-comment">/*</span>
 <span class="hljs-comment">			* BeanDefinitionRegistryPostProcessor</span>
 <span class="hljs-comment">			* BeanFactoryPostProcessor</span>
@@ -360,33 +369,27 @@
 <span class="hljs-comment">			* */</span>
 			<span class="hljs-comment">// Invoke factory processors registered as beans in the context.</span>
 			invokeBeanFactoryPostProcessors(beanFactory);
-
 			<span class="hljs-comment">/*</span>
 <span class="hljs-comment">			* 把实现了BeanPostProcessor接口的类实例化，并且加入到BeanFactory中</span>
 <span class="hljs-comment">			* */</span>
 			<span class="hljs-comment">// Register bean processors that intercept bean creation.</span>
 			registerBeanPostProcessors(beanFactory);
-
 			<span class="hljs-comment">/*</span>
 <span class="hljs-comment">			* 国际化,重要程度2</span>
 <span class="hljs-comment">			* */</span>
 			<span class="hljs-comment">// Initialize message source for this context.</span>
 			initMessageSource();
-
 			<span class="hljs-comment">//初始化事件管理类</span>
 			<span class="hljs-comment">// Initialize event multicaster for this context.</span>
 			initApplicationEventMulticaster();
-
 			<span class="hljs-comment">//这个方法着重理解模板设计模式，因为在springboot中，这个方法是用来做内嵌tomcat启动的</span>
 			<span class="hljs-comment">// Initialize other special beans in specific context subclasses.</span>
 			onRefresh();
-
 			<span class="hljs-comment">/*</span>
 <span class="hljs-comment">			* 往事件管理类中注册事件类</span>
 <span class="hljs-comment">			* */</span>
 			<span class="hljs-comment">// Check for listener beans and register them.</span>
 			registerListeners();
-
 			<span class="hljs-comment">/*</span>
 <span class="hljs-comment">			* 这个方法是spring中最重要的方法，没有之一</span>
 <span class="hljs-comment">			* 所以这个方法一定要理解要具体看</span>
@@ -395,31 +398,24 @@
 <span class="hljs-comment">			* 3、注解支持</span>
 <span class="hljs-comment">			* 4、BeanPostProcessor的执行</span>
 <span class="hljs-comment">			* 5、Aop的入口</span>
-<span class="hljs-comment">			*</span>
 <span class="hljs-comment">			* */</span>
 			<span class="hljs-comment">// Instantiate all remaining (non-lazy-init) singletons.</span>
 			finishBeanFactoryInitialization(beanFactory);
-
 			<span class="hljs-comment">// Last step: publish corresponding event.</span>
 			finishRefresh();
 		&#125;
-
 		<span class="hljs-keyword">catch</span> (BeansException ex) &#123;
 			<span class="hljs-keyword">if</span> (logger.isWarnEnabled()) &#123;
 				logger.warn(<span class="hljs-string">&quot;Exception encountered during context initialization - &quot;</span> +
 						<span class="hljs-string">&quot;cancelling refresh attempt: &quot;</span> + ex);
 			&#125;
-
 			<span class="hljs-comment">// Destroy already created singletons to avoid dangling resources.</span>
 			destroyBeans();
-
 			<span class="hljs-comment">// Reset &#x27;active&#x27; flag.</span>
 			cancelRefresh(ex);
-
 			<span class="hljs-comment">// Propagate exception to caller.</span>
 			<span class="hljs-keyword">throw</span> ex;
 		&#125;
-
 		<span class="hljs-keyword">finally</span> &#123;
 			<span class="hljs-comment">// Reset common introspection caches in Spring&#x27;s core, since we</span>
 			<span class="hljs-comment">// might not ever need metadata for singleton beans anymore...</span>
@@ -428,65 +424,16 @@
 	&#125;
 &#125;</code></pre>
 
-<h2 id="设计模式1-模版设计模式"><a href="#设计模式1-模版设计模式" class="headerlink" title="设计模式1-模版设计模式"></a>设计模式1-模版设计模式</h2><p>spring源码中大量使用了模版设计模式，是使用的最多的设计模式。</p>
-<p>模版设计模式一般有两种类，抽象的父类，以及具体实现的子类。父类中实现逻辑中不变的部分，将可变的行为定义为抽象方法交给子类实现，但方法的执行顺序由父类决定。</p>
-<p>创建一个抽象模版结构</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AblstractClass</span> </span>&#123;
-
-    <span class="hljs-comment">//模板方法用来控制子类的顺序 要想有人生必须按老爸的人生顺序来  </span>
-    <span class="hljs-comment">//声明final不让子类覆盖这个方法，防止改变人生顺序</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> 人生()&#123;
-        学习();
-        工作();
-        爱情();
-    &#125;
-    
-    <span class="hljs-comment">//家里穷更得用工学习</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 学习()&#123;
-        System.out.println(<span class="hljs-string">&quot;每天晚上趴在邻居窗上学习&quot;</span>);
-    &#125;
-    
-    <span class="hljs-comment">//工作必须稳定</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 工作()&#123;       
-        System.out.println(<span class="hljs-string">&quot;从一而终&quot;</span>);
-    &#125;
-    
-    <span class="hljs-comment">//恋爱自由  让儿子自由恋去</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">void</span> 爱情();
-&#125;</code></pre>
-
-<p>创建一个具体模版</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConcreteClass</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AblstractClass</span> </span>&#123;
-    
-    <span class="hljs-comment">//儿子不认可父亲的学习方法  考高分影响同学关系</span>
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 学习() &#123;
-        System.out.println(<span class="hljs-string">&quot;60分万岁...&quot;</span>);
-    &#125;
-    
-    <span class="hljs-comment">//父亲给我爱情自由  一定好好谈恋爱</span>
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 爱情() &#123;
-        System.out.println(<span class="hljs-string">&quot;肤白貌美大长腿...&quot;</span>);
-    &#125;
-&#125;</code></pre>
-
-<p>具体的调用</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestMain</span> </span>&#123;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-         ConcreteClass cs  = <span class="hljs-keyword">new</span> ConcreteClass();
-         cs.人生();
-    &#125;
-&#125;</code></pre>
-
-<h2 id="xml解析"><a href="#xml解析" class="headerlink" title="xml解析"></a>xml解析</h2><p>ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();</p>
-<p>该方法主要进行xml解析工作，流程如下：</p>
+<h2 id="obtainFreshBeanFactory-方法"><a href="#obtainFreshBeanFactory-方法" class="headerlink" title="obtainFreshBeanFactory()方法"></a>obtainFreshBeanFactory()方法</h2><p>该方法主要进行beanFactory的初始化，包括xml解析工作，方法调用链为：</p>
 <ol>
-<li><p>创建XmlBeanDefinitionReader对象</p>
+<li><p>AbstractApplicationContext.obtainFreshBeanFactory()</p>
+</li>
+<li><p>AbstractRefreshableApplicationContext.refreshBeanFactory()</p>
+</li>
+<li><p>AbstractXmlApplicationContext.loadBeanDefinitions()，此处使用委托模式，利用传入的beanFactory创建XmlBeanDefinitionReader对象</p>
 <pre><code class="hljs java">XmlBeanDefinitionReader beanDefinitionReader = <span class="hljs-keyword">new</span> XmlBeanDefinitionReader(beanFactory);</code></pre>
 </li>
-<li><p>通过Reader对象加载配置文件</p>
+<li><p>AbstractXmlApplicationContext.loadBeanDefinitions()，此时会传入beanDefinitionReader，并调用XmlBeanDefinitionReader对象的loadBeanDefinitions()方法加载配置文件。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">loadBeanDefinitions</span><span class="hljs-params">(XmlBeanDefinitionReader reader)</span> <span class="hljs-keyword">throws</span> BeansException, IOException </span>&#123;
 	Resource[] configResources = getConfigResources();
 	<span class="hljs-keyword">if</span> (configResources != <span class="hljs-keyword">null</span>) &#123;
@@ -499,14 +446,20 @@
 	&#125;
 &#125;</code></pre>
 </li>
-<li><p>根据加载的配置文件把配置文件封装成document对象</p>
+<li><p>AbstractBeanDefinitionReader.loadBeanDefinitions()</p>
+</li>
+<li><p>XmlBeanDefinitionReader.loadBeanDefinitions()，这一步主要进行EncodedResource带编码的对Resource对象的封装</p>
+</li>
+<li><p>XmlBeanDefinitionReader.loadBeanDefinitions()</p>
+</li>
+<li><p>XmlBeanDefinitionReader.doLoadBeanDefinitions()</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">int</span> <span class="hljs-title">doLoadBeanDefinitions</span><span class="hljs-params">(InputSource inputSource, Resource resource)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> BeanDefinitionStoreException </span>&#123;
-   
+
 	<span class="hljs-keyword">try</span> &#123;
 		<span class="hljs-comment">//把inputSource 封装成Document文件对象，这是jdk的API</span>
 		Document doc = doLoadDocument(inputSource, resource);
-   
+
 		<span class="hljs-comment">//主要看这个方法，根据解析出来的document对象，拿到里面的标签元素封装成BeanDefinition</span>
 		<span class="hljs-keyword">int</span> count = registerBeanDefinitions(doc, resource);
 		<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
@@ -515,141 +468,50 @@
 		<span class="hljs-keyword">return</span> count;
 	&#125;</code></pre>
 </li>
-<li><p>创建BeanDefinitionDocumentReader对象，DocumentReader负责对document对象解析</p>
+<li><p>XmlBeanDefinitionReader.registerBeanDefinitions()，创建BeanDefinitionDocumentReader对象，将document的解析委托给这个对象</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">registerBeanDefinitions</span><span class="hljs-params">(Document doc, Resource resource)</span> <span class="hljs-keyword">throws</span> BeanDefinitionStoreException </span>&#123;
-	<span class="hljs-comment">//又来一记委托模式，BeanDefinitionDocumentReader委托这个类进行document的解析</span>
+	<span class="hljs-comment">//委托模式，创建BeanDefinitionDocumentReader对象，将document的解析委托给这个对象</span>
 	BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
 	<span class="hljs-keyword">int</span> countBefore = getRegistry().getBeanDefinitionCount();
-	<span class="hljs-comment">//主要看这个方法，createReaderContext(resource) XmlReaderContext上下文，封装了XmlBeanDefinitionReader对象</span>
+	<span class="hljs-comment">//主要看registerBeanDefinitions方法，createReaderContext(resource) 是创建XmlReaderContext上下文，其中封装了XmlBeanDefinitionReader对象</span>
 	documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
 	<span class="hljs-keyword">return</span> getRegistry().getBeanDefinitionCount() - countBefore;
 &#125;</code></pre>
 </li>
-<li><p>parseDefaultElement(ele,delegate);负责常规标签的解析，delegate.parseCustomElement(ele)负责自定义标签的解析</p>
-<pre><code class="hljs reasonml">protected void parse<span class="hljs-constructor">BeanDefinitions(Element <span class="hljs-params">root</span>, BeanDefinitionParserDelegate <span class="hljs-params">delegate</span>)</span> &#123;
-	<span class="hljs-keyword">if</span> (delegate.is<span class="hljs-constructor">DefaultNamespace(<span class="hljs-params">root</span>)</span>) &#123;
-		NodeList nl = root.get<span class="hljs-constructor">ChildNodes()</span>;
-		<span class="hljs-keyword">for</span> (<span class="hljs-built_in">int</span> i = <span class="hljs-number">0</span>; i &lt; nl.get<span class="hljs-constructor">Length()</span>; i++) &#123;
+<li><p>DefaultBeanDefinitionDocumentReader.registerBeanDefinitions()</p>
+</li>
+<li><p>DefaultBeanDefinitionDocumentReader.doRegisterBeanDefinitions()</p>
+</li>
+<li><p>DefaultBeanDefinitionDocumentReader.parseBeanDefinitions()，其中parseDefaultElement(ele,delegate);负责常规标签的解析，delegate.parseCustomElement(ele)负责自定义标签的解析，最终解析的标签封装成BeanDefinition并缓存到容器中。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">parseBeanDefinitions</span><span class="hljs-params">(Element root, BeanDefinitionParserDelegate delegate)</span> </span>&#123;
+	<span class="hljs-keyword">if</span> (delegate.isDefaultNamespace(root)) &#123;
+		NodeList nl = root.getChildNodes();
+		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; nl.getLength(); i++) &#123;
 			Node node = nl.item(i);
-			<span class="hljs-keyword">if</span> (node instanceof Element) &#123;
+			<span class="hljs-keyword">if</span> (node <span class="hljs-keyword">instanceof</span> Element) &#123;
 				Element ele = (Element) node;
-				<span class="hljs-keyword">if</span> (delegate.is<span class="hljs-constructor">DefaultNamespace(<span class="hljs-params">ele</span>)</span>) &#123;
+				<span class="hljs-keyword">if</span> (delegate.isDefaultNamespace(ele)) &#123;
 					<span class="hljs-comment">//默认标签解析</span>
-					parse<span class="hljs-constructor">DefaultElement(<span class="hljs-params">ele</span>, <span class="hljs-params">delegate</span>)</span>;
+					parseDefaultElement(ele, delegate);
 				&#125;
 				<span class="hljs-keyword">else</span> &#123;
 					<span class="hljs-comment">//自定义标签解析</span>
-					delegate.parse<span class="hljs-constructor">CustomElement(<span class="hljs-params">ele</span>)</span>;
+					delegate.parseCustomElement(ele);
 				&#125;
 			&#125;
 		&#125;
 	&#125;
 	<span class="hljs-keyword">else</span> &#123;
-		delegate.parse<span class="hljs-constructor">CustomElement(<span class="hljs-params">root</span>)</span>;
+		delegate.parseCustomElement(root);
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>最终解析的标签封装成BeanDefinition并缓存到容器中。</p>
-</li>
-<li><p>xml流程分析</p>
+
 </li>
 </ol>
+<p>xml解析流程分析</p>
 <img src="/blog/2020/04/13/Spring%E6%BA%90%E7%A0%81/%E5%88%9D%E5%A7%8B%E5%8C%96%E5%85%A5%E5%8F%A3%E5%92%8Cxml%E8%A7%A3%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" class>
 
-<h2 id="自定义标签解析"><a href="#自定义标签解析" class="headerlink" title="自定义标签解析"></a>自定义标签解析</h2><ol>
-<li><p>首先获取自定义标签头的namespace命名空间，例如：<code>http://www.springframework.org/schema/context</code>，然后通过namespace获取到NamespaceHandler处理类，之后再使用NamespaceHandler中的解析类解析标签获得BeanDefinition对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> BeanDefinition <span class="hljs-title">parseCustomElement</span><span class="hljs-params">(Element ele, <span class="hljs-meta">@Nullable</span> BeanDefinition containingBd)</span> </span>&#123;
-  <span class="hljs-comment">// 获取自定义标签的命名空间</span>
-	String namespaceUri = getNamespaceURI(ele);
-	<span class="hljs-keyword">if</span> (namespaceUri == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-   <span class="hljs-comment">// 这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类</span>
-	NamespaceHandler handler = <span class="hljs-keyword">this</span>.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
-	<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;
-		error(<span class="hljs-string">&quot;Unable to locate Spring NamespaceHandler for XML schema namespace [&quot;</span> + namespaceUri + <span class="hljs-string">&quot;]&quot;</span>, ele);
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-	<span class="hljs-keyword">return</span> handler.parse(ele, <span class="hljs-keyword">new</span> ParserContext(<span class="hljs-keyword">this</span>.readerContext, <span class="hljs-keyword">this</span>, containingBd));
-&#125;</code></pre>
-</li>
-<li><p>获取namespace与NamespaceHandler实例的映射关系，然后通过反射创建实例，并调用NamespaceHandler的init()方法完成解析类的注册。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> NamespaceHandler <span class="hljs-title">resolve</span><span class="hljs-params">(String namespaceUri)</span> </span>&#123;
-	<span class="hljs-comment">//获取spring中所有jar包里面的 &quot;META-INF/spring.handlers&quot;文件，并且建立映射关系</span>
-	Map&lt;String, Object&gt; handlerMappings = getHandlerMappings();
-   
-	<span class="hljs-comment">//根据namespaceUri：http://www.springframework.org/schema/p，获取到这个命名空间的处理类</span>
-	Object handlerOrClassName = handlerMappings.get(namespaceUri);
-	<span class="hljs-keyword">if</span> (handlerOrClassName == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (handlerOrClassName <span class="hljs-keyword">instanceof</span> NamespaceHandler) &#123;
-		<span class="hljs-keyword">return</span> (NamespaceHandler) handlerOrClassName;
-	&#125;
-	<span class="hljs-keyword">else</span> &#123;
-		String className = (String) handlerOrClassName;
-		<span class="hljs-keyword">try</span> &#123;
-			Class&lt;?&gt; handlerClass = ClassUtils.forName(className, <span class="hljs-keyword">this</span>.classLoader);
-			<span class="hljs-keyword">if</span> (!NamespaceHandler.class.isAssignableFrom(handlerClass)) &#123;
-				<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FatalBeanException(<span class="hljs-string">&quot;Class [&quot;</span> + className + <span class="hljs-string">&quot;] for namespace [&quot;</span> + namespaceUri +
-						<span class="hljs-string">&quot;] does not implement the [&quot;</span> + NamespaceHandler.class.getName() + <span class="hljs-string">&quot;] interface&quot;</span>);
-			&#125;
-			NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);
-   
-			<span class="hljs-comment">//调用处理类的init方法，在init方法中完成标签元素解析类的注册</span>
-			namespaceHandler.init();
-			handlerMappings.put(namespaceUri, namespaceHandler);
-			<span class="hljs-keyword">return</span> namespaceHandler;
-		&#125;
-		<span class="hljs-keyword">catch</span> (ClassNotFoundException ex) &#123;
-			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FatalBeanException(<span class="hljs-string">&quot;Could not find NamespaceHandler class [&quot;</span> + className +
-					<span class="hljs-string">&quot;] for namespace [&quot;</span> + namespaceUri + <span class="hljs-string">&quot;]&quot;</span>, ex);
-		&#125;
-		<span class="hljs-keyword">catch</span> (LinkageError err) &#123;
-			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FatalBeanException(<span class="hljs-string">&quot;Unresolvable class definition for NamespaceHandler class [&quot;</span> +
-					className + <span class="hljs-string">&quot;] for namespace [&quot;</span> + namespaceUri + <span class="hljs-string">&quot;]&quot;</span>, err);
-		&#125;
-	&#125;
-&#125;</code></pre>
-</li>
-<li><p>获取namespace跟NamespaceHandler映射关系的详细过程。spring在jar包的META-INF/spring.handlers文件中，已经保存了NamespaceUri和NamepsaceHandler之间的映射。此处会加载spring.handlers中的所有内容并保存在map中。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> Map&lt;String, Object&gt; <span class="hljs-title">getHandlerMappings</span><span class="hljs-params">()</span> </span>&#123;
-	Map&lt;String, Object&gt; handlerMappings = <span class="hljs-keyword">this</span>.handlerMappings;
-	<span class="hljs-keyword">if</span> (handlerMappings == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>) &#123;
-			handlerMappings = <span class="hljs-keyword">this</span>.handlerMappings;
-			<span class="hljs-keyword">if</span> (handlerMappings == <span class="hljs-keyword">null</span>) &#123;
-				<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-					logger.trace(<span class="hljs-string">&quot;Loading NamespaceHandler mappings from [&quot;</span> + <span class="hljs-keyword">this</span>.handlerMappingsLocation + <span class="hljs-string">&quot;]&quot;</span>);
-				&#125;
-				<span class="hljs-keyword">try</span> &#123;
-					<span class="hljs-comment">//加载&quot;META-INF/spring.handlers&quot;文件过程</span>
-					Properties mappings =
-							PropertiesLoaderUtils.loadAllProperties(<span class="hljs-keyword">this</span>.handlerMappingsLocation, <span class="hljs-keyword">this</span>.classLoader);
-					<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-						logger.trace(<span class="hljs-string">&quot;Loaded NamespaceHandler mappings: &quot;</span> + mappings);
-					&#125;
-   
-					<span class="hljs-comment">//所有&quot;META-INF/spring.handlers&quot;文件里面的内容建立映射关系</span>
-					handlerMappings = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;&gt;(mappings.size());
-					CollectionUtils.mergePropertiesIntoMap(mappings, handlerMappings);
-					<span class="hljs-keyword">this</span>.handlerMappings = handlerMappings;
-				&#125;
-				<span class="hljs-keyword">catch</span> (IOException ex) &#123;
-					<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
-							<span class="hljs-string">&quot;Unable to load NamespaceHandler mappings from location [&quot;</span> + <span class="hljs-keyword">this</span>.handlerMappingsLocation + <span class="hljs-string">&quot;]&quot;</span>, ex);
-				&#125;
-			&#125;
-		&#125;
-	&#125;
-	<span class="hljs-keyword">return</span> handlerMappings;
-&#125;</code></pre>
-
-
-</li>
-</ol>
-<h2 id="默认标签的解析"><a href="#默认标签的解析" class="headerlink" title="默认标签的解析"></a>默认标签的解析</h2><ol>
-<li><p>默认标签分为四种，import、alias、bean、beans，这里主要看bean标签的解析。</p>
+<h2 id="parseDefaultElement-方法"><a href="#parseDefaultElement-方法" class="headerlink" title="parseDefaultElement()方法"></a>parseDefaultElement()方法</h2><p>该方法负责默认标签的解析，位于<strong>DefaultBeanDefinitionDocumentReader</strong>中，方法内容：</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">parseDefaultElement</span><span class="hljs-params">(Element ele, BeanDefinitionParserDelegate delegate)</span> </span>&#123;
 	<span class="hljs-comment">//import标签解析  重要程度 1 ，可看可不看</span>
 	<span class="hljs-keyword">if</span> (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) &#123;
@@ -668,17 +530,18 @@
 		doRegisterBeanDefinitions(ele);
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>先调用parseBeanDefinitionElement(ele)方法首先解析节点属性封装为BeanDefinitionHolder对象，之后再解析BeanDefinitionHolder对象中的自定义属性，并使用装饰者模式将解析后的属性设置到BeanDefinitionHolder中，然后对BeanDefinitionHolder进行注册。</p>
+
+<p>默认标签分为四种，import、alias、bean、beans，这里主要看bean标签的解析。</p>
+<p>processBeanDefinition()方法中会调用parseBeanDefinitionElement(ele)方法，解析节点属性并封装为BeanDefinitionHolder对象，之后再解析BeanDefinitionHolder对象中的自定义属性，使用装饰者模式将解析后的属性设置到BeanDefinitionHolder中，然后对BeanDefinitionHolder进行注册。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">processBeanDefinition</span><span class="hljs-params">(Element ele, BeanDefinitionParserDelegate delegate)</span> </span>&#123;
 	<span class="hljs-comment">//重点看这个方法，重要程度 5 ，解析ele，封装成BeanDefinition</span>
 	BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 	<span class="hljs-keyword">if</span> (bdHolder != <span class="hljs-keyword">null</span>) &#123;
-   
+
 		<span class="hljs-comment">//该方法功能不重要，设计模式重点看一下，装饰者设计模式，加上SPI设计思想</span>
 		bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 		<span class="hljs-keyword">try</span> &#123;
-   
+
 			<span class="hljs-comment">//完成document到BeanDefinition对象转换后，对BeanDefinition对象进行缓存注册</span>
 			<span class="hljs-comment">// Register the final decorated instance.</span>
 			<span class="hljs-comment">//注册过程，重要程度5</span>
@@ -692,13 +555,13 @@
 		getReaderContext().fireComponentRegistered(<span class="hljs-keyword">new</span> BeanComponentDefinition(bdHolder));
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>初次解析标签的过程。这里解析完成后会返回到上层方法，上层方法会将BeanDefinition、beanname、aliases（别名）封装为BeanDefinitionHolder并返回。</p>
+
+<p>delegate.parseBeanDefinitionElement(ele)会调用到<strong>BeanDefinitionParserDelegate</strong>中的parseBeanDefinitionElement()方法进行初次解析，这里解析完成后会返回到上层方法，上层方法会将BeanDefinition、beanname、aliases（别名）封装为BeanDefinitionHolder并返回。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> AbstractBeanDefinition <span class="hljs-title">parseBeanDefinitionElement</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		Element ele, String beanName, <span class="hljs-meta">@Nullable</span> BeanDefinition containingBean)</span> </span>&#123;
-   
+
 	<span class="hljs-keyword">this</span>.parseState.push(<span class="hljs-keyword">new</span> BeanEntry(beanName));
-   
+
 	String className = <span class="hljs-keyword">null</span>;
 	<span class="hljs-keyword">if</span> (ele.hasAttribute(CLASS_ATTRIBUTE)) &#123;
 		className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
@@ -707,51 +570,51 @@
 	<span class="hljs-keyword">if</span> (ele.hasAttribute(PARENT_ATTRIBUTE)) &#123;
 		parent = ele.getAttribute(PARENT_ATTRIBUTE);
 	&#125;
-   
+
 	<span class="hljs-keyword">try</span> &#123;
 		<span class="hljs-comment">//创建GenericBeanDefinition对象</span>
 		AbstractBeanDefinition bd = createBeanDefinition(className, parent);
-   
+
 		<span class="hljs-comment">//解析bean标签的属性，并把解析出来的属性设置到BeanDefinition对象中</span>
 		parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 		bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
-   
+
 		<span class="hljs-comment">//解析bean中的meta标签</span>
 		parseMetaElements(ele, bd);
-   
+
 		<span class="hljs-comment">//解析bean中的lookup-method标签  重要程度：2，可看可不看</span>
 		parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
-   
+
 		<span class="hljs-comment">//解析bean中的replaced-method标签  重要程度：2，可看可不看</span>
 		parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
-   
+
 		<span class="hljs-comment">//解析bean中的constructor-arg标签  重要程度：2，可看可不看</span>
 		parseConstructorArgElements(ele, bd);
-   
+
 		<span class="hljs-comment">//解析bean中的property标签  重要程度：2，可看可不看</span>
 		parsePropertyElements(ele, bd);
-   
+
 		<span class="hljs-comment">//可以不看，用不到</span>
 		parseQualifierElements(ele, bd);
-   
+
 		bd.setResource(<span class="hljs-keyword">this</span>.readerContext.getResource());
 		bd.setSource(extractSource(ele));
-   
+
 		<span class="hljs-keyword">return</span> bd;
 	&#125;</code></pre>
-</li>
-<li><p>对标签中的自定义属性再次进行解析，此处用到的SPI思想跟装饰者模式，通过SPI思想获取处理类的方式与自定义标签解析中的方式相同，此处不再赘述。</p>
+
+<p>标签初次解析完后，会返回到<strong>DefaultBeanDefinitionDocumentReader</strong>中的processBeanDefinition()方法，其中的delegate.decorateBeanDefinitionIfRequired(ele, bdHolder)会调用BeanDefinitionParserDelegate中的decorateIfRequired()对标签中的自定义属性再次进行解析，此处用到的SPI思想跟装饰者模式，通过SPI思想获取处理类的方式与自定义标签解析中的方式相同。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> BeanDefinitionHolder <span class="hljs-title">decorateIfRequired</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		Node node, BeanDefinitionHolder originalDef, <span class="hljs-meta">@Nullable</span> BeanDefinition containingBd)</span> </span>&#123;
-   
+
 	<span class="hljs-comment">//根据node获取到node的命名空间，形如：http://www.springframework.org/schema/p</span>
 	String namespaceUri = getNamespaceURI(node);
 	<span class="hljs-keyword">if</span> (namespaceUri != <span class="hljs-keyword">null</span> &amp;&amp; !isDefaultNamespace(namespaceUri)) &#123;
-   
+
 		<span class="hljs-comment">//这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类</span>
 		NamespaceHandler handler = <span class="hljs-keyword">this</span>.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		<span class="hljs-keyword">if</span> (handler != <span class="hljs-keyword">null</span>) &#123;
-   
+
 			<span class="hljs-comment">//调用NamespaceHandler处理类的decorate方法，开始具体装饰过程，并返回装饰完的对象</span>
 			BeanDefinitionHolder decorated =
 					handler.decorate(node, originalDef, <span class="hljs-keyword">new</span> ParserContext(<span class="hljs-keyword">this</span>.readerContext, <span class="hljs-keyword">this</span>, containingBd));
@@ -771,18 +634,18 @@
 	&#125;
 	<span class="hljs-keyword">return</span> originalDef;
 &#125;</code></pre>
-</li>
-<li><p>注册过程，此处完成完成BeanDefinition的注册后会将beanname与aliases建立联系。</p>
+
+<p>标签再次解析完成后，会返回<strong>DefaultBeanDefinitionDocumentReader</strong>中的processBeanDefinition()方法，通过BeanDefinitionReaderUtils.registerBeanDefinition()调用开始注册过程，此处完成完成BeanDefinition的注册后会将beanname与aliases建立联系。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerBeanDefinition</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> BeanDefinitionStoreException </span>&#123;
-   
+
 	<span class="hljs-comment">// Register bean definition under primary name.</span>
 	String beanName = definitionHolder.getBeanName();
-   
+
 	<span class="hljs-comment">//完成BeanDefinition的注册，重点看，重要程度 5</span>
 	registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
-   
+
 	<span class="hljs-comment">//建立别名和 id的映射，这样就可以根据别名获取到id</span>
 	<span class="hljs-comment">// Register aliases for bean name, if any.</span>
 	String[] aliases = definitionHolder.getAliases();
@@ -792,14 +655,14 @@
 		&#125;
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>BeanDefinition的注册详细过程。将beanname与beanDefinition缓存到map中、beanName放到beanDefinitionNames中，之后将通过beanDefinitionNames实例化bean</p>
+
+<p>registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition())会调用到<strong>DefaultListableBeanFactory</strong>中的registerBeanDefinition()方法，进行BeanDefinition的注册。将beanname与beanDefinition缓存到map中、beanName放到beanDefinitionNames中，之后将通过beanDefinitionNames实例化bean</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerBeanDefinition</span><span class="hljs-params">(String beanName, BeanDefinition beanDefinition)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> BeanDefinitionStoreException </span>&#123;
-   
+
 	Assert.hasText(beanName, <span class="hljs-string">&quot;Bean name must not be empty&quot;</span>);
 	Assert.notNull(beanDefinition, <span class="hljs-string">&quot;BeanDefinition must not be null&quot;</span>);
-   
+
 	<span class="hljs-keyword">if</span> (beanDefinition <span class="hljs-keyword">instanceof</span> AbstractBeanDefinition) &#123;
 		<span class="hljs-keyword">try</span> &#123;
 			((AbstractBeanDefinition) beanDefinition).validate();
@@ -809,7 +672,7 @@
 					<span class="hljs-string">&quot;Validation of bean definition failed&quot;</span>, ex);
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-comment">//先判断BeanDefinition是否已经注册</span>
 	BeanDefinition existingDefinition = <span class="hljs-keyword">this</span>.beanDefinitionMap.get(beanName);
 	<span class="hljs-keyword">if</span> (existingDefinition != <span class="hljs-keyword">null</span>) &#123;
@@ -860,227 +723,116 @@
 			<span class="hljs-comment">//把beanDefinition缓存到map中</span>
 			<span class="hljs-comment">// Still in startup registration phase</span>
 			<span class="hljs-keyword">this</span>.beanDefinitionMap.put(beanName, beanDefinition);
-   
+
 			<span class="hljs-comment">//把beanName放到beanDefinitionNames list中</span>
 			<span class="hljs-keyword">this</span>.beanDefinitionNames.add(beanName);
 			<span class="hljs-keyword">this</span>.manualSingletonNames.remove(beanName);
 		&#125;
 		<span class="hljs-keyword">this</span>.frozenBeanDefinitionNames = <span class="hljs-keyword">null</span>;
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (existingDefinition != <span class="hljs-keyword">null</span> || containsSingleton(beanName)) &#123;
 		resetBeanDefinition(beanName);
 	&#125;
 &#125;</code></pre>
 
-</li>
-</ol>
-<h2 id="设计模式2-委托模式"><a href="#设计模式2-委托模式" class="headerlink" title="设计模式2-委托模式"></a>设计模式2-委托模式</h2><p>不属于23种设计模式之一，是面向对象设计模式中常用的一种模式，可以理解为静态代理和策略模式的一种特殊的组合。简单来说就是接受请求的对象将请求委托给另一个对象来处理，在spring中比较常见。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Company</span></span>&#123;
-	<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">product</span><span class="hljs-params">()</span></span>;
+<h2 id="parseCustomElement-方法"><a href="#parseCustomElement-方法" class="headerlink" title="parseCustomElement()方法"></a>parseCustomElement()方法</h2><p>该方法位于<strong>BeanDefinitionParserDelegate</strong>中，主要进行自定义标签解析</p>
+<p>首先获取自定义标签头的namespace命名空间，例如：<code>http://www.springframework.org/schema/context</code>，然后通过namespace获取到NamespaceHandler处理类，之后再使用NamespaceHandler中的解析类解析标签获得BeanDefinition对象。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> BeanDefinition <span class="hljs-title">parseCustomElement</span><span class="hljs-params">(Element ele, <span class="hljs-meta">@Nullable</span> BeanDefinition containingBd)</span> </span>&#123;
+  <span class="hljs-comment">// 获取自定义标签的命名空间</span>
+	String namespaceUri = getNamespaceURI(ele);
+	<span class="hljs-keyword">if</span> (namespaceUri == <span class="hljs-keyword">null</span>) &#123;
+		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+	&#125;
+   <span class="hljs-comment">// 这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类</span>
+	NamespaceHandler handler = <span class="hljs-keyword">this</span>.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
+	<span class="hljs-keyword">if</span> (handler == <span class="hljs-keyword">null</span>) &#123;
+		error(<span class="hljs-string">&quot;Unable to locate Spring NamespaceHandler for XML schema namespace [&quot;</span> + namespaceUri + <span class="hljs-string">&quot;]&quot;</span>, ele);
+		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+	&#125;
+	<span class="hljs-keyword">return</span> handler.parse(ele, <span class="hljs-keyword">new</span> ParserContext(<span class="hljs-keyword">this</span>.readerContext, <span class="hljs-keyword">this</span>, containingBd));
 &#125;</code></pre>
 
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Sum</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Company</span></span>&#123;
-  <span class="hljs-meta">@Override</span>
-  <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">product</span><span class="hljs-params">()</span></span>&#123;
-    System.out.println(<span class="hljs-string">&quot;sum product&quot;</span>);
-  &#125;
-&#125;</code></pre>
+<p>this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri)会调用到<strong>DefaultNamespaceHandlerResolver</strong>的resolve()方法，该方法会获取namespace与NamespaceHandler实例的映射关系，然后通过反射创建实例，并调用NamespaceHandler的init()方法完成解析类的注册。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> NamespaceHandler <span class="hljs-title">resolve</span><span class="hljs-params">(String namespaceUri)</span> </span>&#123;
+	<span class="hljs-comment">//获取spring中所有jar包里面的 &quot;META-INF/spring.handlers&quot;文件，并且建立映射关系</span>
+	Map&lt;String, Object&gt; handlerMappings = getHandlerMappings();
 
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Boss</span> <span class="hljs-title">implemets</span> <span class="hljs-title">Company</span></span>&#123;
-	Sun sun = <span class="hljs-keyword">new</span> Sun();
-	
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">product</span><span class="hljs-params">()</span></span>&#123;
-		sun.product();
+	<span class="hljs-comment">//根据namespaceUri：http://www.springframework.org/schema/p，获取到这个命名空间的处理类</span>
+	Object handlerOrClassName = handlerMappings.get(namespaceUri);
+	<span class="hljs-keyword">if</span> (handlerOrClassName == <span class="hljs-keyword">null</span>) &#123;
+		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+	&#125;
+	<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (handlerOrClassName <span class="hljs-keyword">instanceof</span> NamespaceHandler) &#123;
+		<span class="hljs-keyword">return</span> (NamespaceHandler) handlerOrClassName;
+	&#125;
+	<span class="hljs-keyword">else</span> &#123;
+		String className = (String) handlerOrClassName;
+		<span class="hljs-keyword">try</span> &#123;
+			Class&lt;?&gt; handlerClass = ClassUtils.forName(className, <span class="hljs-keyword">this</span>.classLoader);
+			<span class="hljs-keyword">if</span> (!NamespaceHandler.class.isAssignableFrom(handlerClass)) &#123;
+				<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FatalBeanException(<span class="hljs-string">&quot;Class [&quot;</span> + className + <span class="hljs-string">&quot;] for namespace [&quot;</span> + namespaceUri +
+						<span class="hljs-string">&quot;] does not implement the [&quot;</span> + NamespaceHandler.class.getName() + <span class="hljs-string">&quot;] interface&quot;</span>);
+			&#125;
+			NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);
+
+			<span class="hljs-comment">//调用处理类的init方法，在init方法中完成标签元素解析类的注册</span>
+			namespaceHandler.init();
+			handlerMappings.put(namespaceUri, namespaceHandler);
+			<span class="hljs-keyword">return</span> namespaceHandler;
+		&#125;
+		<span class="hljs-keyword">catch</span> (ClassNotFoundException ex) &#123;
+			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FatalBeanException(<span class="hljs-string">&quot;Could not find NamespaceHandler class [&quot;</span> + className +
+					<span class="hljs-string">&quot;] for namespace [&quot;</span> + namespaceUri + <span class="hljs-string">&quot;]&quot;</span>, ex);
+		&#125;
+		<span class="hljs-keyword">catch</span> (LinkageError err) &#123;
+			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FatalBeanException(<span class="hljs-string">&quot;Unresolvable class definition for NamespaceHandler class [&quot;</span> +
+					className + <span class="hljs-string">&quot;] for namespace [&quot;</span> + namespaceUri + <span class="hljs-string">&quot;]&quot;</span>, err);
+		&#125;
 	&#125;
 &#125;</code></pre>
 
-<h2 id="设计模式3-装饰模式"><a href="#设计模式3-装饰模式" class="headerlink" title="设计模式3-装饰模式"></a>设计模式3-装饰模式</h2><p>装饰模式通过创建一个包装对象，包装对象中通常持有真实对象的引用，通常与装饰对象有相同的接口，提供与真实对象相同的交互方式。装饰对象在接收请求时会将请求转发给真实对象，并在转发前后增加一些附加功能。这样就可以在不改变真实对象的前提下，动态扩展真实对象的功能。</p>
-<p>创建装饰的公共接口</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Person</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span></span>;
+<p>getHandlerMappings()方法会在上述方法中调用，该方法同样位于<strong>DefaultNamespaceHandlerResolver</strong>中，其中包括获取namespace跟NamespaceHandler映射关系的详细过程。spring在jar包的META-INF/spring.handlers文件中，已经保存了NamespaceUri和NamepsaceHandler之间的映射。此处会加载spring.handlers中的所有内容并保存在map中。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> Map&lt;String, Object&gt; <span class="hljs-title">getHandlerMappings</span><span class="hljs-params">()</span> </span>&#123;
+	Map&lt;String, Object&gt; handlerMappings = <span class="hljs-keyword">this</span>.handlerMappings;
+	<span class="hljs-keyword">if</span> (handlerMappings == <span class="hljs-keyword">null</span>) &#123;
+		<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>) &#123;
+			handlerMappings = <span class="hljs-keyword">this</span>.handlerMappings;
+			<span class="hljs-keyword">if</span> (handlerMappings == <span class="hljs-keyword">null</span>) &#123;
+				<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
+					logger.trace(<span class="hljs-string">&quot;Loading NamespaceHandler mappings from [&quot;</span> + <span class="hljs-keyword">this</span>.handlerMappingsLocation + <span class="hljs-string">&quot;]&quot;</span>);
+				&#125;
+				<span class="hljs-keyword">try</span> &#123;
+					<span class="hljs-comment">//加载&quot;META-INF/spring.handlers&quot;文件过程</span>
+					Properties mappings =
+							PropertiesLoaderUtils.loadAllProperties(<span class="hljs-keyword">this</span>.handlerMappingsLocation, <span class="hljs-keyword">this</span>.classLoader);
+					<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
+						logger.trace(<span class="hljs-string">&quot;Loaded NamespaceHandler mappings: &quot;</span> + mappings);
+					&#125;
+
+					<span class="hljs-comment">//所有&quot;META-INF/spring.handlers&quot;文件里面的内容建立映射关系</span>
+					handlerMappings = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;&gt;(mappings.size());
+					CollectionUtils.mergePropertiesIntoMap(mappings, handlerMappings);
+					<span class="hljs-keyword">this</span>.handlerMappings = handlerMappings;
+				&#125;
+				<span class="hljs-keyword">catch</span> (IOException ex) &#123;
+					<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
+							<span class="hljs-string">&quot;Unable to load NamespaceHandler mappings from location [&quot;</span> + <span class="hljs-keyword">this</span>.handlerMappingsLocation + <span class="hljs-string">&quot;]&quot;</span>, ex);
+				&#125;
+			&#125;
+		&#125;
+	&#125;
+	<span class="hljs-keyword">return</span> handlerMappings;
 &#125;</code></pre>
 
-<p>创建被装饰类</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FeiZhai</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Person</span> </span>&#123;
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span> </span>&#123;
-        System.out.println(<span class="hljs-string">&quot;这是一个快乐肥宅&quot;</span>);
-    &#125;
-&#125;</code></pre>
-
-<p>创建装饰器</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Decorator</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Person</span> </span>&#123;
-    Person person;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">PersonDecorator</span><span class="hljs-params">(Person person)</span> </span>&#123;
-        <span class="hljs-keyword">this</span>.person = person;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span> </span>&#123;
-        person.desc();
-    &#125;
-&#125;</code></pre>
-
-<p>创建装饰子类：</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DecoratorDnfPlayer</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">PersonDecorator</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">HighPerson</span><span class="hljs-params">(Person person)</span> </span>&#123;
-        <span class="hljs-keyword">super</span>(person);
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span> </span>&#123;
-        <span class="hljs-keyword">super</span>.desc();
-        System.out.println(<span class="hljs-string">&quot;DNF玩家，八百万勇士之一！！！&quot;</span>);
-    &#125;
-&#125;</code></pre>
-
-<p>具体使用</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DecorationTest</span> </span>&#123;
-    <span class="hljs-meta">@Test</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test</span><span class="hljs-params">()</span></span>&#123;
-        System.out.println(<span class="hljs-string">&quot;创建一个肥宅&quot;</span>);
-        Person person = <span class="hljs-keyword">new</span> FeiZhai();
-        person.desc();
-        System.out.println(<span class="hljs-string">&quot;使用装饰器，装饰肥宅&quot;</span>);
-        person = <span class="hljs-keyword">new</span> DecoratorDnfPlayer(persion);
-        person.desc();
-    &#125;
-&#125;</code></pre>
-
-<h2 id="设计模式4策略模式"><a href="#设计模式4策略模式" class="headerlink" title="设计模式4策略模式"></a>设计模式4策略模式</h2><p>简单来说就是创建不同的处理逻辑，然后根据条件去选择处理逻辑。当代码中出现大量的if时，为了避免修改核心代码，以及增加拓展性就经常需要使用策略模式。</p>
-<p>比如，有省份不同省份做不同处理的需求时：</p>
-<p>先创建一个接口</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Province</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">support</span><span class="hljs-params">(String flag)</span></span>;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">()</span></span>;
-&#125;</code></pre>
-
-<p>湖北的处理策略</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HN</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Province</span></span>&#123;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String flag = <span class="hljs-string">&quot;HN&quot;</span>;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">support</span><span class="hljs-params">(String flag)</span> </span>&#123;
-        <span class="hljs-keyword">return</span> HN.flag.equalsIgnoreCase(flag);
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">()</span> </span>&#123;
-        System.out.println(<span class="hljs-string">&quot;======HN处理类处理&quot;</span>);
-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-    &#125;
-&#125;</code></pre>
-
-<p>湖南的处理策略</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HN</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Province</span></span>&#123;
-
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String flag = <span class="hljs-string">&quot;HN&quot;</span>;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">support</span><span class="hljs-params">(String flag)</span> </span>&#123;
-        <span class="hljs-keyword">return</span> HN.flag.equalsIgnoreCase(flag);
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">()</span> </span>&#123;
-        System.out.println(<span class="hljs-string">&quot;======HN处理类处理&quot;</span>);
-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-    &#125;
-&#125;</code></pre>
-
-<p>具体的使用</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test1</span><span class="hljs-params">()</span> </span>&#123;
-
-    String flag = <span class="hljs-string">&quot;CQ&quot;</span>;
-
-    Map&lt;String, Province&gt; beansOfType = applicationContext.getBeansOfType(Province.class);
-
-    beansOfType.forEach((k,v) -&gt; &#123;
-        <span class="hljs-keyword">if</span>(v.support(flag)) &#123;
-            v.handler();
-        &#125;
-    &#125;);
-&#125;</code></pre>
-
-<h2 id="设计模式5建造者模式"><a href="#设计模式5建造者模式" class="headerlink" title="设计模式5建造者模式"></a>设计模式5建造者模式</h2><p>当类的属性过于复杂时，使用构造方法或set()方法设置会让代码变的混乱，这时就可以通过建造者模式对类进行装配。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BuilderClass</span> </span>&#123;
-
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servingSize;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servings;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> calories;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> fat;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> sodium;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> carbohydrate;
-
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Builder</span> </span>&#123;
-        <span class="hljs-comment">// 必要参数</span>
-        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servingSize;
-        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servings;
-
-        <span class="hljs-comment">// 可选参数</span>
-        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> calories = <span class="hljs-number">0</span>;
-        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> fat = <span class="hljs-number">0</span>;
-        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> carbohydrate = <span class="hljs-number">0</span>;
-        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> sodium = <span class="hljs-number">0</span>;
-
-        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Builder</span><span class="hljs-params">(<span class="hljs-keyword">int</span> servingSize, <span class="hljs-keyword">int</span> servings)</span> </span>&#123;
-            <span class="hljs-keyword">this</span>.servingSize = servingSize;
-            <span class="hljs-keyword">this</span>.servings = servings;
-        &#125;
-
-        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">calories</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
-            calories = val;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
-        &#125;
-
-        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">fat</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
-            fat = val;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
-        &#125;
-
-        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">carbohydrate</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
-            carbohydrate = val;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
-        &#125;
-
-        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">sodium</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
-            sodium = val;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
-        &#125;
-
-        <span class="hljs-function"><span class="hljs-keyword">public</span> BuilderClass <span class="hljs-title">build</span><span class="hljs-params">()</span> </span>&#123;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> BuilderClass(<span class="hljs-keyword">this</span>);
-        &#125;
-    &#125;
-
-    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-title">BuilderClass</span><span class="hljs-params">(Builder builder)</span> </span>&#123;
-        servingSize = builder.servingSize;
-        servings = builder.servings;
-        calories = builder.calories;
-        fat = builder.fat;
-        sodium = builder.sodium;
-        carbohydrate = builder.carbohydrate;
-    &#125;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        BuilderClass cocaCola = <span class="hljs-keyword">new</span> BuilderClass.Builder(<span class="hljs-number">240</span>, <span class="hljs-number">8</span>)
-                .calories(<span class="hljs-number">100</span>).sodium(<span class="hljs-number">35</span>).carbohydrate(<span class="hljs-number">27</span>).build();
-    &#125;
-&#125;</code></pre>
-
-<h2 id="component-scan标签的解析"><a href="#component-scan标签的解析" class="headerlink" title="component-scan标签的解析"></a>component-scan标签的解析</h2><ol>
-<li><p>context属于自定义标签，所以需要先通过namespace命名空间在spring.handlers文件中获取到对应的NamepsaceHandler处理类之后再调用init()方法注册BeanDefinitionParser解析类，然后再获取scan对应的BeanDefinitionParser解析类进行解析。</p>
+<h2 id="component-scan标签的解析"><a href="#component-scan标签的解析" class="headerlink" title="component-scan标签的解析"></a>component-scan标签的解析</h2><p>context属于自定义标签，<strong>DefaultNamespaceHandlerResolver</strong>的resolve()方法会通过namespace命名空间在spring.handlers文件中获取到对应的NamepsaceHandler处理类，之后再调用init()方法注册BeanDefinitionParser解析类，在进行parser()方法时再获取component-scan对应的BeanDefinitionParser解析类进行解析。</p>
 <pre><code class="hljs awk">http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hljs-regexp">/schema/</span>context=org.springframework.context.config.ContextNamespaceHandler
 http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hljs-regexp">/schema/</span>jee=org.springframework.ejb.config.JeeNamespaceHandler
 http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hljs-regexp">/schema/</span>lang=org.springframework.scripting.config.LangNamespaceHandler
 http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hljs-regexp">/schema/</span>task=org.springframework.scheduling.config.TaskNamespaceHandler
 http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hljs-regexp">/schema/</span>cache=org.springframework.cache.config.CacheNamespaceHandler</code></pre>
-</li>
-<li><p>调用ContextNamespaceHandler的init()方法注册BeanDefinitionParser解析类。</p>
+
+<p>调用<strong>ContextNamespaceHandler</strong>的init()方法注册BeanDefinitionParser解析类。此处可以看到component-scan对应的解析类为<strong>ComponentScanBeanDefinitionParser</strong></p>
 <pre><code class="hljs java"><span class="hljs-meta">@Override</span>
 <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">init</span><span class="hljs-params">()</span> </span>&#123;
 	registerBeanDefinitionParser(<span class="hljs-string">&quot;property-placeholder&quot;</span>, <span class="hljs-keyword">new</span> PropertyPlaceholderBeanDefinitionParser());
@@ -1092,8 +844,8 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 	registerBeanDefinitionParser(<span class="hljs-string">&quot;mbean-export&quot;</span>, <span class="hljs-keyword">new</span> MBeanExportBeanDefinitionParser());
 	registerBeanDefinitionParser(<span class="hljs-string">&quot;mbean-server&quot;</span>, <span class="hljs-keyword">new</span> MBeanServerBeanDefinitionParser());
 &#125;</code></pre>
-</li>
-<li><p>BeanDefinitionParser的parser()方法中的逻辑。在这里将创建扫描器对基础包路径下的类进行扫描，并创建为BeanDefiniton对象，然后通过registerComponents()方法注册BeanPostProcessor。BeanPostProcessor主要是支撑类中其他注解的功能，如@Autowired、@PostConstruct、@PreDestory等。</p>
+
+<p>此处为<strong>ComponentScanBeanDefinitionParser</strong>的parser()方法中的逻辑。在这里将创建ClassPathBeanDefinitionScanner，并通过该扫描器的doScan()方法，对基础包路径下的类进行扫描，并为其创建BeanDefiniton对象，然后通过registerComponents()方法注册BeanPostProcessor。BeanPostProcessor主要是支撑类中其他注解的功能，如@Autowired、@PostConstruct、@PreDestory等。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> BeanDefinition <span class="hljs-title">parse</span><span class="hljs-params">(Element element, ParserContext parserContext)</span> </span>&#123;
 	<span class="hljs-comment">//获取basePackage属性</span>
 	String basePackage = element.getAttribute(BASE_PACKAGE_ATTRIBUTE);
@@ -1101,7 +853,7 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 	<span class="hljs-comment">//可以用逗号分开</span>
 	String[] basePackages = StringUtils.tokenizeToStringArray(basePackage,
 			ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
-   
+
 	<span class="hljs-comment">//创建注解扫描器</span>
 	<span class="hljs-comment">// Actually scan for bean definitions and register them.</span>
 	ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
@@ -1109,11 +861,11 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 	Set&lt;BeanDefinitionHolder&gt; beanDefinitions = scanner.doScan(basePackages);
    <span class="hljs-comment">//注册BeanPostProcessor</span>
 	registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
-   
+
 	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
 &#125;</code></pre>
-</li>
-<li><p>doScan()方法中会扫描到有注解的类并封装成BeanDefinitionHolder对象。在通过findCandidateComponents()获取到BeanDefinition之后，会根据ScopeMetadata对BeanDefinitionHolder的属性再次进行设置，并创建BeanDefinitionHolder对象，最后注册BeanDefinitonHolder。注册过程与默认实例化中相同，此处不再赘述。</p>
+
+<p><strong>ClassPathBeanDefinitionScanner</strong>中的doScan()方法会扫描到有注解的类并封装成BeanDefinitionHolder对象。再通过findCandidateComponents()获取到BeanDefinition之后，会根据<strong>ScopeMetadata</strong>对BeanDefinitionHolder的属性再次进行设置，并创建BeanDefinitionHolder对象，最后注册BeanDefinitonHolder，注册过程与默认实例化中相同。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Set&lt;BeanDefinitionHolder&gt; <span class="hljs-title">doScan</span><span class="hljs-params">(String... basePackages)</span> </span>&#123;
 	Assert.notEmpty(basePackages, <span class="hljs-string">&quot;At least one base package must be specified&quot;</span>);
 	Set&lt;BeanDefinitionHolder&gt; beanDefinitions = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;();
@@ -1137,7 +889,7 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 				definitionHolder =
 						AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, <span class="hljs-keyword">this</span>.registry);
 				beanDefinitions.add(definitionHolder);
-   
+
 				<span class="hljs-comment">//BeanDefinition注册</span>
 				registerBeanDefinition(definitionHolder, <span class="hljs-keyword">this</span>.registry);
 			&#125;
@@ -1145,14 +897,14 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 	&#125;
 	<span class="hljs-keyword">return</span> beanDefinitions;
 &#125;</code></pre>
-</li>
-<li><p>findCandidateComponents()会递寻找包路径下文件，然后将文件封装为MetadataReader对象，之后再根据MetadataReader中的类注解判断是否进行实例化。进行处理并封装为BeanDefinition。MetadataReader中持有一个ClassMetadata，ClassMetadata对象中几乎包括类的所有信息。</p>
+
+<p>ClassPathScanningCandidateComponentProvider中的findCandidateComponents()会调用scanCandidateComponents()方法递归寻找包路径下文件，并将文件封装为MetadataReader对象，之后再根据MetadataReader中的类注解判断是否进行实例化，如果需要实例话，就进行处理并封装为BeanDefinition。MetadataReader中持有一个ClassMetadata，ClassMetadata对象中几乎包括类的所有信息。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> Set&lt;BeanDefinition&gt; <span class="hljs-title">scanCandidateComponents</span><span class="hljs-params">(String basePackage)</span> </span>&#123;
 	Set&lt;BeanDefinition&gt; candidates = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;();
 	<span class="hljs-keyword">try</span> &#123;
 		String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 				resolveBasePackage(basePackage) + <span class="hljs-string">&#x27;/&#x27;</span> + <span class="hljs-keyword">this</span>.resourcePattern;
-   
+
 		<span class="hljs-comment">//这里递归寻找文件</span>
 		Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 		<span class="hljs-keyword">boolean</span> traceEnabled = logger.isTraceEnabled();
@@ -1205,8 +957,16 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 	&#125;
 	<span class="hljs-keyword">return</span> candidates;
 &#125;</code></pre>
-</li>
-<li><p>递归寻找文件的主要方法</p>
+
+<p>递归寻找文件的主要方法为PathMatchingResourcePatternResolver中的doRetrieveMatchingFiles()方法，该方法由getResourcePatternResolver().getResources(packageSearchPath)调用，其中getResourcePatternResolver()方法内容为：</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> ResourcePatternResolver <span class="hljs-title">getResourcePatternResolver</span><span class="hljs-params">()</span> </span>&#123;
+	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.resourcePatternResolver == <span class="hljs-keyword">null</span>) &#123;
+		<span class="hljs-keyword">this</span>.resourcePatternResolver = <span class="hljs-keyword">new</span> PathMatchingResourcePatternResolver();
+	&#125;
+	<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.resourcePatternResolver;
+&#125;</code></pre>
+
+<p>所以之后会调用到的getResources()，调用链为PathMatchingResourcePatternResolver.getResources()-&gt;findPathMatchingResources()-&gt;doFindPathMatchingFileResources()-&gt;doFindMatchingFileSystemResources()-&gt;retrieveMatchingFiles()-&gt;doRetrieveMatchingFiles()</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doRetrieveMatchingFiles</span><span class="hljs-params">(String fullPattern, File dir, Set&lt;File&gt; result)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
 	<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
 		logger.trace(<span class="hljs-string">&quot;Searching directory [&quot;</span> + dir.getAbsolutePath() +
@@ -1226,18 +986,18 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 				doRetrieveMatchingFiles(fullPattern, content, result);
 			&#125;
 		&#125;
-   
+
 		<span class="hljs-comment">//如果是一个文件，则加入到容器</span>
 		<span class="hljs-keyword">if</span> (getPathMatcher().match(fullPattern, currPath)) &#123;
 			result.add(content);
 		&#125;
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>注册BeanPostProcessor过程</p>
+
+<p>此时再返回到ClassPathBeanDefinitionScanner中的doScan()方法，此方法中会调用registerBeanDefinition()开始注册BeanPostProcessor</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Set&lt;BeanDefinitionHolder&gt; <span class="hljs-title">registerAnnotationConfigProcessors</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		BeanDefinitionRegistry registry, <span class="hljs-meta">@Nullable</span> Object source)</span> </span>&#123;
-   
+
 	DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
 	<span class="hljs-keyword">if</span> (beanFactory != <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">if</span> (!(beanFactory.getDependencyComparator() <span class="hljs-keyword">instanceof</span> AnnotationAwareOrderComparator)) &#123;
@@ -1247,28 +1007,28 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 			beanFactory.setAutowireCandidateResolver(<span class="hljs-keyword">new</span> ContextAnnotationAutowireCandidateResolver());
 		&#125;
 	&#125;
-   
+
 	Set&lt;BeanDefinitionHolder&gt; beanDefs = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;(<span class="hljs-number">8</span>);
-   
+
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(ConfigurationClassPostProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
-   
+
 	<span class="hljs-comment">// Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.</span>
 	<span class="hljs-keyword">if</span> (jsr250Present &amp;&amp; !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, COMMON_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
-   
+
 	<span class="hljs-comment">// Check for JPA support, and if present add the PersistenceAnnotationBeanPostProcessor.</span>
 	<span class="hljs-keyword">if</span> (jpaPresent &amp;&amp; !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME)) &#123;
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition();
@@ -1283,25 +1043,23 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) &#123;
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(EventListenerMethodProcessor.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) &#123;
 		RootBeanDefinition def = <span class="hljs-keyword">new</span> RootBeanDefinition(DefaultEventListenerFactory.class);
 		def.setSource(source);
 		beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_FACTORY_BEAN_NAME));
 	&#125;
-   
+
 	<span class="hljs-keyword">return</span> beanDefs;
 &#125;</code></pre>
 
-</li>
-</ol>
-<h2 id="简单上手"><a href="#简单上手" class="headerlink" title="简单上手"></a>简单上手</h2><h3 id="使用自定义标签连接redis"><a href="#使用自定义标签连接redis" class="headerlink" title="使用自定义标签连接redis"></a>使用自定义标签连接redis</h3><ol>
+<h2 id="简单实践"><a href="#简单实践" class="headerlink" title="简单实践"></a>简单实践</h2><h3 id="使用自定义标签连接redis"><a href="#使用自定义标签连接redis" class="headerlink" title="使用自定义标签连接redis"></a>使用自定义标签连接redis</h3><ol>
 <li>创建自定义标签约束文件myMags.xsd，位置为在resources/META-INF/</li>
 </ol>
 <pre><code class="hljs xml"><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
@@ -1463,6 +1221,255 @@ http\:<span class="hljs-regexp">//</span>www.springframework.org<span class="hlj
     <span class="hljs-meta">@Test</span>
     <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">beanDefinition</span><span class="hljs-params">()</span></span>&#123;
         System.out.println(beanClass.getUsername());
+    &#125;
+&#125;</code></pre>
+
+<h2 id="涉及到的设计模式"><a href="#涉及到的设计模式" class="headerlink" title="涉及到的设计模式"></a>涉及到的设计模式</h2><h3 id="模版设计模式"><a href="#模版设计模式" class="headerlink" title="模版设计模式"></a>模版设计模式</h3><p>spring源码中大量使用了模版设计模式，是使用的最多的设计模式。</p>
+<p>模版设计模式一般有两种类，抽象的父类，以及具体实现的子类。父类中实现逻辑中不变的部分，将可变的行为定义为抽象方法交给子类实现，但方法的执行顺序由父类决定。</p>
+<p>创建一个抽象模版结构</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AblstractClass</span> </span>&#123;
+
+    <span class="hljs-comment">//模板方法用来控制子类的顺序 要想有人生必须按老爸的人生顺序来  </span>
+    <span class="hljs-comment">//声明final不让子类覆盖这个方法，防止改变人生顺序</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> 人生()&#123;
+        学习();
+        工作();
+        爱情();
+    &#125;
+    
+    <span class="hljs-comment">//家里穷更得用工学习</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 学习()&#123;
+        System.out.println(<span class="hljs-string">&quot;每天晚上趴在邻居窗上学习&quot;</span>);
+    &#125;
+    
+    <span class="hljs-comment">//工作必须稳定</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 工作()&#123;       
+        System.out.println(<span class="hljs-string">&quot;从一而终&quot;</span>);
+    &#125;
+    
+    <span class="hljs-comment">//恋爱自由  让儿子自由恋去</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">void</span> 爱情();
+&#125;</code></pre>
+
+<p>创建一个具体模版</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConcreteClass</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AblstractClass</span> </span>&#123;
+    
+    <span class="hljs-comment">//儿子不认可父亲的学习方法  考高分影响同学关系</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 学习() &#123;
+        System.out.println(<span class="hljs-string">&quot;60分万岁...&quot;</span>);
+    &#125;
+    
+    <span class="hljs-comment">//父亲给我爱情自由  一定好好谈恋爱</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> 爱情() &#123;
+        System.out.println(<span class="hljs-string">&quot;肤白貌美大长腿...&quot;</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>具体的调用</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TestMain</span> </span>&#123;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+         ConcreteClass cs  = <span class="hljs-keyword">new</span> ConcreteClass();
+         cs.人生();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="委托模式"><a href="#委托模式" class="headerlink" title="委托模式"></a>委托模式</h3><p>不属于23种设计模式之一，是面向对象设计模式中常用的一种模式，可以理解为静态代理和策略模式的一种特殊的组合。简单来说就是接受请求的对象将请求委托给另一个对象来处理，在spring中比较常见。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Company</span></span>&#123;
+	<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">product</span><span class="hljs-params">()</span></span>;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Sum</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Company</span></span>&#123;
+  <span class="hljs-meta">@Override</span>
+  <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">product</span><span class="hljs-params">()</span></span>&#123;
+    System.out.println(<span class="hljs-string">&quot;sum product&quot;</span>);
+  &#125;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Boss</span> <span class="hljs-title">implemets</span> <span class="hljs-title">Company</span></span>&#123;
+	Sun sun = <span class="hljs-keyword">new</span> Sun();
+	
+	<span class="hljs-meta">@Override</span>
+	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">product</span><span class="hljs-params">()</span></span>&#123;
+		sun.product();
+	&#125;
+&#125;</code></pre>
+
+<h3 id="装饰模式"><a href="#装饰模式" class="headerlink" title="装饰模式"></a>装饰模式</h3><p>装饰模式通过创建一个包装对象，包装对象中通常持有真实对象的引用，通常与装饰对象有相同的接口，提供与真实对象相同的交互方式。装饰对象在接收请求时会将请求转发给真实对象，并在转发前后增加一些附加功能。这样就可以在不改变真实对象的前提下，动态扩展真实对象的功能。</p>
+<p>创建装饰的公共接口</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Person</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span></span>;
+&#125;</code></pre>
+
+<p>创建被装饰类</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">FeiZhai</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Person</span> </span>&#123;
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;这是一个快乐肥宅&quot;</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>创建装饰器</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Decorator</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Person</span> </span>&#123;
+    Person person;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">PersonDecorator</span><span class="hljs-params">(Person person)</span> </span>&#123;
+        <span class="hljs-keyword">this</span>.person = person;
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span> </span>&#123;
+        person.desc();
+    &#125;
+&#125;</code></pre>
+
+<p>创建装饰子类：</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DecoratorDnfPlayer</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">PersonDecorator</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">HighPerson</span><span class="hljs-params">(Person person)</span> </span>&#123;
+        <span class="hljs-keyword">super</span>(person);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">desc</span><span class="hljs-params">()</span> </span>&#123;
+        <span class="hljs-keyword">super</span>.desc();
+        System.out.println(<span class="hljs-string">&quot;DNF玩家，八百万勇士之一！！！&quot;</span>);
+    &#125;
+&#125;</code></pre>
+
+<p>具体使用</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">DecorationTest</span> </span>&#123;
+    <span class="hljs-meta">@Test</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test</span><span class="hljs-params">()</span></span>&#123;
+        System.out.println(<span class="hljs-string">&quot;创建一个肥宅&quot;</span>);
+        Person person = <span class="hljs-keyword">new</span> FeiZhai();
+        person.desc();
+        System.out.println(<span class="hljs-string">&quot;使用装饰器，装饰肥宅&quot;</span>);
+        person = <span class="hljs-keyword">new</span> DecoratorDnfPlayer(persion);
+        person.desc();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h3><p>简单来说就是创建不同的处理逻辑，然后根据条件去选择处理逻辑。当代码中出现大量的if时，为了避免修改核心代码，以及增加拓展性就经常需要使用策略模式。</p>
+<p>比如，有省份不同省份做不同处理的需求时：</p>
+<p>先创建一个接口</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">Province</span> </span>&#123;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">support</span><span class="hljs-params">(String flag)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">()</span></span>;
+&#125;</code></pre>
+
+<p>湖北的处理策略</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HN</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Province</span></span>&#123;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String flag = <span class="hljs-string">&quot;HN&quot;</span>;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">support</span><span class="hljs-params">(String flag)</span> </span>&#123;
+        <span class="hljs-keyword">return</span> HN.flag.equalsIgnoreCase(flag);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">()</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;======HN处理类处理&quot;</span>);
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+    &#125;
+&#125;</code></pre>
+
+<p>湖南的处理策略</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HN</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Province</span></span>&#123;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String flag = <span class="hljs-string">&quot;HN&quot;</span>;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">support</span><span class="hljs-params">(String flag)</span> </span>&#123;
+        <span class="hljs-keyword">return</span> HN.flag.equalsIgnoreCase(flag);
+    &#125;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">handler</span><span class="hljs-params">()</span> </span>&#123;
+        System.out.println(<span class="hljs-string">&quot;======HN处理类处理&quot;</span>);
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+    &#125;
+&#125;</code></pre>
+
+<p>具体的使用</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">test1</span><span class="hljs-params">()</span> </span>&#123;
+
+    String flag = <span class="hljs-string">&quot;CQ&quot;</span>;
+
+    Map&lt;String, Province&gt; beansOfType = applicationContext.getBeansOfType(Province.class);
+
+    beansOfType.forEach((k,v) -&gt; &#123;
+        <span class="hljs-keyword">if</span>(v.support(flag)) &#123;
+            v.handler();
+        &#125;
+    &#125;);
+&#125;</code></pre>
+
+<h3 id="建造者模式"><a href="#建造者模式" class="headerlink" title="建造者模式"></a>建造者模式</h3><p>当类的属性过于复杂时，使用构造方法或set()方法设置会让代码变的混乱，这时就可以通过建造者模式对类进行装配。</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BuilderClass</span> </span>&#123;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servingSize;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servings;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> calories;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> fat;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> sodium;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> carbohydrate;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Builder</span> </span>&#123;
+        <span class="hljs-comment">// 必要参数</span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servingSize;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">int</span> servings;
+
+        <span class="hljs-comment">// 可选参数</span>
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> calories = <span class="hljs-number">0</span>;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> fat = <span class="hljs-number">0</span>;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> carbohydrate = <span class="hljs-number">0</span>;
+        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> sodium = <span class="hljs-number">0</span>;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Builder</span><span class="hljs-params">(<span class="hljs-keyword">int</span> servingSize, <span class="hljs-keyword">int</span> servings)</span> </span>&#123;
+            <span class="hljs-keyword">this</span>.servingSize = servingSize;
+            <span class="hljs-keyword">this</span>.servings = servings;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">calories</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
+            calories = val;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">fat</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
+            fat = val;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">carbohydrate</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
+            carbohydrate = val;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> Builder <span class="hljs-title">sodium</span><span class="hljs-params">(<span class="hljs-keyword">int</span> val)</span> </span>&#123;
+            sodium = val;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+        &#125;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> BuilderClass <span class="hljs-title">build</span><span class="hljs-params">()</span> </span>&#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> BuilderClass(<span class="hljs-keyword">this</span>);
+        &#125;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-title">BuilderClass</span><span class="hljs-params">(Builder builder)</span> </span>&#123;
+        servingSize = builder.servingSize;
+        servings = builder.servings;
+        calories = builder.calories;
+        fat = builder.fat;
+        sodium = builder.sodium;
+        carbohydrate = builder.carbohydrate;
+    &#125;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
+        BuilderClass cocaCola = <span class="hljs-keyword">new</span> BuilderClass.Builder(<span class="hljs-number">240</span>, <span class="hljs-number">8</span>)
+                .calories(<span class="hljs-number">100</span>).sodium(<span class="hljs-number">35</span>).carbohydrate(<span class="hljs-number">27</span>).build();
     &#125;
 &#125;</code></pre>
 

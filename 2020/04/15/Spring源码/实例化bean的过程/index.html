@@ -184,7 +184,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      15.4k 字
+      16.2k 字
     </span>
   
 
@@ -194,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      251
+      261
        分钟
     </span>
   
@@ -227,7 +227,7 @@
             <h1 style="display: none">Spring实例化Bean的过程</h1>
             
             <div class="markdown-body">
-              <h2 id="DeanDefinition简介"><a href="#DeanDefinition简介" class="headerlink" title="DeanDefinition简介"></a>DeanDefinition简介</h2><p>BeanDefinition在spring中贯穿始终，spring要根据BeanDefiniton对象来实例化bean。在实例化之前，需要解析bean标签并封装成BeanDefiniton对象。</p>
+              <h2 id="DeanDefinition"><a href="#DeanDefinition" class="headerlink" title="DeanDefinition"></a>DeanDefinition</h2><p>BeanDefinition在spring中贯穿始终，spring要根据BeanDefiniton对象来实例化bean。在实例化之前，需要解析bean标签并封装成BeanDefiniton对象。</p>
 <h3 id="BeanDefinition实现类"><a href="#BeanDefinition实现类" class="headerlink" title="BeanDefinition实现类"></a>BeanDefinition实现类</h3><ul>
 <li>ChildBeanDefinition：ChildBeanDefinitio可以继承parent bean definition的设置，对RootBeanDefinition 有一定的依赖关系。 ChildBeanDefinition可以继承父类的构造参数值，属性值并可以重写父类的方法，同时也可以增加新的属性或者方法。若指定初始化方法，销毁方法或者静态工厂方法，ChildBeanDefinition将重写相应父类的设置。</li>
 <li>RootBeanDefinition：RootBeanDefinition是一个可合并的bean definition，即在spring beanFactory运行期间，可以返回一个特定的bean。</li>
@@ -281,9 +281,103 @@
 <li><p>MethodOverrides：用于封装lookup-method和replaced-method标签的信息，同样的类里面有一个Set对象添加LookupOverride对象和ReplaceOverride对象</p>
 </li>
 </ul>
-<h2 id="invokeBeanFactoryPostProcessors-方法"><a href="#invokeBeanFactoryPostProcessors-方法" class="headerlink" title="invokeBeanFactoryPostProcessors()方法"></a>invokeBeanFactoryPostProcessors()方法</h2><p>invokeBeanFactoryPostProcessors()方法在spring的核心方法refresh()中调用，主要用于处理BeanFactoryPostProcessor接口，是针对BeanFactory的扩展，主要用在bean实例化之前，读取bean的定义，完成对BeanDefinition的修改。</p>
-<p>该方法会实例化和调用所有的BeanFactoryPostProcessor（包括子类BeanDefinitionRegistryPostProcessor），并调用postProcessBeanDefinitionRegistry()方法。</p>
-<p>postProcessBeanDefinitionRegistry()方法的入参为BeanDefinitionRegistry对象，通过这个对象可以完成对所有BeanDefinition对象的增删改查。</p>
+<h2 id="Spring容器加载的核心方法"><a href="#Spring容器加载的核心方法" class="headerlink" title="Spring容器加载的核心方法"></a>Spring容器加载的核心方法</h2><p>之前在<a href="https://zhaoguocheng.gitee.io/blog/2020/04/13/Spring%E6%BA%90%E7%A0%81/%E5%88%9D%E5%A7%8B%E5%8C%96%E5%85%A5%E5%8F%A3%E5%92%8Cxml%E8%A7%A3%E6%9E%90/">Spring的初始化入口和xml解析</a>中已经分析过AbstractApplicationContext.refresh()中的obtainFreshBeanFactory()方法，本篇继续分析其中的其他方法。</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">refresh</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException, IllegalStateException </span>&#123;
+	<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>.startupShutdownMonitor) &#123;
+		<span class="hljs-comment">//为容器初始化做准备，重要程度：0</span>
+		<span class="hljs-comment">//Prepare this context for refreshing.</span>
+		prepareRefresh();
+		<span class="hljs-comment">/**</span>
+<span class="hljs-comment">		* 重要程度：5</span>
+<span class="hljs-comment">		* 1、创建BeanFactory对象</span>
+<span class="hljs-comment">		* 2、xml解析</span>
+<span class="hljs-comment">		* 	传统标签解析：bean、import等</span>
+<span class="hljs-comment">		* 	自定义标签解析 如：&lt;context:component-scan base-package=&quot;com.xiangxue.jack&quot;/&gt;</span>
+<span class="hljs-comment">		* 	自定义标签解析流程：</span>
+<span class="hljs-comment">		* 		a、根据当前解析标签的头信息找到对应的namespaceUri</span>
+<span class="hljs-comment">		* 		b、加载spring所以jar中的spring.handlers文件。并建立映射关系</span>
+<span class="hljs-comment">		* 		c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类</span>
+<span class="hljs-comment">		* 		d、调用类的init方法，init方法是注册了各种自定义标签的解析类</span>
+<span class="hljs-comment">		* 		e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析</span>
+<span class="hljs-comment">		*</span>
+<span class="hljs-comment">		* 3、把解析出来的xml标签封装成BeanDefinition对象</span>
+<span class="hljs-comment">		* */</span>
+		<span class="hljs-comment">// Tell the subclass to refresh the internal bean factory.</span>
+		ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+		<span class="hljs-comment">/*</span>
+<span class="hljs-comment">		* 给beanFactory设置一些属性值，可以不看</span>
+<span class="hljs-comment">		* */</span>
+		<span class="hljs-comment">// Prepare the bean factory for use in this context.</span>
+		prepareBeanFactory(beanFactory);
+		<span class="hljs-keyword">try</span> &#123;
+			<span class="hljs-comment">// Allows post-processing of the bean factory in context subclasses.</span>
+			postProcessBeanFactory(beanFactory);
+			<span class="hljs-comment">/*</span>
+<span class="hljs-comment">			* BeanDefinitionRegistryPostProcessor</span>
+<span class="hljs-comment">			* BeanFactoryPostProcessor</span>
+<span class="hljs-comment">			* 完成对这两个接口的调用</span>
+<span class="hljs-comment">			* */</span>
+			<span class="hljs-comment">// Invoke factory processors registered as beans in the context.</span>
+			invokeBeanFactoryPostProcessors(beanFactory);
+			<span class="hljs-comment">/*</span>
+<span class="hljs-comment">			* 把实现了BeanPostProcessor接口的类实例化，并且加入到BeanFactory中</span>
+<span class="hljs-comment">			* */</span>
+			<span class="hljs-comment">// Register bean processors that intercept bean creation.</span>
+			registerBeanPostProcessors(beanFactory);
+			<span class="hljs-comment">/*</span>
+<span class="hljs-comment">			* 国际化,重要程度2</span>
+<span class="hljs-comment">			* */</span>
+			<span class="hljs-comment">// Initialize message source for this context.</span>
+			initMessageSource();
+			<span class="hljs-comment">//初始化事件管理类</span>
+			<span class="hljs-comment">// Initialize event multicaster for this context.</span>
+			initApplicationEventMulticaster();
+			<span class="hljs-comment">//这个方法着重理解模板设计模式，因为在springboot中，这个方法是用来做内嵌tomcat启动的</span>
+			<span class="hljs-comment">// Initialize other special beans in specific context subclasses.</span>
+			onRefresh();
+			<span class="hljs-comment">/*</span>
+<span class="hljs-comment">			* 往事件管理类中注册事件类</span>
+<span class="hljs-comment">			* */</span>
+			<span class="hljs-comment">// Check for listener beans and register them.</span>
+			registerListeners();
+			<span class="hljs-comment">/*</span>
+<span class="hljs-comment">			* 这个方法是spring中最重要的方法，没有之一</span>
+<span class="hljs-comment">			* 所以这个方法一定要理解要具体看</span>
+<span class="hljs-comment">			* 1、bean实例化过程</span>
+<span class="hljs-comment">			* 2、ioc</span>
+<span class="hljs-comment">			* 3、注解支持</span>
+<span class="hljs-comment">			* 4、BeanPostProcessor的执行</span>
+<span class="hljs-comment">			* 5、Aop的入口</span>
+<span class="hljs-comment">			* */</span>
+			<span class="hljs-comment">// Instantiate all remaining (non-lazy-init) singletons.</span>
+			finishBeanFactoryInitialization(beanFactory);
+			<span class="hljs-comment">// Last step: publish corresponding event.</span>
+			finishRefresh();
+		&#125;
+		<span class="hljs-keyword">catch</span> (BeansException ex) &#123;
+			<span class="hljs-keyword">if</span> (logger.isWarnEnabled()) &#123;
+				logger.warn(<span class="hljs-string">&quot;Exception encountered during context initialization - &quot;</span> +
+						<span class="hljs-string">&quot;cancelling refresh attempt: &quot;</span> + ex);
+			&#125;
+			<span class="hljs-comment">// Destroy already created singletons to avoid dangling resources.</span>
+			destroyBeans();
+			<span class="hljs-comment">// Reset &#x27;active&#x27; flag.</span>
+			cancelRefresh(ex);
+			<span class="hljs-comment">// Propagate exception to caller.</span>
+			<span class="hljs-keyword">throw</span> ex;
+		&#125;
+		<span class="hljs-keyword">finally</span> &#123;
+			<span class="hljs-comment">// Reset common introspection caches in Spring&#x27;s core, since we</span>
+			<span class="hljs-comment">// might not ever need metadata for singleton beans anymore...</span>
+			resetCommonCaches();
+		&#125;
+	&#125;
+&#125;</code></pre>
+
+<h2 id="invokeBeanFactoryPostProcessors-方法"><a href="#invokeBeanFactoryPostProcessors-方法" class="headerlink" title="invokeBeanFactoryPostProcessors()方法"></a>invokeBeanFactoryPostProcessors()方法</h2><p>主要用于处理BeanFactoryPostProcessor接口，该接口是针对BeanFactory的扩展，用在bean实例化之前，读取bean的定义，完成对BeanDefinition的修改。</p>
+<p>该方法会实例化和调用所有的BeanFactoryPostProcessor（包括子类BeanDefinitionRegistryPostProcessor），并调用其postProcessBeanDefinitionRegistry()方法。postProcessBeanDefinitionRegistry()方法的入参为BeanDefinitionRegistry对象，通过这个对象可以完成对所有BeanDefinition对象的增删改查。</p>
+<p>invokeBeanFactoryPostProcessors()方法调用链为：AbstractApplicationContext.invokeBeanFactoryPostProcessors()-&gt;PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors()</p>
 <p>在执行过程中会对实现排序接口的BeanFactoryPostProcessor进行排序，然后按照顺序进行调用。</p>
 <p>调用顺序为: </p>
 <ol>
@@ -444,7 +538,7 @@
 &#125;</code></pre>
 
 <h2 id="registerBeanPostProcessors-方法"><a href="#registerBeanPostProcessors-方法" class="headerlink" title="registerBeanPostProcessors()方法"></a>registerBeanPostProcessors()方法</h2><p>registerBeanPostProcessors方法主要用于处理BeanPostProcessor接口，会实例化所有的BeanPostProcessor，将所有实现了BeanPostProcessor接口的类加载到BeanFactory中。BeanPostProcessor接口用于在BeanDefination初始化过程中对Bean进行一些操作。</p>
-<p>调用顺序与invokeBeanFactoryPostProcessors()方法相同。</p>
+<p>registerBeanPostProcessors()方法会调用PostProcessorRegistrationDelegate.registerBeanPostProcessors()，排序方式与invokeBeanFactoryPostProcessors()方法相同。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerBeanPostProcessors</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext)</span> </span>&#123;
 
@@ -524,27 +618,26 @@
 &#125;</code></pre>
 
 <h2 id="finishBeanFactoryInitialization-方法"><a href="#finishBeanFactoryInitialization-方法" class="headerlink" title="finishBeanFactoryInitialization()方法"></a>finishBeanFactoryInitialization()方法</h2><p>这个方法是spring中最重要的方法，包括bean实例化过程、ioc、注解支持、BeanPostProcessor的执行、Aop的入口。</p>
-<ol>
-<li><p>preInstantiateSingletons()是他的主要方法，完成对bean的实例化。该方法会遍历beanDefinitionNames，首先会将父子BeanDefinition合并，然后将具有某些特征的BeanDefinition通过getBean()方法实例化。</p>
+<p>这次主要分析beanFactory.preInstantiateSingletons()方法的内容，该方法会调用DefaultListableBeanFactory的preInstantiateSingletons()方法。该方法会遍历beanDefinitionNames，首先会将父子BeanDefinition合并，然后将具有某些特征的BeanDefinition通过getBean()方法实例化。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">preInstantiateSingletons</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;
 	<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
 		logger.trace(<span class="hljs-string">&quot;Pre-instantiating singletons in &quot;</span> + <span class="hljs-keyword">this</span>);
 	&#125;
-   
+
 	<span class="hljs-comment">// Iterate over a copy to allow for init methods which in turn register new bean definitions.</span>
 	<span class="hljs-comment">// While this may not be part of the regular factory bootstrap, it does otherwise work fine.</span>
 	<span class="hljs-comment">//xml解析时，讲过，把所有beanName都缓存到beanDefinitionNames了</span>
 	List&lt;String&gt; beanNames = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-keyword">this</span>.beanDefinitionNames);
-   
+
 	<span class="hljs-comment">// Trigger initialization of all non-lazy singleton beans...</span>
 	<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;
 		<span class="hljs-comment">//把父BeanDefinition里面的属性拿到子BeanDefinition中</span>
      <span class="hljs-comment">//在解析xml时父子标签会被解析为两个BeanDefinition但只会实例化一个对象</span>
 		RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-   
+
 		<span class="hljs-comment">//如果不是抽象的，单例的，非懒加载的就实例化</span>
 		<span class="hljs-keyword">if</span> (!bd.isAbstract() &amp;&amp; bd.isSingleton() &amp;&amp; !bd.isLazyInit()) &#123;
-   
+
 			<span class="hljs-comment">//判断bean是否实现了FactoryBean接口，这里可以不看</span>
 			<span class="hljs-keyword">if</span> (isFactoryBean(beanName)) &#123;
 				Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
@@ -571,7 +664,7 @@
 			&#125;
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-comment">// Trigger post-initialization callback for all applicable beans...</span>
 	<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;
 		Object singletonInstance = getSingleton(beanName);
@@ -589,8 +682,8 @@
 		&#125;
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>getBean()是实例化的核心方法，doGetBean()方法是getBean()方法的主要方法。该方法首先会尝试从缓存中获取实例，如果没有再进行类的实例化，此时缓存中一般是没有实例的。在类实例化之前会判断类上是否有@Dependon注解，如果有就先实例化@Dependon注解中的类。类的实例化是通过getSingleton()方法实现的。getObjectForBeanInstance()方法用于对BeanFactory接口的支持，之后会进行单独分析。</p>
+
+<p>getBean()方法中会调用<strong>AbstractBeanFactory</strong>中的doGetBean()方法。该方法首先会尝试从缓存中获取实例（此时缓存中一般是没有实例的），如果没有再进行类的实例化。在类实例化之前会判断类上是否有@Dependon注解，如果有就先实例化@Dependon注解中的类。单例类的实例化是通过getSingleton()方法实现的。getObjectForBeanInstance()方法用于对BeanFactory接口的支持，之后会进行单独分析。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">doGetBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String name, <span class="hljs-meta">@Nullable</span> <span class="hljs-keyword">final</span> Class&lt;T&gt; requiredType,</span></span>
 <span class="hljs-function"><span class="hljs-params">			<span class="hljs-meta">@Nullable</span> <span class="hljs-keyword">final</span> Object[] args, <span class="hljs-keyword">boolean</span> typeCheckOnly)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;
 
@@ -763,8 +856,8 @@
 		&#125;
 		<span class="hljs-keyword">return</span> (T) bean;
 	&#125;</code></pre>
-</li>
-<li><p>getSingleton()方法在创建前会将beanName添加到singletonsCurrentlyInCreation容器中，该容器中存储着正在实例化的beanName，然后调用传入的singletonFactory的getObject()方法创建实例，创建完成后再从容器中删除，并放入一级缓存中。getObject()方法会调用上层传入的方法createBean()。</p>
+
+<p>DefaultSingletonBeanRegistry.getSingleton()方法在创建前会将beanName添加到singletonsCurrentlyInCreation容器中，该容器中存储着正在实例化的beanName，然后调用传入的singletonFactory的getObject()方法创建实例，创建完成后再从容器中删除，并放入一级缓存中。getObject()方法会调用上层传入的方法createBean()。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getSingleton</span><span class="hljs-params">(String beanName, ObjectFactory&lt;?&gt; singletonFactory)</span> </span>&#123;
 	Assert.notNull(beanName, <span class="hljs-string">&quot;Bean name must not be null&quot;</span>);
 	<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>.singletonObjects) &#123;
@@ -779,7 +872,7 @@
 			<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
 				logger.debug(<span class="hljs-string">&quot;Creating shared instance of singleton bean &#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27;&quot;</span>);
 			&#125;
-   
+
 			<span class="hljs-comment">//把beanName添加到singletonsCurrentlyInCreation Set容器中，在这个集合里面的bean都是正在实例化的bean</span>
 			beforeSingletonCreation(beanName);
 			<span class="hljs-keyword">boolean</span> newSingleton = <span class="hljs-keyword">false</span>;
@@ -823,11 +916,11 @@
 		<span class="hljs-keyword">return</span> singletonObject;
 	&#125;
 </code></pre>
-</li>
-<li><p>doCreateBean()是createBean()的主要方法。此方法中首先会通过createBeanInstance()方法创建实例，然后调用applyMergedBeanDefinitionPostProcessors()方法完成注解的装配，收集。addSingletonFactory()方法用于解决循环依赖的问题，之后会进行分析。populateBean()方法用于完成applyMergedBeanDefinitionPostProcessors(方法装配的注解进行处理，主要完成IOC、DI等工作。initializeBean()方法用于完成实例化后的一些操作。</p>
+
+<p>AbstractAutowireCapableBeanFactory中的createBean()会继续调用doCreateBean()方法。此方法中首先会通过<strong>createBeanInstance()方法</strong>创建实例，然后调用<strong>applyMergedBeanDefinitionPostProcessors()方法</strong>完成注解的装配、收集。<strong>addSingletonFactory()方法</strong>用于解决循环依赖的问题，之后会进行分析。<strong>populateBean()方法</strong>用于完成装配的注解进行处理，主要完成IOC、DI等工作。<strong>initializeBean()方法</strong>用于完成实例化后的一些操作。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">doCreateBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String beanName, <span class="hljs-keyword">final</span> RootBeanDefinition mbd, <span class="hljs-keyword">final</span> <span class="hljs-meta">@Nullable</span> Object[] args)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> BeanCreationException </span>&#123;
-   
+
 	<span class="hljs-comment">// Instantiate the bean.</span>
 	BeanWrapper instanceWrapper = <span class="hljs-keyword">null</span>;
 	<span class="hljs-keyword">if</span> (mbd.isSingleton()) &#123;
@@ -842,7 +935,7 @@
 	<span class="hljs-keyword">if</span> (beanType != NullBean.class) &#123;
 		mbd.resolvedTargetType = beanType;
 	&#125;
-   
+
 	<span class="hljs-comment">// Allow post-processors to modify the merged bean definition.</span>
 	<span class="hljs-keyword">synchronized</span> (mbd.postProcessingLock) &#123;
 		<span class="hljs-keyword">if</span> (!mbd.postProcessed) &#123;
@@ -861,7 +954,7 @@
 			mbd.postProcessed = <span class="hljs-keyword">true</span>;
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-comment">// Eagerly cache singletons to be able to resolve circular references</span>
 	<span class="hljs-comment">// even when triggered by lifecycle interfaces like BeanFactoryAware.</span>
 	<span class="hljs-comment">//是否	单例bean提前暴露</span>
@@ -875,13 +968,13 @@
 		<span class="hljs-comment">//这里着重理解，对理解循环依赖帮助非常大，重要程度 5   添加三级缓存</span>
 		addSingletonFactory(beanName, () -&gt; getEarlyBeanReference(beanName, mbd, bean));
 	&#125;
-   
+
 	<span class="hljs-comment">// Initialize the bean instance.</span>
 	Object exposedObject = bean;
 	<span class="hljs-keyword">try</span> &#123;
 		<span class="hljs-comment">//ioc di，依赖注入的核心方法，该方法必须看，重要程度：5</span>
 		populateBean(beanName, mbd, instanceWrapper);
-   
+
 		<span class="hljs-comment">//bean 实例化+ioc依赖注入完以后的调用，非常重要，重要程度：5</span>
 		exposedObject = initializeBean(beanName, exposedObject, mbd);
 	&#125;
@@ -894,7 +987,7 @@
 					mbd.getResourceDescription(), beanName, <span class="hljs-string">&quot;Initialization of bean failed&quot;</span>, ex);
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (earlySingletonExposure) &#123;
 		Object earlySingletonReference = getSingleton(beanName, <span class="hljs-keyword">false</span>);
 		<span class="hljs-keyword">if</span> (earlySingletonReference != <span class="hljs-keyword">null</span>) &#123;
@@ -921,7 +1014,7 @@
 			&#125;
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-comment">// Register bean as disposable.</span>
 	<span class="hljs-keyword">try</span> &#123;
 		<span class="hljs-comment">//注册bean销毁时的类DisposableBeanAdapter</span>
@@ -931,34 +1024,31 @@
 		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(
 				mbd.getResourceDescription(), beanName, <span class="hljs-string">&quot;Invalid destruction signature&quot;</span>, ex);
 	&#125;
-   
+
 	<span class="hljs-keyword">return</span> exposedObject;
 &#125;</code></pre>
 
-</li>
-</ol>
-<h3 id="createBeanInstance-方法"><a href="#createBeanInstance-方法" class="headerlink" title="createBeanInstance()方法"></a>createBeanInstance()方法</h3><ol>
-<li><p>createBeanInstance()方法，首先会通过反射拿到Class对象，然后会检查是否有FactoryMethodName属性，如果有则调用instantiateUsingFactoryMethod()方法创建后返回，如果没有会使用determineConstructorsFromBeanPostProcessors()方法扫描有Autowired注解的构造函数，如果有则使用autowireConstructor()方法创建对象并返回，无参构造直接使用反射调用构造函数创建实例并包装为BeanWrapperImpl返回。</p>
+<h3 id="createBeanInstance-方法"><a href="#createBeanInstance-方法" class="headerlink" title="createBeanInstance()方法"></a>createBeanInstance()方法</h3><p>createBeanInstance()方法位于<strong>AbstractAutowireCapableBeanFactory</strong>中，用于创建实例，该方法首先会通过反射拿到Class对象，然后会检查是否有FactoryMethodName属性，如果有则调用<strong>instantiateUsingFactoryMethod()方法</strong>创建后返回，如果没有会使用<strong>determineConstructorsFromBeanPostProcessors()方法</strong>扫描有Autowired注解的构造函数，如果有则使用<strong>autowireConstructor()方法</strong>创建对象并返回，无参构造直接使用反射调用构造函数创建实例并包装为<strong>BeanWrapperImpl</strong>返回。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> BeanWrapper <span class="hljs-title">createBeanInstance</span><span class="hljs-params">(String beanName, RootBeanDefinition mbd, <span class="hljs-meta">@Nullable</span> Object[] args)</span> </span>&#123;
 	<span class="hljs-comment">// Make sure bean class is actually resolved at this point.</span>
 	<span class="hljs-comment">//反射拿到Class对象</span>
 	Class&lt;?&gt; beanClass = resolveBeanClass(mbd, beanName);
-   
+
 	<span class="hljs-keyword">if</span> (beanClass != <span class="hljs-keyword">null</span> &amp;&amp; !Modifier.isPublic(beanClass.getModifiers()) &amp;&amp; !mbd.isNonPublicAccessAllowed()) &#123;
 		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> BeanCreationException(mbd.getResourceDescription(), beanName,
 				<span class="hljs-string">&quot;Bean class isn&#x27;t public, and non-public access not allowed: &quot;</span> + beanClass.getName());
 	&#125;
-   
+
 	Supplier&lt;?&gt; instanceSupplier = mbd.getInstanceSupplier();
 	<span class="hljs-keyword">if</span> (instanceSupplier != <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">return</span> obtainFromSupplier(instanceSupplier, beanName);
 	&#125;
-   
+
 	<span class="hljs-comment">//如果有FactoryMethodName属性</span>
 	<span class="hljs-keyword">if</span> (mbd.getFactoryMethodName() != <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">return</span> instantiateUsingFactoryMethod(beanName, mbd, args);
 	&#125;
-   
+
 	<span class="hljs-comment">// Shortcut when re-creating the same bean...</span>
 	<span class="hljs-keyword">boolean</span> resolved = <span class="hljs-keyword">false</span>;
 	<span class="hljs-keyword">boolean</span> autowireNecessary = <span class="hljs-keyword">false</span>;
@@ -978,7 +1068,7 @@
 			<span class="hljs-keyword">return</span> instantiateBean(beanName, mbd);
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-comment">// Candidate constructors for autowiring?</span>
 	<span class="hljs-comment">//寻找当前正在实例化的bean中有@Autowired注解的构造函数</span>
 	Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
@@ -987,29 +1077,29 @@
 		<span class="hljs-comment">//如果ctors不为空，就说明构造函数上有@Autowired注解</span>
 		<span class="hljs-keyword">return</span> autowireConstructor(beanName, mbd, ctors, args);
 	&#125;
-   
+
 	<span class="hljs-comment">// Preferred constructors for default construction?</span>
 	ctors = mbd.getPreferredConstructors();
 	<span class="hljs-keyword">if</span> (ctors != <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">return</span> autowireConstructor(beanName, mbd, ctors, <span class="hljs-keyword">null</span>);
 	&#125;
-   
+
 	<span class="hljs-comment">//无参构造函数的实例化,大部分的实例是采用的无参构造函数的方式实例化</span>
 	<span class="hljs-comment">// No special handling: simply use no-arg constructor.</span>
 	<span class="hljs-keyword">return</span> instantiateBean(beanName, mbd);
 &#125;</code></pre>
-</li>
-<li><p>instantiateUsingFactoryMethod()方法是通过反射调用类中的factoryMethod方法创建对象，然后将对象包装为BeanWrapperImpl对象。BeanWrapperImpl对象中包含对实例的引用，以及一些编辑器和类型转换器，这个对象不需要深究，了解即可。@Bean注解其实就是把方法名称设置到BeanDefinition的factoryMethod属性中。该方法里面的参数解析过程不需要了解。</p>
+
+<h4 id="instantiateUsingFactoryMethod-方法"><a href="#instantiateUsingFactoryMethod-方法" class="headerlink" title="instantiateUsingFactoryMethod()方法"></a>instantiateUsingFactoryMethod()方法</h4><p>该方法同样位于<strong>AbstractAutowireCapableBeanFactory</strong>中，会调用<strong>ConstructorResolver</strong>中的instantiateUsingFactoryMethod()方法，通过反射调用类中的factoryMethod方法创建对象，然后将对象包装为BeanWrapperImpl对象。BeanWrapperImpl对象中包含对实例的引用，以及一些编辑器和类型转换器，这个对象不需要深究，了解即可。@Bean注解其实就是把方法名称设置到BeanDefinition的factoryMethod属性中。该方法里面的参数解析过程不需要了解。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> BeanWrapper <span class="hljs-title">instantiateUsingFactoryMethod</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		String beanName, RootBeanDefinition mbd, <span class="hljs-meta">@Nullable</span> Object[] explicitArgs)</span> </span>&#123;
-   
+
 	BeanWrapperImpl bw = <span class="hljs-keyword">new</span> BeanWrapperImpl();
 	<span class="hljs-keyword">this</span>.beanFactory.initBeanWrapper(bw);
-   
+
 	Object factoryBean;
 	Class&lt;?&gt; factoryClass;
 	<span class="hljs-keyword">boolean</span> isStatic;
-   
+
 	String factoryBeanName = mbd.getFactoryBeanName();
 	<span class="hljs-keyword">if</span> (factoryBeanName != <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">if</span> (factoryBeanName.equals(beanName)) &#123;
@@ -1033,11 +1123,11 @@
 		factoryClass = mbd.getBeanClass();
 		isStatic = <span class="hljs-keyword">true</span>;
 	&#125;
-   
+
 	Method factoryMethodToUse = <span class="hljs-keyword">null</span>;
 	ArgumentsHolder argsHolderToUse = <span class="hljs-keyword">null</span>;
 	Object[] argsToUse = <span class="hljs-keyword">null</span>;
-   
+
 	<span class="hljs-keyword">if</span> (explicitArgs != <span class="hljs-keyword">null</span>) &#123;
 		argsToUse = explicitArgs;
 	&#125;
@@ -1057,12 +1147,12 @@
 			argsToUse = resolvePreparedArguments(beanName, mbd, bw, factoryMethodToUse, argsToResolve, <span class="hljs-keyword">true</span>);
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (factoryMethodToUse == <span class="hljs-keyword">null</span> || argsToUse == <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-comment">// Need to determine the factory method...</span>
 		<span class="hljs-comment">// Try all methods with this name to see if they match the given arguments.</span>
 		factoryClass = ClassUtils.getUserClass(factoryClass);
-   
+
 		Method[] rawCandidates = getCandidateMethods(factoryClass, mbd);
 		List&lt;Method&gt; candidateList = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
 		<span class="hljs-keyword">for</span> (Method candidate : rawCandidates) &#123;
@@ -1070,7 +1160,7 @@
 				candidateList.add(candidate);
 			&#125;
 		&#125;
-   
+
 		<span class="hljs-keyword">if</span> (candidateList.size() == <span class="hljs-number">1</span> &amp;&amp; explicitArgs == <span class="hljs-keyword">null</span> &amp;&amp; !mbd.hasConstructorArgumentValues()) &#123;
 			Method uniqueCandidate = candidateList.get(<span class="hljs-number">0</span>);
 			<span class="hljs-keyword">if</span> (uniqueCandidate.getParameterCount() == <span class="hljs-number">0</span>) &#123;
@@ -1084,15 +1174,15 @@
 				<span class="hljs-keyword">return</span> bw;
 			&#125;
 		&#125;
-   
+
 		Method[] candidates = candidateList.toArray(<span class="hljs-keyword">new</span> Method[<span class="hljs-number">0</span>]);
 		AutowireUtils.sortFactoryMethods(candidates);
-   
+
 		ConstructorArgumentValues resolvedValues = <span class="hljs-keyword">null</span>;
 		<span class="hljs-keyword">boolean</span> autowiring = (mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
 		<span class="hljs-keyword">int</span> minTypeDiffWeight = Integer.MAX_VALUE;
 		Set&lt;Method&gt; ambiguousFactoryMethods = <span class="hljs-keyword">null</span>;
-   
+
 		<span class="hljs-keyword">int</span> minNrOfArgs;
 		<span class="hljs-keyword">if</span> (explicitArgs != <span class="hljs-keyword">null</span>) &#123;
 			minNrOfArgs = explicitArgs.length;
@@ -1109,15 +1199,15 @@
 				minNrOfArgs = <span class="hljs-number">0</span>;
 			&#125;
 		&#125;
-   
+
 		LinkedList&lt;UnsatisfiedDependencyException&gt; causes = <span class="hljs-keyword">null</span>;
-   
+
 		<span class="hljs-keyword">for</span> (Method candidate : candidates) &#123;
 			Class&lt;?&gt;[] paramTypes = candidate.getParameterTypes();
-   
+
 			<span class="hljs-keyword">if</span> (paramTypes.length &gt;= minNrOfArgs) &#123;
 				ArgumentsHolder argsHolder;
-   
+
 				<span class="hljs-keyword">if</span> (explicitArgs != <span class="hljs-keyword">null</span>) &#123;
 					<span class="hljs-comment">// Explicit arguments given -&gt; arguments length must match exactly.</span>
 					<span class="hljs-keyword">if</span> (paramTypes.length != explicitArgs.length) &#123;
@@ -1148,7 +1238,7 @@
 						<span class="hljs-keyword">continue</span>;
 					&#125;
 				&#125;
-   
+
 				<span class="hljs-keyword">int</span> typeDiffWeight = (mbd.isLenientConstructorResolution() ?
 						argsHolder.getTypeDifferenceWeight(paramTypes) : argsHolder.getAssignabilityWeight(paramTypes));
 				<span class="hljs-comment">// Choose this factory method if it represents the closest match.</span>
@@ -1176,7 +1266,7 @@
 				&#125;
 			&#125;
 		&#125;
-   
+
 		<span class="hljs-keyword">if</span> (factoryMethodToUse == <span class="hljs-keyword">null</span>) &#123;
 			<span class="hljs-keyword">if</span> (causes != <span class="hljs-keyword">null</span>) &#123;
 				UnsatisfiedDependencyException ex = causes.removeLast();
@@ -1223,22 +1313,22 @@
 					<span class="hljs-string">&quot;(hint: specify index/type/name arguments for simple parameters to avoid type ambiguities): &quot;</span> +
 					ambiguousFactoryMethods);
 		&#125;
-   
+
 		<span class="hljs-keyword">if</span> (explicitArgs == <span class="hljs-keyword">null</span> &amp;&amp; argsHolderToUse != <span class="hljs-keyword">null</span>) &#123;
 			mbd.factoryMethodToIntrospect = factoryMethodToUse;
 			argsHolderToUse.storeCache(mbd, factoryMethodToUse);
 		&#125;
 	&#125;
-   
+
 	Assert.state(argsToUse != <span class="hljs-keyword">null</span>, <span class="hljs-string">&quot;Unresolved factory method arguments&quot;</span>);
 	bw.setBeanInstance(instantiate(beanName, mbd, factoryBean, factoryMethodToUse, argsToUse));
 	<span class="hljs-keyword">return</span> bw;
 &#125;</code></pre>
-</li>
-<li><p>determineConstructorsFromBeanPostProcessors()首先会获取所有的BeanPostProcessor，然后调用determineCandidateConstructors()方法获取带@Autowired注解的构造函数。该方法是BeanPostProcessor接口类的首次应用，最终会掉到AutowiredAnnotationBeanPostProcessor类的方法，在方法中会扫描有注解的构造函数并返回。</p>
+
+<h4 id="determineConstructorsFromBeanPostProcessors-方法"><a href="#determineConstructorsFromBeanPostProcessors-方法" class="headerlink" title="determineConstructorsFromBeanPostProcessors()方法"></a>determineConstructorsFromBeanPostProcessors()方法</h4><p>该方法同样位于<strong>AbstractAutowireCapableBeanFactory</strong>中，首先会获取所有的BeanPostProcessor，然后调用实现<strong>SmartInstantiationAwareBeanPostProcessor接口</strong>的BeanPostProcessor的<strong>determineCandidateConstructors()方法</strong>，该方法是BeanPostProcessor接口类的首次应用，<strong>AutowiredAnnotationBeanPostProcessor类</strong>实现了<strong>SmartInstantiationAwareBeanPostProcessor接口</strong>其中的determineCandidateConstructors()方法会获取带有@Autowired注解的构造函数并返回。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">protected</span> Constructor&lt;?&gt;[] determineConstructorsFromBeanPostProcessors(<span class="hljs-meta">@Nullable</span> Class&lt;?&gt; beanClass, String beanName)
 		<span class="hljs-keyword">throws</span> BeansException &#123;
-   
+
 	<span class="hljs-keyword">if</span> (beanClass != <span class="hljs-keyword">null</span> &amp;&amp; hasInstantiationAwareBeanPostProcessors()) &#123;
 		<span class="hljs-comment">//获取所有的BeanPostProcessors</span>
 		<span class="hljs-keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;
@@ -1254,11 +1344,11 @@
 	&#125;
 	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
 &#125;</code></pre>
-</li>
-<li><p>AutowiredAnnotationBeanPostProcessor中的determineCandidateConstructors()方法，该方法会返回有@Autowired注解的构造函数。该方法首先会扫描所有方法，处理有@Lookup注解的方法，然后拿到所有的构造函数并使用findAutowiredAnnotation()方法对@Autowired跟@Value注解进行扫描，返回有@Autowired的构造函数。</p>
+
+<p><strong>AutowiredAnnotationBeanPostProcessor</strong>中的<strong>determineCandidateConstructors()方法</strong>，该方法会返回有@Autowired注解的构造函数。该方法首先会扫描所有方法，处理有@Lookup注解的方法，然后拿到所有的构造函数并使用findAutowiredAnnotation()方法对@Autowired跟@Value注解进行扫描，返回有@Autowired的构造函数。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">public</span> Constructor&lt;?&gt;[] determineCandidateConstructors(Class&lt;?&gt; beanClass, <span class="hljs-keyword">final</span> String beanName)
 		<span class="hljs-keyword">throws</span> BeanCreationException &#123;
-   
+
 	<span class="hljs-comment">// Let&#x27;s check for lookup methods here..</span>
 	<span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.lookupMethodsChecked.contains(beanName)) &#123;
 		<span class="hljs-keyword">try</span> &#123;
@@ -1285,7 +1375,7 @@
 		&#125;
 		<span class="hljs-keyword">this</span>.lookupMethodsChecked.add(beanName);
 	&#125;
-   
+
 	<span class="hljs-comment">// Quick check on the concurrent map first, with minimal locking.</span>
 	Constructor&lt;?&gt;[] candidateConstructors = <span class="hljs-keyword">this</span>.candidateConstructorsCache.get(beanClass);
 	<span class="hljs-keyword">if</span> (candidateConstructors == <span class="hljs-keyword">null</span>) &#123;
@@ -1323,7 +1413,7 @@
 							<span class="hljs-keyword">try</span> &#123;
 								Constructor&lt;?&gt; superCtor =
 										userClass.getDeclaredConstructor(candidate.getParameterTypes());
-   
+
 								ann = findAutowiredAnnotation(superCtor);
 							&#125;
 							<span class="hljs-keyword">catch</span> (NoSuchMethodException ex) &#123;
@@ -1389,8 +1479,8 @@
 	&#125;
 	<span class="hljs-keyword">return</span> (candidateConstructors.length &gt; <span class="hljs-number">0</span> ? candidateConstructors : <span class="hljs-keyword">null</span>);
 &#125;</code></pre>
-</li>
-<li><p>autowireConstructor()方法中会获取@Autowired的参数，过程中会触发getBean()方法，此时的getBean()方法可能是从缓存中获取。获取到参数后使用反射创建实例并包装为BeanWrapperImpl后返回。</p>
+
+<h4 id="autowireConstructor-方法"><a href="#autowireConstructor-方法" class="headerlink" title="autowireConstructor()方法"></a>autowireConstructor()方法</h4><p>该方法位于AbstractAutowireCapableBeanFactory中，会创建ConstructorResolver对象，并调用其autowireConstructor方法，该方法会获取@Autowired的参数，过程中会触发getBean()方法，此时的getBean()方法可能是从缓存中获取。获取到参数后使用反射创建实例并包装为BeanWrapperImpl后返回。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> BeanWrapper <span class="hljs-title">autowireConstructor</span><span class="hljs-params">(String beanName, RootBeanDefinition mbd,</span></span>
 <span class="hljs-function"><span class="hljs-params">			<span class="hljs-meta">@Nullable</span> Constructor&lt;?&gt;[] chosenCtors, <span class="hljs-meta">@Nullable</span> Object[] explicitArgs)</span> </span>&#123;
 
@@ -1572,10 +1662,7 @@
 	&#125;</code></pre>
 
 
-</li>
-</ol>
-<h3 id="applyMergedBeanDefinitionPostProcessors-方法"><a href="#applyMergedBeanDefinitionPostProcessors-方法" class="headerlink" title="applyMergedBeanDefinitionPostProcessors()方法"></a>applyMergedBeanDefinitionPostProcessors()方法</h3><ol>
-<li><p>applyMergedBeanDefinitionPostProcessors()方法会拿到所有的BeanPostProcessor接口，然后调用MergedBeanDefinitionPostProcessor接口的postProcessMergedBeanDefinition()方法完成注解的收集。</p>
+<h3 id="applyMergedBeanDefinitionPostProcessors-方法"><a href="#applyMergedBeanDefinitionPostProcessors-方法" class="headerlink" title="applyMergedBeanDefinitionPostProcessors()方法"></a>applyMergedBeanDefinitionPostProcessors()方法</h3><p>applyMergedBeanDefinitionPostProcessors()方法会拿到所有的BeanPostProcessor接口，然后调用MergedBeanDefinitionPostProcessor接口的postProcessMergedBeanDefinition()方法完成注解的收集。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">applyMergedBeanDefinitionPostProcessors</span><span class="hljs-params">(RootBeanDefinition mbd, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;
 	<span class="hljs-keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;
 		<span class="hljs-keyword">if</span> (bp <span class="hljs-keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;
@@ -1584,26 +1671,26 @@
 		&#125;
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>CommonAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法会调用InitDestroyAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法完成@postConstruct跟@PreDestory()注解的扫描，然后调用findResourceMetadata()扫描@Resource注解。</p>
-<pre><code class="hljs reasonml">public void post<span class="hljs-constructor">ProcessMergedBeanDefinition(RootBeanDefinition <span class="hljs-params">beanDefinition</span>, Class&lt;?&gt; <span class="hljs-params">beanType</span>, String <span class="hljs-params">beanName</span>)</span> &#123;
+
+<p><strong>CommonAnnotationBeanPostProcessor</strong>的postProcessMergedBeanDefinition()方法会调用<strong>InitDestroyAnnotationBeanPostProcessor</strong>的postProcessMergedBeanDefinition()方法完成@postConstruct跟@PreDestory()注解的扫描，然后调用<strong>findResourceMetadata</strong>()扫描@Resource注解。以下内容为CommonAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">postProcessMergedBeanDefinition</span><span class="hljs-params">(RootBeanDefinition beanDefinition, Class&lt;?&gt; beanType, String beanName)</span> </span>&#123;
 	<span class="hljs-comment">//扫描@PostConstruct @PreDestroy</span>
-	super.post<span class="hljs-constructor">ProcessMergedBeanDefinition(<span class="hljs-params">beanDefinition</span>, <span class="hljs-params">beanType</span>, <span class="hljs-params">beanName</span>)</span>;
+	<span class="hljs-keyword">super</span>.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
 	<span class="hljs-comment">//扫描@Resource,扫描属性和方法上面是否有@Resource注解，如果有则收集起来封装成对象</span>
-	InjectionMetadata metadata = find<span class="hljs-constructor">ResourceMetadata(<span class="hljs-params">beanName</span>, <span class="hljs-params">beanType</span>, <span class="hljs-params">null</span>)</span>;
-	metadata.check<span class="hljs-constructor">ConfigMembers(<span class="hljs-params">beanDefinition</span>)</span>;
+	InjectionMetadata metadata = findResourceMetadata(beanName, beanType, <span class="hljs-keyword">null</span>);
+	metadata.checkConfigMembers(beanDefinition);
 &#125;</code></pre>
-</li>
-<li><p>InitDestroyAnnotationBeanPostProcessor的postProcessMergedBeanDefinition()方法会调用findLifecycleMetadata()方法，然后再次封装其返回的LifecycleMetadata对象。buildLifecycleMetadata()是findLifecycleMetadata()的核心方法，会循环判断类中的所有方法是否有@postConstruct跟@PreDestory()注解，如果有就将这个方法放到容器中，最后包装为LifecycleMetadata并返回。</p>
+
+<p><strong>InitDestroyAnnotationBeanPostProcessor</strong>的postProcessMergedBeanDefinition()方法会调用<strong>findLifecycleMetadata</strong>()方法，然后再次封装其返回的LifecycleMetadata对象。buildLifecycleMetadata()是findLifecycleMetadata()的核心方法，会循环判断类中的所有方法是否有@postConstruct跟@PreDestory()注解，如果有就将这个方法放到容器中，最后包装为LifecycleMetadata并返回。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> LifecycleMetadata <span class="hljs-title">buildLifecycleMetadata</span><span class="hljs-params">(<span class="hljs-keyword">final</span> Class&lt;?&gt; clazz)</span> </span>&#123;
 	List&lt;LifecycleElement&gt; initMethods = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
 	List&lt;LifecycleElement&gt; destroyMethods = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
 	Class&lt;?&gt; targetClass = clazz;
-   
+
 	<span class="hljs-keyword">do</span> &#123;
 		<span class="hljs-keyword">final</span> List&lt;LifecycleElement&gt; currInitMethods = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
 		<span class="hljs-keyword">final</span> List&lt;LifecycleElement&gt; currDestroyMethods = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-   
+
 		ReflectionUtils.doWithLocalMethods(targetClass, method -&gt; &#123;
 			<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.initAnnotationType != <span class="hljs-keyword">null</span> &amp;&amp; method.isAnnotationPresent(<span class="hljs-keyword">this</span>.initAnnotationType)) &#123;
 				LifecycleElement element = <span class="hljs-keyword">new</span> LifecycleElement(method);
@@ -1619,17 +1706,17 @@
 				&#125;
 			&#125;
 		&#125;);
-   
+
 		initMethods.addAll(<span class="hljs-number">0</span>, currInitMethods);
 		destroyMethods.addAll(currDestroyMethods);
 		targetClass = targetClass.getSuperclass();
 	&#125;
 	<span class="hljs-keyword">while</span> (targetClass != <span class="hljs-keyword">null</span> &amp;&amp; targetClass != Object.class);
-   
+
 	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> LifecycleMetadata(clazz, initMethods, destroyMethods);
 &#125;</code></pre>
-</li>
-<li><p>findResourceMetadata()方法会调用buildResourceMetadata()方法获取包装后的InjectionMetadata，放入缓存后返回。</p>
+
+<p>findResourceMetadata()方法会调用buildResourceMetadata()方法获取包装后的InjectionMetadata，放入缓存后返回。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> InjectionMetadata <span class="hljs-title">findResourceMetadata</span><span class="hljs-params">(String beanName, <span class="hljs-keyword">final</span> Class&lt;?&gt; clazz, <span class="hljs-meta">@Nullable</span> PropertyValues pvs)</span> </span>&#123;
 	<span class="hljs-comment">// Fall back to class name as cache key, for backwards compatibility with custom callers.</span>
 	String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
@@ -1650,15 +1737,15 @@
 	&#125;
 	<span class="hljs-keyword">return</span> metadata;
 &#125;</code></pre>
-</li>
-<li><p>buildResourceMetadata()方法会去获取类上的所有属性，然后循环调用lambda中的内容放到容器中，最后封装为InjectionMetadata对象后返回。</p>
+
+<p>buildResourceMetadata()方法会去获取类上的所有属性，然后循环调用lambda中的内容放到容器中，最后封装为InjectionMetadata对象后返回。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> InjectionMetadata <span class="hljs-title">buildResourceMetadata</span><span class="hljs-params">(<span class="hljs-keyword">final</span> Class&lt;?&gt; clazz)</span> </span>&#123;
 	List&lt;InjectionMetadata.InjectedElement&gt; elements = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
 	Class&lt;?&gt; targetClass = clazz;
-   
+
 	<span class="hljs-keyword">do</span> &#123;
 		<span class="hljs-keyword">final</span> List&lt;InjectionMetadata.InjectedElement&gt; currElements = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-   
+
 		ReflectionUtils.doWithLocalFields(targetClass, field -&gt; &#123;
 			<span class="hljs-keyword">if</span> (webServiceRefClass != <span class="hljs-keyword">null</span> &amp;&amp; field.isAnnotationPresent(webServiceRefClass)) &#123;
 				<span class="hljs-keyword">if</span> (Modifier.isStatic(field.getModifiers())) &#123;
@@ -1681,7 +1768,7 @@
 				&#125;
 			&#125;
 		&#125;);
-   
+
 		ReflectionUtils.doWithLocalMethods(targetClass, method -&gt; &#123;
 			Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 			<span class="hljs-keyword">if</span> (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) &#123;
@@ -1723,20 +1810,17 @@
 				&#125;
 			&#125;
 		&#125;);
-   
+
 		elements.addAll(<span class="hljs-number">0</span>, currElements);
 		targetClass = targetClass.getSuperclass();
 	&#125;
 	<span class="hljs-keyword">while</span> (targetClass != <span class="hljs-keyword">null</span> &amp;&amp; targetClass != Object.class);
-   
+
 	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> InjectionMetadata(clazz, elements);
 &#125;</code></pre>
 
-</li>
-</ol>
 <p>注：其他类型的BeanPostProcessor收集过程与InitDestroyAnnotationBeanPostProcessor基本相同，只是扫描的注解不同，此处不在赘述。</p>
-<h3 id="populateBean-方法"><a href="#populateBean-方法" class="headerlink" title="populateBean()方法"></a>populateBean()方法</h3><ol>
-<li><p>依赖注入的核心方法，主要方法为postProcessProperties()，依据applyMergedBeanDefinitionPostProcessors收集的注解进行依赖注入。</p>
+<h3 id="populateBean-方法"><a href="#populateBean-方法" class="headerlink" title="populateBean()方法"></a>populateBean()方法</h3><p>该方法同样位于AbstractAutowireCapableBeanFactory，是依赖注入的核心方法，该方法会调用AutowiredAnnotationBeanPostProcessor的postProcessProperties()，依据applyMergedBeanDefinitionPostProcessors收集的注解进行依赖注入。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">populateBean</span><span class="hljs-params">(String beanName, RootBeanDefinition mbd, <span class="hljs-meta">@Nullable</span> BeanWrapper bw)</span> </span>&#123;
 	<span class="hljs-keyword">if</span> (bw == <span class="hljs-keyword">null</span>) &#123;
 		<span class="hljs-keyword">if</span> (mbd.hasPropertyValues()) &#123;
@@ -1748,19 +1832,19 @@
 			<span class="hljs-keyword">return</span>;
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-comment">// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the</span>
 	<span class="hljs-comment">// state of the bean before properties are set. This can be used, for example,</span>
 	<span class="hljs-comment">// to support styles of field injection.</span>
 	<span class="hljs-keyword">boolean</span> continueWithPropertyPopulation = <span class="hljs-keyword">true</span>;
-   
+
 	<span class="hljs-comment">//这里很有意思，写接口可以让所有类都不能依赖注入</span>
 	<span class="hljs-keyword">if</span> (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) &#123;
 		<span class="hljs-keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;
 			<span class="hljs-keyword">if</span> (bp <span class="hljs-keyword">instanceof</span> InstantiationAwareBeanPostProcessor) &#123;
 				InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
 				<span class="hljs-keyword">if</span> (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) &#123;
-   
+
 					<span class="hljs-comment">//是否需要DI，依赖注入</span>
 					continueWithPropertyPopulation = <span class="hljs-keyword">false</span>;
 					<span class="hljs-keyword">break</span>;
@@ -1768,13 +1852,13 @@
 			&#125;
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (!continueWithPropertyPopulation) &#123;
 		<span class="hljs-keyword">return</span>;
 	&#125;
-   
+
 	PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : <span class="hljs-keyword">null</span>);
-   
+
 	<span class="hljs-keyword">if</span> (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_NAME || mbd.getResolvedAutowireMode() == AUTOWIRE_BY_TYPE) &#123;
 		MutablePropertyValues newPvs = <span class="hljs-keyword">new</span> MutablePropertyValues(pvs);
 		<span class="hljs-comment">// Add property values based on autowire by name if applicable.</span>
@@ -1787,12 +1871,12 @@
 		&#125;
 		pvs = newPvs;
 	&#125;
-   
+
 	<span class="hljs-keyword">boolean</span> hasInstAwareBpps = hasInstantiationAwareBeanPostProcessors();
 	<span class="hljs-keyword">boolean</span> needsDepCheck = (mbd.getDependencyCheck() != AbstractBeanDefinition.DEPENDENCY_CHECK_NONE);
-   
+
 	PropertyDescriptor[] filteredPds = <span class="hljs-keyword">null</span>;
-   
+
 	<span class="hljs-comment">//重点看这个if代码块，重要程度 5</span>
 	<span class="hljs-keyword">if</span> (hasInstAwareBpps) &#123;
 		<span class="hljs-keyword">if</span> (pvs == <span class="hljs-keyword">null</span>) &#123;
@@ -1807,7 +1891,7 @@
 					<span class="hljs-keyword">if</span> (filteredPds == <span class="hljs-keyword">null</span>) &#123;
 						filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
 					&#125;
-   
+
 					<span class="hljs-comment">//老版本用这个完成依赖注入过程，@Autowired的支持</span>
 					pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
 					<span class="hljs-keyword">if</span> (pvsToUse == <span class="hljs-keyword">null</span>) &#123;
@@ -1824,15 +1908,15 @@
 		&#125;
 		checkDependencies(beanName, mbd, filteredPds, pvs);
 	&#125;
-   
+
 	<span class="hljs-comment">//这个方法很鸡肋了，建议不看，是老版本用&lt;property name=&quot;username&quot; value=&quot;Jack&quot;/&gt;</span>
 	<span class="hljs-comment">//标签做依赖注入的代码实现，复杂且无用</span>
 	<span class="hljs-keyword">if</span> (pvs != <span class="hljs-keyword">null</span>) &#123;
 		applyPropertyValues(beanName, mbd, bw, pvs);
 	&#125;
 &#125;</code></pre>
-</li>
-<li><p>AutowiredAnnotationBeanPostProcessor的postProcessProperties()方法。该方法首先从缓存中获取之前收集好的所有InjectionMetadata对象，然后调用循环调用inject()方法进行注入。</p>
+
+<p>AutowiredAnnotationBeanPostProcessor的postProcessProperties()方法会从缓存中获取之前收集好的所有InjectionMetadata对象，然后调用循环调用inject()方法进行注入。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> PropertyValues <span class="hljs-title">postProcessProperties</span><span class="hljs-params">(PropertyValues pvs, Object bean, String beanName)</span> </span>&#123;
    <span class="hljs-comment">// 从缓存中获取InjectionMetadata对象</span>
 	InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
@@ -1847,8 +1931,8 @@
 	&#125;
 	<span class="hljs-keyword">return</span> pvs;
 &#125;</code></pre>
-</li>
-<li><p>此处为inject()方法，先从spring容器中拿到参数对应的值，这时可能会触发实例化，然后通过反射完成对象的注入。</p>
+
+<p>此处为InjectionMetadata的inject()方法，先从spring容器中拿到参数对应的值，这时可能会触发实例化，然后通过反射完成对象的注入。</p>
 <pre><code class="hljs java">	<span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">inject</span><span class="hljs-params">(Object bean, <span class="hljs-meta">@Nullable</span> String beanName, <span class="hljs-meta">@Nullable</span> PropertyValues pvs)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
 		Field field = (Field) <span class="hljs-keyword">this</span>.member;
 		Object value;
@@ -1895,11 +1979,8 @@
 	&#125;
 &#125;</code></pre>
 
-</li>
-</ol>
 <p>注：其他类的postProcessProperties与此处基本相同。</p>
-<h3 id="initializeBean-方法"><a href="#initializeBean-方法" class="headerlink" title="initializeBean()方法"></a>initializeBean()方法</h3><ol>
-<li><p>initializeBean()方法是BeanDefinition实例化完成后的操作。首先会使用applyBeanPostProcessorsBeforeInitialization()方法对@PostConstruct，Aware接口进行调用，然后使用invokeInitMethods()接口，完成对InitializingBean接口的afterPropertiesSet()方法、BeanDefination中init-method对应方法的调用。这些注解在applyMergedBeanDefinitionPostProcessors()方法中已经被收集并封装为Metadata对象。applyBeanPostProcessorsAfterInitialization()方法是aop入口类，在之后会有详细分析。</p>
+<h3 id="initializeBean-方法"><a href="#initializeBean-方法" class="headerlink" title="initializeBean()方法"></a>initializeBean()方法</h3><p>该方法同样位于AbstractAutowireCapableBeanFactory，是BeanDefinition实例化完成后的操作。首先会使用<strong>applyBeanPostProcessorsBeforeInitialization()方法</strong>对@PostConstruct，Aware接口进行调用，然后使用<strong>invokeInitMethods()方法</strong>，完成对InitializingBean接口的afterPropertiesSet()方法、BeanDefination中init-method对应方法的调用。这些注解在<strong>applyMergedBeanDefinitionPostProcessors()方法</strong>中已经被收集并封装为Metadata对象。<strong>applyBeanPostProcessorsAfterInitialization()方法</strong>是aop入口类，在之后会有详细分析。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">initializeBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String beanName, <span class="hljs-keyword">final</span> Object bean, <span class="hljs-meta">@Nullable</span> RootBeanDefinition mbd)</span> </span>&#123;
 	<span class="hljs-keyword">if</span> (System.getSecurityManager() != <span class="hljs-keyword">null</span>) &#123;
 		AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt; &#123;
@@ -1911,13 +1992,13 @@
 		<span class="hljs-comment">//调用Aware方法</span>
 		invokeAwareMethods(beanName, bean);
 	&#125;
-   
+
 	Object wrappedBean = bean;
 	<span class="hljs-keyword">if</span> (mbd == <span class="hljs-keyword">null</span> || !mbd.isSynthetic()) &#123;
 		<span class="hljs-comment">//对类中某些特殊方法的调用，比如@PostConstruct，Aware接口，非常重要 重要程度 ：5</span>
 		wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 	&#125;
-   
+
 	<span class="hljs-keyword">try</span> &#123;
 		<span class="hljs-comment">//InitializingBean接口，afterPropertiesSet，init-method属性调用,非常重要，重要程度：5</span>
 		invokeInitMethods(beanName, wrappedBean, mbd);
@@ -1930,15 +2011,15 @@
 	<span class="hljs-keyword">if</span> (mbd == <span class="hljs-keyword">null</span> || !mbd.isSynthetic()) &#123;
 		wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 	&#125;
-   
+
 	<span class="hljs-keyword">return</span> wrappedBean;
 &#125;</code></pre>
-</li>
-<li><p>applyBeanPostProcessorsBeforeInitialization()方法</p>
+
+<h4 id="applyBeanPostProcessorsBeforeInitialization-方法"><a href="#applyBeanPostProcessorsBeforeInitialization-方法" class="headerlink" title="applyBeanPostProcessorsBeforeInitialization()方法"></a>applyBeanPostProcessorsBeforeInitialization()方法</h4><p>该方法同样位于AbstractAutowireCapableBeanFactory，主要完成对@PostConstruct，Aware接口进行调用</p>
 <pre><code class="hljs java"><span class="hljs-meta">@Override</span>
 <span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">applyBeanPostProcessorsBeforeInitialization</span><span class="hljs-params">(Object existingBean, String beanName)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> BeansException </span>&#123;
-   
+
 	Object result = existingBean;
 	<span class="hljs-comment">/*</span>
 <span class="hljs-comment">	* 着重看几个</span>
@@ -1957,8 +2038,8 @@
 	&#125;
 	<span class="hljs-keyword">return</span> result;
 &#125;</code></pre>
-</li>
-<li><p>InitDestroyAnnotationBeanPostProcessor的postProcessBeforeInitialization()方法会通过反射调用metadata中的方法，此处被调用的方法不能有任何参数。</p>
+
+<p>InitDestroyAnnotationBeanPostProcessor的postProcessBeforeInitialization()方法会通过反射调用metadata中的方法，此处被调用的方法不能有任何参数。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">postProcessBeforeInitialization</span><span class="hljs-params">(Object bean, String beanName)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;
 	LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 	<span class="hljs-keyword">try</span> &#123;
@@ -1973,11 +2054,11 @@
 	&#125;
 	<span class="hljs-keyword">return</span> bean;
 &#125;</code></pre>
-</li>
-<li><p>invokeInitMethods()方法首先会判断bean是否实现了InitializingBean接口，如果是就直接通过反射调用该接口的afterPropertiesSet()方法。然后会通过invokeCustomInitMethod()方法调用initMethod()方法方法。如果要在Bean实例化之后去做一些事情可以实现InitializingBean接口，比如缓存预热，注册到注册中心等，Mybatis中xml的解析也是用了该接口。</p>
+
+<h4 id="invokeInitMethods-方法"><a href="#invokeInitMethods-方法" class="headerlink" title="invokeInitMethods()方法"></a>invokeInitMethods()方法</h4><p>该方法同样位于AbstractAutowireCapableBeanFactory，invokeInitMethods()方法首先会判断bean是否实现了InitializingBean接口，如果是就直接通过反射调用该接口的afterPropertiesSet()方法。然后会通过invokeCustomInitMethod()方法调用initMethod()方法方法。如果要在Bean实例化之后去做一些事情可以实现InitializingBean接口，比如缓存预热，注册到注册中心等，Mybatis中xml的解析也是用了该接口。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">invokeInitMethods</span><span class="hljs-params">(String beanName, <span class="hljs-keyword">final</span> Object bean, <span class="hljs-meta">@Nullable</span> RootBeanDefinition mbd)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> Throwable </span>&#123;
-   
+
 	<span class="hljs-keyword">boolean</span> isInitializingBean = (bean <span class="hljs-keyword">instanceof</span> InitializingBean);
 	<span class="hljs-keyword">if</span> (isInitializingBean &amp;&amp; (mbd == <span class="hljs-keyword">null</span> || !mbd.isExternallyManagedInitMethod(<span class="hljs-string">&quot;afterPropertiesSet&quot;</span>))) &#123;
 		<span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
@@ -1998,7 +2079,7 @@
 			((InitializingBean) bean).afterPropertiesSet();
 		&#125;
 	&#125;
-   
+
 	<span class="hljs-keyword">if</span> (mbd != <span class="hljs-keyword">null</span> &amp;&amp; bean.getClass() != NullBean.class) &#123;
 		String initMethodName = mbd.getInitMethodName();
 		<span class="hljs-keyword">if</span> (StringUtils.hasLength(initMethodName) &amp;&amp;
@@ -2009,9 +2090,7 @@
 	&#125;
 &#125;</code></pre>
 
-</li>
-</ol>
-<h3 id="registerDisposableBeanIfNecessary-方法"><a href="#registerDisposableBeanIfNecessary-方法" class="headerlink" title="registerDisposableBeanIfNecessary()方法"></a>registerDisposableBeanIfNecessary()方法</h3><p>该方法首先会将需要销毁的Bean包装为DisposableBeanAdapter对象，然后通过registerDisposableBean()方法放入disposableBeans容器中。</p>
+<h3 id="registerDisposableBeanIfNecessary-方法"><a href="#registerDisposableBeanIfNecessary-方法" class="headerlink" title="registerDisposableBeanIfNecessary()方法"></a>registerDisposableBeanIfNecessary()方法</h3><p>该方法位于<strong>AbstractBeanFactory</strong>，首先会将需要销毁的Bean包装为DisposableBeanAdapter对象，然后通过registerDisposableBean()方法放入disposableBeans容器中。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerDisposableBeanIfNecessary</span><span class="hljs-params">(String beanName, Object bean, RootBeanDefinition mbd)</span> </span>&#123;
 	AccessControlContext acc = (System.getSecurityManager() != <span class="hljs-keyword">null</span> ? getAccessControlContext() : <span class="hljs-keyword">null</span>);
 	<span class="hljs-keyword">if</span> (!mbd.isPrototype() &amp;&amp; requiresDestruction(bean, mbd)) &#123;
@@ -2118,7 +2197,7 @@
 
 <h2 id="单实例循环依赖"><a href="#单实例循环依赖" class="headerlink" title="单实例循环依赖"></a>单实例循环依赖</h2><p><a target="_blank" rel="noopener" href="https://www.processon.com/view/link/5df9ce52e4b0c4255ea1a84f">循环依赖流程图</a></p>
 <p>单例实例无参构造函数的循环依赖是可以解决的，但如果是参构造函数@Autowired 的方式造成的循环依赖会直接报错，多例的循环依赖也是直接报错。</p>
-<p>doGetBean()方法的再分析。在调用doGetBean()方法获取实例时，在该方法中会尝试通过getSingleton(beanName)方法从缓存中获取实例，如果没有会通过getSingleton()的重载方法创建实例。</p>
+<p>AbstractBeanFactory.doGetBean()方法的再分析。在调用doGetBean()方法获取实例时，在该方法中会尝试通过DefaultSingletonBeanRegistry.getSingleton(beanName)方法从缓存中获取实例，如果没有会通过DefaultSingletonBeanRegistry中的getSingleton()的重载方法创建实例。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">doGetBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String name, <span class="hljs-meta">@Nullable</span> <span class="hljs-keyword">final</span> Class&lt;T&gt; requiredType,</span></span>
 <span class="hljs-function"><span class="hljs-params">		<span class="hljs-meta">@Nullable</span> <span class="hljs-keyword">final</span> Object[] args, <span class="hljs-keyword">boolean</span> typeCheckOnly)</span> <span class="hljs-keyword">throws</span> BeansException </span>&#123;
 
@@ -2292,7 +2371,7 @@
 	<span class="hljs-keyword">return</span> (T) bean;
 &#125;</code></pre>
 
-<p>getSingleton()方法，该方法用于从缓存中获取实例，会按照一级缓存、二级缓存、三级缓存的顺序获取，再从三级缓存中获取实例后，会将实例放到二级缓存并删除三级缓存。一级缓存中的bean是完成实例化，IOC、DI注入的，三级缓存中时仅仅执行完构造方法，还没有对属性进行赋值操作的bean，二级缓存中的bean与三级缓存相同，二级缓存存在的意义是为了提升效率。</p>
+<h3 id="getSingleton-方法"><a href="#getSingleton-方法" class="headerlink" title="getSingleton()方法"></a>getSingleton()方法</h3><p>该方法位于DefaultSingletonBeanRegistry中，用于从缓存中获取实例。会按照一级缓存、二级缓存、三级缓存的顺序获取，再从三级缓存中获取实例后，会将实例放到二级缓存并删除三级缓存。一级缓存中的bean是完成实例化，IOC、DI注入的，三级缓存中时仅仅执行完构造方法，还没有对属性进行赋值操作的bean，二级缓存中的bean与三级缓存相同，二级缓存存在的意义是为了提升效率。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getSingleton</span><span class="hljs-params">(String beanName, <span class="hljs-keyword">boolean</span> allowEarlyReference)</span> </span>&#123;
 	<span class="hljs-comment">//根据beanName从缓存中拿实例</span>
 	<span class="hljs-comment">//先从一级缓存拿</span>
@@ -2321,7 +2400,7 @@
 	<span class="hljs-keyword">return</span> singletonObject;
 &#125;</code></pre>
 
-<p>重载的getSingleton()方法，该方法在创建Bean之前会将beanName添加到singletonsCurrentlyInCreation容器中，如果容器中已有该beanName会直接报错，然后通过singletonFactory.getObject()方法创建实例，如果有返回值，就表示实例已经完成创建，再从容器中删除beanName，创建完成后调用addSingleton()方法放入一级缓存。</p>
+<h3 id="重载的getSingleton-方法"><a href="#重载的getSingleton-方法" class="headerlink" title="重载的getSingleton()方法"></a>重载的getSingleton()方法</h3><p>同样位于DefaultSingletonBeanRegistry中，该方法在创建Bean之前会将beanName添加到singletonsCurrentlyInCreation容器中，如果容器中已有该beanName会直接报错，然后通过singletonFactory.getObject()方法创建实例，如果有返回值，就表示实例已经完成创建，再从容器中删除beanName，创建完成后调用addSingleton()方法放入一级缓存。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getSingleton</span><span class="hljs-params">(String beanName, ObjectFactory&lt;?&gt; singletonFactory)</span> </span>&#123;
 	Assert.notNull(beanName, <span class="hljs-string">&quot;Bean name must not be null&quot;</span>);
 	<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>.singletonObjects) &#123;
@@ -2393,7 +2472,7 @@
 	&#125;
 &#125;</code></pre>
 
-<p>singletonFactory.getObject()方法会回调到doCreateBean()方法，该方法完成实例的构造函数后创建实例后，会判断类是否需要提前暴露，如果需要会调用addSingletonFactory()方法将正在创建的bean添加到三级缓存，注意此时注解装配已经完成，但对注解的IOC、DI等操作还未开始。addSingletonFactory()方法会调用到getEarlyBeanReference()方法获取完成实例化的bean。判断bean是否正在创建的方法为判断beanName在singletonsCurrentlyInCreation中是否存在。</p>
+<p>singletonFactory.getObject()方法会回调到AbstractBeanFactory的doGetBean()方法中传入的createBean()方法，createBean()方法在AbstractAutowireCapableBeanFactory中实现，会继续调用doCreateBean()方法，该方法创建实例后，会判断类是否需要提前暴露，如果需要会调用getEarlyBeanReference()方法获取完成实例化的bean，传入addSingletonFactory()方法将正在创建的bean添加到三级缓存，注意此时注解装配已经完成，但对注解的IOC、DI等操作还未开始。判断bean是否正在创建的方法为判断beanName在singletonsCurrentlyInCreation中是否存在。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">doCreateBean</span><span class="hljs-params">(<span class="hljs-keyword">final</span> String beanName, <span class="hljs-keyword">final</span> RootBeanDefinition mbd, <span class="hljs-keyword">final</span> <span class="hljs-meta">@Nullable</span> Object[] args)</span></span>
 <span class="hljs-function">		<span class="hljs-keyword">throws</span> BeanCreationException </span>&#123;
 
@@ -2530,7 +2609,7 @@
 </ol>
 <p>看完上面的流程后，对于有参构造函数中的@Autowired造成的循环依赖直接报错的原因就显而易见了。如果A类在执行有@Autowired注解的构造函数时需要注入B类，B类的构造函数中也使用@Autowired要求注入A类，那么在调用A的构造函数时会触发B类的初始化。而要处理B类构造函数的@Autowired就需要获取A的实例，就会再次触发A类的getBean()，但此时A的构造函数还没有完成，通过三级缓存是拿不到A类的，所以会再次触发getSingleton往singletonsCurrentlyInCreation中放入beanName，但由于在上面执行A的构造函数之前就已经往singletonsCurrentlyInCreation放入了A类的beanName，此时再次放入会直接报错。</p>
 <h2 id="FactoryBean接口"><a href="#FactoryBean接口" class="headerlink" title="FactoryBean接口"></a>FactoryBean接口</h2><p>该接口主要是在BeanFactory完成实例化后，创建交给Spring管理的、可以用于@Autowired注解的对象。注意此时根据beanName获取的是BeanFactory接口创建的实例，如果要获取BeanFactory接口的实例需要在BeanName前加上&amp;符号。</p>
-<p>getObjectForBeanInstance()方法用于对该接口的支持，如果beanName不是以&amp;开头，并且beanInstance是FactoryBean类型，就会从缓存里面拿FactoryBean类型的实例，然后调用getObjectFromFactoryBean()方法创建实例。</p>
+<p>AbstractBeanFactory中的getObjectForBeanInstance()方法用于对该接口的支持，如果beanName不是以&amp;开头，并且beanInstance是FactoryBean类型，就会从缓存里面拿FactoryBean类型的实例，然后调用getObjectFromFactoryBean()方法创建实例，这两个方法都在FactoryBeanRegistrySupport类中。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getObjectForBeanInstance</span><span class="hljs-params">(</span></span>
 <span class="hljs-function"><span class="hljs-params">		Object beanInstance, String name, String beanName, <span class="hljs-meta">@Nullable</span> RootBeanDefinition mbd)</span> </span>&#123;
 
@@ -2630,14 +2709,14 @@
 
 <h2 id="BeanPostProcessor接口"><a href="#BeanPostProcessor接口" class="headerlink" title="BeanPostProcessor接口"></a>BeanPostProcessor接口</h2><p>BeanPostProcessor接口类型实例是针对某种特定功能的埋点，在这个点会根据接口类型来过滤掉不关注这个点的其他类，只有真正关注的类才会在这个点进行相应的功能实现。在使用时通常会拿到所有的BeanPostProcessor接口，然后循环根据BeanPostProcessor接口的类型进行过滤，或者直接调用对应的方法，如果该BeanPostProcessor接口不关注这个点，对应的方法中就没有相应的实现。</p>
 <h3 id="获取有-Autowired注解的构造函数埋点"><a href="#获取有-Autowired注解的构造函数埋点" class="headerlink" title="获取有@Autowired注解的构造函数埋点"></a>获取有@Autowired注解的构造函数埋点</h3><p>doCreateBean()初始化Bean实例时，用于创建Bean实例的createBeanInstance()方法中，会调用determineConstructorsFromBeanPostProcessors()方法获得有@Autowired注解的构造方法。</p>
-<pre><code class="hljs reasonml"><span class="hljs-comment">// Candidate constructors for autowiring?</span>
+<pre><code class="hljs java"><span class="hljs-comment">// Candidate constructors for autowiring?</span>
 <span class="hljs-comment">//寻找当前正在实例化的bean中有@Autowired注解的构造函数</span>
-Constructor&lt;?&gt;<span class="hljs-literal">[]</span> ctors = determine<span class="hljs-constructor">ConstructorsFromBeanPostProcessors(<span class="hljs-params">beanClass</span>, <span class="hljs-params">beanName</span>)</span>;
-<span class="hljs-keyword">if</span> (ctors != null<span class="hljs-operator"> || </span>mbd.get<span class="hljs-constructor">ResolvedAutowireMode()</span><span class="hljs-operator"> == </span>AUTOWIRE_CONSTRUCTOR <span class="hljs-pattern-match"><span class="hljs-operator">||</span></span>
-<span class="hljs-pattern-match">		mbd.has<span class="hljs-constructor">ConstructorArgumentValues()</span> <span class="hljs-operator">||</span> !<span class="hljs-constructor">ObjectUtils</span>.is<span class="hljs-constructor">Empty(<span class="hljs-params">args</span>)</span>) &#123;</span>
-<span class="hljs-pattern-match">	<span class="hljs-operator">/</span><span class="hljs-operator">/</span>如果ctors不为空，就说明构造函数上有@<span class="hljs-constructor">Autowired</span>注解</span>
-<span class="hljs-pattern-match">	return autowire<span class="hljs-constructor">Constructor(<span class="hljs-params">beanName</span>, <span class="hljs-params">mbd</span>, <span class="hljs-params">ctors</span>, <span class="hljs-params">args</span>)</span>;</span>
-<span class="hljs-pattern-match">&#125;</span></code></pre>
+Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+<span class="hljs-keyword">if</span> (ctors != <span class="hljs-keyword">null</span> || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
+		mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) &#123;
+	<span class="hljs-comment">//如果ctors不为空，就说明构造函数上有@Autowired注解</span>
+	<span class="hljs-keyword">return</span> autowireConstructor(beanName, mbd, ctors, args);
+&#125;</code></pre>
 
 <p>这里过滤的接口类型是SmartInstantiationAwareBeanPostProcessor，调用的方法是determineCandidateConstructors()。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">protected</span> Constructor&lt;?&gt;[] determineConstructorsFromBeanPostProcessors(<span class="hljs-meta">@Nullable</span> Class&lt;?&gt; beanClass, String beanName)
@@ -2659,7 +2738,7 @@ Constructor&lt;?&gt;<span class="hljs-literal">[]</span> ctors = determine<span 
 	<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
 &#125;</code></pre>
 
-<h3 id="收集-Resource、-Autowired、-Value-PostConstruct、-PreDestroy注解的方法和属性埋点"><a href="#收集-Resource、-Autowired、-Value-PostConstruct、-PreDestroy注解的方法和属性埋点" class="headerlink" title="收集@Resource、@Autowired、@Value@PostConstruct、@PreDestroy注解的方法和属性埋点"></a>收集@Resource、@Autowired、@Value@PostConstruct、@PreDestroy注解的方法和属性埋点</h3><p>doCreateBean()进行注解的装配时，会使用applyMergedBeanDefinitionPostProcessors()方法。</p>
+<h3 id="收集-Resource、-Autowired、-Value-PostConstruct、-PreDestroy注解的方法和属性埋点"><a href="#收集-Resource、-Autowired、-Value-PostConstruct、-PreDestroy注解的方法和属性埋点" class="headerlink" title="收集@Resource、@Autowired、@Value@PostConstruct、@PreDestroy注解的方法和属性埋点"></a>收集@Resource、@Autowired、@Value@PostConstruct、@PreDestroy注解的方法和属性埋点</h3><p>AbstractAutowireCapableBeanFactory中的doCreateBean()进行注解的装配时，会使用applyMergedBeanDefinitionPostProcessors()方法。</p>
 <pre><code class="hljs java"><span class="hljs-keyword">synchronized</span> (mbd.postProcessingLock) &#123;
 	<span class="hljs-keyword">if</span> (!mbd.postProcessed) &#123;
 		<span class="hljs-keyword">try</span> &#123;
@@ -2688,7 +2767,7 @@ Constructor&lt;?&gt;<span class="hljs-literal">[]</span> ctors = determine<span 
 	&#125;
 &#125;</code></pre>
 
-<h3 id="循环依赖解决中bean的提前暴露埋点"><a href="#循环依赖解决中bean的提前暴露埋点" class="headerlink" title="循环依赖解决中bean的提前暴露埋点"></a>循环依赖解决中bean的提前暴露埋点</h3><p>doCreateBean()对Bean进行提前暴露时，会调用getEarlyBeanReference()方法获取到Bean实例。</p>
+<h3 id="循环依赖解决中bean的提前暴露埋点"><a href="#循环依赖解决中bean的提前暴露埋点" class="headerlink" title="循环依赖解决中bean的提前暴露埋点"></a>循环依赖解决中bean的提前暴露埋点</h3><p>在doCreateBean()对Bean进行提前暴露时，会调用getEarlyBeanReference()方法获取到Bean实例。</p>
 <pre><code class="hljs java"><span class="hljs-comment">//是否	单例bean提前暴露</span>
 <span class="hljs-keyword">boolean</span> earlySingletonExposure = (mbd.isSingleton() &amp;&amp; <span class="hljs-keyword">this</span>.allowCircularReferences &amp;&amp;
 		isSingletonCurrentlyInCreation(beanName));
@@ -2715,8 +2794,7 @@ Constructor&lt;?&gt;<span class="hljs-literal">[]</span> ctors = determine<span 
 	<span class="hljs-keyword">return</span> exposedObject;
 &#125;</code></pre>
 
-<h3 id="阻止依赖注入埋点"><a href="#阻止依赖注入埋点" class="headerlink" title="阻止依赖注入埋点"></a>阻止依赖注入埋点</h3><p>位于doCreateBean()进行依赖注入时，populateBean()方法中。</p>
-<p>过滤的接口类型是InstantiationAwareBeanPostProcessor，调用的方法是postProcessAfterInstantiation。</p>
+<h3 id="阻止依赖注入埋点"><a href="#阻止依赖注入埋点" class="headerlink" title="阻止依赖注入埋点"></a>阻止依赖注入埋点</h3><p>在doCreateBean()进行依赖注入时，会调用populateBean()方法，过滤的接口类型是InstantiationAwareBeanPostProcessor，调用的方法是postProcessAfterInstantiation。</p>
 <pre><code class="hljs java"><span class="hljs-comment">//这里写接口可以让所有类都不能依赖注入</span>
 <span class="hljs-keyword">if</span> (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) &#123;
 	<span class="hljs-keyword">for</span> (BeanPostProcessor bp : getBeanPostProcessors()) &#123;
@@ -2732,8 +2810,7 @@ Constructor&lt;?&gt;<span class="hljs-literal">[]</span> ctors = determine<span 
 	&#125;
 &#125;</code></pre>
 
-<h3 id="IOC-DI-依赖注入埋点"><a href="#IOC-DI-依赖注入埋点" class="headerlink" title="IOC/DI 依赖注入埋点"></a>IOC/DI 依赖注入埋点</h3><p>位于doCreateBean()进行依赖注入时，populateBean()方法中。</p>
-<p>过滤的接口类型是InstantiationAwareBeanPostProcessor，调用的方法是postProcessProperties。</p>
+<h3 id="IOC-DI-依赖注入埋点"><a href="#IOC-DI-依赖注入埋点" class="headerlink" title="IOC/DI 依赖注入埋点"></a>IOC/DI 依赖注入埋点</h3><p>同样位于在populateBean()方法中，过滤的接口类型是InstantiationAwareBeanPostProcessor，调用的方法是postProcessProperties。</p>
 <pre><code class="hljs java"><span class="hljs-comment">//重点看这个if代码块，重要程度 5</span>
 <span class="hljs-keyword">if</span> (hasInstAwareBpps) &#123;
 	<span class="hljs-keyword">if</span> (pvs == <span class="hljs-keyword">null</span>) &#123;
@@ -2760,7 +2837,7 @@ Constructor&lt;?&gt;<span class="hljs-literal">[]</span> ctors = determine<span 
 	&#125;
   &#125;</code></pre>
 
-<h3 id="Bean销毁的埋点"><a href="#Bean销毁的埋点" class="headerlink" title="Bean销毁的埋点"></a>Bean销毁的埋点</h3><p>位于doGreateBean().registerDisposableBeanIfNecessary()方法中调用DisposableBeanAdapter的构造函数时。用于寻找DestructionAwareBeanPostProcessor类型的BeanPostProcessor。</p>
+<h3 id="Bean销毁的埋点"><a href="#Bean销毁的埋点" class="headerlink" title="Bean销毁的埋点"></a>Bean销毁的埋点</h3><p>调用链为doGreateBean()-&gt;registerDisposableBeanIfNecessary()-&gt;DisposableBeanAdapter的构造函数。用于寻找DestructionAwareBeanPostProcessor类型的BeanPostProcessor。</p>
 <pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> List&lt;DestructionAwareBeanPostProcessor&gt; <span class="hljs-title">filterPostProcessors</span><span class="hljs-params">(List&lt;BeanPostProcessor&gt; processors, Object bean)</span> </span>&#123;
 	List&lt;DestructionAwareBeanPostProcessor&gt; filteredPostProcessors = <span class="hljs-keyword">null</span>;
 	<span class="hljs-keyword">if</span> (!CollectionUtils.isEmpty(processors)) &#123;
