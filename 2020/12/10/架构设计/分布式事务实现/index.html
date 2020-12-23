@@ -184,7 +184,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      7k 字
+      10.9k 字
     </span>
   
 
@@ -194,7 +194,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      106
+      166
        分钟
     </span>
   
@@ -993,6 +993,731 @@
 
 <h4 id="执行过程分析"><a href="#执行过程分析" class="headerlink" title="执行过程分析"></a>执行过程分析</h4><img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic6.png" srcset="/blog/img/loading.gif" class>
 
+<h3 id="Seata的AT模式"><a href="#Seata的AT模式" class="headerlink" title="Seata的AT模式"></a>Seata的AT模式</h3><h4 id="Seata简介"><a href="#Seata简介" class="headerlink" title="Seata简介"></a>Seata简介</h4><p>FESCAR是阿里巴巴开源的分布式事务中间件，以高效并且对业务0侵入的方式，解决微服务场景下面临的分布式事务问题。它全称是Fast &amp; EaSy Commit And Rollback，是阿里内部的TXC（Taobao Transaction onstructor）和阿里云上的GTS（Global Transaction Service）的精炼出的产物，作为开源的分布式事务解决方案，被很多项目团队青睐。</p>
+<p>Seata是fescar的升级版本，从2019年4月起，更名为seata。seata是由一组单词组成：Simple Extensible Autonomous Transaction Architecture。<a target="_blank" rel="noopener" href="https://github.com/seata/seata">Git网址</a>提供了对他的详细介绍，包括<a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/user/quickstart.html">Quick Start</a>。 </p>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h4><p>在seata的github网站中提供了一套用例介绍，用户购买商品的业务逻辑。整个业务逻辑由3个微服务提供支持：</p>
+<ul>
+<li>仓储服务：对给定的商品扣除仓储数量。</li>
+<li>订单服务：根据采购需求创建订单。</li>
+<li>帐户服务：从用户帐户中扣除余额。</li>
+</ul>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p>在此时，引入了seata，它提供了一个“完美”的解决方案。如下图所示：</p>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<p>在图中的三个和seata相关的组件，前面在介绍fescar的时候已经介绍了，它也是seata的基本组件，他们分别是： </p>
+<ul>
+<li><p>事务协调器（TC）：维护全局和分支事务的状态，驱动全局提交或回滚。 </p>
+</li>
+<li><p>事务管理器（TM）：定义全局事务的范围：开始全局事务，提交或回滚全局事务。 </p>
+</li>
+<li><p>资源管理器（RM）：管理分支事务的资源，与TC通信以注册分支事务和报告分支事务的状态，并驱动分支事务提交或回滚。 </p>
+</li>
+</ul>
+<p>一个典型的Seata管理的分布式事务生命周期：</p>
+<ol>
+<li>TM要求TC开始新的全局事务。 TC生成表示全局事务的XID。</li>
+<li>XID通过微服务的调用链传播。</li>
+<li>RM将本地事务注册为XID到TC的相应全局事务的分支。 </li>
+<li>TM要求TC提交或回滚XID的相应全局事务。</li>
+<li>TC在XID的相应全局事务下驱动所有分支事务，以完成分支提交或回滚。</li>
+</ol>
+<h4 id="案例准备"><a href="#案例准备" class="headerlink" title="案例准备"></a>案例准备</h4><p>seata-server的安装</p>
+<p>创建数据库seata-tcc，sql文件下载地址为：<a target="_blank" rel="noopener" href="https://gitee.com/dhb414/seata/blob/master/script/server/db/mysql.sql">https://gitee.com/dhb414/seata/blob/master/script/server/db/mysql.sql</a></p>
+<pre><code class="hljs sql"><span class="hljs-comment">-- -------------------------------- The script used when storeMode is &#x27;db&#x27; --------------------------------</span>
+<span class="hljs-comment">-- the table to store GlobalSession data</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-keyword">IF</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">EXISTS</span> <span class="hljs-string">`global_table`</span>
+(
+    <span class="hljs-string">`xid`</span>                       <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">128</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+    <span class="hljs-string">`transaction_id`</span>            <span class="hljs-built_in">BIGINT</span>,
+    <span class="hljs-string">`status`</span>                    <span class="hljs-built_in">TINYINT</span>      <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+    <span class="hljs-string">`application_id`</span>            <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">32</span>),
+    <span class="hljs-string">`transaction_service_group`</span> <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">32</span>),
+    <span class="hljs-string">`transaction_name`</span>          <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">128</span>),
+    <span class="hljs-string">`timeout`</span>                   <span class="hljs-built_in">INT</span>,
+    <span class="hljs-string">`begin_time`</span>                <span class="hljs-built_in">BIGINT</span>,
+    <span class="hljs-string">`application_data`</span>          <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">2000</span>),
+    <span class="hljs-string">`gmt_create`</span>                DATETIME,
+    <span class="hljs-string">`gmt_modified`</span>              DATETIME,
+    PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`xid`</span>),
+    <span class="hljs-keyword">KEY</span> <span class="hljs-string">`idx_gmt_modified_status`</span> (<span class="hljs-string">`gmt_modified`</span>, <span class="hljs-string">`status`</span>),
+    <span class="hljs-keyword">KEY</span> <span class="hljs-string">`idx_transaction_id`</span> (<span class="hljs-string">`transaction_id`</span>)
+) <span class="hljs-keyword">ENGINE</span> = <span class="hljs-keyword">InnoDB</span>
+  <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span> = utf8;
+
+<span class="hljs-comment">-- the table to store BranchSession data</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-keyword">IF</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">EXISTS</span> <span class="hljs-string">`branch_table`</span>
+(
+    <span class="hljs-string">`branch_id`</span>         <span class="hljs-built_in">BIGINT</span>       <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+    <span class="hljs-string">`xid`</span>               <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">128</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+    <span class="hljs-string">`transaction_id`</span>    <span class="hljs-built_in">BIGINT</span>,
+    <span class="hljs-string">`resource_group_id`</span> <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">32</span>),
+    <span class="hljs-string">`resource_id`</span>       <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">256</span>),
+    <span class="hljs-string">`branch_type`</span>       <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">8</span>),
+    <span class="hljs-string">`status`</span>            <span class="hljs-built_in">TINYINT</span>,
+    <span class="hljs-string">`client_id`</span>         <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">64</span>),
+    <span class="hljs-string">`application_data`</span>  <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">2000</span>),
+    <span class="hljs-string">`gmt_create`</span>        DATETIME,
+    <span class="hljs-string">`gmt_modified`</span>      DATETIME,
+    PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`branch_id`</span>),
+    <span class="hljs-keyword">KEY</span> <span class="hljs-string">`idx_xid`</span> (<span class="hljs-string">`xid`</span>)
+) <span class="hljs-keyword">ENGINE</span> = <span class="hljs-keyword">InnoDB</span>
+  <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span> = utf8;
+
+<span class="hljs-comment">-- the table to store lock data</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-keyword">IF</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">EXISTS</span> <span class="hljs-string">`lock_table`</span>
+(
+    <span class="hljs-string">`row_key`</span>        <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">128</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+    <span class="hljs-string">`xid`</span>            <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">96</span>),
+    <span class="hljs-string">`transaction_id`</span> <span class="hljs-built_in">BIGINT</span>,
+    <span class="hljs-string">`branch_id`</span>      <span class="hljs-built_in">BIGINT</span>       <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,
+    <span class="hljs-string">`resource_id`</span>    <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">256</span>),
+    <span class="hljs-string">`table_name`</span>     <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">32</span>),
+    <span class="hljs-string">`pk`</span>             <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">36</span>),
+    <span class="hljs-string">`gmt_create`</span>     DATETIME,
+    <span class="hljs-string">`gmt_modified`</span>   DATETIME,
+    PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`row_key`</span>),
+    <span class="hljs-keyword">KEY</span> <span class="hljs-string">`idx_branch_id`</span> (<span class="hljs-string">`branch_id`</span>)
+) <span class="hljs-keyword">ENGINE</span> = <span class="hljs-keyword">InnoDB</span>
+  <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span> = utf8;</code></pre>
+
+<p><a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/ops/deploy-guide-beginner.html">官网提供的的部署指南</a></p>
+<p>此处使用docker启动，命令为：<code>docker run --name seata-server -p 8091:8091 seataio/seata-server:latest</code>，其他参数可以参考：<a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/ops/deploy-by-docker.html">http://seata.io/zh-cn/docs/ops/deploy-by-docker.html</a></p>
+<p>修改file.conf中的数据库连接信息</p>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>修改register.conf文件，根据实际情况修改里面的配置，里面提供了注册中心和配置中心的可选项，本次使用file的方式，如下图： </p>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic12.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic13.png" srcset="/blog/img/loading.gif" class>
+
+<p>修改完成后需要重启容器</p>
+<h4 id="案例实现"><a href="#案例实现" class="headerlink" title="案例实现"></a>案例实现</h4><p>导入seata坐标</p>
+<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>io.seata<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>seata-all<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.2.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+
+<p>配置seata代理数据源</p>
+<p>在账户，订单和库存服务的spring-dubbo.xml中配置如下内容：</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--代理数据源--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;dataSourceProxy&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;io.seata.rm.datasource.DataSourceProxy&quot;</span>&gt;</span>
+    <span class="hljs-comment">&lt;!--注入当前(被代理的)数据源--&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">constructor-arg</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;dataSource&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></code></pre>
+
+<p>改造SqlSessionFactoryBean</p>
+<pre><code class="hljs xml"> <span class="hljs-comment">&lt;!-- SqlSessionFactoryBean --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;sqlSessionFactoryBean&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.mybatis.spring.SqlSessionFactoryBean&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;dataSource&quot;</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;dataSourceProxy&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></code></pre>
+
+<p>改造MapperScannerConfigurer</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--</span>
+<span class="hljs-comment">  配置接口扫描包</span>
+<span class="hljs-comment">  如果是单数据源，则可以不配置sqlSessionFactoryBeanName</span>
+<span class="hljs-comment">--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.mybatis.spring.mapper.MapperScannerConfigurer&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">p:basePackage</span>=<span class="hljs-string">&quot;com.itheima.mapper&quot;</span></span>
+<span class="hljs-tag">      <span class="hljs-attr">p:sqlSessionFactoryBeanName</span>=<span class="hljs-string">&quot;sqlSessionFactoryBean&quot;</span> /&gt;</span></code></pre>
+
+<p>注意：指定sqlSessionFactoryBeanname在配置多数据源时必不可少</p>
+<p>配置undoLog解析器</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--配置undolog解析器--&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;undoLogParser&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;io.seata.rm.datasource.undo.parser.JacksonUndoLogParser&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></code></pre>
+
+<p>配置TM和TC的通讯协议</p>
+<pre><code class="hljs nix">transport &#123;
+  <span class="hljs-comment"># tcp udt unix-domain-socket</span>
+  <span class="hljs-attr">type</span> = <span class="hljs-string">&quot;TCP&quot;</span>
+  <span class="hljs-comment">#NIO NATIVE</span>
+  <span class="hljs-attr">server</span> = <span class="hljs-string">&quot;NIO&quot;</span>
+  <span class="hljs-comment">#enable heartbeat</span>
+  <span class="hljs-attr">heartbeat</span> = <span class="hljs-literal">true</span>
+  <span class="hljs-comment">#thread factory for netty</span>
+  thread-factory &#123;
+    <span class="hljs-attr">boss-thread-prefix</span> = <span class="hljs-string">&quot;NettyBoss&quot;</span>
+    <span class="hljs-attr">worker-thread-prefix</span> = <span class="hljs-string">&quot;NettyServerNIOWorker&quot;</span>
+    <span class="hljs-attr">server-executor-thread-prefix</span> = <span class="hljs-string">&quot;NettyServerBizHandler&quot;</span>
+    <span class="hljs-attr">share-boss-worker</span> = <span class="hljs-literal">false</span>
+    <span class="hljs-attr">client-selector-thread-prefix</span> = <span class="hljs-string">&quot;NettyClientSelector&quot;</span>
+    <span class="hljs-attr">client-selector-thread-size</span> = <span class="hljs-number">1</span>
+    <span class="hljs-attr">client-worker-thread-prefix</span> = <span class="hljs-string">&quot;NettyClientWorkerThread&quot;</span>
+    <span class="hljs-comment"># netty boss thread size,will not be used for UDT</span>
+    <span class="hljs-attr">boss-thread-size</span> = <span class="hljs-number">1</span>
+    <span class="hljs-comment">#auto default pin or 8</span>
+    <span class="hljs-attr">worker-thread-size</span> = <span class="hljs-number">8</span>
+  &#125;
+&#125;
+service &#123;
+  <span class="hljs-comment">#vgroup-&gt;rgroup</span>
+  vgroup_mapping.<span class="hljs-attr">my_test_tx_group</span> = <span class="hljs-string">&quot;localRgroup&quot;</span>
+  <span class="hljs-comment">#only support single node</span>
+  localRgroup.<span class="hljs-attr">grouplist</span> = <span class="hljs-string">&quot;127.0.0.1:8091&quot;</span>
+  <span class="hljs-comment">#degrade current not support</span>
+  <span class="hljs-attr">enableDegrade</span> = <span class="hljs-literal">false</span>
+  <span class="hljs-comment">#disable</span>
+  <span class="hljs-attr">disable</span> = <span class="hljs-literal">false</span>
+&#125;</code></pre>
+
+<p>配置@GlobalTransaction注解（引入seata全局事务管理）</p>
+<p>配置全局事务扫描器</p>
+<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--注入全局事务管理器--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;io.seata.spring.annotation.GlobalTransactionScanner&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">constructor-arg</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;seata-account&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">constructor-arg</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;my_test_tx_group&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></code></pre>
+
+<p>改造订单服务的OrderInfoService具体实现</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Service</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OrderInfoServiceImpl</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">OrderInfoService</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> OrderInfoDao orderInfoDao;
+
+    <span class="hljs-meta">@Reference(check = false)</span>
+    <span class="hljs-keyword">private</span> ItemService itemService;
+
+    <span class="hljs-comment">/****</span>
+<span class="hljs-comment">     * 创建订单</span>
+<span class="hljs-comment">     * 调用ItemService修改库存(调用AccountService修改余额)</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span>  usernumber:购买商品的用户</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span>  id：购买的商品ID</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span>  count:要减的数量</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@GlobalTransactional(name=&quot;fescar-itheima-tx&quot;)</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">create</span><span class="hljs-params">(String usernumber, String id, Integer count)</span></span>&#123;
+        <span class="hljs-comment">//从数据库查询商品信息</span>
+        Item item = <span class="hljs-keyword">new</span> Item();
+        item.setId(id);
+        item.setNum(count);
+        item.setPrice(<span class="hljs-number">100L</span>);
+        item.setTitle(<span class="hljs-string">&quot;华为荣耀4&quot;</span>);
+
+        <span class="hljs-comment">//创建订单</span>
+        OrderInfo orderInfo = <span class="hljs-keyword">new</span> OrderInfo();
+        String orderId = UUID.randomUUID().toString().replace(<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;&quot;</span>).toUpperCase();
+        orderInfo.setId(orderId);
+        orderInfo.setMoney(item.getPrice()*count);
+        orderInfo.setCreatetime(<span class="hljs-keyword">new</span> Date());
+        orderInfo.setUsernumber(usernumber);
+        <span class="hljs-keyword">int</span> acount = orderInfoDao.add(orderInfo);
+
+        System.out.println(<span class="hljs-string">&quot;添加订单受影响行数：&quot;</span>+acount);
+
+        <span class="hljs-comment">//制造异常</span>
+<span class="hljs-comment">//        System.out.println(&quot;订单添加成功后,出现异常。。。。&quot;);</span>
+<span class="hljs-comment">//        int q=10/0;</span>
+
+        <span class="hljs-comment">//调用ItemService(远程调用)</span>
+        Account account = <span class="hljs-keyword">new</span> Account();
+        account.setUsernumber(usernumber);
+        account.setMoney(item.getPrice()*count); <span class="hljs-comment">//花掉的钱</span>
+        itemService.update(item,account);
+
+        <span class="hljs-comment">//制造异常</span>
+        System.out.println(<span class="hljs-string">&quot;开始报错了。。。。&quot;</span>);
+        <span class="hljs-keyword">int</span> q=<span class="hljs-number">10</span>/<span class="hljs-number">0</span>;
+        <span class="hljs-keyword">return</span>  acount;
+    &#125;
+&#125;</code></pre>
+
+<p>改造ItemService具体实现</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Service</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ItemServcieImpl</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ItemService</span> </span>&#123;
+
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> ItemDao itemDao;
+
+    <span class="hljs-meta">@Reference(check = false)</span>
+    <span class="hljs-keyword">private</span> AccountService accountService;
+
+
+    <span class="hljs-comment">/****</span>
+<span class="hljs-comment">     * 修改商品库存，同时修改账户余额</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> item</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> account</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">update</span><span class="hljs-params">(Item item, Account account)</span></span>&#123;
+        <span class="hljs-comment">//修改商品的库存</span>
+        <span class="hljs-keyword">int</span> mcount = itemDao.update(item);
+        System.out.println(<span class="hljs-string">&quot;更新库存受影响行数：&quot;</span>+mcount);
+
+        <span class="hljs-comment">//修改账户余额</span>
+        <span class="hljs-keyword">int</span> acount = accountService.update(account);
+        System.out.println(<span class="hljs-string">&quot;账户更新余额受影响行数:&quot;</span>+acount);
+        <span class="hljs-keyword">return</span>  mcount;
+    &#125;
+&#125;</code></pre>
+
+<p>改造AccountService具体实现</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Service</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AccountServiceImpl</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">AccountService</span> </span>&#123;
+
+    <span class="hljs-meta">@Autowired</span>
+    <span class="hljs-keyword">private</span> AccountDao accountDao;
+
+    <span class="hljs-comment">/***</span>
+<span class="hljs-comment">     * 修改账户余额</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> account</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">update</span><span class="hljs-params">(Account account)</span></span>&#123;
+        <span class="hljs-keyword">return</span> accountDao.update(account);
+    &#125;
+&#125;</code></pre>
+
+<p>编写测试代码</p>
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AccountTest</span> </span>&#123;
+
+
+    <span class="hljs-comment">/***</span>
+<span class="hljs-comment">     * 启动服务</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Test</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">testAccount</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+        ApplicationContext act = <span class="hljs-keyword">new</span> ClassPathXmlApplicationContext(<span class="hljs-string">&quot;spring/spring-dubbo.xml&quot;</span>);
+
+        <span class="hljs-comment">//阻塞线程</span>
+        System.in.read();
+    &#125;
+&#125;
+</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OrderInfoTest</span> </span>&#123;
+
+    <span class="hljs-comment">/***</span>
+<span class="hljs-comment">     * 业务测试</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Test</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">testOrder</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+        ApplicationContext act = <span class="hljs-keyword">new</span> ClassPathXmlApplicationContext(<span class="hljs-string">&quot;spring/spring-dubbo.xml&quot;</span>);
+        OrderInfoService orderInfoService = act.getBean(OrderInfoService.class);
+        orderInfoService.create(<span class="hljs-string">&quot;itheima&quot;</span>,<span class="hljs-string">&quot;1&quot;</span>, <span class="hljs-number">1</span>);
+
+    &#125;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ItemTest</span> </span>&#123;
+
+
+    <span class="hljs-comment">/***</span>
+<span class="hljs-comment">     * 启动服务</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@Test</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">testAccount</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
+        ApplicationContext act = <span class="hljs-keyword">new</span> ClassPathXmlApplicationContext(<span class="hljs-string">&quot;spring/spring-dubbo.xml&quot;</span>);
+
+        <span class="hljs-comment">//阻塞线程</span>
+        System.in.read();
+    &#125;
+&#125;</code></pre>
+
+<h3 id="Seata的TCC模式"><a href="#Seata的TCC模式" class="headerlink" title="Seata的TCC模式"></a>Seata的TCC模式</h3><p>TCC模式又称为补偿型分布式事务解决方案，它是通过开发者自己编写补偿代码来实现事务各个组成部分的最终一致性的。其原理图大致如下： </p>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic14.png" srcset="/blog/img/loading.gif" class>
+
+<p><strong>以下描述来自于 seata 文档</strong></p>
+<p>一个分布式的全局事务，整体是 <strong>两阶段提交</strong> 的模型。全局事务是由若干分支事务组成的，分支事务要满足 <strong>两阶段提交</strong> 的模型要求，即需要每个分支事务都具备自己的：</p>
+<ul>
+<li>一阶段 prepare 行为</li>
+<li>二阶段 commit 或 rollback 行为</li>
+</ul>
+<img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic15.png" srcset="/blog/img/loading.gif" class>
+
+<p>根据两阶段行为模式的不同，我们将分支事务划分为 <strong>Automatic (Branch) Transaction Mode</strong> 和 <strong>TCC (Branch) Transaction Mode</strong>.</p>
+<p>AT 模式（<a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/dev/mode/tcc-mode.html">参考链接 TBD</a>）基于 <strong>支持本地 ACID 事务</strong> 的 <strong>关系型数据库</strong>：</p>
+<ul>
+<li>一阶段 prepare 行为：在本地事务中，一并提交业务数据更新和相应回滚日志记录。</li>
+<li>二阶段 commit 行为：马上成功结束，<strong>自动</strong> 异步批量清理回滚日志。</li>
+<li>二阶段 rollback 行为：通过回滚日志，<strong>自动</strong> 生成补偿操作，完成数据回滚。</li>
+</ul>
+<p>相应的，TCC 模式，不依赖于底层数据资源的事务支持：</p>
+<ul>
+<li>一阶段 prepare 行为：调用 <strong>自定义</strong> 的 prepare 逻辑。</li>
+<li>二阶段 commit 行为：调用 <strong>自定义</strong> 的 commit 逻辑。</li>
+<li>二阶段 rollback 行为：调用 <strong>自定义</strong> 的 rollback 逻辑。</li>
+</ul>
+<p>所谓 TCC 模式，是指支持把 <strong>自定义</strong> 的分支事务纳入到全局事务的管理中。</p>
+<h4 id="场景说明"><a href="#场景说明" class="headerlink" title="场景说明"></a>场景说明</h4><img src="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic16.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="具体实现-1"><a href="#具体实现-1" class="headerlink" title="具体实现"></a>具体实现</h4><p>配置@TwoPhaseBusinessAction注解</p>
+<pre><code class="hljs java"><span class="hljs-meta">@LocalTCC</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">OrderService</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 创建订单并且进行扣除账户余额支付，并进行库存扣减操作</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span> string string</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@TwoPhaseBusinessAction(name = &quot;orderPayTccTryPhase&quot;, commitMethod = &quot;commit&quot;, rollbackMethod = &quot;rollback&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">prepareUpdateState</span><span class="hljs-params">(BusinessActionContext businessActionContext, <span class="hljs-meta">@BusinessActionContextParameter(paramName = &quot;orderId&quot;)</span> String orderId)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 修改订单状态为支付完成</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">commit</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 修改订单状态为支付失败</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">rollback</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 根据id查询订单</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">Order <span class="hljs-title">findById</span><span class="hljs-params">(String id)</span></span>;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-meta">@LocalTCC</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">InventoryService</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 预扣减库存操作</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> productId             商品id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> count                 商品数量</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@TwoPhaseBusinessAction(name = &quot;decreaseTccTryPhase&quot;, commitMethod = &quot;commit&quot;, rollbackMethod = &quot;rollback&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">prepareDecrease</span><span class="hljs-params">(BusinessActionContext businessActionContext,</span></span>
+<span class="hljs-function"><span class="hljs-params">                            <span class="hljs-meta">@BusinessActionContextParameter(paramName = &quot;productId&quot;)</span> String productId,</span></span>
+<span class="hljs-function"><span class="hljs-params">                            <span class="hljs-meta">@BusinessActionContextParameter(paramName = &quot;count&quot;)</span> Integer count)</span></span>;
+
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 扣减库存的提交补偿</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">commit</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 扣减库存的回滚补偿</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">rollback</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-meta">@LocalTCC</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">AccountService</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 扣款支付</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> userId                支付人id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> amount                支付金额</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-meta">@TwoPhaseBusinessAction(name = &quot;accountTccTryPhase&quot;, commitMethod = &quot;commit&quot;, rollbackMethod = &quot;rollback&quot;)</span>
+    <span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">preparePayment</span><span class="hljs-params">(BusinessActionContext businessActionContext,</span></span>
+<span class="hljs-function"><span class="hljs-params">                           <span class="hljs-meta">@BusinessActionContextParameter(paramName = &quot;userId&quot;)</span> String userId,</span></span>
+<span class="hljs-function"><span class="hljs-params">                           <span class="hljs-meta">@BusinessActionContextParameter(paramName = &quot;amount&quot;)</span> BigDecimal amount)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 提交方法</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">commit</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 取消方法</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">rollback</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;
+&#125;</code></pre>
+
+<p>在业务发起者中，增加**@GlobalTransactional**注解</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Service</span>
+<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BusinessServiceImpl</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">BusinessService</span> </span>&#123;
+
+    <span class="hljs-meta">@Reference</span>
+    <span class="hljs-keyword">private</span> OrderService orderService;
+
+    <span class="hljs-meta">@Reference</span>
+    <span class="hljs-keyword">private</span> InventoryService inventoryService;
+
+    <span class="hljs-meta">@Reference</span>
+    <span class="hljs-keyword">private</span> AccountService accountService;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-meta">@GlobalTransactional(name = &quot;seata-tcc-tx&quot;, rollbackFor = Exception.class, propagation = Propagation.REQUIRED)</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">orderPay</span><span class="hljs-params">(String orderId)</span> </span>&#123;
+        String xid = RootContext.getXID();
+        System.out.println(xid);
+        <span class="hljs-comment">//1.根据订单id查询订单</span>
+        Order order = orderService.findById(orderId);
+        <span class="hljs-comment">//2.判断是否有此订单</span>
+        <span class="hljs-keyword">if</span> (order != <span class="hljs-keyword">null</span> &amp;&amp; order.getStatus().intValue() == OrderStatusEnum.NOT_PAY.getCode()) &#123;
+            <span class="hljs-comment">//3.更新订单状态为支付中</span>
+            orderService.prepareUpdateState(<span class="hljs-keyword">null</span>, orderId);
+            <span class="hljs-comment">//4.预扣减余额（冻结账户资金）</span>
+            accountService.preparePayment(<span class="hljs-keyword">null</span>, order.getUserId(), order.getTotalAmount());
+            <span class="hljs-comment">//5.预扣减库存（锁定库存）</span>
+            inventoryService.prepareDecrease(<span class="hljs-keyword">null</span>, order.getProductId(), order.getCount());
+        &#125; <span class="hljs-keyword">else</span> &#123;
+            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;订单不存在&quot;</span>;
+        &#125;
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;success&quot;</span>;
+    &#125;
+&#125;</code></pre>
+
+<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">BusinessService</span> </span>&#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * 外部服务：下单</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> orderId 订单Id</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment">     */</span>
+    <span class="hljs-function">String <span class="hljs-title">orderPay</span><span class="hljs-params">(String orderId)</span></span>;
+&#125;</code></pre>
+
+<p>其他配置与AT模式配置相同</p>
+<h4 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h4><p>在程序加载时，解析配置文件中提供的 GlobalTransactionScanner 配置，该类是 AbstractAutoProxyCreator 的子类，里面重写了 wrapIfNecessary 方法。该方法里面调用了 TCCBeanParserUtils 类中的静态方法isTccAutoProxy ，而此方法内部执行了解析注解的操作方法 parserRemotingServiceInfo ，此时它会把具有@TwoPhaseBusinessAction 注解的方法解析出来，并创建成 TccResource 对象。</p>
+<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> RemotingDesc <span class="hljs-title">parserRemotingServiceInfo</span><span class="hljs-params">(Object bean, String beanName, RemotingParser remotingParser)</span> </span>&#123;
+    RemotingDesc remotingBeanDesc = remotingParser.getServiceDesc(bean, beanName);
+    <span class="hljs-keyword">if</span> (remotingBeanDesc == <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
+    &#125;
+    remotingServiceMap.put(beanName, remotingBeanDesc);
+
+    Class&lt;?&gt; interfaceClass = remotingBeanDesc.getInterfaceClass();
+    Method[] methods = interfaceClass.getMethods();
+    <span class="hljs-keyword">if</span> (remotingParser.isService(bean, beanName)) &#123;
+        <span class="hljs-keyword">try</span> &#123;
+            <span class="hljs-comment">//service bean, registry resource</span>
+            Object targetBean = remotingBeanDesc.getTargetBean();
+            <span class="hljs-keyword">for</span> (Method m : methods) &#123;
+                <span class="hljs-comment">// 解析注解，创建TccRecources对象</span>
+                TwoPhaseBusinessAction twoPhaseBusinessAction = m.getAnnotation(TwoPhaseBusinessAction.class);
+                <span class="hljs-keyword">if</span> (twoPhaseBusinessAction != <span class="hljs-keyword">null</span>) &#123;
+                    TCCResource tccResource = <span class="hljs-keyword">new</span> TCCResource();
+                    tccResource.setActionName(twoPhaseBusinessAction.name());
+                    tccResource.setTargetBean(targetBean);
+                    tccResource.setPrepareMethod(m);
+                    tccResource.setCommitMethodName(twoPhaseBusinessAction.commitMethod());
+                    tccResource.setCommitMethod(ReflectionUtil
+                        .getMethod(interfaceClass, twoPhaseBusinessAction.commitMethod(),
+                            <span class="hljs-keyword">new</span> Class[] &#123;BusinessActionContext.class&#125;));
+                    tccResource.setRollbackMethodName(twoPhaseBusinessAction.rollbackMethod());
+                    tccResource.setRollbackMethod(ReflectionUtil
+                        .getMethod(interfaceClass, twoPhaseBusinessAction.rollbackMethod(),
+                            <span class="hljs-keyword">new</span> Class[] &#123;BusinessActionContext.class&#125;));
+                    <span class="hljs-comment">//registry tcc resource</span>
+                    DefaultResourceManager.get().registerResource(tccResource);
+                &#125;
+            &#125;
+        &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FrameworkException(t, <span class="hljs-string">&quot;parser remoting service error&quot;</span>);
+        &#125;
+    &#125;
+    <span class="hljs-keyword">if</span> (remotingParser.isReference(bean, beanName)) &#123;
+        <span class="hljs-comment">//reference bean, TCC proxy</span>
+        remotingBeanDesc.setReference(<span class="hljs-keyword">true</span>);
+    &#125;
+    <span class="hljs-keyword">return</span> remotingBeanDesc;
+&#125;</code></pre>
+
+<h5 id="资源管理器注册资源"><a href="#资源管理器注册资源" class="headerlink" title="资源管理器注册资源"></a>资源管理器注册资源</h5><p>TCCResourceManager 负责管理 TCC 模式下资源的注册、分支的注册、提交、和回滚。代码如下：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerResource</span><span class="hljs-params">(Resource resource)</span> </span>&#123;
+    TCCResource tccResource = (TCCResource)resource;
+    tccResourceCache.put(tccResource.getResourceId(), tccResource);
+    <span class="hljs-keyword">super</span>.registerResource(tccResource);
+&#125;</code></pre>
+
+<p>而与server通信的逻辑被封装在了父类 AbstractResourceManage 中，这里根据 resourceId 对 TCCResource 进行缓存。父类 AbstractResourceManage 注册资源的时候，使用 resourceGroupId + actionName，actionName就是 @TwoParseBusinessAction 注解中的 name，resourceGroupId 默认是 DEFAULT。 </p>
+<p>同时，在TccResourceManager中还定义了分支事务的提交和回滚的方法。</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * TCC branch commit</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> branchType</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> xid             Transaction id.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> branchId        Branch id.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> resourceId      Resource id.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> applicationData Application data bind with this branch.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> TransactionException</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> BranchStatus <span class="hljs-title">branchCommit</span><span class="hljs-params">(BranchType branchType, String xid, <span class="hljs-keyword">long</span> branchId, String resourceId,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                 String applicationData)</span> <span class="hljs-keyword">throws</span> TransactionException </span>&#123;
+    TCCResource tccResource = (TCCResource)tccResourceCache.get(resourceId);
+    <span class="hljs-keyword">if</span> (tccResource == <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ShouldNeverHappenException(String.format(<span class="hljs-string">&quot;TCC resource is not exist, resourceId: %s&quot;</span>, resourceId));
+    &#125;
+    Object targetTCCBean = tccResource.getTargetBean();
+    Method commitMethod = tccResource.getCommitMethod();
+    <span class="hljs-keyword">if</span> (targetTCCBean == <span class="hljs-keyword">null</span> || commitMethod == <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ShouldNeverHappenException(String.format(<span class="hljs-string">&quot;TCC resource is not available, resourceId: %s&quot;</span>, resourceId));
+    &#125;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-keyword">boolean</span> result = <span class="hljs-keyword">false</span>;
+        <span class="hljs-comment">//BusinessActionContext</span>
+        BusinessActionContext businessActionContext = getBusinessActionContext(xid, branchId, resourceId,
+            applicationData);
+        Object ret = commitMethod.invoke(targetTCCBean, businessActionContext);
+        LOGGER.info(<span class="hljs-string">&quot;TCC resource commit result : &#123;&#125;, xid: &#123;&#125;, branchId: &#123;&#125;, resourceId: &#123;&#125;&quot;</span>, ret, xid, branchId, resourceId);
+        <span class="hljs-keyword">if</span> (ret != <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-keyword">if</span> (ret <span class="hljs-keyword">instanceof</span> TwoPhaseResult) &#123;
+                result = ((TwoPhaseResult)ret).isSuccess();
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                result = (<span class="hljs-keyword">boolean</span>)ret;
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> result ? BranchStatus.PhaseTwo_Committed : BranchStatus.PhaseTwo_CommitFailed_Retryable;
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        String msg = String.format(<span class="hljs-string">&quot;commit TCC resource error, resourceId: %s, xid: %s.&quot;</span>, resourceId, xid);
+        LOGGER.error(msg, t);
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FrameworkException(t, msg);
+    &#125;
+&#125;
+
+<span class="hljs-comment">/**</span>
+<span class="hljs-comment"> * TCC branch rollback</span>
+<span class="hljs-comment"> *</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> branchType      the branch type</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> xid             Transaction id.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> branchId        Branch id.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> resourceId      Resource id.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@param</span> applicationData Application data bind with this branch.</span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@return</span></span>
+<span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> TransactionException</span>
+<span class="hljs-comment"> */</span>
+<span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> BranchStatus <span class="hljs-title">branchRollback</span><span class="hljs-params">(BranchType branchType, String xid, <span class="hljs-keyword">long</span> branchId, String resourceId,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                   String applicationData)</span> <span class="hljs-keyword">throws</span> TransactionException </span>&#123;
+    TCCResource tccResource = (TCCResource)tccResourceCache.get(resourceId);
+    <span class="hljs-keyword">if</span> (tccResource == <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ShouldNeverHappenException(String.format(<span class="hljs-string">&quot;TCC resource is not exist, resourceId: %s&quot;</span>, resourceId));
+    &#125;
+    Object targetTCCBean = tccResource.getTargetBean();
+    Method rollbackMethod = tccResource.getRollbackMethod();
+    <span class="hljs-keyword">if</span> (targetTCCBean == <span class="hljs-keyword">null</span> || rollbackMethod == <span class="hljs-keyword">null</span>) &#123;
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ShouldNeverHappenException(String.format(<span class="hljs-string">&quot;TCC resource is not available, resourceId: %s&quot;</span>, resourceId));
+    &#125;
+    <span class="hljs-keyword">try</span> &#123;
+        <span class="hljs-keyword">boolean</span> result = <span class="hljs-keyword">false</span>;
+        <span class="hljs-comment">//BusinessActionContext</span>
+        BusinessActionContext businessActionContext = getBusinessActionContext(xid, branchId, resourceId,
+            applicationData);
+        Object ret = rollbackMethod.invoke(targetTCCBean, businessActionContext);
+        LOGGER.info(<span class="hljs-string">&quot;TCC resource rollback result : &#123;&#125;, xid: &#123;&#125;, branchId: &#123;&#125;, resourceId: &#123;&#125;&quot;</span>, ret, xid, branchId, resourceId);
+        <span class="hljs-keyword">if</span> (ret != <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-keyword">if</span> (ret <span class="hljs-keyword">instanceof</span> TwoPhaseResult) &#123;
+                result = ((TwoPhaseResult)ret).isSuccess();
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                result = (<span class="hljs-keyword">boolean</span>)ret;
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> result ? BranchStatus.PhaseTwo_Rollbacked : BranchStatus.PhaseTwo_RollbackFailed_Retryable;
+    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;
+        String msg = String.format(<span class="hljs-string">&quot;rollback TCC resource error, resourceId: %s, xid: %s.&quot;</span>, resourceId, xid);
+        LOGGER.error(msg, t);
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> FrameworkException(t, msg);
+    &#125;
+&#125;</code></pre>
+
+<h5 id="事务控制的方法拦截器"><a href="#事务控制的方法拦截器" class="headerlink" title="事务控制的方法拦截器"></a>事务控制的方法拦截器</h5><p>seata的tcc模式事务控制也是基于Spring的AOP实现的，它里面也是利用了<code>MethodInterceptor</code>方法拦截器来进行的增强，它里面提供了一个名称为<code>TccActionInterceptor</code>的类，该类实现了<code>MethodInterceptor</code>接口，并重写了<code>invoke</code>方法。代码如下：</p>
+<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+    <span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(<span class="hljs-keyword">final</span> MethodInvocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
+        <span class="hljs-keyword">if</span> (!RootContext.inGlobalTransaction()) &#123;
+            <span class="hljs-comment">//not in transaction</span>
+            <span class="hljs-keyword">return</span> invocation.proceed();
+        &#125;
+        Method method = getActionInterfaceMethod(invocation);
+        TwoPhaseBusinessAction businessAction = method.getAnnotation(TwoPhaseBusinessAction.class);
+        <span class="hljs-comment">//try method</span>
+        <span class="hljs-keyword">if</span> (businessAction != <span class="hljs-keyword">null</span>) &#123;
+            <span class="hljs-comment">//save the xid</span>
+            String xid = RootContext.getXID();
+            <span class="hljs-comment">//clear the context</span>
+            RootContext.unbind();
+            RootContext.bindInterceptorType(xid, BranchType.TCC);
+            <span class="hljs-keyword">try</span> &#123;
+                Object[] methodArgs = invocation.getArguments();
+                <span class="hljs-comment">//Handler the TCC Aspect</span>
+                Map&lt;String, Object&gt; ret = actionInterceptorHandler.proceed(method, methodArgs, xid, businessAction,
+                        invocation::proceed);
+                <span class="hljs-comment">//return the final result</span>
+                <span class="hljs-keyword">return</span> ret.get(Constants.TCC_METHOD_RESULT);
+            &#125; <span class="hljs-keyword">finally</span> &#123;
+                <span class="hljs-comment">//recovery the context</span>
+                RootContext.unbindInterceptorType();
+                RootContext.bind(xid);
+            &#125;
+        &#125;
+        <span class="hljs-keyword">return</span> invocation.proceed();
+    &#125;</code></pre>
+
+<p>而此方法的核心是<code>MethodInvocation</code>的<code>proceed</code>方法，最终由<code>ActionInterceptorHandler</code>类中的<code>proceed</code>方法处理。代码如下：</p>
+<pre><code class="hljs java"><span class="hljs-comment">/**</span>
+<span class="hljs-comment">    * Handler the TCC Aspect</span>
+<span class="hljs-comment">    *</span>
+<span class="hljs-comment">    * <span class="hljs-doctag">@param</span> method         the method</span>
+<span class="hljs-comment">    * <span class="hljs-doctag">@param</span> arguments      the arguments</span>
+<span class="hljs-comment">    * <span class="hljs-doctag">@param</span> businessAction the business action</span>
+<span class="hljs-comment">    * <span class="hljs-doctag">@param</span> targetCallback the target callback</span>
+<span class="hljs-comment">    * <span class="hljs-doctag">@return</span> map map</span>
+<span class="hljs-comment">    * <span class="hljs-doctag">@throws</span> Throwable the throwable</span>
+<span class="hljs-comment">    */</span>
+   <span class="hljs-function"><span class="hljs-keyword">public</span> Map&lt;String, Object&gt; <span class="hljs-title">proceed</span><span class="hljs-params">(Method method, Object[] arguments, String xid, TwoPhaseBusinessAction businessAction,</span></span>
+<span class="hljs-function"><span class="hljs-params">                                      Callback&lt;Object&gt; targetCallback)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
+       Map&lt;String, Object&gt; ret = <span class="hljs-keyword">new</span> HashMap&lt;&gt;(<span class="hljs-number">4</span>);
+
+       <span class="hljs-comment">//TCC name</span>
+       String actionName = businessAction.name();
+       BusinessActionContext actionContext = <span class="hljs-keyword">new</span> BusinessActionContext();
+       actionContext.setXid(xid);
+       <span class="hljs-comment">//set action anme</span>
+       actionContext.setActionName(actionName);
+
+       <span class="hljs-comment">//Creating Branch Record</span>
+       String branchId = doTccActionLogStore(method, arguments, businessAction, actionContext);
+       actionContext.setBranchId(branchId);
+
+       <span class="hljs-comment">//set the parameter whose type is BusinessActionContext</span>
+       Class&lt;?&gt;[] types = method.getParameterTypes();
+       <span class="hljs-keyword">int</span> argIndex = <span class="hljs-number">0</span>;
+       <span class="hljs-keyword">for</span> (Class&lt;?&gt; cls : types) &#123;
+           <span class="hljs-keyword">if</span> (cls.getName().equals(BusinessActionContext.class.getName())) &#123;
+               arguments[argIndex] = actionContext;
+               <span class="hljs-keyword">break</span>;
+           &#125;
+           argIndex++;
+       &#125;
+       <span class="hljs-comment">//the final parameters of the try method</span>
+       ret.put(Constants.TCC_METHOD_ARGUMENTS, arguments);
+       <span class="hljs-comment">//the final result</span>
+       ret.put(Constants.TCC_METHOD_RESULT, targetCallback.execute());
+       <span class="hljs-keyword">return</span> ret;
+   &#125;</code></pre>
 
             </div>
             <hr>
