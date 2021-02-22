@@ -1,0 +1,768 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
+  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="keywords" content="">
+  <title>Docker引擎与核心组件 - 萤火的博客</title>
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/blog/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.1.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/blog/">&nbsp;<strong>萤火的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner intro-2" id="background" parallax=true
+         style="background: url('/blog/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Docker引擎与核心组件">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-12-31 16:09" pubdate>
+        2020年12月31日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.1k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      46
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="container nopadding-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Docker引擎与核心组件</h1>
+            
+            <div class="markdown-body">
+              <h3 id="Docker核心组件介绍"><a href="#Docker核心组件介绍" class="headerlink" title="Docker核心组件介绍"></a>Docker核心组件介绍</h3><h4 id="Docker概述"><a href="#Docker概述" class="headerlink" title="Docker概述"></a>Docker概述</h4><p>Docker 是一个开源的应用容器引擎，基于 Go 语言 ，诞生于2013年初。 </p>
+<p>最初发起者是DotCloud公司（（Platform-as-a-Service, PaaS）提供商）开源的一个基于 LXC 的高级容器引擎。 </p>
+<p>Docker 可以让开发者打包他们的应用以及依赖包到一个轻量级、可移植的容器中，然后发布到任何流行的 Linux 机器，实现虚拟化。 </p>
+<p>Docker从1.13.x（2017.3.2）版本开始，版本分为企业版EE和社区版CE </p>
+<ul>
+<li><p>EE（Enterprise Edition: 企业版） 2017 年 3 月 2 日发布17.03；大公司（含自研） </p>
+</li>
+<li><p>CE（Community Edition: 社区版）2017 年 3 月 2 日发布17.03； 中小企业使用居多 </p>
+</li>
+</ul>
+<p>从 17.03开始基于时间线进行版本发布， 17.03 代表17年3月，说明这个是个稳定版 </p>
+<p>CE版分为”Edge”与”Stable”两个版本发行 ，Edge（边界）版本每月发布，提供一个月支持。 Stable（稳定）版本每季度发布，提供4个月支持。</p>
+<p>EE版每个季度发布一次季度版本, 也就是说每年会发布 4 个季度版本</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic1.png" srcset="/blog/img/loading.gif" class>
+
+<p>Docker 官网地址：<a target="_blank" rel="noopener" href="https://www.docker.com/">https://www.docker.com</a> </p>
+<p>Github Docker 源码地址：<a target="_blank" rel="noopener" href="https://github.com/docker/docker-ce">https://github.com/docker/docker-ce</a> </p>
+<h4 id="核心组件与联系"><a href="#核心组件与联系" class="headerlink" title="核心组件与联系"></a>核心组件与联系</h4><ul>
+<li>镜像(Image)：镜像是一个特殊的文件系统，提供容器运行时所需的资源</li>
+<li>容器(Container)：容器是基于镜像生成的，镜像与容器的关系，就是面向对象编程中类与对象的关系。</li>
+<li>仓库(Repository)：仓库是存放镜像的地方，比较容易与镜像仓库服务（Registry）混淆，镜像仓库服务包含多个镜像仓库（Repository） ，镜像仓库中可以包含多个镜像，Docker客户端的镜像仓库服务是可配置的，默认使用 Docker Hub。</li>
+</ul>
+<h5 id="镜像仓库服务与镜像仓库的关系"><a href="#镜像仓库服务与镜像仓库的关系" class="headerlink" title="镜像仓库服务与镜像仓库的关系"></a>镜像仓库服务与镜像仓库的关系</h5><img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic2.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="镜像、容器、仓库三者之间的关系"><a href="#镜像、容器、仓库三者之间的关系" class="headerlink" title="镜像、容器、仓库三者之间的关系"></a>镜像、容器、仓库三者之间的关系</h5><img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic3.png" srcset="/blog/img/loading.gif" class>
+
+<h5 id="相关命令"><a href="#相关命令" class="headerlink" title="相关命令"></a>相关命令</h5><p>基于镜像创建容器（run），也可以基于容器制作镜像（commit）</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#启动容器</span>
+docker run --name nacos -p 8818:8848 --restart=always -d 8cb51161b062
+<span class="hljs-comment">#将容器a404c6c174a2 保存为新的镜像,并添加提交人信息和说明信息</span>
+docker commit -a <span class="hljs-string">&quot;czbk&quot;</span> -m <span class="hljs-string">&quot;install image&quot;</span> a404c6c174a2 kibana:v1</code></pre>
+
+<p>从远端仓库拉取镜像（pull），将本地镜像推送到远端（push）</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#拉取镜像</span>
+docker pull nacos/nacos-server:1.1.3
+<span class="hljs-comment">#上传本地镜像myapache:v1到镜像仓库中</span>
+docker push myapache:v1</code></pre>
+
+<p>镜像打包成tar文件&amp;还原</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#将镜像文件打包成tar文件</span>
+docker save -o kibana .tar kibana
+<span class="hljs-comment">#还原</span>
+docker load -i kibana.tar</code></pre>
+
+<h3 id="Docker架构与调用流程剖析"><a href="#Docker架构与调用流程剖析" class="headerlink" title="Docker架构与调用流程剖析"></a>Docker架构与调用流程剖析</h3><p>Docker使用C/S架构，Docker Client通过command（or api）与Docker Daemon（Sever进程）通信实现容器的构建。</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic4.png" srcset="/blog/img/loading.gif" class>
+
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic5.png" srcset="/blog/img/loading.gif" class>
+
+<p>用户访问docker的流程，用户并不是直接和docker的守护进程交互，而是通过Docker client和docker的守护进程交互。 </p>
+<blockquote>
+<p>Docker Client和Docker Daemon之间通过在Socket上使用RESTful API进行交互，所以Docker Client和Docker Daemon可以运行在同一个系统上也可以通过远程的方式访问 </p>
+</blockquote>
+<p>总体架构图</p>
+<p>粗粒度调用</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic6.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li><p>Host(Docker 宿主机) ：安装了Docker程序，并运行了Docker daemon的主机。 </p>
+</li>
+<li><p>Docker daemon(Docker 守护进程) ：运行在宿主机上，Docker守护进程，用户通过Docker client(Docker命令)与Docker daemon交互。 </p>
+</li>
+<li><p>Images(镜像) ：将软件环境打包好的模板，用来创建容器的，一个镜像可以创建多个容器。 </p>
+</li>
+<li><p>Containers(容器) ：Docker的运行组件，启动一个镜像就是一个容器，容器与容器之间相互隔离，并且互不影响。 </p>
+</li>
+<li><p>Docker Client(Docker 客户端) ：Docker命令行工具，用户是用Docker Client与Docker daemon进行通信并返回结果给用户。 也可以使用其他工具通过Docker Api 与Docker daemon通信。 </p>
+</li>
+<li><p>Registry(仓库服务注册) ：最大的公开仓库是官方的Docker Hub，国内也有如阿里云、时速云等 </p>
+</li>
+</ul>
+<p>调用关系流程图</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic7.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li><p>用户是使用Docker Client与Docker Daemon建立通信，并发送请求给后者； </p>
+</li>
+<li><p>Docker Daemon作为Docker架构中的主体部分，首先提供Server的功能使其可以接受Docker Client的请求；而后Engine（引擎）执行Docker内部的一系列工作，每一项工作都是以一个Job的形式存在； </p>
+</li>
+<li><p>Job的运行过程中，当需要容器镜像时，则从Docker Registry（docker仓库）中下载镜像，并通过graphdriver（镜像管理驱动）将下载镜像以Graph（图像）的形式存储； </p>
+</li>
+<li><p>当需要为Docker创建网络环境时，通过networkdriver（网络管理驱动）创建并配置Docker容器网络环境；当需要限制Docker容器运行资源或执行用户指令等操作时，则通过execdriver（执行管理驱动）来完成。 </p>
+</li>
+<li><p>libcontainer（容器库）是一项独立的容器管理包，networkdriver以及execdriver都是通过libcontainer来实现具体对容器进行的操作。</p>
+</li>
+</ul>
+<h3 id="Docker镜像下载原理剖析"><a href="#Docker镜像下载原理剖析" class="headerlink" title="Docker镜像下载原理剖析"></a>Docker镜像下载原理剖析</h3><p>docker pull下载演示 </p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic8.png" srcset="/blog/img/loading.gif" class>
+
+<p>镜像下载原理流程图解</p>
+<p>index：GET /v1/repositories/(namespace)/(repo_name)/images（docker pull调用）</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic9.png" srcset="/blog/img/loading.gif" class>
+
+<blockquote>
+<p>index服务（Open API）主要提供镜像索引以及用户认证的功能。 </p>
+<p>当下载一个镜像的时候，首先会去index服务上做认证，然后index服务查找镜像所在的registry的地址</p>
+</blockquote>
+<ol>
+<li>docker首先查询index，看哪里可以下载nginx；</li>
+<li>index返回nginx的image List、registry URL和token；</li>
+<li>docker向registry请求数据； </li>
+<li>registry向index验证token/user是否可以下载该image；</li>
+<li>index返回验证结果true/false；</li>
+<li>registry给docker返回image数据；</li>
+</ol>
+<h3 id="镜像分层与文件系统深入剖析"><a href="#镜像分层与文件系统深入剖析" class="headerlink" title="镜像分层与文件系统深入剖析"></a>镜像分层与文件系统深入剖析</h3><h4 id="镜像文件系统组成"><a href="#镜像文件系统组成" class="headerlink" title="镜像文件系统组成"></a>镜像文件系统组成</h4><p>docker镜像实际上就是由一层一层的文件系统叠加组合而成</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic10.png" srcset="/blog/img/loading.gif" class>
+
+<p>在Docker镜像的最底层是bootfs，然后是rootfs</p>
+<ul>
+<li><p>bootfs(boot fifile system) ：Docker镜像的最底层是bootfs，用户是不能对这层作任何修改。主要包含bootloader和kernel，bootloader 主要是引导加载kernel，Linux刚启动时会加载bootfs文件系统。 </p>
+</li>
+<li><p>rootfs (root fifile system) ：在 bootfs 上一层是 rootfs，我们也称之为 base image layer（FROM centos），包含的就是典型 Linux 系统中的 /dev, /proc, /bin, /etc 等标准目录和文件。rootfs就是各种不同的操作系统发行版，比如Ubuntu，Centos等等。 </p>
+</li>
+</ul>
+<h5 id="联合文件系统（UnionFS）"><a href="#联合文件系统（UnionFS）" class="headerlink" title="联合文件系统（UnionFS）"></a>联合文件系统（UnionFS）</h5><p>以nginx镜像举例 </p>
+<p>Union文件系统（UnionFS）是一种 由下而上的分层的文件系统，docker 镜像由多个低耦合的只读镜像层组成</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic11.png" srcset="/blog/img/loading.gif" class>
+
+<p>合计5层；最底层是 bootfs（boot file system） </p>
+<h5 id="tar文件解析"><a href="#tar文件解析" class="headerlink" title="tar文件解析"></a>tar文件解析</h5><p>将下载的镜像打包到本地</p>
+<pre><code class="hljs shell">mkdir -p /usr/local/downloadimage
+cd /usr/local/downloadimage
+docker save nginx &gt; nginx.tar</code></pre>
+
+<p>对应到tar的文件系统</p>
+ <img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic12.png" srcset="/blog/img/loading.gif" class>
+
+<p>镜像分层与文件系统</p>
+<ul>
+<li><p>首先获取image的manifest.json</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic13.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>manifest里面重要两部分内容，一是image的配置文件config，另一个是image包含的所有 filesystem layer的digest(sha256) </p>
+</li>
+<li><p>遍历manifest里面的所有layer，根据其digest在本地找，如果找到对应的layer，则跳过当前layer，否则从服务器取相应layer的压缩包</p>
+</li>
+<li><p>等上面的所有步骤完成后，就会拼出完整的image </p>
+</li>
+</ul>
+<p>层级关系界定</p>
+<p>每个layer里面有个json文件 </p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic14.png" srcset="/blog/img/loading.gif" class>
+
+<p>可以通过parent来界定</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic15.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="常见面试题"><a href="#常见面试题" class="headerlink" title="常见面试题"></a>常见面试题</h4><ul>
+<li><p>为什么Docker 镜像要采用这种分层结构呢？ </p>
+<p>最大的一个好处就是共享资源，比如：有多个镜像都从相同的 base 镜像构建而来，那么宿主机只需在磁盘上保存一份base镜像，就可以公用了。而且镜像的每一层都可以被共享。 </p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic16.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>为什么Docker镜像（centos）体积非常小？ </p>
+<p>centos的镜像，大小却只有两百兆，rootfs可以很小，因为底层直接用Host的kernel。</p>
+<p>这就是容器为什么轻量级的原因，因为内核是共享 </p>
+</li>
+<li><p>docker 镜像每一层都是不可写的，那我们该怎样运行（操作）它呢？ 运行后对镜像会有影响吗？</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic17.png" srcset="/blog/img/loading.gif" class>
+
+<p>一个docker镜像由多个可读的镜像层组成，然后运行的容器会在这个docker的镜像上面多加一层可写的 容器层，任何的对文件的更改都只存在此容器层。 因此任何对容器的操作均不会影响到镜像。 </p>
+</li>
+</ul>
+<h3 id="Docker容器生命周期管理"><a href="#Docker容器生命周期管理" class="headerlink" title="Docker容器生命周期管理"></a>Docker容器生命周期管理</h3><img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic18.png" srcset="/blog/img/loading.gif" class>
+
+<ul>
+<li>docker run：创建一个新的容器并运行一个命令</li>
+<li>docker start/stop/restart：启停容器</li>
+<li>docker kill：杀掉运行中的容器</li>
+<li>docker rm：删除一个或多个容器</li>
+<li>docker pause/unpause：暂停或恢复容器中的所有进程</li>
+<li>docker create：创建一个新的容器但不启动它</li>
+<li> docker update：更新一个或多个容器的配置</li>
+</ul>
+<h3 id="底层核心技术之容器隔离"><a href="#底层核心技术之容器隔离" class="headerlink" title="底层核心技术之容器隔离"></a>底层核心技术之容器隔离</h3><img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic19.png" srcset="/blog/img/loading.gif" class>
+
+<p>容器其实是一种沙盒技术，这样应用与应用之间就因为有了边界而不至于互相干扰。 </p>
+<p>虚拟机与容器资源隔离对比</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic20.png" srcset="/blog/img/loading.gif" class>
+
+<p>虚拟机实现资源隔离的方法是利用一个独立的Guest OS（虚拟机里的的系统），并利用Hypervisor虚拟化CPU、内存、IO设备等实现的。 </p>
+<p>相比虚拟机实现资源和环境隔离的方案，Docker就显得简练很多，它不像虚拟机一样重新加载一个操作系统内核；Docker是利用Linux操作系统内核lxc特性实现的隔离。</p>
+<p>LXC为Linux Container的简写。可以提供轻量级的虚拟化，以便隔离进程和资源。</p>
+<p>LXC与docker什么关系</p>
+<p>Docker并不是LXC替代品，docker底层使用了LXC来实现，LXC将linux进程沙盒化，使得进程之间相互隔离，并且能够控制各进程的资源分配。 </p>
+<p>Linux内核资源隔离机制</p>
+<p>命名空间（Namespace） </p>
+<p>命名空间是用于容器之间的资源进程隔离的。 </p>
+<p>当 Docker 创建一个容器时，它会创建新的以下六种 namespace 的实例，然后把容器中的所有进程放到这些 namespace 之中，使得Docker 容器中的进程只能看到隔离的系统资源 </p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>功能说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mount Namespace</td>
+<td>提供磁盘挂载点和文件系统隔离能力。容器有自己的 / 目录，可以执行 mount 和 umount 命令。这些操作只在当前容器中生效，不会影响到 host 和其他容器。</td>
+</tr>
+<tr>
+<td>IPC Namespace</td>
+<td>提供进程间通信的隔离能力。IPC 有共享内存、信号量、消息队列等功能，将IPC隔离后，只有在同一个 Namespace 下的进程才能相互通信。</td>
+</tr>
+<tr>
+<td>Network Namespace</td>
+<td>提供网络隔离能力。让容器拥有自己独立的网卡、IP、路由等资源。</td>
+</tr>
+<tr>
+<td>UTS Namespace</td>
+<td>提供主机名隔离能力，让容器有自己的 hostname</td>
+</tr>
+<tr>
+<td>PID Namespace</td>
+<td>提供进程隔离能力。容器在 host 中以进程的形式运行，不同用户登录的进程就是通过 PID Namespaces 来隔开的</td>
+</tr>
+<tr>
+<td>User Namespace</td>
+<td>提供用户隔离能力。User namespace 让容器能够管理自己的用户，host 不能看到容器中创建的用户。</td>
+</tr>
+</tbody></table>
+<h3 id="底层核心技术之资源控制"><a href="#底层核心技术之资源控制" class="headerlink" title="底层核心技术之资源控制"></a>底层核心技术之资源控制</h3><p>控制组（CGroup） </p>
+<p>CGroup 是 Control Groups 的缩写，是 Linux 内核提供的一种可以限制、记录、隔离进程组 (process  groups) 所使用的物理资源 (如 cpu memory i/o 等等) 的机制。 </p>
+<p>Cgroup作用：控制程序对资源的占用。</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic21.png" srcset="/blog/img/loading.gif" class>
+
+<p>CGroup 技术可以被用来在操作系统底层限制物理资源，起到 Container 的作用。图中每一个 JVM 进程对应一个 Container Cgroup 层级，通过 CGroup 提供的各类子系统，可以对每一个 JVM 进程对应的线程级别进行物理限制，这些限制包括 CPU、内存等等许多种类的资源。 </p>
+<p>例如要求容器CPU使用权重为512</p>
+<p>/sys/fs/cgroup 为资源限制的目录</p>
+<pre><code class="hljs dts"><span class="hljs-number">1.</span> cat <span class="hljs-meta-keyword">/sys/</span>fs<span class="hljs-meta-keyword">/cgroup/</span>cpu/cpu.shares <span class="hljs-comment">//查看宿主机CPU的权重</span>
+<span class="hljs-number">2.</span> docker run -d dc833dc45d8f <span class="hljs-comment">//运行一个容器 或者进入交互式容器 </span>
+   docker exec -it <span class="hljs-number">17f</span>274c2ca9d <span class="hljs-meta-keyword">/bin/</span>bash 
+<span class="hljs-number">3.</span> cat <span class="hljs-meta-keyword">/sys/</span>fs<span class="hljs-meta-keyword">/cgroup/</span>cpu/cpu.shares <span class="hljs-comment">//查看容器中CPU的权重 发现和宿主机一样 </span>
+<span class="hljs-number">4.</span> exit <span class="hljs-comment">//退出容器</span>
+   docker stop id 
+   docker rm id 
+<span class="hljs-number">5.</span> docker run -d -c <span class="hljs-number">512</span> dc833dc45d8f <span class="hljs-comment">//指定CPU权重 </span>
+<span class="hljs-number">6.</span> cat <span class="hljs-meta-keyword">/sys/</span>fs<span class="hljs-meta-keyword">/cgroup/</span>cpu/cpu.shares <span class="hljs-comment">//查看修改后容器中CPU的权重</span></code></pre>
+
+<p>结论： </p>
+<p>cpu和容器的cpu权重都是 一样的1024 </p>
+<p>如果不进行修改CPU的权重，那么容器与宿主机对CPU的权重都是默认的1024，这样分配是不合理的， </p>
+<p>因为宿主机与容器对CPU的权重一样，因而导致，它们在对CPU资源出现抢占的情况下，其可使用的CPU资源是1:1 </p>
+<p>若限制容器为512，宿主机还是1024，那么其CPU使用权重的比例就变成了2:1，可以通过上面对容器进行限制。</p>
+<p>还可以通过<code>--device-write-bps /dev/sda:40MB </code>对写入速度进行限制。</p>
+<p>总结</p>
+<p>使用Cgroup，可更好地根据任务和用户分配硬件资源（cpu、内存、交换空间、写入速度）。</p>
+<h3 id="Docker容器网络管理深入剖析"><a href="#Docker容器网络管理深入剖析" class="headerlink" title="Docker容器网络管理深入剖析"></a>Docker容器网络管理深入剖析</h3><h4 id="Docker默认网络"><a href="#Docker默认网络" class="headerlink" title="Docker默认网络"></a>Docker默认网络</h4><p>docker安装完成后缺省配置有三个网络类型 </p>
+<p>使用<code>docker network ls</code>可以查看当前系统中的docker网桥</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic22.png" srcset="/blog/img/loading.gif" class>
+
+<p>Docker内置这三个网络，运行容器时，你可以使用该–network标志来指定容器应连接到哪些网络</p>
+<ol>
+<li><p>bridge（默认） </p>
+<p>此模式会为每一个容器分配、设置IP等，并将容器连接到一个docker0虚拟网桥 </p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic23.png" srcset="/blog/img/loading.gif" class>
+</li>
+<li><p>none </p>
+<p>Docker容器没有网卡、IP、路由等信息。需要我们自己为Docker容器添加网卡、配置IP等 </p>
+<pre><code class="hljs sh"><span class="hljs-comment">#创建一个使用none 网络的容器 </span>
+docker run -d --name <span class="hljs-string">&quot;none-network&quot;</span> --network=none 941109e2896d</code></pre>
+
+<p>缺点是：无法联网 </p>
+<p>优点是：封闭的网络能很好的保证容器的安全性 </p>
+<p>应用场景：生成密钥 </p>
+</li>
+<li><p>host</p>
+<p>相当于Vmware中的桥接模式，与宿主机在同一个网络中，但没有独立IP地址。 </p>
+<p>容器将不会虚拟出自己的网卡，也不会配置自己的IP等，而是使用宿主机的IP和端口。</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic24.png" srcset="/blog/img/loading.gif" class>
+
+<pre><code class="hljs sh"><span class="hljs-comment">#创建一个使用none 网络的容器</span>
+docker run -d --name <span class="hljs-string">&quot;host-network&quot;</span> --network=host 941109e2896d</code></pre>
+
+<p>使用host模式的容器可以直接使用宿主机的IP地址与外界通信，容器内部的服务端口也可以使用宿主机的 </p>
+<p>端口，网络的隔离性不好。</p>
+</li>
+</ol>
+<p>查看网络详细信息，以及网络下所有的容器信息</p>
+<pre><code class="hljs sh"><span class="hljs-comment">#bridge也是所有container的缺省网络</span>
+docker network inspect bridge</code></pre>
+
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic25.png" srcset="/blog/img/loading.gif" class>
+
+<blockquote>
+<p>关于”Containers” </p>
+<p>1、当前网络下所有的容器（正在运行的） </p>
+<p>2、如果容器停止，Containers就不存在容器的信息 </p>
+</blockquote>
+<h4 id="容器互联通信网卡docker0（默认）"><a href="#容器互联通信网卡docker0（默认）" class="headerlink" title="容器互联通信网卡docker0（默认）"></a>容器互联通信网卡docker0（默认）</h4><blockquote>
+<p>进入容器中通过ifconfig命令查看网络信息</p>
+<p>如果提示没有安装ifconfig </p>
+<p>执行 yum install net-tools即可 </p>
+</blockquote>
+<pre><code class="hljs sh"><span class="hljs-comment">#ifconfig可以查看 docker0 网卡的地址为 inet 172.18.0.1</span>
+ifconfig</code></pre>
+
+<p>容器互联通信 </p>
+<blockquote>
+<p>容器—–宿主机 </p>
+<p>容器—–容器</p>
+</blockquote>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic26.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="用户定义的网络"><a href="#用户定义的网络" class="headerlink" title="用户定义的网络"></a>用户定义的网络</h4><pre><code class="hljs sh"><span class="hljs-comment">#创建网络</span>
+docker network create --subnet=172.188.0.0/16 czbkNetwork-bas</code></pre>
+
+<p>在IP地址后加上”/“符号以及1-32的数字，其中1-32的数字表示子网掩码中网络标识位的长度 </p>
+<p>每一个自创建的网络，在主机上都有一个”br-“开头的网络，这点与和缺省bridge网络不同，bridge网络不以br- 开头。</p>
+<p>下图是我们自定义网络czbkNetwork对应的网卡br-413b460a0fc8: </p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic27.png" srcset="/blog/img/loading.gif" class>
+
+<h4 id="Docker网络管理常见的问题"><a href="#Docker网络管理常见的问题" class="headerlink" title="Docker网络管理常见的问题"></a>Docker网络管理常见的问题</h4><ul>
+<li><p>如何知道自定义网络下有哪些用户容器？</p>
+<p>通过<code>docker inspect czbkNetwork </code>即可，czbkNetwork为被查看的自定义网络名称。</p>
+</li>
+<li><p>如何知道自定义网络（czbkNetwork）对应的网卡是那个？ </p>
+<p><code>docker network inspect czbkNetwork </code>，同样，czbkNetwork为被查看的自定义网络名称，在控制台信息中可以找到网络所对应的网段</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic28.png" srcset="/blog/img/loading.gif" class>
+
+<p>然后再通过<code>ifconfig</code>命令即可找到对应的网卡。</p>
+</li>
+<li><p>docker容器相互访问以及容器是如何访问互联网的？</p>
+<img src="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/pic28.png" srcset="/blog/img/loading.gif" class>
+
+<p>默认情况下容器会使用docker0这个网桥，两个容器都使用这个网桥的话，就可以直接互相访问了。当docker的容器里面访问互联网的时候，其实也是使用docker0网卡转换到宿主机网卡上，然后访问互联网。</p>
+</li>
+<li><p>互联网怎么访问docker？</p>
+<p>暴露端口</p>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/categories/Docker%E5%AE%B9%E5%99%A8/">Docker容器</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/docker/">docker</a>
+                    
+                  </div>
+                
+              </div>
+              
+              
+                <div class="post-prevnext row">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2020/12/10/%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/">
+                        <span class="hidden-mobile">分布式事务实现</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":200})
+    NProgress.start()
+    document.addEventListener('DOMContentLoaded', function() {
+      window.NProgress && window.NProgress.inc();
+    })
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
+<script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/debouncer.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/blog/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.staticfile.org/tocbot/4.12.0/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.staticfile.org/anchor-js/4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js" ></script>
+
+
+
+
+
+  <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/blog/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/blog/local-search.xml";
+      var inputArea = document.querySelector("#local-search-input");
+      inputArea.onclick = function () {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+        this.onclick = null
+      }
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+
+</body>
+</html>
