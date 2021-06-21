@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>springboot2+shiro+token认证 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -229,335 +230,19 @@
             <div class="markdown-body">
               <h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h2><p>从shiro过滤器的源码中可以看到，shiro过滤器拦截请求之后会调用isAccessAllowed()和onAccessDenied()方法，只要其中一个方法返回true，这次请求就会被放行。本文的实现方法是在onAccessDenied()中的执行登录验证即执行executeLogin()方法，这个方法会去执行AuthorizingRealm中的doGetAuthenticationInfo()方法，所以我们只需要在doGetAuthenticationInfo()里实现token的合法性检查，而doGetAuthenticationInfo()中需要AuthenticationToken类，这个类一般是存用户的用户名和密码，所以要重写这个类，把等待验证的token放入这个类，在executeLogin()方法会调用shiro过滤器中的createToken()方法创建AuthenticationToken实例，所以我们只需要重写createToken()方法创建带有token的重写之后的AuthenticationToken类即可。如果验证失败，因为我们是在executeLogin()方法中执行的登录，所以登录失败后会进入shiro过滤器中的onLoginFailure()方法，我们再重写这个方法，将验证失败的结果写入response就可以实现返回json而不是shiro默认的重定向到登录页。</p>
 <p>多点登录限制是借助于redis实现，在用户登录时会将用户id作为键，当前token作为值存入redis中，在验证时获取token中的用户id，然后根据用户id去取redis中的token后对比，如果不同则当前token已经失效，提醒用户重新登录。</p>
-<h2 id="pom文件"><a href="#pom文件" class="headerlink" title="pom文件"></a>pom文件</h2><pre><code class="hljs xml"><span class="hljs-comment">&lt;!--shiro--&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.shiro<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>shiro-core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.shiro<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>shiro-spring<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
-<span class="hljs-comment">&lt;!--jwt--&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.auth0<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>java-jwt<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.3.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
-<span class="hljs-comment">&lt;!--redis--&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+<h2 id="pom文件"><a href="#pom文件" class="headerlink" title="pom文件"></a>pom文件</h2><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-comment">&lt;!--shiro--&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.shiro<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>shiro-core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.shiro<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>shiro-spring<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><span class="hljs-comment">&lt;!--jwt--&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.auth0<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>java-jwt<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.3.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><span class="hljs-comment">&lt;!--redis--&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br></code></pre></td></tr></table></figure>
 
-<h2 id="重写shiro过滤器"><a href="#重写shiro过滤器" class="headerlink" title="重写shiro过滤器"></a>重写shiro过滤器</h2><pre><code class="hljs reasonml">import com.alibaba.fastjson.JSON;
-import com.minte.english.security.common.utils.JwtUtil;
-import com.minte.english.security.common.utils.R;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.web.filter.authc.AuthenticatingFilter;
-import org.springframework.web.bind.annotation.RequestMethod;
+<h2 id="重写shiro过滤器"><a href="#重写shiro过滤器" class="headerlink" title="重写shiro过滤器"></a>重写shiro过滤器</h2><figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">import com.alibaba.fastjson.JSON;<br>import com.minte.english.security.common.utils.JwtUtil;<br>import com.minte.english.security.common.utils.R;<br>import org.apache.commons.lang3.StringUtils;<br>import org.apache.shiro.authc.AuthenticationException;<br>import org.apache.shiro.authc.AuthenticationToken;<br>import org.apache.shiro.web.filter.authc.AuthenticatingFilter;<br>import org.springframework.web.bind.annotation.RequestMethod;<br><br>import javax.servlet.ServletRequest;<br>import javax.servlet.ServletResponse;<br>import javax.servlet.http.HttpServletRequest;<br>import javax.servlet.http.HttpServletResponse;<br>import java.io.IOException;<br><br>public <span class="hljs-keyword">class</span> OAuth2Filter extends AuthenticatingFilter &#123;<br><br>    @Override<br>    protected AuthenticationToken create<span class="hljs-constructor">Token(ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>)</span> throws Exception &#123;<br>        <span class="hljs-comment">//获取请求token</span><br>        String token = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">RequestToken((HttpServletRequest)</span> request);<br>        <span class="hljs-keyword">if</span>(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">StringUtils</span>.</span></span>is<span class="hljs-constructor">Blank(<span class="hljs-params">token</span>)</span>)&#123;<br>            return null;<br>        &#125;<br>        return <span class="hljs-keyword">new</span> <span class="hljs-constructor">OAuth2Token(<span class="hljs-params">token</span>)</span>;<br>    &#125;<br><br>    @Override<br>    protected boolean is<span class="hljs-constructor">AccessAllowed(ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>, Object <span class="hljs-params">mappedValue</span>)</span> &#123;<br>        <span class="hljs-keyword">if</span>(((HttpServletRequest) request).get<span class="hljs-constructor">Method()</span>.equals(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RequestMethod</span>.</span><span class="hljs-module"><span class="hljs-identifier">OPTIONS</span>.</span></span>name<span class="hljs-literal">()</span>))&#123;<br>            return <span class="hljs-literal">true</span>;<br>        &#125;<br><br>        return <span class="hljs-literal">false</span>;<br>    &#125;<br><br>    @Override<br>    protected boolean on<span class="hljs-constructor">AccessDenied(ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>)</span> throws Exception &#123;<br>        <span class="hljs-comment">//获取请求token，如果token不存在，直接返回401</span><br>        String token = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">RequestToken((HttpServletRequest)</span> request);<br>        <span class="hljs-keyword">if</span>(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">StringUtils</span>.</span></span>is<span class="hljs-constructor">Blank(<span class="hljs-params">token</span>)</span>)&#123;<br>            HttpServletResponse httpResponse = (HttpServletResponse) response;<br>            httpResponse.set<span class="hljs-constructor">Header(<span class="hljs-string">&quot;Access-Control-Allow-Credentials&quot;</span>, <span class="hljs-string">&quot;true&quot;</span>)</span>;<br>            String json = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JSON</span>.</span></span><span class="hljs-keyword">to</span><span class="hljs-constructor">JSONString(R.<span class="hljs-params">failed</span>(<span class="hljs-string">&quot;false&quot;</span>, <span class="hljs-string">&quot;获取token信息失败&quot;</span>)</span>);<br>            httpResponse.get<span class="hljs-constructor">Writer()</span>.print(json);<br>            return <span class="hljs-literal">false</span>;<br>        &#125;<br><br>        return execute<span class="hljs-constructor">Login(<span class="hljs-params">request</span>, <span class="hljs-params">response</span>)</span>;<br>    &#125;<br><br>    @Override<br>    protected boolean on<span class="hljs-constructor">LoginFailure(AuthenticationToken <span class="hljs-params">token</span>, AuthenticationException <span class="hljs-params">e</span>, ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>)</span> &#123;<br>        HttpServletResponse httpResponse = (HttpServletResponse) response;<br>        httpResponse.set<span class="hljs-constructor">ContentType(<span class="hljs-string">&quot;application/json;charset=utf-8&quot;</span>)</span>;<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-comment">//处理登录失败的异常</span><br>            Throwable throwable = e.get<span class="hljs-constructor">Cause()</span><span class="hljs-operator"> == </span>null ? e : e.get<span class="hljs-constructor">Cause()</span>;<br>            R r = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">R</span>.</span></span>re<span class="hljs-constructor">Login(<span class="hljs-params">throwable</span>.<span class="hljs-params">getMessage</span>()</span>);<br>            String json = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JSON</span>.</span></span><span class="hljs-keyword">to</span><span class="hljs-constructor">JSONString(<span class="hljs-params">r</span>)</span>;<br>            httpResponse.get<span class="hljs-constructor">Writer()</span>.print(json);<br>        &#125; catch (IOException e1) &#123;<br><br>        &#125;<br>        return <span class="hljs-literal">false</span>;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+<h2 id="重写AuthorizingRealm"><a href="#重写AuthorizingRealm" class="headerlink" title="重写AuthorizingRealm"></a>重写AuthorizingRealm</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> com.auth0.jwt.exceptions.TokenExpiredException;<br><span class="hljs-keyword">import</span> com.minte.english.security.common.utils.JwtUtil;<br><span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.sys.redis.UserRedis;<br><span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.pojo.Role;<br><span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.pojo.User;<br><span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.service.IRoleService;<br><span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.service.IUserRoleService;<br><span class="hljs-keyword">import</span> org.apache.shiro.authc.*;<br><span class="hljs-keyword">import</span> org.apache.shiro.authc.pam.UnsupportedTokenException;<br><span class="hljs-keyword">import</span> org.apache.shiro.authz.AuthorizationInfo;<br><span class="hljs-keyword">import</span> org.apache.shiro.authz.SimpleAuthorizationInfo;<br><span class="hljs-keyword">import</span> org.apache.shiro.authz.UnauthenticatedException;<br><span class="hljs-keyword">import</span> org.apache.shiro.realm.AuthorizingRealm;<br><span class="hljs-keyword">import</span> org.apache.shiro.subject.PrincipalCollection;<br><span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Autowired;<br><span class="hljs-keyword">import</span> org.springframework.stereotype.Component;<br><br><span class="hljs-keyword">import</span> java.io.UnsupportedEncodingException;<br><span class="hljs-keyword">import</span> java.util.Arrays;<br><span class="hljs-keyword">import</span> java.util.HashSet;<br><span class="hljs-keyword">import</span> java.util.Set;<br><br><span class="hljs-meta">@Component</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OAuth2Realm</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AuthorizingRealm</span> </span>&#123;<br><br>    <span class="hljs-meta">@Autowired</span><br>    <span class="hljs-keyword">private</span> IUserRoleService userRoleService;<br><br>    <span class="hljs-meta">@Autowired</span><br>    <span class="hljs-keyword">private</span> IRoleService roleService;<br><br>    <span class="hljs-meta">@Autowired</span><br>    <span class="hljs-keyword">private</span> UserRedis userRedis;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">supports</span><span class="hljs-params">(AuthenticationToken token)</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> token <span class="hljs-keyword">instanceof</span> OAuth2Token;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 授权(验证权限时调用)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">protected</span> AuthorizationInfo <span class="hljs-title">doGetAuthorizationInfo</span><span class="hljs-params">(PrincipalCollection principals)</span> </span>&#123;<br>        User user = (User) principals.getPrimaryPrincipal();<br>        Long userId = user.getId();<br>        Integer roleId = userRoleService.getRoleIdByUserId(userId);<br>        Role role = roleService.getById(roleId);<br>        <span class="hljs-comment">//用户权限列表</span><br>        Set&lt;String&gt; permsSet = <span class="hljs-keyword">new</span> HashSet&lt;&gt;(Arrays.asList(role.getPermissions().split(<span class="hljs-string">&quot;,&quot;</span>)));<br>        SimpleAuthorizationInfo info = <span class="hljs-keyword">new</span> SimpleAuthorizationInfo();<br>        info.setStringPermissions(permsSet);<br>        <span class="hljs-keyword">return</span> info;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 认证(登录时调用)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">protected</span> AuthenticationInfo <span class="hljs-title">doGetAuthenticationInfo</span><span class="hljs-params">(AuthenticationToken token)</span> <span class="hljs-keyword">throws</span> AuthenticationException </span>&#123;<br>        String accessToken = (String) token.getPrincipal();<br>        <span class="hljs-comment">// 验证token信息</span><br>        <span class="hljs-keyword">try</span> &#123;<br>            JwtUtil.verify(accessToken);<br>        &#125; <span class="hljs-keyword">catch</span> (TokenExpiredException e) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ExpiredCredentialsException();<br>        &#125; <span class="hljs-keyword">catch</span> (UnsupportedEncodingException e) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnsupportedTokenException(<span class="hljs-string">&quot;token已失效&quot;</span>);<br>        &#125;<br>        <span class="hljs-comment">// 检测是否在其他设备登录</span><br>        Long userId = JwtUtil.getUserId(accessToken);<br>        String onlineToken = userRedis.getOnlineUserToken(userId);<br>        <span class="hljs-keyword">if</span> (!onlineToken.equals(accessToken)) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ConcurrentAccessException(<span class="hljs-string">&quot;该账号已在其他设备登录&quot;</span>);<br>        &#125;<br>        <span class="hljs-comment">// 检查用户授权天数，是否被冻结</span><br>        User user = userRedis.get(accessToken);<br>        <span class="hljs-keyword">if</span> (user.getValidityDays() &lt;= <span class="hljs-number">0</span>) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnauthenticatedException(<span class="hljs-string">&quot;授权天数不足&quot;</span>);<br>        &#125;<br>        <span class="hljs-comment">//账号锁定</span><br>        <span class="hljs-keyword">if</span> (!user.getEnabled()) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> DisabledAccountException(<span class="hljs-string">&quot;该账号已被禁用&quot;</span>);<br>        &#125;<br>        SimpleAuthenticationInfo info = <span class="hljs-keyword">new</span> SimpleAuthenticationInfo(user, accessToken, getName());<br>        <span class="hljs-keyword">return</span> info;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-public <span class="hljs-keyword">class</span> OAuth2Filter extends AuthenticatingFilter &#123;
-
-    @Override
-    protected AuthenticationToken create<span class="hljs-constructor">Token(ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>)</span> throws Exception &#123;
-        <span class="hljs-comment">//获取请求token</span>
-        String token = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">RequestToken((HttpServletRequest)</span> request);
-        <span class="hljs-keyword">if</span>(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">StringUtils</span>.</span></span>is<span class="hljs-constructor">Blank(<span class="hljs-params">token</span>)</span>)&#123;
-            return null;
-        &#125;
-        return <span class="hljs-keyword">new</span> <span class="hljs-constructor">OAuth2Token(<span class="hljs-params">token</span>)</span>;
-    &#125;
-
-    @Override
-    protected boolean is<span class="hljs-constructor">AccessAllowed(ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>, Object <span class="hljs-params">mappedValue</span>)</span> &#123;
-        <span class="hljs-keyword">if</span>(((HttpServletRequest) request).get<span class="hljs-constructor">Method()</span>.equals(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RequestMethod</span>.</span><span class="hljs-module"><span class="hljs-identifier">OPTIONS</span>.</span></span>name<span class="hljs-literal">()</span>))&#123;
-            return <span class="hljs-literal">true</span>;
-        &#125;
-
-        return <span class="hljs-literal">false</span>;
-    &#125;
-
-    @Override
-    protected boolean on<span class="hljs-constructor">AccessDenied(ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>)</span> throws Exception &#123;
-        <span class="hljs-comment">//获取请求token，如果token不存在，直接返回401</span>
-        String token = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">RequestToken((HttpServletRequest)</span> request);
-        <span class="hljs-keyword">if</span>(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">StringUtils</span>.</span></span>is<span class="hljs-constructor">Blank(<span class="hljs-params">token</span>)</span>)&#123;
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
-            httpResponse.set<span class="hljs-constructor">Header(<span class="hljs-string">&quot;Access-Control-Allow-Credentials&quot;</span>, <span class="hljs-string">&quot;true&quot;</span>)</span>;
-            String json = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JSON</span>.</span></span><span class="hljs-keyword">to</span><span class="hljs-constructor">JSONString(R.<span class="hljs-params">failed</span>(<span class="hljs-string">&quot;false&quot;</span>, <span class="hljs-string">&quot;获取token信息失败&quot;</span>)</span>);
-            httpResponse.get<span class="hljs-constructor">Writer()</span>.print(json);
-            return <span class="hljs-literal">false</span>;
-        &#125;
-
-        return execute<span class="hljs-constructor">Login(<span class="hljs-params">request</span>, <span class="hljs-params">response</span>)</span>;
-    &#125;
-
-    @Override
-    protected boolean on<span class="hljs-constructor">LoginFailure(AuthenticationToken <span class="hljs-params">token</span>, AuthenticationException <span class="hljs-params">e</span>, ServletRequest <span class="hljs-params">request</span>, ServletResponse <span class="hljs-params">response</span>)</span> &#123;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
-        httpResponse.set<span class="hljs-constructor">ContentType(<span class="hljs-string">&quot;application/json;charset=utf-8&quot;</span>)</span>;
-        <span class="hljs-keyword">try</span> &#123;
-            <span class="hljs-comment">//处理登录失败的异常</span>
-            Throwable throwable = e.get<span class="hljs-constructor">Cause()</span><span class="hljs-operator"> == </span>null ? e : e.get<span class="hljs-constructor">Cause()</span>;
-            R r = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">R</span>.</span></span>re<span class="hljs-constructor">Login(<span class="hljs-params">throwable</span>.<span class="hljs-params">getMessage</span>()</span>);
-            String json = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JSON</span>.</span></span><span class="hljs-keyword">to</span><span class="hljs-constructor">JSONString(<span class="hljs-params">r</span>)</span>;
-            httpResponse.get<span class="hljs-constructor">Writer()</span>.print(json);
-        &#125; catch (IOException e1) &#123;
-
-        &#125;
-        return <span class="hljs-literal">false</span>;
-    &#125;
-&#125;</code></pre>
-
-<h2 id="重写AuthorizingRealm"><a href="#重写AuthorizingRealm" class="headerlink" title="重写AuthorizingRealm"></a>重写AuthorizingRealm</h2><pre><code class="hljs java"><span class="hljs-keyword">import</span> com.auth0.jwt.exceptions.TokenExpiredException;
-<span class="hljs-keyword">import</span> com.minte.english.security.common.utils.JwtUtil;
-<span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.sys.redis.UserRedis;
-<span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.pojo.Role;
-<span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.pojo.User;
-<span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.service.IRoleService;
-<span class="hljs-keyword">import</span> com.minte.english.security.<span class="hljs-keyword">module</span>.user.service.IUserRoleService;
-<span class="hljs-keyword">import</span> org.apache.shiro.authc.*;
-<span class="hljs-keyword">import</span> org.apache.shiro.authc.pam.UnsupportedTokenException;
-<span class="hljs-keyword">import</span> org.apache.shiro.authz.AuthorizationInfo;
-<span class="hljs-keyword">import</span> org.apache.shiro.authz.SimpleAuthorizationInfo;
-<span class="hljs-keyword">import</span> org.apache.shiro.authz.UnauthenticatedException;
-<span class="hljs-keyword">import</span> org.apache.shiro.realm.AuthorizingRealm;
-<span class="hljs-keyword">import</span> org.apache.shiro.subject.PrincipalCollection;
-<span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Autowired;
-<span class="hljs-keyword">import</span> org.springframework.stereotype.Component;
-
-<span class="hljs-keyword">import</span> java.io.UnsupportedEncodingException;
-<span class="hljs-keyword">import</span> java.util.Arrays;
-<span class="hljs-keyword">import</span> java.util.HashSet;
-<span class="hljs-keyword">import</span> java.util.Set;
-
-<span class="hljs-meta">@Component</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OAuth2Realm</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AuthorizingRealm</span> </span>&#123;
-
-    <span class="hljs-meta">@Autowired</span>
-    <span class="hljs-keyword">private</span> IUserRoleService userRoleService;
-
-    <span class="hljs-meta">@Autowired</span>
-    <span class="hljs-keyword">private</span> IRoleService roleService;
-
-    <span class="hljs-meta">@Autowired</span>
-    <span class="hljs-keyword">private</span> UserRedis userRedis;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">supports</span><span class="hljs-params">(AuthenticationToken token)</span> </span>&#123;
-        <span class="hljs-keyword">return</span> token <span class="hljs-keyword">instanceof</span> OAuth2Token;
-    &#125;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 授权(验证权限时调用)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">protected</span> AuthorizationInfo <span class="hljs-title">doGetAuthorizationInfo</span><span class="hljs-params">(PrincipalCollection principals)</span> </span>&#123;
-        User user = (User) principals.getPrimaryPrincipal();
-        Long userId = user.getId();
-        Integer roleId = userRoleService.getRoleIdByUserId(userId);
-        Role role = roleService.getById(roleId);
-        <span class="hljs-comment">//用户权限列表</span>
-        Set&lt;String&gt; permsSet = <span class="hljs-keyword">new</span> HashSet&lt;&gt;(Arrays.asList(role.getPermissions().split(<span class="hljs-string">&quot;,&quot;</span>)));
-        SimpleAuthorizationInfo info = <span class="hljs-keyword">new</span> SimpleAuthorizationInfo();
-        info.setStringPermissions(permsSet);
-        <span class="hljs-keyword">return</span> info;
-    &#125;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 认证(登录时调用)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">protected</span> AuthenticationInfo <span class="hljs-title">doGetAuthenticationInfo</span><span class="hljs-params">(AuthenticationToken token)</span> <span class="hljs-keyword">throws</span> AuthenticationException </span>&#123;
-        String accessToken = (String) token.getPrincipal();
-        <span class="hljs-comment">// 验证token信息</span>
-        <span class="hljs-keyword">try</span> &#123;
-            JwtUtil.verify(accessToken);
-        &#125; <span class="hljs-keyword">catch</span> (TokenExpiredException e) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ExpiredCredentialsException();
-        &#125; <span class="hljs-keyword">catch</span> (UnsupportedEncodingException e) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnsupportedTokenException(<span class="hljs-string">&quot;token已失效&quot;</span>);
-        &#125;
-        <span class="hljs-comment">// 检测是否在其他设备登录</span>
-        Long userId = JwtUtil.getUserId(accessToken);
-        String onlineToken = userRedis.getOnlineUserToken(userId);
-        <span class="hljs-keyword">if</span> (!onlineToken.equals(accessToken)) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ConcurrentAccessException(<span class="hljs-string">&quot;该账号已在其他设备登录&quot;</span>);
-        &#125;
-        <span class="hljs-comment">// 检查用户授权天数，是否被冻结</span>
-        User user = userRedis.get(accessToken);
-        <span class="hljs-keyword">if</span> (user.getValidityDays() &lt;= <span class="hljs-number">0</span>) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnauthenticatedException(<span class="hljs-string">&quot;授权天数不足&quot;</span>);
-        &#125;
-        <span class="hljs-comment">//账号锁定</span>
-        <span class="hljs-keyword">if</span> (!user.getEnabled()) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> DisabledAccountException(<span class="hljs-string">&quot;该账号已被禁用&quot;</span>);
-        &#125;
-        SimpleAuthenticationInfo info = <span class="hljs-keyword">new</span> SimpleAuthenticationInfo(user, accessToken, getName());
-        <span class="hljs-keyword">return</span> info;
-    &#125;
-&#125;</code></pre>
-
-<h2 id="Config类"><a href="#Config类" class="headerlink" title="Config类"></a>Config类</h2><pre><code class="hljs typescript"><span class="hljs-meta">@Configuration</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ShiroConfig</span> </span>&#123;
-
-    <span class="hljs-meta">@Bean</span>(<span class="hljs-string">&quot;securityManager&quot;</span>)
-    <span class="hljs-keyword">public</span> SecurityManager <span class="hljs-function"><span class="hljs-title">securityManager</span>(<span class="hljs-params">OAuth2Realm oAuth2Realm</span>)</span> &#123;
-        DefaultWebSecurityManager securityManager = <span class="hljs-keyword">new</span> DefaultWebSecurityManager();
-        securityManager.setRealm(oAuth2Realm);
-        securityManager.setRememberMeManager(<span class="hljs-literal">null</span>);
-        <span class="hljs-keyword">return</span> securityManager;
-    &#125;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * setUsePrefix(false)用于解决一个奇怪的bug。在引入spring aop的情况下。</span>
-<span class="hljs-comment">     * 在<span class="hljs-doctag">@Controller</span>注解的类的方法中加入<span class="hljs-doctag">@RequiresRole</span>注解，会导致该方法无法映射请求，导致返回404。 加入这项配置能解决这个bug</span>
-<span class="hljs-comment">     * 在使用<span class="hljs-doctag">@Transaction</span>注解时出现无法注入bug解决</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> DefaultAdvisorAutoProxyCreator <span class="hljs-function"><span class="hljs-title">getDefaultAdvisorAutoProxyCreator</span>(<span class="hljs-params"></span>)</span> &#123;
-        DefaultAdvisorAutoProxyCreator creator = <span class="hljs-keyword">new</span> DefaultAdvisorAutoProxyCreator();
-        creator.setProxyTargetClass(<span class="hljs-literal">true</span>);
-        creator.setUsePrefix(<span class="hljs-literal">false</span>);
-        <span class="hljs-keyword">return</span> creator;
-    &#125;
-
-    <span class="hljs-meta">@Bean</span>(<span class="hljs-string">&quot;shiroFilter&quot;</span>)
-    <span class="hljs-keyword">public</span> ShiroFilterFactoryBean <span class="hljs-function"><span class="hljs-title">shirFilter</span>(<span class="hljs-params">SecurityManager manager</span>)</span> &#123;
-        ShiroFilterFactoryBean shiroFilterFactory = <span class="hljs-keyword">new</span> ShiroFilterFactoryBean();
-        shiroFilterFactory.setSecurityManager(manager);
-
-        <span class="hljs-built_in">Map</span>&lt;<span class="hljs-built_in">String</span>, Filter&gt; filterMap = shiroFilterFactory.getFilters();
-        filterMap.put(<span class="hljs-string">&quot;oauth2&quot;</span>, <span class="hljs-keyword">new</span> OAuth2Filter());
-        shiroFilterFactory.setFilters(filterMap);
-
-        <span class="hljs-built_in">Map</span>&lt;<span class="hljs-built_in">String</span>, <span class="hljs-built_in">String</span>&gt; filterChainDefinitionMap = <span class="hljs-keyword">new</span> LinkedHashMap&lt;&gt;();
-        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/login&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);
-        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/actuator&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);
-        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/actuator/**&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);
-        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/validate/**&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);
-        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/user/getByUsername&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);
-        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/**&quot;</span>, <span class="hljs-string">&quot;oauth2&quot;</span>);
-        shiroFilterFactory.setFilterChainDefinitionMap(filterChainDefinitionMap);
-
-        <span class="hljs-keyword">return</span> shiroFilterFactory;
-    &#125;
-
-    <span class="hljs-meta">@Bean</span>(<span class="hljs-string">&quot;lifecycleBeanPostProcessor&quot;</span>)
-    <span class="hljs-keyword">public</span> LifecycleBeanPostProcessor <span class="hljs-function"><span class="hljs-title">lifecycleBeanPostProcessor</span>(<span class="hljs-params"></span>)</span> &#123;
-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> LifecycleBeanPostProcessor();
-    &#125;
-
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-keyword">public</span> AuthorizationAttributeSourceAdvisor <span class="hljs-function"><span class="hljs-title">authorizationAttributeSourceAdvisor</span>(<span class="hljs-params">SecurityManager securityManager</span>)</span> &#123;
-        AuthorizationAttributeSourceAdvisor advisor = <span class="hljs-keyword">new</span> AuthorizationAttributeSourceAdvisor();
-        advisor.setSecurityManager(securityManager);
-        <span class="hljs-keyword">return</span> advisor;
-    &#125;
-&#125;</code></pre>
+<h2 id="Config类"><a href="#Config类" class="headerlink" title="Config类"></a>Config类</h2><figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><code class="hljs typescript"><span class="hljs-meta">@Configuration</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ShiroConfig</span> </span>&#123;<br><br>    <span class="hljs-meta">@Bean</span>(<span class="hljs-string">&quot;securityManager&quot;</span>)<br>    <span class="hljs-keyword">public</span> SecurityManager <span class="hljs-function"><span class="hljs-title">securityManager</span>(<span class="hljs-params">OAuth2Realm oAuth2Realm</span>)</span> &#123;<br>        DefaultWebSecurityManager securityManager = <span class="hljs-keyword">new</span> DefaultWebSecurityManager();<br>        securityManager.setRealm(oAuth2Realm);<br>        securityManager.setRememberMeManager(<span class="hljs-literal">null</span>);<br>        <span class="hljs-keyword">return</span> securityManager;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * setUsePrefix(false)用于解决一个奇怪的bug。在引入spring aop的情况下。</span><br><span class="hljs-comment">     * 在<span class="hljs-doctag">@Controller</span>注解的类的方法中加入<span class="hljs-doctag">@RequiresRole</span>注解，会导致该方法无法映射请求，导致返回404。 加入这项配置能解决这个bug</span><br><span class="hljs-comment">     * 在使用<span class="hljs-doctag">@Transaction</span>注解时出现无法注入bug解决</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> DefaultAdvisorAutoProxyCreator <span class="hljs-function"><span class="hljs-title">getDefaultAdvisorAutoProxyCreator</span>(<span class="hljs-params"></span>)</span> &#123;<br>        DefaultAdvisorAutoProxyCreator creator = <span class="hljs-keyword">new</span> DefaultAdvisorAutoProxyCreator();<br>        creator.setProxyTargetClass(<span class="hljs-literal">true</span>);<br>        creator.setUsePrefix(<span class="hljs-literal">false</span>);<br>        <span class="hljs-keyword">return</span> creator;<br>    &#125;<br><br>    <span class="hljs-meta">@Bean</span>(<span class="hljs-string">&quot;shiroFilter&quot;</span>)<br>    <span class="hljs-keyword">public</span> ShiroFilterFactoryBean <span class="hljs-function"><span class="hljs-title">shirFilter</span>(<span class="hljs-params">SecurityManager manager</span>)</span> &#123;<br>        ShiroFilterFactoryBean shiroFilterFactory = <span class="hljs-keyword">new</span> ShiroFilterFactoryBean();<br>        shiroFilterFactory.setSecurityManager(manager);<br><br>        <span class="hljs-built_in">Map</span>&lt;<span class="hljs-built_in">String</span>, Filter&gt; filterMap = shiroFilterFactory.getFilters();<br>        filterMap.put(<span class="hljs-string">&quot;oauth2&quot;</span>, <span class="hljs-keyword">new</span> OAuth2Filter());<br>        shiroFilterFactory.setFilters(filterMap);<br><br>        <span class="hljs-built_in">Map</span>&lt;<span class="hljs-built_in">String</span>, <span class="hljs-built_in">String</span>&gt; filterChainDefinitionMap = <span class="hljs-keyword">new</span> LinkedHashMap&lt;&gt;();<br>        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/login&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);<br>        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/actuator&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);<br>        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/actuator/**&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);<br>        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/validate/**&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);<br>        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/user/getByUsername&quot;</span>, <span class="hljs-string">&quot;anon&quot;</span>);<br>        filterChainDefinitionMap.put(<span class="hljs-string">&quot;/**&quot;</span>, <span class="hljs-string">&quot;oauth2&quot;</span>);<br>        shiroFilterFactory.setFilterChainDefinitionMap(filterChainDefinitionMap);<br><br>        <span class="hljs-keyword">return</span> shiroFilterFactory;<br>    &#125;<br><br>    <span class="hljs-meta">@Bean</span>(<span class="hljs-string">&quot;lifecycleBeanPostProcessor&quot;</span>)<br>    <span class="hljs-keyword">public</span> LifecycleBeanPostProcessor <span class="hljs-function"><span class="hljs-title">lifecycleBeanPostProcessor</span>(<span class="hljs-params"></span>)</span> &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> LifecycleBeanPostProcessor();<br>    &#125;<br><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-keyword">public</span> AuthorizationAttributeSourceAdvisor <span class="hljs-function"><span class="hljs-title">authorizationAttributeSourceAdvisor</span>(<span class="hljs-params">SecurityManager securityManager</span>)</span> &#123;<br>        AuthorizationAttributeSourceAdvisor advisor = <span class="hljs-keyword">new</span> AuthorizationAttributeSourceAdvisor();<br>        advisor.setSecurityManager(securityManager);<br>        <span class="hljs-keyword">return</span> advisor;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 
 
-<h2 id="重写AuthenticationToken类"><a href="#重写AuthenticationToken类" class="headerlink" title="重写AuthenticationToken类"></a>重写AuthenticationToken类</h2><pre><code class="hljs typescript"><span class="hljs-keyword">import</span> org.apache.shiro.authc.AuthenticationToken;
+<h2 id="重写AuthenticationToken类"><a href="#重写AuthenticationToken类" class="headerlink" title="重写AuthenticationToken类"></a>重写AuthenticationToken类</h2><figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs typescript"><span class="hljs-keyword">import</span> org.apache.shiro.authc.AuthenticationToken;<br><br><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * token</span><br><span class="hljs-comment"> *</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author </span>Mark sunlightcs<span class="hljs-doctag">@gmail</span>.com</span><br><span class="hljs-comment"> */</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OAuth2Token</span> <span class="hljs-title">implements</span> <span class="hljs-title">AuthenticationToken</span> </span>&#123;<br>    <span class="hljs-keyword">private</span> <span class="hljs-built_in">String</span> token;<br><br>    <span class="hljs-keyword">public</span> <span class="hljs-function"><span class="hljs-title">OAuth2Token</span>(<span class="hljs-params"><span class="hljs-built_in">String</span> token</span>)</span>&#123;<br>        <span class="hljs-built_in">this</span>.token = token;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">String</span> <span class="hljs-function"><span class="hljs-title">getPrincipal</span>(<span class="hljs-params"></span>)</span> &#123;<br>        <span class="hljs-keyword">return</span> token;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-built_in">Object</span> <span class="hljs-function"><span class="hljs-title">getCredentials</span>(<span class="hljs-params"></span>)</span> &#123;<br>        <span class="hljs-keyword">return</span> token;<br>    &#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
 
-<span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * token</span>
-<span class="hljs-comment"> *</span>
-<span class="hljs-comment"> * <span class="hljs-doctag">@author </span>Mark sunlightcs<span class="hljs-doctag">@gmail</span>.com</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OAuth2Token</span> <span class="hljs-title">implements</span> <span class="hljs-title">AuthenticationToken</span> </span>&#123;
-    <span class="hljs-keyword">private</span> <span class="hljs-built_in">String</span> token;
-
-    <span class="hljs-keyword">public</span> <span class="hljs-function"><span class="hljs-title">OAuth2Token</span>(<span class="hljs-params"><span class="hljs-built_in">String</span> token</span>)</span>&#123;
-        <span class="hljs-built_in">this</span>.token = token;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-built_in">String</span> <span class="hljs-function"><span class="hljs-title">getPrincipal</span>(<span class="hljs-params"></span>)</span> &#123;
-        <span class="hljs-keyword">return</span> token;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-built_in">Object</span> <span class="hljs-function"><span class="hljs-title">getCredentials</span>(<span class="hljs-params"></span>)</span> &#123;
-        <span class="hljs-keyword">return</span> token;
-    &#125;
-&#125;
-</code></pre>
-
-<h2 id="userRedis的配置"><a href="#userRedis的配置" class="headerlink" title="userRedis的配置"></a>userRedis的配置</h2><pre><code class="hljs reasonml">import com.minte.english.security.common.utils.JwtUtil;
-import com.minte.english.security.common.utils.RedisKeys;
-import com.minte.english.security.common.utils.RedisUtil;
-import com.minte.english.security.<span class="hljs-keyword">module</span>.sys.service.ISysConfigService;
-import com.minte.english.security.<span class="hljs-keyword">module</span>.user.pojo.User;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-<span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * @author zgc</span>
-<span class="hljs-comment"> * @since 2019/12/5</span>
-<span class="hljs-comment"> */</span>
-@Component
-public <span class="hljs-keyword">class</span> UserRedis &#123;
-
-    @Autowired
-    <span class="hljs-keyword">private</span> RedisUtil redisUtil;
-
-    @Autowired
-    <span class="hljs-keyword">private</span> ISysConfigService sysConfigService;
-
-    public void save<span class="hljs-constructor">OrUpdate(User <span class="hljs-params">user</span>, String <span class="hljs-params">token</span>)</span> &#123;
-        String imgPath = sysConfigService.get<span class="hljs-constructor">Value(<span class="hljs-string">&quot;ICON_PATH&quot;</span>)</span> + user.get<span class="hljs-constructor">ImagePath()</span>;
-        user.set<span class="hljs-constructor">ImagePath(<span class="hljs-params">imgPath</span>)</span>;
-        redisUtil.set(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">UserKey(<span class="hljs-params">token</span>)</span>, user, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">ExpiresTime(<span class="hljs-params">token</span>)</span>);
-    &#125;
-
-    public void delete(String token) &#123;
-        redisUtil.delete(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">UserKey(<span class="hljs-params">token</span>)</span>);
-    &#125;
-
-    public User get(String token) &#123;
-        return redisUtil.get(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">UserKey(<span class="hljs-params">token</span>)</span>, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">User</span>.</span></span><span class="hljs-keyword">class</span>);
-    &#125;
-
-    public void save<span class="hljs-constructor">OrUpdateOnlineUser(Long <span class="hljs-params">userId</span>, String <span class="hljs-params">token</span>)</span> &#123;
-        redisUtil.set(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">OnlineUserKey(<span class="hljs-params">userId</span>)</span>, token, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">ExpiresTime(<span class="hljs-params">token</span>)</span>);
-    &#125;
-
-    public String get<span class="hljs-constructor">OnlineUserToken(Long <span class="hljs-params">userId</span>)</span> &#123;
-        return redisUtil.get(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">OnlineUserKey(<span class="hljs-params">userId</span>)</span>, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">String</span>.</span></span><span class="hljs-keyword">class</span>);
-    &#125;
-
-    public void delete<span class="hljs-constructor">OnlineUser(Long <span class="hljs-params">userId</span>, String <span class="hljs-params">token</span>)</span> &#123;
-        <span class="hljs-keyword">if</span> (get<span class="hljs-constructor">OnlineUserToken(<span class="hljs-params">userId</span>)</span>.equals(token)) &#123;
-            redisUtil.delete(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">OnlineUserKey(<span class="hljs-params">userId</span>)</span>);
-        &#125;
-    &#125;
-
-    public boolean is<span class="hljs-constructor">Online(Long <span class="hljs-params">userId</span>)</span> &#123;
-        return userId<span class="hljs-operator"> == </span>null ? <span class="hljs-literal">false</span> : redisUtil.contains<span class="hljs-constructor">Key(RedisKeys.<span class="hljs-params">getOnlineUserKey</span>(<span class="hljs-params">userId</span>)</span>);
-    &#125;
-
-    public void update(User user) &#123;
-        Long userId = user.get<span class="hljs-constructor">Id()</span>;
-        <span class="hljs-keyword">if</span> (is<span class="hljs-constructor">Online(<span class="hljs-params">userId</span>)</span>) &#123;
-            String token = get<span class="hljs-constructor">OnlineUserToken(<span class="hljs-params">userId</span>)</span>;
-            save<span class="hljs-constructor">OrUpdate(<span class="hljs-params">user</span>, <span class="hljs-params">token</span>)</span>;
-        &#125;
-    &#125;
-&#125;</code></pre>
+<h2 id="userRedis的配置"><a href="#userRedis的配置" class="headerlink" title="userRedis的配置"></a>userRedis的配置</h2><figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">import com.minte.english.security.common.utils.JwtUtil;<br>import com.minte.english.security.common.utils.RedisKeys;<br>import com.minte.english.security.common.utils.RedisUtil;<br>import com.minte.english.security.<span class="hljs-keyword">module</span>.sys.service.ISysConfigService;<br>import com.minte.english.security.<span class="hljs-keyword">module</span>.user.pojo.User;<br>import org.springframework.beans.factory.annotation.Autowired;<br>import org.springframework.stereotype.Component;<br><br><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * @author zgc</span><br><span class="hljs-comment"> * @since 2019/12/5</span><br><span class="hljs-comment"> */</span><br>@Component<br>public <span class="hljs-keyword">class</span> UserRedis &#123;<br><br>    @Autowired<br>    <span class="hljs-keyword">private</span> RedisUtil redisUtil;<br><br>    @Autowired<br>    <span class="hljs-keyword">private</span> ISysConfigService sysConfigService;<br><br>    public void save<span class="hljs-constructor">OrUpdate(User <span class="hljs-params">user</span>, String <span class="hljs-params">token</span>)</span> &#123;<br>        String imgPath = sysConfigService.get<span class="hljs-constructor">Value(<span class="hljs-string">&quot;ICON_PATH&quot;</span>)</span> + user.get<span class="hljs-constructor">ImagePath()</span>;<br>        user.set<span class="hljs-constructor">ImagePath(<span class="hljs-params">imgPath</span>)</span>;<br>        redisUtil.set(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">UserKey(<span class="hljs-params">token</span>)</span>, user, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">ExpiresTime(<span class="hljs-params">token</span>)</span>);<br>    &#125;<br><br>    public void delete(String token) &#123;<br>        redisUtil.delete(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">UserKey(<span class="hljs-params">token</span>)</span>);<br>    &#125;<br><br>    public User get(String token) &#123;<br>        return redisUtil.get(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">UserKey(<span class="hljs-params">token</span>)</span>, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">User</span>.</span></span><span class="hljs-keyword">class</span>);<br>    &#125;<br><br>    public void save<span class="hljs-constructor">OrUpdateOnlineUser(Long <span class="hljs-params">userId</span>, String <span class="hljs-params">token</span>)</span> &#123;<br>        redisUtil.set(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">OnlineUserKey(<span class="hljs-params">userId</span>)</span>, token, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">JwtUtil</span>.</span></span>get<span class="hljs-constructor">ExpiresTime(<span class="hljs-params">token</span>)</span>);<br>    &#125;<br><br>    public String get<span class="hljs-constructor">OnlineUserToken(Long <span class="hljs-params">userId</span>)</span> &#123;<br>        return redisUtil.get(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">OnlineUserKey(<span class="hljs-params">userId</span>)</span>, <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">String</span>.</span></span><span class="hljs-keyword">class</span>);<br>    &#125;<br><br>    public void delete<span class="hljs-constructor">OnlineUser(Long <span class="hljs-params">userId</span>, String <span class="hljs-params">token</span>)</span> &#123;<br>        <span class="hljs-keyword">if</span> (get<span class="hljs-constructor">OnlineUserToken(<span class="hljs-params">userId</span>)</span>.equals(token)) &#123;<br>            redisUtil.delete(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">RedisKeys</span>.</span></span>get<span class="hljs-constructor">OnlineUserKey(<span class="hljs-params">userId</span>)</span>);<br>        &#125;<br>    &#125;<br><br>    public boolean is<span class="hljs-constructor">Online(Long <span class="hljs-params">userId</span>)</span> &#123;<br>        return userId<span class="hljs-operator"> == </span>null ? <span class="hljs-literal">false</span> : redisUtil.contains<span class="hljs-constructor">Key(RedisKeys.<span class="hljs-params">getOnlineUserKey</span>(<span class="hljs-params">userId</span>)</span>);<br>    &#125;<br><br>    public void update(User user) &#123;<br>        Long userId = user.get<span class="hljs-constructor">Id()</span>;<br>        <span class="hljs-keyword">if</span> (is<span class="hljs-constructor">Online(<span class="hljs-params">userId</span>)</span>) &#123;<br>            String token = get<span class="hljs-constructor">OnlineUserToken(<span class="hljs-params">userId</span>)</span>;<br>            save<span class="hljs-constructor">OrUpdate(<span class="hljs-params">user</span>, <span class="hljs-params">token</span>)</span>;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 
 
@@ -605,8 +290,14 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -697,17 +388,15 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -716,7 +405,6 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -724,7 +412,7 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -751,6 +439,7 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -768,11 +457,12 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -792,7 +482,6 @@ public <span class="hljs-keyword">class</span> UserRedis &#123;
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

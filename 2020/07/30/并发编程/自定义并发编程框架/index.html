@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>自定义并发任务执行框架 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -247,39 +248,39 @@
 <li><p>自动清除已完成和过期任务。因为要提供进度查询，系统需要在内存中维护每个任务的进度信息以供查询，但是这种查询又是有时间限制的，一个任务完成一段时间后，就不再提供进度查询了，则就需要我们自动清除已完成和过期任务，用定时轮询吗？</p>
 </li>
 </ol>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h4><ol>
 <li><p>框架使用者业务方法的执行结果共有三种，成功：按预想的流程出了结果；失败：按预想的流程没出结果；异常：没按预想的流程抛出了预料之外的错误。因此我们定义了一个枚举，表示这三种情况。</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>业务方法的返回值有很多种可能，基本类型、系统定义的对象类型、框架使用者自定义的对象类型都是存在的，所以需要用泛型来说表示这个结果。如果方法执行失败了，还需要告诉用户或者框架使用者失败的原因，还需要再定义一个任务的执行结束后的返回值类。</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic3.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>定义执行业务方法的接口，框架就只执行这个方法，框架的使用者都应该来实现这个接口，由于用户业务的数据多样性，方法的参数也应该用泛型。</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>提供一种封装机制，让框架使用者可以将用户在前端提交的工作（JOB）提交给这个封装机制，当用户的需要查询进度的时候，也从这个封装机制中取得，同时封装机制内部也要负责清除已完成任务。</p>
 <p>在这个封装机制里我们定义了一个类JobInfo，抽象了对用户工作（JOB）的封装，一个工作可以包含多个子任务（TASK），这个JobInfo中就包括了这个工作的相关信息，比如工作名，用以区分框架中唯一的工作，也可以避免重复提交，也方便查询时快速定位工作，除了工作名以外，工作中任务（TASK）的列表，工作中任务的处理器都在其中定义。</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic5.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>同时JobInfo还有相当多的关于这个工作的方法，比如查询工作进度，查询每个任务的处理结果，记录每个任务的处理结果等等</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>负责清除已完成任务，我们则交给CheckJobProcesser类来完成，定时轮询的机制不够优雅，因此我们选用了DelayQueue来实现这个功能</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>并且在其中定义了清除已完成任务的Runnable和相关的工作线程。</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic8.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>框架的主体类则是PendingJobPool，这也是框架使用者主要使用的类。这个类主要负责调度，例如工作（JOB）和任务（TASK）的提交，任务（TASK）的保存，任务（TASK）的并发执行，工作进度的查询接口和任务执行情况的查询等等。</p>
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic9.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic10.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
 
 </li>
 </ol>
-<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic11.png" srcset="/blog/img/loading.gif" class>
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><img src="/blog/2020/07/30/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E6%A1%86%E6%9E%B6/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>如果需要spring集成的话，某些单例化的部分就不需要了。</p>
 
@@ -307,8 +308,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -399,17 +406,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -418,7 +423,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -426,7 +430,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -453,6 +457,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -470,11 +475,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -494,7 +500,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>分库分表的深入剖析 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -261,8 +262,7 @@
 <h4 id="连接层策略"><a href="#连接层策略" class="headerlink" title="连接层策略"></a>连接层策略</h4><ol>
 <li><p>jdbc直连（sql拼接）</p>
 <p>在开发层面进行sql拼接，实现比较简单。</p>
-<pre><code class="hljs java">String year = getYear();
-String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+year+<span class="hljs-string">&quot;where xxx&quot;</span>;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java">String year = getYear();<br>String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+year+<span class="hljs-string">&quot;where xxx&quot;</span>;<br></code></pre></td></tr></table></figure>
 </li>
 <li><p>中间件</p>
 <p>常见的几种中间件主要针对两种层面做代理</p>
@@ -356,10 +356,10 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 </ol>
 <h3 id="分库分表的概念"><a href="#分库分表的概念" class="headerlink" title="分库分表的概念"></a>分库分表的概念</h3><p>MySQL单表数据量如果达到千万级别，甚至过亿，这时候再对数据库进行操作就比较吃力，select个半天都出不来数据，这时候业务已经难以维系。不得已，分库分表提上日程，分库分表的目的很简单就是减小数据库的压力，缩短表的操作时间。</p>
 <h4 id="分表"><a href="#分表" class="headerlink" title="分表"></a>分表</h4><p>分表是指在一个或者多个数据库实例内，将一张表拆分为多张表存储。一般来说，分表是因为该表需要存储很庞大的记录数，如果将其堆积到一起，就会导致数据量过于庞大（一般 MySQL 的表是 5000 万条记录左右）引发性能瓶颈。一般分表会按照某种算法进行拆分，如交易记录，可能按年份拆分:</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="分库"><a href="#分库" class="headerlink" title="分库"></a>分库</h4><p>分库是指将一套数据库的设计结构，部署到多个数据库实例的节点中去，在应用的时候，按照一定的方法通过多个数据库实例节点访问数据。请注意，这里的数据库实例节点是一个逻辑概念，不是一个物理概念，什么意思呢？简单地说，一个机器节点可以部署多个数据库实例节点，也可以一个机器节点只部署一个数据库实例节点，所以机器节点不一定等于数据库节点。而机器节点是物理概念，是看得到的真实的机器；数据库节点是逻辑概念，是看不到的东西。为了更好地说明分库的概念，如下图</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h3 id="海量数据存储解决方案"><a href="#海量数据存储解决方案" class="headerlink" title="海量数据存储解决方案"></a>海量数据存储解决方案</h3><p>移动互联网时代，海量的用户每天产生海量的数量，比如：用户表、订单表、交易流水表。</p>
 <p>以支付宝用户为例，8亿；微信用户更是多大10亿。订单表更夸张，比如美团外卖，每天都是几千万的订单。淘宝的历史订单总量应该是百亿，甚至是千亿级别，这些海量数据远不是一张表能Hold住的。事实上MySQL单表可以存储10亿级数据，只是这时候性能比较差，业界公认MySQL单表容量在1000W以下是最佳状态，因为这是它的BTREE索引树高在3~5之间。既然一张表无法搞定，那么就想办法将数据放到多个地方，目前比较普遍的方案有3个：分区、分库分表、NoSQL/NewSQL</p>
@@ -368,7 +368,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 <p>NoSQL比较具有代表性的是MongoDB，es。NewSQL比较具有代表性的是TiDB。 </p>
 </blockquote>
 <h4 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h4><p>分区技术与分表技术很类似，只是分区技术属于数据库内部的技术，对于开发者来说，它逻辑上仍旧是一张表，开发时不需要改变 SQL 表名。</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>它的缺点很明显：很多的资源都受到单机的限制，例如连接数，网络吞吐等。虽然每个分区可以独立存储，但是分区表的总入口还是一个MySQL示例。从而导致它的并发能力非常一般，远远达不到互联网高并发的要求。</p>
 <p>使用分区，业务必须具备两个特点：</p>
@@ -392,10 +392,10 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 </li>
 </ul>
 <h4 id="CLIENT模式"><a href="#CLIENT模式" class="headerlink" title="CLIENT模式"></a>CLIENT模式</h4><p>代表有阿里的TDDL，开源社区的sharding-jdbc（sharding-jdbc的3.x版本即sharding-sphere已经支持了proxy模式）。架构如下：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="PROXY模式"><a href="#PROXY模式" class="headerlink" title="PROXY模式"></a>PROXY模式</h4><p>代表有阿里的cobar，民间组织的MyCAT。架构如下：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>从以上两种模式可以看出sharding-jdbc作为一个组件集成在应用内，而mycat则作为一个独立的应用需要单独部署。</p>
 <table>
@@ -508,7 +508,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 </ol>
 <h3 id="分库分表架构方案"><a href="#分库分表架构方案" class="headerlink" title="分库分表架构方案"></a>分库分表架构方案</h3><h4 id="垂直切分"><a href="#垂直切分" class="headerlink" title="垂直切分"></a>垂直切分</h4><p>垂直切分常见有垂直分库和垂直分表两种。</p>
 <h5 id="垂直分库"><a href="#垂直分库" class="headerlink" title="垂直分库"></a>垂直分库</h5><p>是根据数据库里面的数据库表的相关性进行拆分，比如：一个数据库里面既存在用户数据，又存在订单数据，那么垂直拆分可以吧用户数据放在用户库，把订单数据放到订单库。另外在微服务盛行的今天已经非常普及，按照业务模块来划分不同的数据库，也是一种垂直拆分，而不是像早期一样将所有的数据表都放在同一个数据库中。如下图：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>以表为依据，按照业务归属不同，将不同的表拆分到不同的库中</p>
 <p>注意事项：</p>
@@ -522,7 +522,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 </ol>
 <p><strong>使用垂直分库的场景：</strong>当系统绝对并发量上来了，并且可以抽象出单独的业务模块的情况下使用垂直分库方案。</p>
 <h5 id="垂直分表"><a href="#垂直分表" class="headerlink" title="垂直分表"></a>垂直分表</h5><p>在日常开发和设计中比较常见，通俗的说法叫做“大表拆小表”。拆分是基于关系型数据库中的“列”（字段）进行的。通常情况，某个表中的字段比较多，可以新建立一张”扩展表”，将不经常使用或者长度较大的字段拆分出去放到“扩展表”中，如下图所示：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>以字段为依据，按照字段的活跃性，将表中字段拆到不同的表中（主表和扩展表）。</p>
 <p>说明：拆分字段的操作建议在数据库设计阶段就做好。如果是在发展过程中拆分，则需要改写以前的查询语句，会额外带来一定的成本和风险，建议谨慎。</p>
@@ -564,7 +564,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 </ul>
 <h4 id="水平切分"><a href="#水平切分" class="headerlink" title="水平切分"></a>水平切分</h4><p>水平切分是通过某种策略将数据片来存储，分为水平分表和水平分库两部分，每片数据会分散到不同的MySQL表或者库中，达到分布式的效果，能够支持非常大的数据量。</p>
 <h5 id="水平分库"><a href="#水平分库" class="headerlink" title="水平分库"></a>水平分库</h5><p>以字段为依据，按照一定策略(hash、range等)，将一个库中的数据拆分到多个库中。</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>注意事项：</p>
 <ol>
@@ -578,7 +578,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 <p><strong>使用水平分库的场景：</strong></p>
 <p>当系统绝对并发量上来了，分表难以从根本上解决问题，并且还没有明显的业务归属进行抽取业务的情况下使用水平分库方案。</p>
 <h5 id="水平分表"><a href="#水平分表" class="headerlink" title="水平分表"></a>水平分表</h5><p>以字段为依据，按照一定策略(hash,range等)，将一个表中的数据拆分到多个表中。</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>注意事项: </p>
 <ol>
@@ -651,7 +651,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 <p>分页需要按照指定字段进行排序，当排序字段就是分片字段时，通过分片规则就比较容易定位到指定的分片；当排序字段非分片字段时，就变得比较复杂。</p>
 <p>需要先在不同的分片节点中将数据进行排序并返回，然后将不同分片返回的结果集进行汇总和再次排序。</p>
 <p>最终返回给用户如下图：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>上图只是取第一页的数据，对性能影响还不是很大。但是如果取得页数很大，情况就变得复杂的多。</p>
 <p>因为各分片节点中的数据可能是随机的，为了排序的准确性，需要将所有节点的前N页数据都排序好做合并，最后再进行整体排序，这样的操作很耗费 CPU 和内存资源，所以页数越大，系统性能就会越差。</p>
@@ -673,259 +673,54 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 <p>此外还需要根据当前的数据量个 QPS，以及业务发展速度，进行容量规划，推算出大概需要多少分片（一般建议单个分片的单表数据量不超过 1000W）。</p>
 <h3 id="分布式主键生成策略"><a href="#分布式主键生成策略" class="headerlink" title="分布式主键生成策略"></a>分布式主键生成策略</h3><h4 id="业务规则"><a href="#业务规则" class="headerlink" title="业务规则"></a>业务规则</h4><p>从业务角度对并发性降维，比如在订单号中加入用户id，将并发维度降低到单个用户，从而将主键生成速度变得可控。典型的事例有userId+时间戳，从业务角度来说，一个用户不可能在1毫秒内下两个单子，即使也说明是可以刷单，应该被限流。</p>
 <p>实现</p>
-<pre><code class="hljs java"><span class="hljs-meta">@GetMapping</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">busiadd</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;
-	Strorder order = <span class="hljs-keyword">new</span> Strorder();
-	order.setId(System.currentTimeMillis()+<span class="hljs-string">&quot;-&quot;</span>+userId);
-	order.setUserId(userId);
-	strorderMapper.save(order);
-	<span class="hljs-keyword">return</span> order;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@GetMapping</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">busiadd</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;<br>	Strorder order = <span class="hljs-keyword">new</span> Strorder();<br>	order.setId(System.currentTimeMillis()+<span class="hljs-string">&quot;-&quot;</span>+userId);<br>	order.setUserId(userId);<br>	strorderMapper.save(order);<br>	<span class="hljs-keyword">return</span> order;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="集中式分配"><a href="#集中式分配" class="headerlink" title="集中式分配"></a>集中式分配</h4><h5 id="maxId表"><a href="#maxId表" class="headerlink" title="maxId表"></a>maxId表</h5><ol>
 <li>通过一张max表集中分配</li>
 </ol>
-<pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`maxid`</span>(
-	<span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,
-	<span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
-	<span class="hljs-string">`nextid`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,
-	PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)
-);
-
-<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> maxid(<span class="hljs-keyword">name</span>,nextid) <span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;orders&#x27;</span>,<span class="hljs-number">1000</span>);</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`maxid`</span>(<br>	<span class="hljs-string">`id`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">10</span>) <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> AUTO_INCREMENT,<br>	<span class="hljs-string">`name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">50</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>	<span class="hljs-string">`nextid`</span> <span class="hljs-built_in">bigint</span>(<span class="hljs-number">20</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>	PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)<br>);<br><br><span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> maxid(<span class="hljs-keyword">name</span>,nextid) <span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;orders&#x27;</span>,<span class="hljs-number">1000</span>);<br></code></pre></td></tr></table></figure>
 
 <ol start="2">
 <li>创建函数</li>
 </ol>
-<pre><code class="hljs sql"><span class="hljs-keyword">DROP</span> <span class="hljs-keyword">FUNCTION</span> getid;
-
-<span class="hljs-comment">-- 创建函数</span>
-<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">FUNCTION</span> getid(table_name <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">50</span>))
-<span class="hljs-keyword">RETURNS</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>)
-<span class="hljs-keyword">BEGIN</span>
-  <span class="hljs-comment">-- 定义变量</span>
-  <span class="hljs-keyword">DECLARE</span> <span class="hljs-keyword">id</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>);
-  <span class="hljs-comment">-- 给定义的变量赋值 </span>
-	<span class="hljs-keyword">update</span> maxid <span class="hljs-keyword">set</span> nextid=nextid+<span class="hljs-number">1</span> <span class="hljs-keyword">where</span> <span class="hljs-keyword">name</span> = table_name;
-	<span class="hljs-keyword">SELECT</span> nextid <span class="hljs-keyword">INTO</span> <span class="hljs-keyword">id</span> <span class="hljs-keyword">FROM</span> maxid <span class="hljs-keyword">WHERE</span> <span class="hljs-keyword">name</span> = table_name;
-  <span class="hljs-comment">-- 返回函数处理结果</span>
-  RETURN id;
-<span class="hljs-keyword">END</span></code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">DROP</span> <span class="hljs-keyword">FUNCTION</span> getid;<br><br><span class="hljs-comment">-- 创建函数</span><br><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">FUNCTION</span> getid(table_name <span class="hljs-built_in">VARCHAR</span>(<span class="hljs-number">50</span>))<br><span class="hljs-keyword">RETURNS</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>)<br><span class="hljs-keyword">BEGIN</span><br>  <span class="hljs-comment">-- 定义变量</span><br>  <span class="hljs-keyword">DECLARE</span> <span class="hljs-keyword">id</span> <span class="hljs-built_in">BIGINT</span>(<span class="hljs-number">20</span>);<br>  <span class="hljs-comment">-- 给定义的变量赋值 </span><br>	<span class="hljs-keyword">update</span> maxid <span class="hljs-keyword">set</span> nextid=nextid+<span class="hljs-number">1</span> <span class="hljs-keyword">where</span> <span class="hljs-keyword">name</span> = table_name;<br>	<span class="hljs-keyword">SELECT</span> nextid <span class="hljs-keyword">INTO</span> <span class="hljs-keyword">id</span> <span class="hljs-keyword">FROM</span> maxid <span class="hljs-keyword">WHERE</span> <span class="hljs-keyword">name</span> = table_name;<br>  <span class="hljs-comment">-- 返回函数处理结果</span><br>  RETURN id;<br><span class="hljs-keyword">END</span> <br></code></pre></td></tr></table></figure>
 
 <ol start="3">
 <li>StrorderMapper调整id策略，借助mybatis的SelectKey生成id，注意Before=true</li>
 </ol>
-<pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span>
-<span class="hljs-meta">        &quot;insert into strorder (id,userId)&quot;,</span>
-<span class="hljs-meta">        &quot;values (#&#123;id&#125;,#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span>
-<span class="hljs-meta">&#125;)</span>
-<span class="hljs-meta">@SelectKey(statement=&quot;SELECT getid(&#x27;orders&#x27;) from dual&quot;, </span>
-<span class="hljs-meta">           keyProperty=&quot;id&quot;, before=true, resultType=String.class)</span>
-<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">getIdSave</span><span class="hljs-params">(Strorder record)</span></span>;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span><br><span class="hljs-meta">        &quot;insert into strorder (id,userId)&quot;,</span><br><span class="hljs-meta">        &quot;values (#&#123;id&#125;,#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span><br><span class="hljs-meta">&#125;)</span><br><span class="hljs-meta">@SelectKey(statement=&quot;SELECT getid(&#x27;orders&#x27;) from dual&quot;, </span><br><span class="hljs-meta">           keyProperty=&quot;id&quot;, before=true, resultType=String.class)</span><br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">getIdSave</span><span class="hljs-params">(Strorder record)</span></span>;<br></code></pre></td></tr></table></figure>
 
-<pre><code class="hljs java"><span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * maxid表验证</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-meta">@GetMapping(&quot;/maxId&quot;)</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">maxId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;
-    Strorder order = <span class="hljs-keyword">new</span> Strorder();
-    order.setUserId(userId);
-    strorderMapper.getIdSave(order);
-    <span class="hljs-keyword">return</span> order;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * maxid表验证</span><br><span class="hljs-comment"> */</span><br><span class="hljs-meta">@GetMapping(&quot;/maxId&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">maxId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userId)</span></span>&#123;<br>    Strorder order = <span class="hljs-keyword">new</span> Strorder();<br>    order.setUserId(userId);<br>    strorderMapper.getIdSave(order);<br>    <span class="hljs-keyword">return</span> order;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>通过maxId表分配实现简单，不需要借助中间件，但受限于mysql的效率在并发较大的情况下，会造成锁等待。</p>
 <h5 id="分布式缓存"><a href="#分布式缓存" class="headerlink" title="分布式缓存"></a>分布式缓存</h5><p>通过redis的inc操作的原子性实现，</p>
-<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/redisId&quot;)</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">redisId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
-    Strorder order = <span class="hljs-keyword">new</span> Strorder();
-    order.setId(template.opsForValue().increment(<span class="hljs-string">&quot;next_order_id&quot;</span>).toString());
-    order.setUserid(userid);
-    strorderMapper.save(order);
-    <span class="hljs-keyword">return</span> order;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/redisId&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">redisId</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;<br>    Strorder order = <span class="hljs-keyword">new</span> Strorder();<br>    order.setId(template.opsForValue().increment(<span class="hljs-string">&quot;next_order_id&quot;</span>).toString());<br>    order.setUserid(userid);<br>    strorderMapper.save(order);<br>    <span class="hljs-keyword">return</span> order;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>这种方式能够承受较大的并发，但对redis集群的可靠性要求很高，如果出现故障，会阻断入库操作，down机恢复时也需要去确认和库中最大id的一致性。</p>
-<h4 id="uuid"><a href="#uuid" class="headerlink" title="uuid"></a>uuid</h4><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/uuid&quot;)</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">uuid</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
-    Strorder order = <span class="hljs-keyword">new</span> Strorder();
-    order.setId(UUID.randomUUID().toString());
-    order.setUserid(userid);
-    strorderMapper.save(order);
-    <span class="hljs-keyword">return</span> order;
-&#125;</code></pre>
+<h4 id="uuid"><a href="#uuid" class="headerlink" title="uuid"></a>uuid</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/uuid&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">uuid</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;<br>    Strorder order = <span class="hljs-keyword">new</span> Strorder();<br>    order.setId(UUID.randomUUID().toString());<br>    order.setUserid(userid);<br>    strorderMapper.save(order);<br>    <span class="hljs-keyword">return</span> order;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>uuid的长度较大，会影响建立索引和基于索引查询时的效率，而且需要占用大量的存储空间。</p>
 <h4 id="雪花算法"><a href="#雪花算法" class="headerlink" title="雪花算法"></a>雪花算法</h4><p>雪花算法由Twitter发明，是一种约定，它把时间戳、工作组 ID、工作机器 ID、自增序列号组合在一起，生成一个 64bits 的整数ID，能够使用 (2^41)/(1000<em>60</em>60<em>24</em>365) = 69.7 年，每台机器每毫秒理论最多生成 2^12 个 ID</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>雪花算法的优点在于不需要依赖Redis等第三方介质，占用空间及查询效率都要优于uuid，但只能保证在工作组中的机器生成的 ID 唯一，不同组下可能会重复。而且时间回拨后，生成的 ID 就会重复，所以需要保持时间是网络同步的。</p>
 <h5 id="java代码实现"><a href="#java代码实现" class="headerlink" title="java代码实现"></a>java代码实现</h5><p>工具类</p>
-<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.itheima.snow;
-
-<span class="hljs-keyword">import</span> org.apache.commons.lang3.StringUtils;
-<span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Value;
-<span class="hljs-keyword">import</span> org.springframework.stereotype.Component;
-
-<span class="hljs-meta">@Compoent</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Snowflake</span> </span>&#123;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 序列的掩码，12个1，也就是(0B111111111111=0xFFF=4095)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> SEQUENCE_MASK = <span class="hljs-number">0xFFF</span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 系统起始时间，这里取2020-01-01</span>
-<span class="hljs-comment">     **/</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> startTimeStamp = <span class="hljs-number">1577836800000L</span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 上次生成 ID 的时间截</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> lastTimestamp = -<span class="hljs-number">1L</span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 工作机器 ID(0~31)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> workerId;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 数据中心 ID(0~31)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> datacenterId;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 毫秒内序列(0~4095)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> sequence = <span class="hljs-number">0L</span>;
-
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> datacenterId 数据中心 ID (0~31)</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> workerId     工作机器 ID (0~31)</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Snowflake</span><span class="hljs-params">(<span class="hljs-meta">@Value(&quot;$&#123;snowflake.datacenterId&#125;&quot;)</span> <span class="hljs-keyword">long</span> datacenterId, <span class="hljs-meta">@Value(&quot;$&#123;snowflake.workerId&#125;&quot;)</span> <span class="hljs-keyword">long</span> workerId)</span> </span>&#123;
-        <span class="hljs-keyword">if</span> (workerId &gt; <span class="hljs-number">31</span> || workerId &lt; <span class="hljs-number">0</span>) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;workId必须在0-31之间，当前=&quot;</span> + workerId);
-        &#125;
-        <span class="hljs-keyword">if</span> (datacenterId &gt; <span class="hljs-number">31</span> || datacenterId &lt; <span class="hljs-number">0</span>) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;datacenterId必须在0-31之间，当前=&quot;</span> + datacenterId);
-        &#125;
-
-        <span class="hljs-keyword">this</span>.workerId = workerId;
-        <span class="hljs-keyword">this</span>.datacenterId = datacenterId;
-    &#125;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 加锁，线程安全</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@return</span> long 类型的 ID</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">synchronized</span> <span class="hljs-keyword">long</span> <span class="hljs-title">nextId</span><span class="hljs-params">()</span> </span>&#123;
-        <span class="hljs-keyword">long</span> timestamp = currentTime();
-
-        <span class="hljs-comment">// 如果当前时间小于上一次 ID 生成的时间戳，说明系统时钟回退过这个时候应当抛出异常</span>
-        <span class="hljs-keyword">if</span> (timestamp &lt; lastTimestamp) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;时钟回退！时间差=&quot;</span> + (lastTimestamp - timestamp));
-        &#125;
-
-        <span class="hljs-comment">// 同一毫秒内，序列增加</span>
-        <span class="hljs-keyword">if</span> (lastTimestamp == timestamp) &#123;
-            <span class="hljs-comment">//超出阈值。思考下为什么这么运算？</span>
-            sequence = (sequence + <span class="hljs-number">1</span>) &amp; SEQUENCE_MASK;
-            <span class="hljs-comment">// 毫秒内序列溢出</span>
-            <span class="hljs-keyword">if</span> (sequence == <span class="hljs-number">0</span>) &#123;
-                <span class="hljs-comment">//自旋等待下一毫秒</span>
-                <span class="hljs-keyword">while</span> ((timestamp = currentTime()) &lt;= lastTimestamp) ;
-            &#125;
-        &#125; <span class="hljs-keyword">else</span> &#123;
-            <span class="hljs-comment">//已经进入下一毫秒，从0开始计数</span>
-            sequence = <span class="hljs-number">0L</span>;
-        &#125;
-
-        <span class="hljs-comment">//赋值为新的时间戳</span>
-        lastTimestamp = timestamp;
-
-        <span class="hljs-comment">//移位拼接</span>
-        <span class="hljs-keyword">long</span> id = ((timestamp - startTimeStamp) &lt;&lt; <span class="hljs-number">22</span>)
-                | (datacenterId &lt;&lt; <span class="hljs-number">17</span>)
-                | (workerId &lt;&lt; <span class="hljs-number">12</span>)
-                | sequence;
-
-        System.out.println(<span class="hljs-string">&quot;new id = &quot;</span> + id);
-        System.out.println(<span class="hljs-string">&quot;bit id = &quot;</span> + toBit(id));
-
-        <span class="hljs-keyword">return</span> id;
-    &#125;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 返回当前时间，以毫秒为单位</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">long</span> <span class="hljs-title">currentTime</span><span class="hljs-params">()</span> </span>&#123;
-        <span class="hljs-keyword">return</span> System.currentTimeMillis();
-    &#125;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 转成二进制展示</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">toBit</span><span class="hljs-params">(<span class="hljs-keyword">long</span> id)</span> </span>&#123;
-        String bit = StringUtils.leftPad(Long.toBinaryString(id), <span class="hljs-number">64</span>, <span class="hljs-string">&quot;0&quot;</span>);
-        <span class="hljs-keyword">return</span> bit.substring(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>) +
-                <span class="hljs-string">&quot; - &quot;</span> +
-                bit.substring(<span class="hljs-number">1</span>, <span class="hljs-number">42</span>) +
-                <span class="hljs-string">&quot; - &quot;</span> +
-                bit.substring(<span class="hljs-number">42</span>, <span class="hljs-number">52</span>) +
-                <span class="hljs-string">&quot; - &quot;</span> +
-                bit.substring(<span class="hljs-number">52</span>, <span class="hljs-number">64</span>);
-    &#125;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        Snowflake idWorker = <span class="hljs-keyword">new</span> Snowflake(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>);
-        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;
-            <span class="hljs-keyword">long</span> id = idWorker.nextId();
-            System.out.println(id);
-            System.out.println(toBit(id));
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> com.itheima.snow;<br><br><span class="hljs-keyword">import</span> org.apache.commons.lang3.StringUtils;<br><span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Value;<br><span class="hljs-keyword">import</span> org.springframework.stereotype.Component;<br><br><span class="hljs-meta">@Compoent</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Snowflake</span> </span>&#123;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 序列的掩码，12个1，也就是(0B111111111111=0xFFF=4095)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">long</span> SEQUENCE_MASK = <span class="hljs-number">0xFFF</span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 系统起始时间，这里取2020-01-01</span><br><span class="hljs-comment">     **/</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> startTimeStamp = <span class="hljs-number">1577836800000L</span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 上次生成 ID 的时间截</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> lastTimestamp = -<span class="hljs-number">1L</span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 工作机器 ID(0~31)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> workerId;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 数据中心 ID(0~31)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> datacenterId;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 毫秒内序列(0~4095)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> sequence = <span class="hljs-number">0L</span>;<br><br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> datacenterId 数据中心 ID (0~31)</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> workerId     工作机器 ID (0~31)</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Snowflake</span><span class="hljs-params">(<span class="hljs-meta">@Value(&quot;$&#123;snowflake.datacenterId&#125;&quot;)</span> <span class="hljs-keyword">long</span> datacenterId, <span class="hljs-meta">@Value(&quot;$&#123;snowflake.workerId&#125;&quot;)</span> <span class="hljs-keyword">long</span> workerId)</span> </span>&#123;<br>        <span class="hljs-keyword">if</span> (workerId &gt; <span class="hljs-number">31</span> || workerId &lt; <span class="hljs-number">0</span>) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;workId必须在0-31之间，当前=&quot;</span> + workerId);<br>        &#125;<br>        <span class="hljs-keyword">if</span> (datacenterId &gt; <span class="hljs-number">31</span> || datacenterId &lt; <span class="hljs-number">0</span>) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;datacenterId必须在0-31之间，当前=&quot;</span> + datacenterId);<br>        &#125;<br><br>        <span class="hljs-keyword">this</span>.workerId = workerId;<br>        <span class="hljs-keyword">this</span>.datacenterId = datacenterId;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 加锁，线程安全</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span> long 类型的 ID</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">synchronized</span> <span class="hljs-keyword">long</span> <span class="hljs-title">nextId</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">long</span> timestamp = currentTime();<br><br>        <span class="hljs-comment">// 如果当前时间小于上一次 ID 生成的时间戳，说明系统时钟回退过这个时候应当抛出异常</span><br>        <span class="hljs-keyword">if</span> (timestamp &lt; lastTimestamp) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;时钟回退！时间差=&quot;</span> + (lastTimestamp - timestamp));<br>        &#125;<br><br>        <span class="hljs-comment">// 同一毫秒内，序列增加</span><br>        <span class="hljs-keyword">if</span> (lastTimestamp == timestamp) &#123;<br>            <span class="hljs-comment">//超出阈值。思考下为什么这么运算？</span><br>            sequence = (sequence + <span class="hljs-number">1</span>) &amp; SEQUENCE_MASK;<br>            <span class="hljs-comment">// 毫秒内序列溢出</span><br>            <span class="hljs-keyword">if</span> (sequence == <span class="hljs-number">0</span>) &#123;<br>                <span class="hljs-comment">//自旋等待下一毫秒</span><br>                <span class="hljs-keyword">while</span> ((timestamp = currentTime()) &lt;= lastTimestamp) ;<br>            &#125;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-comment">//已经进入下一毫秒，从0开始计数</span><br>            sequence = <span class="hljs-number">0L</span>;<br>        &#125;<br><br>        <span class="hljs-comment">//赋值为新的时间戳</span><br>        lastTimestamp = timestamp;<br><br>        <span class="hljs-comment">//移位拼接</span><br>        <span class="hljs-keyword">long</span> id = ((timestamp - startTimeStamp) &lt;&lt; <span class="hljs-number">22</span>)<br>                | (datacenterId &lt;&lt; <span class="hljs-number">17</span>)<br>                | (workerId &lt;&lt; <span class="hljs-number">12</span>)<br>                | sequence;<br><br>        System.out.println(<span class="hljs-string">&quot;new id = &quot;</span> + id);<br>        System.out.println(<span class="hljs-string">&quot;bit id = &quot;</span> + toBit(id));<br><br>        <span class="hljs-keyword">return</span> id;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 返回当前时间，以毫秒为单位</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">long</span> <span class="hljs-title">currentTime</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> System.currentTimeMillis();<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 转成二进制展示</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title">toBit</span><span class="hljs-params">(<span class="hljs-keyword">long</span> id)</span> </span>&#123;<br>        String bit = StringUtils.leftPad(Long.toBinaryString(id), <span class="hljs-number">64</span>, <span class="hljs-string">&quot;0&quot;</span>);<br>        <span class="hljs-keyword">return</span> bit.substring(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>) +<br>                <span class="hljs-string">&quot; - &quot;</span> +<br>                bit.substring(<span class="hljs-number">1</span>, <span class="hljs-number">42</span>) +<br>                <span class="hljs-string">&quot; - &quot;</span> +<br>                bit.substring(<span class="hljs-number">42</span>, <span class="hljs-number">52</span>) +<br>                <span class="hljs-string">&quot; - &quot;</span> +<br>                bit.substring(<span class="hljs-number">52</span>, <span class="hljs-number">64</span>);<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        Snowflake idWorker = <span class="hljs-keyword">new</span> Snowflake(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>);<br>        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">10</span>; i++) &#123;<br>            <span class="hljs-keyword">long</span> id = idWorker.nextId();<br>            System.out.println(id);<br>            System.out.println(toBit(id));<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>启动参数中指定机器编号</p>
-<pre><code class="hljs properties"><span class="hljs-meta">snowflake.datacenterId</span>=<span class="hljs-string">1</span>
-<span class="hljs-meta">snowflake.workerId</span>=<span class="hljs-string">1</span></code></pre>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs properties"><span class="hljs-meta">snowflake.datacenterId</span>=<span class="hljs-string">1</span><br><span class="hljs-meta">snowflake.workerId</span>=<span class="hljs-string">1</span><br></code></pre></td></tr></table></figure>
 
 <p>使用</p>
-<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/myflake&quot;)</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">myflake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
-    Strorder order = <span class="hljs-keyword">new</span> Strorder();
-    order.setId(String.valueOf(snowflake.nextId()));
-    order.setUserid(userid);
-    strorderMapper.save(order);
-    <span class="hljs-keyword">return</span> order;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/myflake&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">myflake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;<br>    Strorder order = <span class="hljs-keyword">new</span> Strorder();<br>    order.setId(String.valueOf(snowflake.nextId()));<br>    order.setUserid(userid);<br>    strorderMapper.save(order);<br>    <span class="hljs-keyword">return</span> order;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="sharding实现"><a href="#sharding实现" class="headerlink" title="sharding实现"></a>sharding实现</h4><p>配置</p>
-<pre><code class="hljs properties"><span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.column</span>=<span class="hljs-string">id</span>
-<span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.type</span>=<span class="hljs-string">SNOWFLAKE</span>
-<span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.props.worker.id</span>=<span class="hljs-string">3</span></code></pre>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs properties"><span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.column</span>=<span class="hljs-string">id</span><br><span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.type</span>=<span class="hljs-string">SNOWFLAKE</span><br><span class="hljs-meta">spring.shardingsphere.sharding.tables.strorder.key-generator.props.worker.id</span>=<span class="hljs-string">3</span><br></code></pre></td></tr></table></figure>
 
 <p>mapper</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span>
-<span class="hljs-meta">        &quot;insert into strorder (userid)&quot;,</span>
-<span class="hljs-meta">        &quot;values (#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span>
-<span class="hljs-meta">&#125;)</span>
-<span class="hljs-meta">@SelectKey(statement=&quot;SELECT max(id) from strorder where userid=#&#123;userid,jdbcType=INTEGER&#125;&quot;, keyProperty=&quot;id&quot;, before=false, resultType=String.class)</span>
-<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">shardingIdSave</span><span class="hljs-params">(Strorder record)</span></span>;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Insert(&#123;</span><br><span class="hljs-meta">        &quot;insert into strorder (userid)&quot;,</span><br><span class="hljs-meta">        &quot;values (#&#123;userid,jdbcType=INTEGER&#125;)&quot;</span><br><span class="hljs-meta">&#125;)</span><br><span class="hljs-meta">@SelectKey(statement=&quot;SELECT max(id) from strorder where userid=#&#123;userid,jdbcType=INTEGER&#125;&quot;, keyProperty=&quot;id&quot;, before=false, resultType=String.class)</span><br><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">shardingIdSave</span><span class="hljs-params">(Strorder record)</span></span>;<br></code></pre></td></tr></table></figure>
 
 <p>使用</p>
-<pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/shardingFlake&quot;)</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">shardingFlake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;
-    Strorder order = <span class="hljs-keyword">new</span> Strorder();
-    order.setUserid(userid);
-    strorderMapper.shardingIdSave(order);
-    System.out.println(Snowflake.toBit(Long.valueOf(order.getId())));
-    <span class="hljs-keyword">return</span> order;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@GetMapping(&quot;/shardingFlake&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Strorder <span class="hljs-title">shardingFlake</span><span class="hljs-params">(<span class="hljs-keyword">int</span> userid)</span></span>&#123;<br>    Strorder order = <span class="hljs-keyword">new</span> Strorder();<br>    order.setUserid(userid);<br>    strorderMapper.shardingIdSave(order);<br>    System.out.println(Snowflake.toBit(Long.valueOf(order.getId())));<br>    <span class="hljs-keyword">return</span> order;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>生成的id号由sharding-jdbc自动添加到maper的sql中</p>
 
@@ -953,8 +748,14 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -1045,17 +846,15 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -1064,7 +863,6 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -1072,7 +870,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -1099,6 +897,7 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -1116,11 +915,12 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -1140,7 +940,6 @@ String sql = <span class="hljs-string">&quot;select * from order_&quot;</span>+y
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

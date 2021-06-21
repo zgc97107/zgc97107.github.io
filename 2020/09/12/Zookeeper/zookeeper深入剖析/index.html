@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Zookeeper深入剖析 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -194,7 +195,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      46
+      45
        分钟
     </span>
   
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -235,7 +236,7 @@
 <li><strong>可靠性</strong> ：一旦服务端成功应用了一个事务，则其引起的改变会一直保留，直到被另外一个事务所更改；</li>
 <li><strong>实时性</strong> ：一旦一个事务被成功应用后，Zookeeper可以保证客户端立即可以读取到这个事务变更后的最新状态的数据。</li>
 </ul>
-<img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>ZK集群主要分为三种角色：</p>
 <ul>
@@ -246,7 +247,7 @@
 <li><p>Observer（观察者）：无投票权，不参加选举， 也不响应提议，只同步状态，目的是为了扩展系统的性能。Observer不需要将事务持久化到磁盘，如果重启需要从 leader 重新同步整个名字空间。 </p>
 </li>
 </ul>
-<h3 id="ZK数据结构模型"><a href="#ZK数据结构模型" class="headerlink" title="ZK数据结构模型"></a>ZK数据结构模型</h3><img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" class>
+<h3 id="ZK数据结构模型"><a href="#ZK数据结构模型" class="headerlink" title="ZK数据结构模型"></a>ZK数据结构模型</h3><img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>ZK通过树形结构来存储数据，由一系列ZNode数据节点组成，与文件系统类似，但ZNode节点的存储容量不超过1M，而且为了实现高吞吐，ZK数据将全部存储在内存中。</p>
 <h4 id="ZNode节点类型"><a href="#ZNode节点类型" class="headerlink" title="ZNode节点类型"></a>ZNode节点类型</h4><ul>
@@ -259,19 +260,7 @@
 <li><p>临时顺序节点（EPHEMERAL_SEQUENTIAL）：基本特性与临时节点一致，创建节点的过程中，zookeeper 会在其名字后自动追加一个单调增长的数字后缀，作为新的节点名。 执行命令： <code>create -e -s /apps/app1 &quot;order&quot;</code> 。 </p>
 </li>
 </ul>
-<h4 id="ZNode节点属性"><a href="#ZNode节点属性" class="headerlink" title="ZNode节点属性"></a>ZNode节点属性</h4><pre><code class="hljs makefile"><span class="hljs-section">[zk: localhost:2181(CONNECTED) 29] get -s /test_node</span>
-null
-cZxid = 0x22b
-ctime = Wed Nov 04 11:09:30 UTC 2020
-mZxid = 0x22b
-mtime = Wed Nov 04 11:09:30 UTC 2020
-pZxid = 0x22b
-cversion = 0
-dataVersion = 0
-aclVersion = 0
-ephemeralOwner = 0x0
-dataLength = 0
-numChildren = 0</code></pre>
+<h4 id="ZNode节点属性"><a href="#ZNode节点属性" class="headerlink" title="ZNode节点属性"></a>ZNode节点属性</h4><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs makefile"><span class="hljs-section">[zk: localhost:2181(CONNECTED) 29] get -s /test_node</span><br>null<br>cZxid = 0x22b<br>ctime = Wed Nov 04 11:09:30 UTC 2020<br>mZxid = 0x22b<br>mtime = Wed Nov 04 11:09:30 UTC 2020<br>pZxid = 0x22b<br>cversion = 0<br>dataVersion = 0<br>aclVersion = 0<br>ephemeralOwner = 0x0<br>dataLength = 0<br>numChildren = 0<br></code></pre></td></tr></table></figure>
 
 <table>
 <thead>
@@ -325,7 +314,7 @@ numChildren = 0</code></pre>
 <td>该节点拥有子节点的数量<strong>（只统计直接子节点的数量）</strong></td>
 </tr>
 </tbody></table>
-<h3 id="ZK数据存储方式"><a href="#ZK数据存储方式" class="headerlink" title="ZK数据存储方式"></a>ZK数据存储方式</h3><h4 id="内存数据"><a href="#内存数据" class="headerlink" title="内存数据"></a>内存数据</h4><img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" class>
+<h3 id="ZK数据存储方式"><a href="#ZK数据存储方式" class="headerlink" title="ZK数据存储方式"></a>ZK数据存储方式</h3><h4 id="内存数据"><a href="#内存数据" class="headerlink" title="内存数据"></a>内存数据</h4><img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>内存数据结构分为三类</p>
 <ul>
@@ -334,102 +323,20 @@ numChildren = 0</code></pre>
 <li>ZKDatabase：ZK的内存数据库</li>
 </ul>
 <h4 id="事务日志"><a href="#事务日志" class="headerlink" title="事务日志"></a>事务日志</h4><p>处理流程</p>
-<img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>查看日志命令（执行该命令时，需要进入zk的lib目录中）：</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">java</span> -classpath .:slf<span class="hljs-number">4</span>j-api-<span class="hljs-number">1</span>.<span class="hljs-number">7</span>.<span class="hljs-number">25</span>.jar:zookeeper-<span class="hljs-number">3</span>.<span class="hljs-number">6</span>.<span class="hljs-number">2</span>.jar:zookeeper-jute-<span class="hljs-number">3</span>.<span class="hljs-number">6</span>.<span class="hljs-number">2</span>.jar org.apache.zookeeper.server.LogFormatter /datalog/version-<span class="hljs-number">2</span>/log.<span class="hljs-number">1</span></code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">java</span> -classpath .:slf<span class="hljs-number">4</span>j-api-<span class="hljs-number">1</span>.<span class="hljs-number">7</span>.<span class="hljs-number">25</span>.jar:zookeeper-<span class="hljs-number">3</span>.<span class="hljs-number">6</span>.<span class="hljs-number">2</span>.jar:zookeeper-jute-<span class="hljs-number">3</span>.<span class="hljs-number">6</span>.<span class="hljs-number">2</span>.jar org.apache.zookeeper.server.LogFormatter /datalog/version-<span class="hljs-number">2</span>/log.<span class="hljs-number">1</span><br></code></pre></td></tr></table></figure>
 
 <p>产生日志内容：</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">09</span>:<span class="hljs-number">30</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20086</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">16</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>b create &#x27;/test_node,,v&#123;s&#123;<span class="hljs-number">31</span>,s&#123;&#x27;world,&#x27;anyone&#125;&#125;&#125;,F,<span class="hljs-number">47</span>
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4422671230</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">17</span>:<span class="hljs-number">36</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20086</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">19</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>c closeSession v&#123;&#x27;/test&#125;
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">22</span>:<span class="hljs-number">30</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20087</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>d createSession <span class="hljs-number">30000</span>
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">22</span>:<span class="hljs-number">30</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20087</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">1</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>e error -<span class="hljs-number">110</span>
- <span class="hljs-attribute">null</span>
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">23</span>:<span class="hljs-number">01</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20087</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>f closeSession v&#123;&#125;
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">23</span>:<span class="hljs-number">12</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20088</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">230</span> createSession <span class="hljs-number">30000</span>
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">00</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">231</span> createSession <span class="hljs-number">30000</span>
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">00</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">1</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">232</span> delete &#x27;/test_node
- <span class="hljs-attribute">2</span>,<span class="hljs-number">3010015558</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">00</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">2</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">233</span> create &#x27;/test_node,#ffffffacffffffed<span class="hljs-number">05740464617461</span>,v&#123;s&#123;<span class="hljs-number">31</span>,s&#123;&#x27;world,&#x27;anyone&#125;&#125;&#125;,F,<span class="hljs-number">48</span>
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4429271689</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">31</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">234</span> closeSession v&#123;&#125;
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4429271689</span>
-
-<span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">56</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20088</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">3</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">235</span> closeSession v&#123;&#125;
- <span class="hljs-attribute">2</span>,<span class="hljs-number">4429271689</span></code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">09</span>:<span class="hljs-number">30</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20086</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">16</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>b create &#x27;/test_node,,v&#123;s&#123;<span class="hljs-number">31</span>,s&#123;&#x27;world,&#x27;anyone&#125;&#125;&#125;,F,<span class="hljs-number">47</span><br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4422671230</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">17</span>:<span class="hljs-number">36</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20086</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">19</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>c closeSession v&#123;&#x27;/test&#125;<br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">22</span>:<span class="hljs-number">30</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20087</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>d createSession <span class="hljs-number">30000</span><br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">22</span>:<span class="hljs-number">30</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20087</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">1</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>e error -<span class="hljs-number">110</span><br> <span class="hljs-attribute">null</span><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">23</span>:<span class="hljs-number">01</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20087</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">22</span>f closeSession v&#123;&#125;<br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">23</span>:<span class="hljs-number">12</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20088</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">230</span> createSession <span class="hljs-number">30000</span><br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">00</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">231</span> createSession <span class="hljs-number">30000</span><br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4682781841</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">00</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">1</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">232</span> delete &#x27;/test_node<br> <span class="hljs-attribute">2</span>,<span class="hljs-number">3010015558</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">00</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">2</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">233</span> create &#x27;/test_node,#ffffffacffffffed<span class="hljs-number">05740464617461</span>,v&#123;s&#123;<span class="hljs-number">31</span>,s&#123;&#x27;world,&#x27;anyone&#125;&#125;&#125;,F,<span class="hljs-number">48</span><br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4429271689</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">31</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20089</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">0</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">234</span> closeSession v&#123;&#125;<br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4429271689</span><br><br><span class="hljs-attribute">11</span>/<span class="hljs-number">4</span>/<span class="hljs-number">20</span>, <span class="hljs-number">11</span>:<span class="hljs-number">24</span>:<span class="hljs-number">56</span> AM UTC session <span class="hljs-number">0</span>x<span class="hljs-number">10018</span>a<span class="hljs-number">070</span>b<span class="hljs-number">20088</span> cxid <span class="hljs-number">0</span>x<span class="hljs-number">3</span> zxid <span class="hljs-number">0</span>x<span class="hljs-number">235</span> closeSession v&#123;&#125;<br> <span class="hljs-attribute">2</span>,<span class="hljs-number">4429271689</span><br></code></pre></td></tr></table></figure>
 
 <h4 id="数据快照（snapshot）"><a href="#数据快照（snapshot）" class="headerlink" title="数据快照（snapshot）"></a>数据快照（<strong>snapshot</strong>）</h4><p>数据快照用来记录Zookeeper服务器上某一时刻的全量内存数据内容，并将其写入指定的磁盘文件中。</p>
 <p>快照查看可以使用zk中的zkSnapShotToolkit.sh工具</p>
-<pre><code class="hljs awk">.<span class="hljs-regexp">/zkSnapShotToolkit.sh /</span>data<span class="hljs-regexp">/version-2/</span>snapshot.<span class="hljs-number">0</span></code></pre>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">.<span class="hljs-regexp">/zkSnapShotToolkit.sh /</span>data<span class="hljs-regexp">/version-2/</span>snapshot.<span class="hljs-number">0</span> <br></code></pre></td></tr></table></figure>
 
 <p>内容</p>
-<pre><code class="hljs asciidoc">ZNode Details (count=5):
-----
-/
-<span class="hljs-code">  cZxid = 0x00000000000000</span>
-<span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  mZxid = 0x00000000000000</span>
-<span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  pZxid = 0x00000000000000</span>
-<span class="hljs-code">  cversion = 0</span>
-<span class="hljs-code">  dataVersion = 0</span>
-<span class="hljs-code">  aclVersion = 0</span>
-<span class="hljs-code">  ephemeralOwner = 0x00000000000000</span>
-<span class="hljs-code">  dataLength = 0</span>
-----
-/zookeeper
-<span class="hljs-code">  cZxid = 0x00000000000000</span>
-<span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  mZxid = 0x00000000000000</span>
-<span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  pZxid = 0x00000000000000</span>
-<span class="hljs-code">  cversion = 0</span>
-<span class="hljs-code">  dataVersion = 0</span>
-<span class="hljs-code">  aclVersion = 0</span>
-<span class="hljs-code">  ephemeralOwner = 0x00000000000000</span>
-<span class="hljs-code">  dataLength = 0</span>
-----
-/zookeeper/config
-<span class="hljs-code">  cZxid = 0x00000000000000</span>
-<span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  mZxid = 0x00000000000000</span>
-<span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  pZxid = 0x00000000000000</span>
-<span class="hljs-code">  cversion = 0</span>
-<span class="hljs-code">  dataVersion = 0</span>
-<span class="hljs-code">  aclVersion = -1</span>
-<span class="hljs-code">  ephemeralOwner = 0x00000000000000</span>
-<span class="hljs-code">  dataLength = 0</span>
-----
-/zookeeper/quota
-<span class="hljs-code">  cZxid = 0x00000000000000</span>
-<span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  mZxid = 0x00000000000000</span>
-<span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span>
-<span class="hljs-code">  pZxid = 0x00000000000000</span>
-<span class="hljs-code">  cversion = 0</span>
-<span class="hljs-code">  dataVersion = 0</span>
-<span class="hljs-code">  aclVersion = 0</span>
-<span class="hljs-code">  ephemeralOwner = 0x00000000000000</span>
-<span class="hljs-code">  dataLength = 0</span>
-----
-Session Details (sid, timeout, ephemeralCount):
-----
-Last zxid: 0x0</code></pre>
+<figure class="highlight asciidoc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><code class="hljs asciidoc">ZNode Details (count=5):<br>----<br>/<br><span class="hljs-code">  cZxid = 0x00000000000000</span><br><span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  mZxid = 0x00000000000000</span><br><span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  pZxid = 0x00000000000000</span><br><span class="hljs-code">  cversion = 0</span><br><span class="hljs-code">  dataVersion = 0</span><br><span class="hljs-code">  aclVersion = 0</span><br><span class="hljs-code">  ephemeralOwner = 0x00000000000000</span><br><span class="hljs-code">  dataLength = 0</span><br>----<br>/zookeeper<br><span class="hljs-code">  cZxid = 0x00000000000000</span><br><span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  mZxid = 0x00000000000000</span><br><span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  pZxid = 0x00000000000000</span><br><span class="hljs-code">  cversion = 0</span><br><span class="hljs-code">  dataVersion = 0</span><br><span class="hljs-code">  aclVersion = 0</span><br><span class="hljs-code">  ephemeralOwner = 0x00000000000000</span><br><span class="hljs-code">  dataLength = 0</span><br>----<br>/zookeeper/config<br><span class="hljs-code">  cZxid = 0x00000000000000</span><br><span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  mZxid = 0x00000000000000</span><br><span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  pZxid = 0x00000000000000</span><br><span class="hljs-code">  cversion = 0</span><br><span class="hljs-code">  dataVersion = 0</span><br><span class="hljs-code">  aclVersion = -1</span><br><span class="hljs-code">  ephemeralOwner = 0x00000000000000</span><br><span class="hljs-code">  dataLength = 0</span><br>----<br>/zookeeper/quota<br><span class="hljs-code">  cZxid = 0x00000000000000</span><br><span class="hljs-code">  ctime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  mZxid = 0x00000000000000</span><br><span class="hljs-code">  mtime = Thu Jan 01 00:00:00 UTC 1970</span><br><span class="hljs-code">  pZxid = 0x00000000000000</span><br><span class="hljs-code">  cversion = 0</span><br><span class="hljs-code">  dataVersion = 0</span><br><span class="hljs-code">  aclVersion = 0</span><br><span class="hljs-code">  ephemeralOwner = 0x00000000000000</span><br><span class="hljs-code">  dataLength = 0</span><br>----<br>Session Details (sid, timeout, ephemeralCount):<br>----<br>Last zxid: 0x0<br></code></pre></td></tr></table></figure>
 
 <p>快照处理步骤如下： </p>
 <ol>
@@ -500,16 +407,16 @@ Last zxid: 0x0</code></pre>
 <li><p>在所有Proposers中选主，选举一个Leader，由Leader唯一提交Proposal给Acceptors进行表决。这样没有Proposer竞争，解决了活锁问题。在系统中仅有一个Leader进行Value提交的情况下， Prepare阶段就可以跳过，从而将两阶段变为一阶段，提高效率。 </p>
 </li>
 </ol>
-<img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>在Basic Paxos协议中，每一次执行过程都需要经历Prepare-&gt;Promise-&gt;Accept-&gt;Accepted 这四个步骤，这样就会导致消息太多，影响性能。 </p>
 <p>在Multi Paxos的实际过程中：如果Leader足够稳定的话，Phase 1 里面的Prepare-&gt;Promise 完全可以省略掉，从而使用同一个Leader去发送Accept消息。 </p>
 <p>实质上，Multi Paxos模式下首先对所有Proposers进行Leader选举，再利用Basic Paxos来实现。 </p>
 <p>选出Leader后，只由Leader来提交Proposal，如果Leader出现宕机，则重新选举Leader，在系统中仅有一个Leader可以提交Proposal。 Multi Paxos通过改变Prepare阶段的作用范围，从而使得Leader的连续提交只需要执行一次Prepare阶段，后续只需要执行Accept阶段，将两阶段变为一阶段，提高了效率。 </p>
 <h5 id="Fast-Paxos"><a href="#Fast-Paxos" class="headerlink" title="Fast Paxos"></a>Fast Paxos</h5><p>上述Paxos协议中，消息最后到达Learner一般都要经历 Client–&gt;Proposer–&gt;Acceptor–&gt;Learner 多个步骤，实质上由Learner是真正执行任务，为了更快的让消息到达Learner，如果Proposer本身没有数据需要被确认的话，那么可以跳过Proposer这一步，直接将请求发送给Accepter，由leader先进行检查， 这样的操作叫做Fast Paxos。</p>
-<img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<img src="/blog/2020/09/12/RPC%E5%8E%9F%E7%90%86/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/09/12/Zookeeper/zookeeper%E6%B7%B1%E5%85%A5%E5%89%96%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <ol>
 <li><p>Leader检测到冲突之后，根据规定的算法从冲突中选择一个数据，重新发送Accept请求； </p>
@@ -527,7 +434,7 @@ Last zxid: 0x0</code></pre>
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/blog/categories/RPC%E5%8E%9F%E7%90%86/">RPC原理</a>
+                      <a class="hover-with-bg" href="/blog/categories/Zookeeper/">Zookeeper</a>
                     
                   </div>
                 
@@ -541,8 +448,14 @@ Last zxid: 0x0</code></pre>
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -633,17 +546,15 @@ Last zxid: 0x0</code></pre>
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -652,7 +563,6 @@ Last zxid: 0x0</code></pre>
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -660,7 +570,7 @@ Last zxid: 0x0</code></pre>
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -687,6 +597,7 @@ Last zxid: 0x0</code></pre>
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -704,11 +615,12 @@ Last zxid: 0x0</code></pre>
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -728,7 +640,6 @@ Last zxid: 0x0</code></pre>
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Spring的AOP源码解析 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -231,742 +232,69 @@
 <h3 id="AbstractAutoProxyCreator类的来源"><a href="#AbstractAutoProxyCreator类的来源" class="headerlink" title="AbstractAutoProxyCreator类的来源"></a>AbstractAutoProxyCreator类的来源</h3><p>在进行aop标签解析时会创建org.springframework.aop.config.AopNamespaceHandler类，该类注册的aspectj-autoproxy解析类AspectJAutoProxyBeanDefinitionParser会注册AnnotationAwareAspectJAutoProxyCreator类，该类就是AbstractAutoProxyCreator的子类。</p>
 <p>@EnableAspectJAutoProxy注解会引入AspectJAutoProxyRegistrar类，该类中有一个registerBeanDefinitions方法，该方法用于注册一个AnnotationAwareAspectJAutoProxyCreator类并进行proxyTargetClass、exposeProxy属性的设置。AUTO_PROXY_CREATOR_BEAN_NAME属性为BeanDefinition的名称。</p>
 <p>AspectJAutoProxyRegistrar构造函数</p>
-<pre><code class="hljs java"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AspectJAutoProxyRegistrar</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ImportBeanDefinitionRegistrar</span> </span>&#123;
-
-	<span class="hljs-comment">/**</span>
-<span class="hljs-comment">	 * Register, escalate, and configure the AspectJ auto proxy creator based on the value</span>
-<span class="hljs-comment">	 * of the @&#123;<span class="hljs-doctag">@link</span> EnableAspectJAutoProxy#proxyTargetClass()&#125; attribute on the importing</span>
-<span class="hljs-comment">	 * &#123;<span class="hljs-doctag">@code</span> <span class="hljs-doctag">@Configuration</span>&#125; class.</span>
-<span class="hljs-comment">	 */</span>
-	<span class="hljs-meta">@Override</span>
-	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerBeanDefinitions</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">			AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry)</span> </span>&#123;
-
-		<span class="hljs-comment">//注册注解AOP入口类</span>
-		AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);
-
-		<span class="hljs-comment">/*</span>
-<span class="hljs-comment">		* * true</span>
-<span class="hljs-comment">		 * 1、目标对象实现了接口 – 使用CGLIB代理机制</span>
-<span class="hljs-comment">		 * 2、目标对象没有接口(只有实现类) – 使用CGLIB代理机制</span>
-<span class="hljs-comment">		 *</span>
-<span class="hljs-comment">		 * false</span>
-<span class="hljs-comment">		 * 1、目标对象实现了接口 – 使用JDK动态代理机制(代理所有实现了的接口)</span>
-<span class="hljs-comment">		 * 2、目标对象没有接口(只有实现类) – 使用CGLIB代理机制</span>
-<span class="hljs-comment">		* */</span>
-		AnnotationAttributes enableAspectJAutoProxy =
-				AnnotationConfigUtils.attributesFor(importingClassMetadata, EnableAspectJAutoProxy.class);
-		<span class="hljs-keyword">if</span> (enableAspectJAutoProxy != <span class="hljs-keyword">null</span>) &#123;
-			<span class="hljs-keyword">if</span> (enableAspectJAutoProxy.getBoolean(<span class="hljs-string">&quot;proxyTargetClass&quot;</span>)) &#123;
-				AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
-			&#125;
-
-			<span class="hljs-comment">//是否需要把代理对象暴露出来，简单来说是否需要把代理对象用ThreadLocal存起来，如果是true就是需要</span>
-			<span class="hljs-keyword">if</span> (enableAspectJAutoProxy.getBoolean(<span class="hljs-string">&quot;exposeProxy&quot;</span>)) &#123;
-				AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);
-			&#125;
-		&#125;
-	&#125;
-
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AspectJAutoProxyRegistrar</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ImportBeanDefinitionRegistrar</span> </span>&#123;<br><br>	<span class="hljs-comment">/**</span><br><span class="hljs-comment">	 * Register, escalate, and configure the AspectJ auto proxy creator based on the value</span><br><span class="hljs-comment">	 * of the @&#123;<span class="hljs-doctag">@link</span> EnableAspectJAutoProxy#proxyTargetClass()&#125; attribute on the importing</span><br><span class="hljs-comment">	 * &#123;<span class="hljs-doctag">@code</span> <span class="hljs-doctag">@Configuration</span>&#125; class.</span><br><span class="hljs-comment">	 */</span><br>	<span class="hljs-meta">@Override</span><br>	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerBeanDefinitions</span><span class="hljs-params">(</span></span><br><span class="hljs-function"><span class="hljs-params">			AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry)</span> </span>&#123;<br><br>		<span class="hljs-comment">//注册注解AOP入口类</span><br>		AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry);<br><br>		<span class="hljs-comment">/*</span><br><span class="hljs-comment">		* * true</span><br><span class="hljs-comment">		 * 1、目标对象实现了接口 – 使用CGLIB代理机制</span><br><span class="hljs-comment">		 * 2、目标对象没有接口(只有实现类) – 使用CGLIB代理机制</span><br><span class="hljs-comment">		 *</span><br><span class="hljs-comment">		 * false</span><br><span class="hljs-comment">		 * 1、目标对象实现了接口 – 使用JDK动态代理机制(代理所有实现了的接口)</span><br><span class="hljs-comment">		 * 2、目标对象没有接口(只有实现类) – 使用CGLIB代理机制</span><br><span class="hljs-comment">		* */</span><br>		AnnotationAttributes enableAspectJAutoProxy =<br>				AnnotationConfigUtils.attributesFor(importingClassMetadata, EnableAspectJAutoProxy.class);<br>		<span class="hljs-keyword">if</span> (enableAspectJAutoProxy != <span class="hljs-keyword">null</span>) &#123;<br>			<span class="hljs-keyword">if</span> (enableAspectJAutoProxy.getBoolean(<span class="hljs-string">&quot;proxyTargetClass&quot;</span>)) &#123;<br>				AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);<br>			&#125;<br><br>			<span class="hljs-comment">//是否需要把代理对象暴露出来，简单来说是否需要把代理对象用ThreadLocal存起来，如果是true就是需要</span><br>			<span class="hljs-keyword">if</span> (enableAspectJAutoProxy.getBoolean(<span class="hljs-string">&quot;exposeProxy&quot;</span>)) &#123;<br>				AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);<br>			&#125;<br>		&#125;<br>	&#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="AOP的过程解析"><a href="#AOP的过程解析" class="headerlink" title="AOP的过程解析"></a>AOP的过程解析</h2><p>wrapIfNecessary()方法</p>
 <p>该方法会调用getAdvicesAndAdvisorsForBean()方法判断类是否需要代理，如果需要会返回一个不为空的切面数组，然后将切面数组传递给createProxy()方法创建一个代理，在创建之前会将被代理对象封装为SingletonTargetSource对象。为bean创建一个代理类，最终放入一级缓存的是代理类。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">wrapIfNecessary</span><span class="hljs-params">(Object bean, String beanName, Object cacheKey)</span> </span>&#123;
-	<span class="hljs-keyword">if</span> (StringUtils.hasLength(beanName) &amp;&amp; <span class="hljs-keyword">this</span>.targetSourcedBeans.contains(beanName)) &#123;
-		<span class="hljs-keyword">return</span> bean;
-	&#125;
-	<span class="hljs-keyword">if</span> (Boolean.FALSE.equals(<span class="hljs-keyword">this</span>.advisedBeans.get(cacheKey))) &#123;
-		<span class="hljs-keyword">return</span> bean;
-	&#125;
-	<span class="hljs-keyword">if</span> (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) &#123;
-		<span class="hljs-keyword">this</span>.advisedBeans.put(cacheKey, Boolean.FALSE);
-		<span class="hljs-keyword">return</span> bean;
-	&#125;
-
-	<span class="hljs-comment">//创建当前bean的代理，如果这个bean有advice的话，重点看，重要程度5</span>
-	<span class="hljs-comment">// Create proxy if we have advice.</span>
-	Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, <span class="hljs-keyword">null</span>);
-	<span class="hljs-comment">//如果有切面，则生成该bean的代理</span>
-	<span class="hljs-keyword">if</span> (specificInterceptors != DO_NOT_PROXY) &#123;
-		<span class="hljs-keyword">this</span>.advisedBeans.put(cacheKey, Boolean.TRUE);
-		<span class="hljs-comment">//把被代理对象bean实例封装到SingletonTargetSource对象中</span>
-		Object proxy = createProxy(
-				bean.getClass(), beanName, specificInterceptors, <span class="hljs-keyword">new</span> SingletonTargetSource(bean));
-		<span class="hljs-keyword">this</span>.proxyTypes.put(cacheKey, proxy.getClass());
-		<span class="hljs-keyword">return</span> proxy;
-	&#125;
-
-	<span class="hljs-keyword">this</span>.advisedBeans.put(cacheKey, Boolean.FALSE);
-	<span class="hljs-keyword">return</span> bean;
-</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">wrapIfNecessary</span><span class="hljs-params">(Object bean, String beanName, Object cacheKey)</span> </span>&#123;<br>	<span class="hljs-keyword">if</span> (StringUtils.hasLength(beanName) &amp;&amp; <span class="hljs-keyword">this</span>.targetSourcedBeans.contains(beanName)) &#123;<br>		<span class="hljs-keyword">return</span> bean;<br>	&#125;<br>	<span class="hljs-keyword">if</span> (Boolean.FALSE.equals(<span class="hljs-keyword">this</span>.advisedBeans.get(cacheKey))) &#123;<br>		<span class="hljs-keyword">return</span> bean;<br>	&#125;<br>	<span class="hljs-keyword">if</span> (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) &#123;<br>		<span class="hljs-keyword">this</span>.advisedBeans.put(cacheKey, Boolean.FALSE);<br>		<span class="hljs-keyword">return</span> bean;<br>	&#125;<br><br>	<span class="hljs-comment">//创建当前bean的代理，如果这个bean有advice的话，重点看，重要程度5</span><br>	<span class="hljs-comment">// Create proxy if we have advice.</span><br>	Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, <span class="hljs-keyword">null</span>);<br>	<span class="hljs-comment">//如果有切面，则生成该bean的代理</span><br>	<span class="hljs-keyword">if</span> (specificInterceptors != DO_NOT_PROXY) &#123;<br>		<span class="hljs-keyword">this</span>.advisedBeans.put(cacheKey, Boolean.TRUE);<br>		<span class="hljs-comment">//把被代理对象bean实例封装到SingletonTargetSource对象中</span><br>		Object proxy = createProxy(<br>				bean.getClass(), beanName, specificInterceptors, <span class="hljs-keyword">new</span> SingletonTargetSource(bean));<br>		<span class="hljs-keyword">this</span>.proxyTypes.put(cacheKey, proxy.getClass());<br>		<span class="hljs-keyword">return</span> proxy;<br>	&#125;<br><br>	<span class="hljs-keyword">this</span>.advisedBeans.put(cacheKey, Boolean.FALSE);<br>	<span class="hljs-keyword">return</span> bean;<br><br></code></pre></td></tr></table></figure>
 
 <h3 id="getAdvicesAndAdvisorsForBean-方法"><a href="#getAdvicesAndAdvisorsForBean-方法" class="headerlink" title="getAdvicesAndAdvisorsForBean()方法"></a>getAdvicesAndAdvisorsForBean()方法</h3><p>findEligibleAdvisors()方法收集所有@Aspect注解的所有类，收集完之后循环进行匹配。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">protected</span> Object[] getAdvicesAndAdvisorsForBean(
-		Class&lt;?&gt; beanClass, String beanName, <span class="hljs-meta">@Nullable</span> TargetSource targetSource) &#123;
-	<span class="hljs-comment">//找到合格的切面，重点看</span>
-	List&lt;Advisor&gt; advisors = findEligibleAdvisors(beanClass, beanName);
-	<span class="hljs-keyword">if</span> (advisors.isEmpty()) &#123;
-		<span class="hljs-keyword">return</span> DO_NOT_PROXY;
-	&#125;
-	<span class="hljs-keyword">return</span> advisors.toArray();
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> Object[] getAdvicesAndAdvisorsForBean(<br>		Class&lt;?&gt; beanClass, String beanName, <span class="hljs-meta">@Nullable</span> TargetSource targetSource) &#123;<br>	<span class="hljs-comment">//找到合格的切面，重点看</span><br>	List&lt;Advisor&gt; advisors = findEligibleAdvisors(beanClass, beanName);<br>	<span class="hljs-keyword">if</span> (advisors.isEmpty()) &#123;<br>		<span class="hljs-keyword">return</span> DO_NOT_PROXY;<br>	&#125;<br>	<span class="hljs-keyword">return</span> advisors.toArray();<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>findEligibleAdvisors()方法</p>
 <p>该方法会调用findCandidateAdvisors()方法获取@Aspectj注解的所有类，然后调用findAdvisorsThatCanApply()方法匹配可以作用在类上的切面，然后拿到匹配的切面，再调用sortAdvisors()方法进行排序。findAdvisorsThatCanApply()方法其实就是根据PointCut对类名进行模糊匹配，这时还不对方法名进行匹配，因为这里只是判断类是否需要代理。这里不再对这个方法分析。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> List&lt;Advisor&gt; <span class="hljs-title">findEligibleAdvisors</span><span class="hljs-params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;
-	<span class="hljs-comment">//找到候选的切面,其实就是一个寻找有@Aspectj注解的过程，把工程中所有有这个注解的类封装成Advisor返回</span>
-	List&lt;Advisor&gt; candidateAdvisors = findCandidateAdvisors();
-
-	<span class="hljs-comment">//判断候选的切面是否作用在当前beanClass上面，就是一个匹配过程。。现在就是一个匹配</span>
-	List&lt;Advisor&gt; eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
-	extendAdvisors(eligibleAdvisors);
-	<span class="hljs-keyword">if</span> (!eligibleAdvisors.isEmpty()) &#123;
-		<span class="hljs-comment">//对有@Order@Priority进行排序</span>
-		eligibleAdvisors = sortAdvisors(eligibleAdvisors);
-	&#125;
-	<span class="hljs-keyword">return</span> eligibleAdvisors;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> List&lt;Advisor&gt; <span class="hljs-title">findEligibleAdvisors</span><span class="hljs-params">(Class&lt;?&gt; beanClass, String beanName)</span> </span>&#123;<br>	<span class="hljs-comment">//找到候选的切面,其实就是一个寻找有@Aspectj注解的过程，把工程中所有有这个注解的类封装成Advisor返回</span><br>	List&lt;Advisor&gt; candidateAdvisors = findCandidateAdvisors();<br><br>	<span class="hljs-comment">//判断候选的切面是否作用在当前beanClass上面，就是一个匹配过程。。现在就是一个匹配</span><br>	List&lt;Advisor&gt; eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);<br>	extendAdvisors(eligibleAdvisors);<br>	<span class="hljs-keyword">if</span> (!eligibleAdvisors.isEmpty()) &#123;<br>		<span class="hljs-comment">//对有@Order@Priority进行排序</span><br>		eligibleAdvisors = sortAdvisors(eligibleAdvisors);<br>	&#125;<br>	<span class="hljs-keyword">return</span> eligibleAdvisors;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>findCandidateAdvisors()方法</p>
 <p>buildAspectJAdvisors()方法是findCandidateAdvisors()方法的主要方法。该方法会获取当前spring容器中的所有BeanName后循环判断bean上是否有@Aspect注解，然后创建获取有@Aspect注解类的实例工厂，然后调用其getAdvisors()方法</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Advisor&gt; <span class="hljs-title">buildAspectJAdvisors</span><span class="hljs-params">()</span> </span>&#123;
-	List&lt;String&gt; aspectNames = <span class="hljs-keyword">this</span>.aspectBeanNames;
-
-	<span class="hljs-keyword">if</span> (aspectNames == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>) &#123;
-			aspectNames = <span class="hljs-keyword">this</span>.aspectBeanNames;
-			<span class="hljs-keyword">if</span> (aspectNames == <span class="hljs-keyword">null</span>) &#123;
-				List&lt;Advisor&gt; advisors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-				aspectNames = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-				<span class="hljs-comment">//获取spring容器中的所有bean的名称BeanName</span>
-				String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
-						<span class="hljs-keyword">this</span>.beanFactory, Object.class, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>);
-				<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;
-					<span class="hljs-keyword">if</span> (!isEligibleBean(beanName)) &#123;
-						<span class="hljs-keyword">continue</span>;
-					&#125;
-					<span class="hljs-comment">// We must be careful not to instantiate beans eagerly as in this case they</span>
-					<span class="hljs-comment">// would be cached by the Spring container but would not have been weaved.</span>
-					Class&lt;?&gt; beanType = <span class="hljs-keyword">this</span>.beanFactory.getType(beanName);
-					<span class="hljs-keyword">if</span> (beanType == <span class="hljs-keyword">null</span>) &#123;
-						<span class="hljs-keyword">continue</span>;
-					&#125;
-					<span class="hljs-comment">//判断类上是否有@Aspect注解</span>
-					<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.advisorFactory.isAspect(beanType)) &#123;
-						aspectNames.add(beanName);
-						AspectMetadata amd = <span class="hljs-keyword">new</span> AspectMetadata(beanType, beanName);
-						<span class="hljs-keyword">if</span> (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) &#123;
-
-							<span class="hljs-comment">//创建获取有@Aspect注解类的实例工厂，负责获取有@Aspect注解类的实例</span>
-							MetadataAwareAspectInstanceFactory factory =
-									<span class="hljs-keyword">new</span> BeanFactoryAspectInstanceFactory(<span class="hljs-keyword">this</span>.beanFactory, beanName);
-
-							<span class="hljs-comment">//创建切面advisor对象</span>
-							List&lt;Advisor&gt; classAdvisors = <span class="hljs-keyword">this</span>.advisorFactory.getAdvisors(factory);
-							<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory.isSingleton(beanName)) &#123;
-								<span class="hljs-keyword">this</span>.advisorsCache.put(beanName, classAdvisors);
-							&#125;
-							<span class="hljs-keyword">else</span> &#123;
-								<span class="hljs-keyword">this</span>.aspectFactoryCache.put(beanName, factory);
-							&#125;
-							advisors.addAll(classAdvisors);
-						&#125;
-						<span class="hljs-keyword">else</span> &#123;
-							<span class="hljs-comment">// Per target or per this.</span>
-							<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory.isSingleton(beanName)) &#123;
-								<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;Bean with name &#x27;&quot;</span> + beanName +
-										<span class="hljs-string">&quot;&#x27; is a singleton, but aspect instantiation model is not singleton&quot;</span>);
-							&#125;
-							MetadataAwareAspectInstanceFactory factory =
-									<span class="hljs-keyword">new</span> PrototypeAspectInstanceFactory(<span class="hljs-keyword">this</span>.beanFactory, beanName);
-							<span class="hljs-keyword">this</span>.aspectFactoryCache.put(beanName, factory);
-							advisors.addAll(<span class="hljs-keyword">this</span>.advisorFactory.getAdvisors(factory));
-						&#125;
-					&#125;
-				&#125;
-				<span class="hljs-keyword">this</span>.aspectBeanNames = aspectNames;
-				<span class="hljs-keyword">return</span> advisors;
-			&#125;
-		&#125;
-	&#125;
-
-	<span class="hljs-keyword">if</span> (aspectNames.isEmpty()) &#123;
-		<span class="hljs-keyword">return</span> Collections.emptyList();
-	&#125;
-	List&lt;Advisor&gt; advisors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-	<span class="hljs-keyword">for</span> (String aspectName : aspectNames) &#123;
-		List&lt;Advisor&gt; cachedAdvisors = <span class="hljs-keyword">this</span>.advisorsCache.get(aspectName);
-		<span class="hljs-keyword">if</span> (cachedAdvisors != <span class="hljs-keyword">null</span>) &#123;
-			advisors.addAll(cachedAdvisors);
-		&#125;
-		<span class="hljs-keyword">else</span> &#123;
-			MetadataAwareAspectInstanceFactory factory = <span class="hljs-keyword">this</span>.aspectFactoryCache.get(aspectName);
-			advisors.addAll(<span class="hljs-keyword">this</span>.advisorFactory.getAdvisors(factory));
-		&#125;
-	&#125;
-	<span class="hljs-keyword">return</span> advisors;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Advisor&gt; <span class="hljs-title">buildAspectJAdvisors</span><span class="hljs-params">()</span> </span>&#123;<br>	List&lt;String&gt; aspectNames = <span class="hljs-keyword">this</span>.aspectBeanNames;<br><br>	<span class="hljs-keyword">if</span> (aspectNames == <span class="hljs-keyword">null</span>) &#123;<br>		<span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>) &#123;<br>			aspectNames = <span class="hljs-keyword">this</span>.aspectBeanNames;<br>			<span class="hljs-keyword">if</span> (aspectNames == <span class="hljs-keyword">null</span>) &#123;<br>				List&lt;Advisor&gt; advisors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>				aspectNames = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>				<span class="hljs-comment">//获取spring容器中的所有bean的名称BeanName</span><br>				String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(<br>						<span class="hljs-keyword">this</span>.beanFactory, Object.class, <span class="hljs-keyword">true</span>, <span class="hljs-keyword">false</span>);<br>				<span class="hljs-keyword">for</span> (String beanName : beanNames) &#123;<br>					<span class="hljs-keyword">if</span> (!isEligibleBean(beanName)) &#123;<br>						<span class="hljs-keyword">continue</span>;<br>					&#125;<br>					<span class="hljs-comment">// We must be careful not to instantiate beans eagerly as in this case they</span><br>					<span class="hljs-comment">// would be cached by the Spring container but would not have been weaved.</span><br>					Class&lt;?&gt; beanType = <span class="hljs-keyword">this</span>.beanFactory.getType(beanName);<br>					<span class="hljs-keyword">if</span> (beanType == <span class="hljs-keyword">null</span>) &#123;<br>						<span class="hljs-keyword">continue</span>;<br>					&#125;<br>					<span class="hljs-comment">//判断类上是否有@Aspect注解</span><br>					<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.advisorFactory.isAspect(beanType)) &#123;<br>						aspectNames.add(beanName);<br>						AspectMetadata amd = <span class="hljs-keyword">new</span> AspectMetadata(beanType, beanName);<br>						<span class="hljs-keyword">if</span> (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) &#123;<br><br>							<span class="hljs-comment">//创建获取有@Aspect注解类的实例工厂，负责获取有@Aspect注解类的实例</span><br>							MetadataAwareAspectInstanceFactory factory =<br>									<span class="hljs-keyword">new</span> BeanFactoryAspectInstanceFactory(<span class="hljs-keyword">this</span>.beanFactory, beanName);<br><br>							<span class="hljs-comment">//创建切面advisor对象</span><br>							List&lt;Advisor&gt; classAdvisors = <span class="hljs-keyword">this</span>.advisorFactory.getAdvisors(factory);<br>							<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory.isSingleton(beanName)) &#123;<br>								<span class="hljs-keyword">this</span>.advisorsCache.put(beanName, classAdvisors);<br>							&#125;<br>							<span class="hljs-keyword">else</span> &#123;<br>								<span class="hljs-keyword">this</span>.aspectFactoryCache.put(beanName, factory);<br>							&#125;<br>							advisors.addAll(classAdvisors);<br>						&#125;<br>						<span class="hljs-keyword">else</span> &#123;<br>							<span class="hljs-comment">// Per target or per this.</span><br>							<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory.isSingleton(beanName)) &#123;<br>								<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalArgumentException(<span class="hljs-string">&quot;Bean with name &#x27;&quot;</span> + beanName +<br>										<span class="hljs-string">&quot;&#x27; is a singleton, but aspect instantiation model is not singleton&quot;</span>);<br>							&#125;<br>							MetadataAwareAspectInstanceFactory factory =<br>									<span class="hljs-keyword">new</span> PrototypeAspectInstanceFactory(<span class="hljs-keyword">this</span>.beanFactory, beanName);<br>							<span class="hljs-keyword">this</span>.aspectFactoryCache.put(beanName, factory);<br>							advisors.addAll(<span class="hljs-keyword">this</span>.advisorFactory.getAdvisors(factory));<br>						&#125;<br>					&#125;<br>				&#125;<br>				<span class="hljs-keyword">this</span>.aspectBeanNames = aspectNames;<br>				<span class="hljs-keyword">return</span> advisors;<br>			&#125;<br>		&#125;<br>	&#125;<br><br>	<span class="hljs-keyword">if</span> (aspectNames.isEmpty()) &#123;<br>		<span class="hljs-keyword">return</span> Collections.emptyList();<br>	&#125;<br>	List&lt;Advisor&gt; advisors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>	<span class="hljs-keyword">for</span> (String aspectName : aspectNames) &#123;<br>		List&lt;Advisor&gt; cachedAdvisors = <span class="hljs-keyword">this</span>.advisorsCache.get(aspectName);<br>		<span class="hljs-keyword">if</span> (cachedAdvisors != <span class="hljs-keyword">null</span>) &#123;<br>			advisors.addAll(cachedAdvisors);<br>		&#125;<br>		<span class="hljs-keyword">else</span> &#123;<br>			MetadataAwareAspectInstanceFactory factory = <span class="hljs-keyword">this</span>.aspectFactoryCache.get(aspectName);<br>			advisors.addAll(<span class="hljs-keyword">this</span>.advisorFactory.getAdvisors(factory));<br>		&#125;<br>	&#125;<br>	<span class="hljs-keyword">return</span> advisors;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getAdvisors()方法</p>
 <p>该方法会获取到有@Aspect注解的类名称。然后拿到没有@PointCut注解的所有方法，这样做是因为@PointCut并方法大多数情况下是空方法。然后调用getAdvisor()方法获取到advisor对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Advisor&gt; <span class="hljs-title">getAdvisors</span><span class="hljs-params">(MetadataAwareAspectInstanceFactory aspectInstanceFactory)</span> </span>&#123;
-	<span class="hljs-comment">//从工厂中获取有@Aspect注解的类Class</span>
-	Class&lt;?&gt; aspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();
-	<span class="hljs-comment">//从工厂中获取有@Aspect注解的类的名称</span>
-	String aspectName = aspectInstanceFactory.getAspectMetadata().getAspectName();
-	validate(aspectClass);
-
-	<span class="hljs-comment">//创建工厂的装饰类，获取实例只会获取一次</span>
-	<span class="hljs-comment">// We need to wrap the MetadataAwareAspectInstanceFactory with a decorator</span>
-	<span class="hljs-comment">// so that it will only instantiate once.</span>
-	MetadataAwareAspectInstanceFactory lazySingletonAspectInstanceFactory =
-			<span class="hljs-keyword">new</span> LazySingletonAspectInstanceFactoryDecorator(aspectInstanceFactory);
-
-	List&lt;Advisor&gt; advisors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-
-	<span class="hljs-comment">//这里循环没有@Pointcut注解的方法</span>
-	<span class="hljs-keyword">for</span> (Method method : getAdvisorMethods(aspectClass)) &#123;
-
-		<span class="hljs-comment">//非常重要重点看看，重要程度 5</span>
-		Advisor advisor = getAdvisor(method, lazySingletonAspectInstanceFactory, advisors.size(), aspectName);
-		<span class="hljs-keyword">if</span> (advisor != <span class="hljs-keyword">null</span>) &#123;
-			advisors.add(advisor);
-		&#125;
-	&#125;
-
-	<span class="hljs-comment">// If it&#x27;s a per target aspect, emit the dummy instantiating aspect.</span>
-	<span class="hljs-keyword">if</span> (!advisors.isEmpty() &amp;&amp; lazySingletonAspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) &#123;
-		Advisor instantiationAdvisor = <span class="hljs-keyword">new</span> SyntheticInstantiationAdvisor(lazySingletonAspectInstanceFactory);
-		advisors.add(<span class="hljs-number">0</span>, instantiationAdvisor);
-	&#125;
-
-	<span class="hljs-comment">//判断属性上是否有引介注解</span>
-	<span class="hljs-comment">// Find introduction fields.</span>
-	<span class="hljs-keyword">for</span> (Field field : aspectClass.getDeclaredFields()) &#123;
-		<span class="hljs-comment">//判断属性上是否有DeclareParents注解，如果有返回切面</span>
-		Advisor advisor = getDeclareParentsAdvisor(field);
-		<span class="hljs-keyword">if</span> (advisor != <span class="hljs-keyword">null</span>) &#123;
-			advisors.add(advisor);
-		&#125;
-	&#125;
-
-	<span class="hljs-keyword">return</span> advisors;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Advisor&gt; <span class="hljs-title">getAdvisors</span><span class="hljs-params">(MetadataAwareAspectInstanceFactory aspectInstanceFactory)</span> </span>&#123;<br>	<span class="hljs-comment">//从工厂中获取有@Aspect注解的类Class</span><br>	Class&lt;?&gt; aspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();<br>	<span class="hljs-comment">//从工厂中获取有@Aspect注解的类的名称</span><br>	String aspectName = aspectInstanceFactory.getAspectMetadata().getAspectName();<br>	validate(aspectClass);<br><br>	<span class="hljs-comment">//创建工厂的装饰类，获取实例只会获取一次</span><br>	<span class="hljs-comment">// We need to wrap the MetadataAwareAspectInstanceFactory with a decorator</span><br>	<span class="hljs-comment">// so that it will only instantiate once.</span><br>	MetadataAwareAspectInstanceFactory lazySingletonAspectInstanceFactory =<br>			<span class="hljs-keyword">new</span> LazySingletonAspectInstanceFactoryDecorator(aspectInstanceFactory);<br><br>	List&lt;Advisor&gt; advisors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br><br>	<span class="hljs-comment">//这里循环没有@Pointcut注解的方法</span><br>	<span class="hljs-keyword">for</span> (Method method : getAdvisorMethods(aspectClass)) &#123;<br><br>		<span class="hljs-comment">//非常重要重点看看，重要程度 5</span><br>		Advisor advisor = getAdvisor(method, lazySingletonAspectInstanceFactory, advisors.size(), aspectName);<br>		<span class="hljs-keyword">if</span> (advisor != <span class="hljs-keyword">null</span>) &#123;<br>			advisors.add(advisor);<br>		&#125;<br>	&#125;<br><br>	<span class="hljs-comment">// If it&#x27;s a per target aspect, emit the dummy instantiating aspect.</span><br>	<span class="hljs-keyword">if</span> (!advisors.isEmpty() &amp;&amp; lazySingletonAspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) &#123;<br>		Advisor instantiationAdvisor = <span class="hljs-keyword">new</span> SyntheticInstantiationAdvisor(lazySingletonAspectInstanceFactory);<br>		advisors.add(<span class="hljs-number">0</span>, instantiationAdvisor);<br>	&#125;<br><br>	<span class="hljs-comment">//判断属性上是否有引介注解</span><br>	<span class="hljs-comment">// Find introduction fields.</span><br>	<span class="hljs-keyword">for</span> (Field field : aspectClass.getDeclaredFields()) &#123;<br>		<span class="hljs-comment">//判断属性上是否有DeclareParents注解，如果有返回切面</span><br>		Advisor advisor = getDeclareParentsAdvisor(field);<br>		<span class="hljs-keyword">if</span> (advisor != <span class="hljs-keyword">null</span>) &#123;<br>			advisors.add(advisor);<br>		&#125;<br>	&#125;<br><br>	<span class="hljs-keyword">return</span> advisors;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getAdvisor()方法</p>
 <p>getAdvisor()方法会调用getPointCut()方法获取到封装的AspectJAnnotation对象，然后使用InstantiationModelAwarePointcutAdvisorImpl()创建Advisor切面类。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Advisor <span class="hljs-title">getAdvisor</span><span class="hljs-params">(Method candidateAdviceMethod, MetadataAwareAspectInstanceFactory aspectInstanceFactory,</span></span>
-<span class="hljs-function"><span class="hljs-params">		<span class="hljs-keyword">int</span> declarationOrderInAspect, String aspectName)</span> </span>&#123;
-
-	validate(aspectInstanceFactory.getAspectMetadata().getAspectClass());
-
-	<span class="hljs-comment">//获取pointCut对象，最重要的是从注解中获取表达式</span>
-	AspectJExpressionPointcut expressionPointcut = getPointcut(
-			candidateAdviceMethod, aspectInstanceFactory.getAspectMetadata().getAspectClass());
-	<span class="hljs-keyword">if</span> (expressionPointcut == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-
-	<span class="hljs-comment">//创建Advisor切面类，这才是真正的切面类，一个切面类里面肯定要有1、pointCut 2、advice</span>
-	<span class="hljs-comment">//这里pointCut是expressionPointcut， advice 增强方法是 candidateAdviceMethod</span>
-	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> InstantiationModelAwarePointcutAdvisorImpl(expressionPointcut, candidateAdviceMethod,
-			<span class="hljs-keyword">this</span>, aspectInstanceFactory, declarationOrderInAspect, aspectName);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Advisor <span class="hljs-title">getAdvisor</span><span class="hljs-params">(Method candidateAdviceMethod, MetadataAwareAspectInstanceFactory aspectInstanceFactory,</span></span><br><span class="hljs-function"><span class="hljs-params">		<span class="hljs-keyword">int</span> declarationOrderInAspect, String aspectName)</span> </span>&#123;<br><br>	validate(aspectInstanceFactory.getAspectMetadata().getAspectClass());<br><br>	<span class="hljs-comment">//获取pointCut对象，最重要的是从注解中获取表达式</span><br>	AspectJExpressionPointcut expressionPointcut = getPointcut(<br>			candidateAdviceMethod, aspectInstanceFactory.getAspectMetadata().getAspectClass());<br>	<span class="hljs-keyword">if</span> (expressionPointcut == <span class="hljs-keyword">null</span>) &#123;<br>		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>	&#125;<br><br>	<span class="hljs-comment">//创建Advisor切面类，这才是真正的切面类，一个切面类里面肯定要有1、pointCut 2、advice</span><br>	<span class="hljs-comment">//这里pointCut是expressionPointcut， advice 增强方法是 candidateAdviceMethod</span><br>	<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> InstantiationModelAwarePointcutAdvisorImpl(expressionPointcut, candidateAdviceMethod,<br>			<span class="hljs-keyword">this</span>, aspectInstanceFactory, declarationOrderInAspect, aspectName);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getPoint()方法</p>
 <p>getPointCut()方法会去寻找@Pointcut、@Around、@Before、@After、@AfterReturning、@ AfterThrowing注解，并把注解信息封装成AspectJAnnotation对象，然后创建一个PointCut类，并且把前面从注解里面解析的表达式设置进去。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> AspectJExpressionPointcut <span class="hljs-title">getPointcut</span><span class="hljs-params">(Method candidateAdviceMethod, Class&lt;?&gt; candidateAspectClass)</span> </span>&#123;
-	<span class="hljs-comment">//从候选的增强方法里面 candidateAdviceMethod找到注解</span>
-	<span class="hljs-comment">//Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class</span>
-	<span class="hljs-comment">//并把注解信息封装成AspectJAnnotation对象</span>
-	AspectJAnnotation&lt;?&gt; aspectJAnnotation =
-			AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);
-	<span class="hljs-keyword">if</span> (aspectJAnnotation == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-
-	<span class="hljs-comment">//创建一个PointCut类，并且把前面从注解里面解析的表达式设置进去</span>
-	AspectJExpressionPointcut ajexp =
-			<span class="hljs-keyword">new</span> AspectJExpressionPointcut(candidateAspectClass, <span class="hljs-keyword">new</span> String[<span class="hljs-number">0</span>], <span class="hljs-keyword">new</span> Class&lt;?&gt;[<span class="hljs-number">0</span>]);
-	ajexp.setExpression(aspectJAnnotation.getPointcutExpression());
-	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory != <span class="hljs-keyword">null</span>) &#123;
-		ajexp.setBeanFactory(<span class="hljs-keyword">this</span>.beanFactory);
-	&#125;
-	<span class="hljs-keyword">return</span> ajexp;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> AspectJExpressionPointcut <span class="hljs-title">getPointcut</span><span class="hljs-params">(Method candidateAdviceMethod, Class&lt;?&gt; candidateAspectClass)</span> </span>&#123;<br>	<span class="hljs-comment">//从候选的增强方法里面 candidateAdviceMethod找到注解</span><br>	<span class="hljs-comment">//Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class</span><br>	<span class="hljs-comment">//并把注解信息封装成AspectJAnnotation对象</span><br>	AspectJAnnotation&lt;?&gt; aspectJAnnotation =<br>			AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);<br>	<span class="hljs-keyword">if</span> (aspectJAnnotation == <span class="hljs-keyword">null</span>) &#123;<br>		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>	&#125;<br><br>	<span class="hljs-comment">//创建一个PointCut类，并且把前面从注解里面解析的表达式设置进去</span><br>	AspectJExpressionPointcut ajexp =<br>			<span class="hljs-keyword">new</span> AspectJExpressionPointcut(candidateAspectClass, <span class="hljs-keyword">new</span> String[<span class="hljs-number">0</span>], <span class="hljs-keyword">new</span> Class&lt;?&gt;[<span class="hljs-number">0</span>]);<br>	ajexp.setExpression(aspectJAnnotation.getPointcutExpression());<br>	<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory != <span class="hljs-keyword">null</span>) &#123;<br>		ajexp.setBeanFactory(<span class="hljs-keyword">this</span>.beanFactory);<br>	&#125;<br>	<span class="hljs-keyword">return</span> ajexp;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>InstantiationModelAwarePointcutAdvisorImpl()方法</p>
 <p>getAdvice()方法是他的主要方法，主要是根据不同的注解信息创建不同的Advice类实例。Advice接口是一个空接口，子类实现完全不同。MethodInterceptor接口也实现了Advice接口，只有AspectJMethodBeforeAdvice跟AspectJAfterReturningAdvice没有实现MethodInterceptor接口，原因是这些Advice的MethodInterceptor接口中的invoke()方法需要预留出来，完成执行链回调。LocalVariableTableParameterNameDiscoverer的getParameterNames()方法可以拿到方法参数名称。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Advice <span class="hljs-title">getAdvice</span><span class="hljs-params">(Method candidateAdviceMethod, AspectJExpressionPointcut expressionPointcut,</span></span>
-<span class="hljs-function"><span class="hljs-params">		MetadataAwareAspectInstanceFactory aspectInstanceFactory, <span class="hljs-keyword">int</span> declarationOrder, String aspectName)</span> </span>&#123;
-
-	<span class="hljs-comment">//获取有@Aspect注解的类</span>
-	Class&lt;?&gt; candidateAspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();
-	validate(candidateAspectClass);
-
-	<span class="hljs-comment">//找到candidateAdviceMethod方法上面的注解，并且包装成AspectJAnnotation对象，这个对象中就有注解类型</span>
-	AspectJAnnotation&lt;?&gt; aspectJAnnotation =
-			AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);
-	<span class="hljs-keyword">if</span> (aspectJAnnotation == <span class="hljs-keyword">null</span>) &#123;
-		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-	&#125;
-
-	<span class="hljs-comment">// If we get here, we know we have an AspectJ method.</span>
-	<span class="hljs-comment">// Check that it&#x27;s an AspectJ-annotated class</span>
-	<span class="hljs-keyword">if</span> (!isAspect(candidateAspectClass)) &#123;
-		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopConfigException(<span class="hljs-string">&quot;Advice must be declared inside an aspect type: &quot;</span> +
-				<span class="hljs-string">&quot;Offending method &#x27;&quot;</span> + candidateAdviceMethod + <span class="hljs-string">&quot;&#x27; in class [&quot;</span> +
-				candidateAspectClass.getName() + <span class="hljs-string">&quot;]&quot;</span>);
-	&#125;
-
-	<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-		logger.debug(<span class="hljs-string">&quot;Found AspectJ method: &quot;</span> + candidateAdviceMethod);
-	&#125;
-
-	AbstractAspectJAdvice springAdvice;
-
-	<span class="hljs-comment">//根据不同的注解类型创建不同的advice类实例</span>
-	<span class="hljs-keyword">switch</span> (aspectJAnnotation.getAnnotationType()) &#123;
-		<span class="hljs-keyword">case</span> AtPointcut:
-			<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-				logger.debug(<span class="hljs-string">&quot;Processing pointcut &#x27;&quot;</span> + candidateAdviceMethod.getName() + <span class="hljs-string">&quot;&#x27;&quot;</span>);
-			&#125;
-			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-		<span class="hljs-keyword">case</span> AtAround:
-			<span class="hljs-comment">//实现了MethodInterceptor接口</span>
-			springAdvice = <span class="hljs-keyword">new</span> AspectJAroundAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			<span class="hljs-keyword">break</span>;
-		<span class="hljs-keyword">case</span> AtBefore:
-			<span class="hljs-comment">//实现了MethodBeforeAdvice接口，没有实现MethodInterceptor接口</span>
-			springAdvice = <span class="hljs-keyword">new</span> AspectJMethodBeforeAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			<span class="hljs-keyword">break</span>;
-		<span class="hljs-keyword">case</span> AtAfter:
-			<span class="hljs-comment">//实现了MethodInterceptor接口</span>
-			springAdvice = <span class="hljs-keyword">new</span> AspectJAfterAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			<span class="hljs-keyword">break</span>;
-		<span class="hljs-keyword">case</span> AtAfterReturning:
-			<span class="hljs-comment">//实现了AfterReturningAdvice接口，没有实现MethodInterceptor接口</span>
-			springAdvice = <span class="hljs-keyword">new</span> AspectJAfterReturningAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			AfterReturning afterReturningAnnotation = (AfterReturning) aspectJAnnotation.getAnnotation();
-			<span class="hljs-keyword">if</span> (StringUtils.hasText(afterReturningAnnotation.returning())) &#123;
-				springAdvice.setReturningName(afterReturningAnnotation.returning());
-			&#125;
-			<span class="hljs-keyword">break</span>;
-		<span class="hljs-keyword">case</span> AtAfterThrowing:
-			<span class="hljs-comment">//实现了MethodInterceptor接口</span>
-			springAdvice = <span class="hljs-keyword">new</span> AspectJAfterThrowingAdvice(
-					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);
-			AfterThrowing afterThrowingAnnotation = (AfterThrowing) aspectJAnnotation.getAnnotation();
-			<span class="hljs-keyword">if</span> (StringUtils.hasText(afterThrowingAnnotation.throwing())) &#123;
-				springAdvice.setThrowingName(afterThrowingAnnotation.throwing());
-			&#125;
-			<span class="hljs-keyword">break</span>;
-		<span class="hljs-keyword">default</span>:
-			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnsupportedOperationException(
-					<span class="hljs-string">&quot;Unsupported advice type on method: &quot;</span> + candidateAdviceMethod);
-	&#125;
-
-	<span class="hljs-comment">// Now to configure the advice...</span>
-	springAdvice.setAspectName(aspectName);
-	springAdvice.setDeclarationOrder(declarationOrder);
-	String[] argNames = <span class="hljs-keyword">this</span>.parameterNameDiscoverer.getParameterNames(candidateAdviceMethod);
-	<span class="hljs-keyword">if</span> (argNames != <span class="hljs-keyword">null</span>) &#123;
-		springAdvice.setArgumentNamesFromStringArray(argNames);
-	&#125;
-
-	<span class="hljs-comment">//计算argNames和类型的对应关系</span>
-	springAdvice.calculateArgumentBindings();
-
-	<span class="hljs-keyword">return</span> springAdvice;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Advice <span class="hljs-title">getAdvice</span><span class="hljs-params">(Method candidateAdviceMethod, AspectJExpressionPointcut expressionPointcut,</span></span><br><span class="hljs-function"><span class="hljs-params">		MetadataAwareAspectInstanceFactory aspectInstanceFactory, <span class="hljs-keyword">int</span> declarationOrder, String aspectName)</span> </span>&#123;<br><br>	<span class="hljs-comment">//获取有@Aspect注解的类</span><br>	Class&lt;?&gt; candidateAspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();<br>	validate(candidateAspectClass);<br><br>	<span class="hljs-comment">//找到candidateAdviceMethod方法上面的注解，并且包装成AspectJAnnotation对象，这个对象中就有注解类型</span><br>	AspectJAnnotation&lt;?&gt; aspectJAnnotation =<br>			AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);<br>	<span class="hljs-keyword">if</span> (aspectJAnnotation == <span class="hljs-keyword">null</span>) &#123;<br>		<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>	&#125;<br><br>	<span class="hljs-comment">// If we get here, we know we have an AspectJ method.</span><br>	<span class="hljs-comment">// Check that it&#x27;s an AspectJ-annotated class</span><br>	<span class="hljs-keyword">if</span> (!isAspect(candidateAspectClass)) &#123;<br>		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopConfigException(<span class="hljs-string">&quot;Advice must be declared inside an aspect type: &quot;</span> +<br>				<span class="hljs-string">&quot;Offending method &#x27;&quot;</span> + candidateAdviceMethod + <span class="hljs-string">&quot;&#x27; in class [&quot;</span> +<br>				candidateAspectClass.getName() + <span class="hljs-string">&quot;]&quot;</span>);<br>	&#125;<br><br>	<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;<br>		logger.debug(<span class="hljs-string">&quot;Found AspectJ method: &quot;</span> + candidateAdviceMethod);<br>	&#125;<br><br>	AbstractAspectJAdvice springAdvice;<br><br>	<span class="hljs-comment">//根据不同的注解类型创建不同的advice类实例</span><br>	<span class="hljs-keyword">switch</span> (aspectJAnnotation.getAnnotationType()) &#123;<br>		<span class="hljs-keyword">case</span> AtPointcut:<br>			<span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;<br>				logger.debug(<span class="hljs-string">&quot;Processing pointcut &#x27;&quot;</span> + candidateAdviceMethod.getName() + <span class="hljs-string">&quot;&#x27;&quot;</span>);<br>			&#125;<br>			<span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>		<span class="hljs-keyword">case</span> AtAround:<br>			<span class="hljs-comment">//实现了MethodInterceptor接口</span><br>			springAdvice = <span class="hljs-keyword">new</span> AspectJAroundAdvice(<br>					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);<br>			<span class="hljs-keyword">break</span>;<br>		<span class="hljs-keyword">case</span> AtBefore:<br>			<span class="hljs-comment">//实现了MethodBeforeAdvice接口，没有实现MethodInterceptor接口</span><br>			springAdvice = <span class="hljs-keyword">new</span> AspectJMethodBeforeAdvice(<br>					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);<br>			<span class="hljs-keyword">break</span>;<br>		<span class="hljs-keyword">case</span> AtAfter:<br>			<span class="hljs-comment">//实现了MethodInterceptor接口</span><br>			springAdvice = <span class="hljs-keyword">new</span> AspectJAfterAdvice(<br>					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);<br>			<span class="hljs-keyword">break</span>;<br>		<span class="hljs-keyword">case</span> AtAfterReturning:<br>			<span class="hljs-comment">//实现了AfterReturningAdvice接口，没有实现MethodInterceptor接口</span><br>			springAdvice = <span class="hljs-keyword">new</span> AspectJAfterReturningAdvice(<br>					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);<br>			AfterReturning afterReturningAnnotation = (AfterReturning) aspectJAnnotation.getAnnotation();<br>			<span class="hljs-keyword">if</span> (StringUtils.hasText(afterReturningAnnotation.returning())) &#123;<br>				springAdvice.setReturningName(afterReturningAnnotation.returning());<br>			&#125;<br>			<span class="hljs-keyword">break</span>;<br>		<span class="hljs-keyword">case</span> AtAfterThrowing:<br>			<span class="hljs-comment">//实现了MethodInterceptor接口</span><br>			springAdvice = <span class="hljs-keyword">new</span> AspectJAfterThrowingAdvice(<br>					candidateAdviceMethod, expressionPointcut, aspectInstanceFactory);<br>			AfterThrowing afterThrowingAnnotation = (AfterThrowing) aspectJAnnotation.getAnnotation();<br>			<span class="hljs-keyword">if</span> (StringUtils.hasText(afterThrowingAnnotation.throwing())) &#123;<br>				springAdvice.setThrowingName(afterThrowingAnnotation.throwing());<br>			&#125;<br>			<span class="hljs-keyword">break</span>;<br>		<span class="hljs-keyword">default</span>:<br>			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnsupportedOperationException(<br>					<span class="hljs-string">&quot;Unsupported advice type on method: &quot;</span> + candidateAdviceMethod);<br>	&#125;<br><br>	<span class="hljs-comment">// Now to configure the advice...</span><br>	springAdvice.setAspectName(aspectName);<br>	springAdvice.setDeclarationOrder(declarationOrder);<br>	String[] argNames = <span class="hljs-keyword">this</span>.parameterNameDiscoverer.getParameterNames(candidateAdviceMethod);<br>	<span class="hljs-keyword">if</span> (argNames != <span class="hljs-keyword">null</span>) &#123;<br>		springAdvice.setArgumentNamesFromStringArray(argNames);<br>	&#125;<br><br>	<span class="hljs-comment">//计算argNames和类型的对应关系</span><br>	springAdvice.calculateArgumentBindings();<br><br>	<span class="hljs-keyword">return</span> springAdvice;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="createProxy-方法"><a href="#createProxy-方法" class="headerlink" title="createProxy()方法"></a>createProxy()方法</h3><p>该方法首先会判断代理方式，然后调用buildAdvisors()方法将传进来的切面数组包装成advisor切面，然后使用getProxy()此方法会根据生成动态代理的方式创建代理JdkDynamicAopProxy或者ObjenesisCglibAopProxy对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">createProxy</span><span class="hljs-params">(Class&lt;?&gt; beanClass, <span class="hljs-meta">@Nullable</span> String beanName,</span></span>
-<span class="hljs-function"><span class="hljs-params">      <span class="hljs-meta">@Nullable</span> Object[] specificInterceptors, TargetSource targetSource)</span> </span>&#123;
-
-   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory <span class="hljs-keyword">instanceof</span> ConfigurableListableBeanFactory) &#123;
-      AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) <span class="hljs-keyword">this</span>.beanFactory, beanName, beanClass);
-   &#125;
-
-   <span class="hljs-comment">//创建代理工厂</span>
-   ProxyFactory proxyFactory = <span class="hljs-keyword">new</span> ProxyFactory();
-   proxyFactory.copyFrom(<span class="hljs-keyword">this</span>);
-   <span class="hljs-comment">//该属性用来控制代理方式，cglib或JDK动态代理</span>
-   <span class="hljs-keyword">if</span> (!proxyFactory.isProxyTargetClass()) &#123;
-      <span class="hljs-keyword">if</span> (shouldProxyTargetClass(beanClass, beanName)) &#123;
-         <span class="hljs-comment">//proxyTargetClass 是否对类进行代理，而不是对接口进行代理，设置为true时，使用CGLib代理。</span>
-         proxyFactory.setProxyTargetClass(<span class="hljs-keyword">true</span>);
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         evaluateProxyInterfaces(beanClass, proxyFactory);
-      &#125;
-   &#125;
-
-   <span class="hljs-comment">//把advice类型的增强包装成advisor切面</span>
-   Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
-   proxyFactory.addAdvisors(advisors);
-   proxyFactory.setTargetSource(targetSource);
-   customizeProxyFactory(proxyFactory);
-
-   <span class="hljs-comment">////用来控制代理工厂被配置后，是否还允许修改代理的配置,默认为false</span>
-   proxyFactory.setFrozen(<span class="hljs-keyword">this</span>.freezeProxy);
-   <span class="hljs-keyword">if</span> (advisorsPreFiltered()) &#123;
-      proxyFactory.setPreFiltered(<span class="hljs-keyword">true</span>);
-   &#125;
-
-   <span class="hljs-comment">//获取代理实例</span>
-   <span class="hljs-keyword">return</span> proxyFactory.getProxy(getProxyClassLoader());
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">createProxy</span><span class="hljs-params">(Class&lt;?&gt; beanClass, <span class="hljs-meta">@Nullable</span> String beanName,</span></span><br><span class="hljs-function"><span class="hljs-params">      <span class="hljs-meta">@Nullable</span> Object[] specificInterceptors, TargetSource targetSource)</span> </span>&#123;<br><br>   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.beanFactory <span class="hljs-keyword">instanceof</span> ConfigurableListableBeanFactory) &#123;<br>      AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) <span class="hljs-keyword">this</span>.beanFactory, beanName, beanClass);<br>   &#125;<br><br>   <span class="hljs-comment">//创建代理工厂</span><br>   ProxyFactory proxyFactory = <span class="hljs-keyword">new</span> ProxyFactory();<br>   proxyFactory.copyFrom(<span class="hljs-keyword">this</span>);<br>   <span class="hljs-comment">//该属性用来控制代理方式，cglib或JDK动态代理</span><br>   <span class="hljs-keyword">if</span> (!proxyFactory.isProxyTargetClass()) &#123;<br>      <span class="hljs-keyword">if</span> (shouldProxyTargetClass(beanClass, beanName)) &#123;<br>         <span class="hljs-comment">//proxyTargetClass 是否对类进行代理，而不是对接口进行代理，设置为true时，使用CGLib代理。</span><br>         proxyFactory.setProxyTargetClass(<span class="hljs-keyword">true</span>);<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         evaluateProxyInterfaces(beanClass, proxyFactory);<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-comment">//把advice类型的增强包装成advisor切面</span><br>   Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);<br>   proxyFactory.addAdvisors(advisors);<br>   proxyFactory.setTargetSource(targetSource);<br>   customizeProxyFactory(proxyFactory);<br><br>   <span class="hljs-comment">////用来控制代理工厂被配置后，是否还允许修改代理的配置,默认为false</span><br>   proxyFactory.setFrozen(<span class="hljs-keyword">this</span>.freezeProxy);<br>   <span class="hljs-keyword">if</span> (advisorsPreFiltered()) &#123;<br>      proxyFactory.setPreFiltered(<span class="hljs-keyword">true</span>);<br>   &#125;<br><br>   <span class="hljs-comment">//获取代理实例</span><br>   <span class="hljs-keyword">return</span> proxyFactory.getProxy(getProxyClassLoader());<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="buildAdvisors-方法"><a href="#buildAdvisors-方法" class="headerlink" title="buildAdvisors()方法"></a>buildAdvisors()方法</h4><p>此方法主要作用为扩展，对自己实现MethodInterceptor进行处理。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">protected</span> Advisor[] buildAdvisors(<span class="hljs-meta">@Nullable</span> String beanName, <span class="hljs-meta">@Nullable</span> Object[] specificInterceptors) &#123;
-   <span class="hljs-comment">// Handle prototypes correctly...</span>
-   <span class="hljs-comment">//自定义MethodInterceptor.拿到AnnotationAwareAspectJAutoProxyCreator对象调用setInterceptorNames方法</span>
-   Advisor[] commonInterceptors = resolveInterceptorNames();
-
-   List&lt;Object&gt; allInterceptors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-   <span class="hljs-keyword">if</span> (specificInterceptors != <span class="hljs-keyword">null</span>) &#123;
-      allInterceptors.addAll(Arrays.asList(specificInterceptors));
-      <span class="hljs-keyword">if</span> (commonInterceptors.length &gt; <span class="hljs-number">0</span>) &#123;
-         <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.applyCommonInterceptorsFirst) &#123;
-            allInterceptors.addAll(<span class="hljs-number">0</span>, Arrays.asList(commonInterceptors));
-         &#125;
-         <span class="hljs-keyword">else</span> &#123;
-            allInterceptors.addAll(Arrays.asList(commonInterceptors));
-         &#125;
-      &#125;
-   &#125;
-   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-      <span class="hljs-keyword">int</span> nrOfCommonInterceptors = commonInterceptors.length;
-      <span class="hljs-keyword">int</span> nrOfSpecificInterceptors = (specificInterceptors != <span class="hljs-keyword">null</span> ? specificInterceptors.length : <span class="hljs-number">0</span>);
-      logger.trace(<span class="hljs-string">&quot;Creating implicit proxy for bean &#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27; with &quot;</span> + nrOfCommonInterceptors +
-            <span class="hljs-string">&quot; common interceptors and &quot;</span> + nrOfSpecificInterceptors + <span class="hljs-string">&quot; specific interceptors&quot;</span>);
-   &#125;
-
-   Advisor[] advisors = <span class="hljs-keyword">new</span> Advisor[allInterceptors.size()];
-   <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; allInterceptors.size(); i++) &#123;
-      <span class="hljs-comment">//对自定义的advice要进行包装，把advice包装成advisor对象，切面对象</span>
-      advisors[i] = <span class="hljs-keyword">this</span>.advisorAdapterRegistry.wrap(allInterceptors.get(i));
-   &#125;
-   <span class="hljs-keyword">return</span> advisors;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> Advisor[] buildAdvisors(<span class="hljs-meta">@Nullable</span> String beanName, <span class="hljs-meta">@Nullable</span> Object[] specificInterceptors) &#123;<br>   <span class="hljs-comment">// Handle prototypes correctly...</span><br>   <span class="hljs-comment">//自定义MethodInterceptor.拿到AnnotationAwareAspectJAutoProxyCreator对象调用setInterceptorNames方法</span><br>   Advisor[] commonInterceptors = resolveInterceptorNames();<br><br>   List&lt;Object&gt; allInterceptors = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>   <span class="hljs-keyword">if</span> (specificInterceptors != <span class="hljs-keyword">null</span>) &#123;<br>      allInterceptors.addAll(Arrays.asList(specificInterceptors));<br>      <span class="hljs-keyword">if</span> (commonInterceptors.length &gt; <span class="hljs-number">0</span>) &#123;<br>         <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.applyCommonInterceptorsFirst) &#123;<br>            allInterceptors.addAll(<span class="hljs-number">0</span>, Arrays.asList(commonInterceptors));<br>         &#125;<br>         <span class="hljs-keyword">else</span> &#123;<br>            allInterceptors.addAll(Arrays.asList(commonInterceptors));<br>         &#125;<br>      &#125;<br>   &#125;<br>   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;<br>      <span class="hljs-keyword">int</span> nrOfCommonInterceptors = commonInterceptors.length;<br>      <span class="hljs-keyword">int</span> nrOfSpecificInterceptors = (specificInterceptors != <span class="hljs-keyword">null</span> ? specificInterceptors.length : <span class="hljs-number">0</span>);<br>      logger.trace(<span class="hljs-string">&quot;Creating implicit proxy for bean &#x27;&quot;</span> + beanName + <span class="hljs-string">&quot;&#x27; with &quot;</span> + nrOfCommonInterceptors +<br>            <span class="hljs-string">&quot; common interceptors and &quot;</span> + nrOfSpecificInterceptors + <span class="hljs-string">&quot; specific interceptors&quot;</span>);<br>   &#125;<br><br>   Advisor[] advisors = <span class="hljs-keyword">new</span> Advisor[allInterceptors.size()];<br>   <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; allInterceptors.size(); i++) &#123;<br>      <span class="hljs-comment">//对自定义的advice要进行包装，把advice包装成advisor对象，切面对象</span><br>      advisors[i] = <span class="hljs-keyword">this</span>.advisorAdapterRegistry.wrap(allInterceptors.get(i));<br>   &#125;<br>   <span class="hljs-keyword">return</span> advisors;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>wrap()方法</p>
 <p>大部分情况下会进入第一个if中强转后直接返回，如果是自定义实现的MethodInterceptor会包装为DefaultPointcutAdvisor，此对象会被直接设置为全局Advice然后返回。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Advisor <span class="hljs-title">wrap</span><span class="hljs-params">(Object adviceObject)</span> <span class="hljs-keyword">throws</span> UnknownAdviceTypeException </span>&#123;
-   <span class="hljs-keyword">if</span> (adviceObject <span class="hljs-keyword">instanceof</span> Advisor) &#123;
-      <span class="hljs-keyword">return</span> (Advisor) adviceObject;
-   &#125;
-   <span class="hljs-keyword">if</span> (!(adviceObject <span class="hljs-keyword">instanceof</span> Advice)) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnknownAdviceTypeException(adviceObject);
-   &#125;
-   Advice advice = (Advice) adviceObject;
-   <span class="hljs-keyword">if</span> (advice <span class="hljs-keyword">instanceof</span> MethodInterceptor) &#123;
-      <span class="hljs-comment">//用于自定义处理MethodInterceptor</span>
-      <span class="hljs-comment">// So well-known it doesn&#x27;t even need an adapter.</span>
-      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultPointcutAdvisor(advice);
-   &#125;
-   <span class="hljs-keyword">for</span> (AdvisorAdapter adapter : <span class="hljs-keyword">this</span>.adapters) &#123;
-      <span class="hljs-comment">// Check that it is supported.</span>
-      <span class="hljs-keyword">if</span> (adapter.supportsAdvice(advice)) &#123;
-         <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultPointcutAdvisor(advice);
-      &#125;
-   &#125;
-   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnknownAdviceTypeException(advice);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Advisor <span class="hljs-title">wrap</span><span class="hljs-params">(Object adviceObject)</span> <span class="hljs-keyword">throws</span> UnknownAdviceTypeException </span>&#123;<br>   <span class="hljs-keyword">if</span> (adviceObject <span class="hljs-keyword">instanceof</span> Advisor) &#123;<br>      <span class="hljs-keyword">return</span> (Advisor) adviceObject;<br>   &#125;<br>   <span class="hljs-keyword">if</span> (!(adviceObject <span class="hljs-keyword">instanceof</span> Advice)) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnknownAdviceTypeException(adviceObject);<br>   &#125;<br>   Advice advice = (Advice) adviceObject;<br>   <span class="hljs-keyword">if</span> (advice <span class="hljs-keyword">instanceof</span> MethodInterceptor) &#123;<br>      <span class="hljs-comment">//用于自定义处理MethodInterceptor</span><br>      <span class="hljs-comment">// So well-known it doesn&#x27;t even need an adapter.</span><br>      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultPointcutAdvisor(advice);<br>   &#125;<br>   <span class="hljs-keyword">for</span> (AdvisorAdapter adapter : <span class="hljs-keyword">this</span>.adapters) &#123;<br>      <span class="hljs-comment">// Check that it is supported.</span><br>      <span class="hljs-keyword">if</span> (adapter.supportsAdvice(advice)) &#123;<br>         <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> DefaultPointcutAdvisor(advice);<br>      &#125;<br>   &#125;<br>   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> UnknownAdviceTypeException(advice);<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<h4 id="getProxy"><a href="#getProxy" class="headerlink" title="getProxy()"></a>getProxy()</h4><h5 id="JdkDynamicAopProxy"><a href="#JdkDynamicAopProxy" class="headerlink" title="JdkDynamicAopProxy"></a>JdkDynamicAopProxy</h5><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getProxy</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> ClassLoader classLoader)</span> </span>&#123;
-   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-      logger.trace(<span class="hljs-string">&quot;Creating JDK dynamic proxy: &quot;</span> + <span class="hljs-keyword">this</span>.advised.getTargetSource());
-   &#125;
-   <span class="hljs-comment">//advised是代理工厂对象</span>
-   Class&lt;?&gt;[] proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(<span class="hljs-keyword">this</span>.advised, <span class="hljs-keyword">true</span>);
-   findDefinedEqualsAndHashCodeMethods(proxiedInterfaces);
-   <span class="hljs-keyword">return</span> Proxy.newProxyInstance(classLoader, proxiedInterfaces, <span class="hljs-keyword">this</span>);
-&#125;</code></pre>
+<h4 id="getProxy"><a href="#getProxy" class="headerlink" title="getProxy()"></a>getProxy()</h4><h5 id="JdkDynamicAopProxy"><a href="#JdkDynamicAopProxy" class="headerlink" title="JdkDynamicAopProxy"></a>JdkDynamicAopProxy</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getProxy</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> ClassLoader classLoader)</span> </span>&#123;<br>   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;<br>      logger.trace(<span class="hljs-string">&quot;Creating JDK dynamic proxy: &quot;</span> + <span class="hljs-keyword">this</span>.advised.getTargetSource());<br>   &#125;<br>   <span class="hljs-comment">//advised是代理工厂对象</span><br>   Class&lt;?&gt;[] proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(<span class="hljs-keyword">this</span>.advised, <span class="hljs-keyword">true</span>);<br>   findDefinedEqualsAndHashCodeMethods(proxiedInterfaces);<br>   <span class="hljs-keyword">return</span> Proxy.newProxyInstance(classLoader, proxiedInterfaces, <span class="hljs-keyword">this</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<h5 id="cglib"><a href="#cglib" class="headerlink" title="cglib"></a>cglib</h5><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getProxy</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> ClassLoader classLoader)</span> </span>&#123;
-   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-      logger.trace(<span class="hljs-string">&quot;Creating CGLIB proxy: &quot;</span> + <span class="hljs-keyword">this</span>.advised.getTargetSource());
-   &#125;
-
-   <span class="hljs-keyword">try</span> &#123;
-      Class&lt;?&gt; rootClass = <span class="hljs-keyword">this</span>.advised.getTargetClass();
-      Assert.state(rootClass != <span class="hljs-keyword">null</span>, <span class="hljs-string">&quot;Target class must be available for creating a CGLIB proxy&quot;</span>);
-
-      Class&lt;?&gt; proxySuperClass = rootClass;
-      <span class="hljs-keyword">if</span> (ClassUtils.isCglibProxyClass(rootClass)) &#123;
-         proxySuperClass = rootClass.getSuperclass();
-         Class&lt;?&gt;[] additionalInterfaces = rootClass.getInterfaces();
-         <span class="hljs-keyword">for</span> (Class&lt;?&gt; additionalInterface : additionalInterfaces) &#123;
-            <span class="hljs-keyword">this</span>.advised.addInterface(additionalInterface);
-         &#125;
-      &#125;
-
-      <span class="hljs-comment">// Validate the class, writing log messages as necessary.</span>
-      validateClassIfNecessary(proxySuperClass, classLoader);
-
-      <span class="hljs-comment">// Configure CGLIB Enhancer...</span>
-      Enhancer enhancer = createEnhancer();
-      <span class="hljs-keyword">if</span> (classLoader != <span class="hljs-keyword">null</span>) &#123;
-         enhancer.setClassLoader(classLoader);
-         <span class="hljs-keyword">if</span> (classLoader <span class="hljs-keyword">instanceof</span> SmartClassLoader &amp;&amp;
-               ((SmartClassLoader) classLoader).isClassReloadable(proxySuperClass)) &#123;
-            enhancer.setUseCache(<span class="hljs-keyword">false</span>);
-         &#125;
-      &#125;
-      enhancer.setSuperclass(proxySuperClass);
-      enhancer.setInterfaces(AopProxyUtils.completeProxiedInterfaces(<span class="hljs-keyword">this</span>.advised));
-      enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
-      enhancer.setStrategy(<span class="hljs-keyword">new</span> ClassLoaderAwareUndeclaredThrowableStrategy(classLoader));
-
-      Callback[] callbacks = getCallbacks(rootClass);
-      Class&lt;?&gt;[] types = <span class="hljs-keyword">new</span> Class&lt;?&gt;[callbacks.length];
-      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> x = <span class="hljs-number">0</span>; x &lt; types.length; x++) &#123;
-         types[x] = callbacks[x].getClass();
-      &#125;
-      <span class="hljs-comment">// fixedInterceptorMap only populated at this point, after getCallbacks call above</span>
-      enhancer.setCallbackFilter(<span class="hljs-keyword">new</span> ProxyCallbackFilter(
-            <span class="hljs-keyword">this</span>.advised.getConfigurationOnlyCopy(), <span class="hljs-keyword">this</span>.fixedInterceptorMap, <span class="hljs-keyword">this</span>.fixedInterceptorOffset));
-      enhancer.setCallbackTypes(types);
-
-      <span class="hljs-comment">// Generate the proxy class and create a proxy instance.</span>
-      <span class="hljs-keyword">return</span> createProxyClassAndInstance(enhancer, callbacks);
-   &#125;
-   <span class="hljs-keyword">catch</span> (CodeGenerationException | IllegalArgumentException ex) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopConfigException(<span class="hljs-string">&quot;Could not generate CGLIB subclass of &quot;</span> + <span class="hljs-keyword">this</span>.advised.getTargetClass() +
-            <span class="hljs-string">&quot;: Common causes of this problem include using a final class or a non-visible class&quot;</span>,
-            ex);
-   &#125;
-   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-      <span class="hljs-comment">// TargetSource.getTarget() failed</span>
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopConfigException(<span class="hljs-string">&quot;Unexpected AOP exception&quot;</span>, ex);
-   &#125;
-&#125;</code></pre>
+<h5 id="cglib"><a href="#cglib" class="headerlink" title="cglib"></a>cglib</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getProxy</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> ClassLoader classLoader)</span> </span>&#123;<br>   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;<br>      logger.trace(<span class="hljs-string">&quot;Creating CGLIB proxy: &quot;</span> + <span class="hljs-keyword">this</span>.advised.getTargetSource());<br>   &#125;<br><br>   <span class="hljs-keyword">try</span> &#123;<br>      Class&lt;?&gt; rootClass = <span class="hljs-keyword">this</span>.advised.getTargetClass();<br>      Assert.state(rootClass != <span class="hljs-keyword">null</span>, <span class="hljs-string">&quot;Target class must be available for creating a CGLIB proxy&quot;</span>);<br><br>      Class&lt;?&gt; proxySuperClass = rootClass;<br>      <span class="hljs-keyword">if</span> (ClassUtils.isCglibProxyClass(rootClass)) &#123;<br>         proxySuperClass = rootClass.getSuperclass();<br>         Class&lt;?&gt;[] additionalInterfaces = rootClass.getInterfaces();<br>         <span class="hljs-keyword">for</span> (Class&lt;?&gt; additionalInterface : additionalInterfaces) &#123;<br>            <span class="hljs-keyword">this</span>.advised.addInterface(additionalInterface);<br>         &#125;<br>      &#125;<br><br>      <span class="hljs-comment">// Validate the class, writing log messages as necessary.</span><br>      validateClassIfNecessary(proxySuperClass, classLoader);<br><br>      <span class="hljs-comment">// Configure CGLIB Enhancer...</span><br>      Enhancer enhancer = createEnhancer();<br>      <span class="hljs-keyword">if</span> (classLoader != <span class="hljs-keyword">null</span>) &#123;<br>         enhancer.setClassLoader(classLoader);<br>         <span class="hljs-keyword">if</span> (classLoader <span class="hljs-keyword">instanceof</span> SmartClassLoader &amp;&amp;<br>               ((SmartClassLoader) classLoader).isClassReloadable(proxySuperClass)) &#123;<br>            enhancer.setUseCache(<span class="hljs-keyword">false</span>);<br>         &#125;<br>      &#125;<br>      enhancer.setSuperclass(proxySuperClass);<br>      enhancer.setInterfaces(AopProxyUtils.completeProxiedInterfaces(<span class="hljs-keyword">this</span>.advised));<br>      enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);<br>      enhancer.setStrategy(<span class="hljs-keyword">new</span> ClassLoaderAwareUndeclaredThrowableStrategy(classLoader));<br><br>      Callback[] callbacks = getCallbacks(rootClass);<br>      Class&lt;?&gt;[] types = <span class="hljs-keyword">new</span> Class&lt;?&gt;[callbacks.length];<br>      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> x = <span class="hljs-number">0</span>; x &lt; types.length; x++) &#123;<br>         types[x] = callbacks[x].getClass();<br>      &#125;<br>      <span class="hljs-comment">// fixedInterceptorMap only populated at this point, after getCallbacks call above</span><br>      enhancer.setCallbackFilter(<span class="hljs-keyword">new</span> ProxyCallbackFilter(<br>            <span class="hljs-keyword">this</span>.advised.getConfigurationOnlyCopy(), <span class="hljs-keyword">this</span>.fixedInterceptorMap, <span class="hljs-keyword">this</span>.fixedInterceptorOffset));<br>      enhancer.setCallbackTypes(types);<br><br>      <span class="hljs-comment">// Generate the proxy class and create a proxy instance.</span><br>      <span class="hljs-keyword">return</span> createProxyClassAndInstance(enhancer, callbacks);<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (CodeGenerationException | IllegalArgumentException ex) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopConfigException(<span class="hljs-string">&quot;Could not generate CGLIB subclass of &quot;</span> + <span class="hljs-keyword">this</span>.advised.getTargetClass() +<br>            <span class="hljs-string">&quot;: Common causes of this problem include using a final class or a non-visible class&quot;</span>,<br>            ex);<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>      <span class="hljs-comment">// TargetSource.getTarget() failed</span><br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopConfigException(<span class="hljs-string">&quot;Unexpected AOP exception&quot;</span>, ex);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="AOP方法的调用"><a href="#AOP方法的调用" class="headerlink" title="AOP方法的调用"></a>AOP方法的调用</h2><h3 id="JdkDynamicAopProxy-1"><a href="#JdkDynamicAopProxy-1" class="headerlink" title="JdkDynamicAopProxy"></a>JdkDynamicAopProxy</h3><p>JdkDynamicAopProxy跟被代理对象是一一对应的，对JdkDynamicAopProxy被代理对象的调用会直接进入到invoke()方法中，JdkDynamicAopProxy中含有一个advised代理工厂对象，代理工厂含有所有的切面对象。然后根据advised.exposeProxy进行暴露判断，如果允许暴露可以通过AopContext.currentProxy()获取到被代理的实例。然后调用getInterceptorsAndDynamicInterceptionAdvice()获取执行链。如果没有就直接反射调用，但也会走代理，如果有就会通过proceed()方法调用执行链。TargetSource中封装被代理对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object proxy, Method method, Object[] args)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-   MethodInvocation invocation;
-   Object oldProxy = <span class="hljs-keyword">null</span>;
-   <span class="hljs-keyword">boolean</span> setProxyContext = <span class="hljs-keyword">false</span>;
-
-   <span class="hljs-comment">//从代理工厂中拿到TargetSource对象，该对象包装了被代理实例bean</span>
-   TargetSource targetSource = <span class="hljs-keyword">this</span>.advised.targetSource;
-   Object target = <span class="hljs-keyword">null</span>;
-
-   <span class="hljs-keyword">try</span> &#123;
-      <span class="hljs-comment">//被代理对象的equals方法和hashCode方法是不能被代理的，不会走切面</span>
-      <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.equalsDefined &amp;&amp; AopUtils.isEqualsMethod(method)) &#123;
-         <span class="hljs-comment">// The target does not implement the equals(Object) method itself.</span>
-         <span class="hljs-keyword">return</span> equals(args[<span class="hljs-number">0</span>]);
-      &#125;
-      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.hashCodeDefined &amp;&amp; AopUtils.isHashCodeMethod(method)) &#123;
-         <span class="hljs-comment">// The target does not implement the hashCode() method itself.</span>
-         <span class="hljs-keyword">return</span> hashCode();
-      &#125;
-      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (method.getDeclaringClass() == DecoratingProxy.class) &#123;
-         <span class="hljs-comment">// There is only getDecoratedClass() declared -&gt; dispatch to proxy config.</span>
-         <span class="hljs-keyword">return</span> AopProxyUtils.ultimateTargetClass(<span class="hljs-keyword">this</span>.advised);
-      &#125;
-      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.advised.opaque &amp;&amp; method.getDeclaringClass().isInterface() &amp;&amp;
-            method.getDeclaringClass().isAssignableFrom(Advised.class)) &#123;
-         <span class="hljs-comment">// Service invocations on ProxyConfig with the proxy config...</span>
-         <span class="hljs-keyword">return</span> AopUtils.invokeJoinpointUsingReflection(<span class="hljs-keyword">this</span>.advised, method, args);
-      &#125;
-
-      Object retVal;
-
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.advised.exposeProxy) &#123;
-         <span class="hljs-comment">// Make invocation available if necessary.</span>
-         oldProxy = AopContext.setCurrentProxy(proxy);
-         setProxyContext = <span class="hljs-keyword">true</span>;
-      &#125;
-
-      <span class="hljs-comment">// Get as late as possible to minimize the time we &quot;own&quot; the target,</span>
-      <span class="hljs-comment">// in case it comes from a pool.</span>
-      <span class="hljs-comment">//这个target就是被代理实例</span>
-      target = targetSource.getTarget();
-      Class&lt;?&gt; targetClass = (target != <span class="hljs-keyword">null</span> ? target.getClass() : <span class="hljs-keyword">null</span>);
-
-      <span class="hljs-comment">// Get the interception chain for this method.</span>
-      <span class="hljs-comment">//从代理工厂中拿过滤器链 Object是一个MethodInterceptor类型的对象，其实就是一个advice对象</span>
-      List&lt;Object&gt; chain = <span class="hljs-keyword">this</span>.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
-
-      <span class="hljs-comment">// Check whether we have any advice. If we don&#x27;t, we can fallback on direct</span>
-      <span class="hljs-comment">// reflective invocation of the target, and avoid creating a MethodInvocation.</span>
-
-      <span class="hljs-comment">//如果该方法没有执行链，则说明这个方法不需要被拦截，则直接反射调用</span>
-      <span class="hljs-keyword">if</span> (chain.isEmpty()) &#123;
-         <span class="hljs-comment">// We can skip creating a MethodInvocation: just invoke the target directly</span>
-         <span class="hljs-comment">// Note that the final invoker must be an InvokerInterceptor so we know it does</span>
-         <span class="hljs-comment">// nothing but a reflective operation on the target, and no hot swapping or fancy proxying.</span>
-         Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
-         retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         <span class="hljs-comment">// We need to create a method invocation...</span>
-         invocation = <span class="hljs-keyword">new</span> ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
-         <span class="hljs-comment">// Proceed to the joinpoint through the interceptor chain.</span>
-         retVal = invocation.proceed();
-      &#125;
-
-      <span class="hljs-comment">// Massage return value if necessary.</span>
-      Class&lt;?&gt; returnType = method.getReturnType();
-      <span class="hljs-keyword">if</span> (retVal != <span class="hljs-keyword">null</span> &amp;&amp; retVal == target &amp;&amp;
-            returnType != Object.class &amp;&amp; returnType.isInstance(proxy) &amp;&amp;
-            !RawTargetAccess.class.isAssignableFrom(method.getDeclaringClass())) &#123;
-         <span class="hljs-comment">// Special case: it returned &quot;this&quot; and the return type of the method</span>
-         <span class="hljs-comment">// is type-compatible. Note that we can&#x27;t help if the target sets</span>
-         <span class="hljs-comment">// a reference to itself in another returned object.</span>
-         retVal = proxy;
-      &#125;
-      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (retVal == <span class="hljs-keyword">null</span> &amp;&amp; returnType != Void.TYPE &amp;&amp; returnType.isPrimitive()) &#123;
-         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopInvocationException(
-               <span class="hljs-string">&quot;Null return value from advice does not match primitive return type for: &quot;</span> + method);
-      &#125;
-      <span class="hljs-keyword">return</span> retVal;
-   &#125;
-   <span class="hljs-keyword">finally</span> &#123;
-      <span class="hljs-keyword">if</span> (target != <span class="hljs-keyword">null</span> &amp;&amp; !targetSource.isStatic()) &#123;
-         <span class="hljs-comment">// Must have come from TargetSource.</span>
-         targetSource.releaseTarget(target);
-      &#125;
-      <span class="hljs-keyword">if</span> (setProxyContext) &#123;
-         <span class="hljs-comment">// Restore old proxy.</span>
-         AopContext.setCurrentProxy(oldProxy);
-      &#125;
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object proxy, Method method, Object[] args)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>   MethodInvocation invocation;<br>   Object oldProxy = <span class="hljs-keyword">null</span>;<br>   <span class="hljs-keyword">boolean</span> setProxyContext = <span class="hljs-keyword">false</span>;<br><br>   <span class="hljs-comment">//从代理工厂中拿到TargetSource对象，该对象包装了被代理实例bean</span><br>   TargetSource targetSource = <span class="hljs-keyword">this</span>.advised.targetSource;<br>   Object target = <span class="hljs-keyword">null</span>;<br><br>   <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-comment">//被代理对象的equals方法和hashCode方法是不能被代理的，不会走切面</span><br>      <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.equalsDefined &amp;&amp; AopUtils.isEqualsMethod(method)) &#123;<br>         <span class="hljs-comment">// The target does not implement the equals(Object) method itself.</span><br>         <span class="hljs-keyword">return</span> equals(args[<span class="hljs-number">0</span>]);<br>      &#125;<br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.hashCodeDefined &amp;&amp; AopUtils.isHashCodeMethod(method)) &#123;<br>         <span class="hljs-comment">// The target does not implement the hashCode() method itself.</span><br>         <span class="hljs-keyword">return</span> hashCode();<br>      &#125;<br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (method.getDeclaringClass() == DecoratingProxy.class) &#123;<br>         <span class="hljs-comment">// There is only getDecoratedClass() declared -&gt; dispatch to proxy config.</span><br>         <span class="hljs-keyword">return</span> AopProxyUtils.ultimateTargetClass(<span class="hljs-keyword">this</span>.advised);<br>      &#125;<br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.advised.opaque &amp;&amp; method.getDeclaringClass().isInterface() &amp;&amp;<br>            method.getDeclaringClass().isAssignableFrom(Advised.class)) &#123;<br>         <span class="hljs-comment">// Service invocations on ProxyConfig with the proxy config...</span><br>         <span class="hljs-keyword">return</span> AopUtils.invokeJoinpointUsingReflection(<span class="hljs-keyword">this</span>.advised, method, args);<br>      &#125;<br><br>      Object retVal;<br><br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.advised.exposeProxy) &#123;<br>         <span class="hljs-comment">// Make invocation available if necessary.</span><br>         oldProxy = AopContext.setCurrentProxy(proxy);<br>         setProxyContext = <span class="hljs-keyword">true</span>;<br>      &#125;<br><br>      <span class="hljs-comment">// Get as late as possible to minimize the time we &quot;own&quot; the target,</span><br>      <span class="hljs-comment">// in case it comes from a pool.</span><br>      <span class="hljs-comment">//这个target就是被代理实例</span><br>      target = targetSource.getTarget();<br>      Class&lt;?&gt; targetClass = (target != <span class="hljs-keyword">null</span> ? target.getClass() : <span class="hljs-keyword">null</span>);<br><br>      <span class="hljs-comment">// Get the interception chain for this method.</span><br>      <span class="hljs-comment">//从代理工厂中拿过滤器链 Object是一个MethodInterceptor类型的对象，其实就是一个advice对象</span><br>      List&lt;Object&gt; chain = <span class="hljs-keyword">this</span>.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);<br><br>      <span class="hljs-comment">// Check whether we have any advice. If we don&#x27;t, we can fallback on direct</span><br>      <span class="hljs-comment">// reflective invocation of the target, and avoid creating a MethodInvocation.</span><br><br>      <span class="hljs-comment">//如果该方法没有执行链，则说明这个方法不需要被拦截，则直接反射调用</span><br>      <span class="hljs-keyword">if</span> (chain.isEmpty()) &#123;<br>         <span class="hljs-comment">// We can skip creating a MethodInvocation: just invoke the target directly</span><br>         <span class="hljs-comment">// Note that the final invoker must be an InvokerInterceptor so we know it does</span><br>         <span class="hljs-comment">// nothing but a reflective operation on the target, and no hot swapping or fancy proxying.</span><br>         Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);<br>         retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         <span class="hljs-comment">// We need to create a method invocation...</span><br>         invocation = <span class="hljs-keyword">new</span> ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);<br>         <span class="hljs-comment">// Proceed to the joinpoint through the interceptor chain.</span><br>         retVal = invocation.proceed();<br>      &#125;<br><br>      <span class="hljs-comment">// Massage return value if necessary.</span><br>      Class&lt;?&gt; returnType = method.getReturnType();<br>      <span class="hljs-keyword">if</span> (retVal != <span class="hljs-keyword">null</span> &amp;&amp; retVal == target &amp;&amp;<br>            returnType != Object.class &amp;&amp; returnType.isInstance(proxy) &amp;&amp;<br>            !RawTargetAccess.class.isAssignableFrom(method.getDeclaringClass())) &#123;<br>         <span class="hljs-comment">// Special case: it returned &quot;this&quot; and the return type of the method</span><br>         <span class="hljs-comment">// is type-compatible. Note that we can&#x27;t help if the target sets</span><br>         <span class="hljs-comment">// a reference to itself in another returned object.</span><br>         retVal = proxy;<br>      &#125;<br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (retVal == <span class="hljs-keyword">null</span> &amp;&amp; returnType != Void.TYPE &amp;&amp; returnType.isPrimitive()) &#123;<br>         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AopInvocationException(<br>               <span class="hljs-string">&quot;Null return value from advice does not match primitive return type for: &quot;</span> + method);<br>      &#125;<br>      <span class="hljs-keyword">return</span> retVal;<br>   &#125;<br>   <span class="hljs-keyword">finally</span> &#123;<br>      <span class="hljs-keyword">if</span> (target != <span class="hljs-keyword">null</span> &amp;&amp; !targetSource.isStatic()) &#123;<br>         <span class="hljs-comment">// Must have come from TargetSource.</span><br>         targetSource.releaseTarget(target);<br>      &#125;<br>      <span class="hljs-keyword">if</span> (setProxyContext) &#123;<br>         <span class="hljs-comment">// Restore old proxy.</span><br>         AopContext.setCurrentProxy(oldProxy);<br>      &#125;<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getInterceptorsAndDynamicInterceptionAdvice()方法</p>
 <p>该方法中完成对切面的类和方法的匹配，匹配成功后会对切面再次进行包装，主要将非MethodInterceptor对象即@Before、@AfterReturning、@AfterThrowing的Advice包装为MethodInterceptor对象。此处的包装主要是为了方便接下来的调用。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Object&gt; <span class="hljs-title">getInterceptorsAndDynamicInterceptionAdvice</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">      Advised config, Method method, <span class="hljs-meta">@Nullable</span> Class&lt;?&gt; targetClass)</span> </span>&#123;
-
-   <span class="hljs-comment">// This is somewhat tricky... We have to process introductions first,</span>
-   <span class="hljs-comment">// but we need to preserve order in the ultimate list.</span>
-   AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();
-   <span class="hljs-comment">//从代理工厂中获得该被代理类的所有切面advisor，config就是代理工厂对象</span>
-   Advisor[] advisors = config.getAdvisors();
-   List&lt;Object&gt; interceptorList = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(advisors.length);
-   Class&lt;?&gt; actualClass = (targetClass != <span class="hljs-keyword">null</span> ? targetClass : method.getDeclaringClass());
-   Boolean hasIntroductions = <span class="hljs-keyword">null</span>;
-
-   <span class="hljs-keyword">for</span> (Advisor advisor : advisors) &#123;
-      <span class="hljs-comment">//大部分走这里</span>
-      <span class="hljs-keyword">if</span> (advisor <span class="hljs-keyword">instanceof</span> PointcutAdvisor) &#123;
-         <span class="hljs-comment">// Add it conditionally.</span>
-         PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
-         <span class="hljs-comment">//如果切面的pointCut和被代理对象是匹配的，说明是切面要拦截的对象</span>
-         <span class="hljs-keyword">if</span> (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) &#123;
-            MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
-            <span class="hljs-keyword">boolean</span> match;
-            <span class="hljs-keyword">if</span> (mm <span class="hljs-keyword">instanceof</span> IntroductionAwareMethodMatcher) &#123;
-               <span class="hljs-keyword">if</span> (hasIntroductions == <span class="hljs-keyword">null</span>) &#123;
-                  hasIntroductions = hasMatchingIntroductions(advisors, actualClass);
-               &#125;
-               match = ((IntroductionAwareMethodMatcher) mm).matches(method, actualClass, hasIntroductions);
-            &#125;
-            <span class="hljs-keyword">else</span> &#123;
-               <span class="hljs-comment">//接下来判断方法是否是切面pointcut需要拦截的方法</span>
-               match = mm.matches(method, actualClass);
-            &#125;
-            <span class="hljs-comment">//如果类和方法都匹配</span>
-            <span class="hljs-keyword">if</span> (match) &#123;
-
-               <span class="hljs-comment">//获取到切面advisor中的advice，并且包装成MethodInterceptor类型的对象</span>
-               MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
-               <span class="hljs-keyword">if</span> (mm.isRuntime()) &#123;
-                  <span class="hljs-comment">// Creating a new object instance in the getInterceptors() method</span>
-                  <span class="hljs-comment">// isn&#x27;t a problem as we normally cache created chains.</span>
-                  <span class="hljs-keyword">for</span> (MethodInterceptor interceptor : interceptors) &#123;
-                     interceptorList.add(<span class="hljs-keyword">new</span> InterceptorAndDynamicMethodMatcher(interceptor, mm));
-                  &#125;
-               &#125;
-               <span class="hljs-keyword">else</span> &#123;
-                  interceptorList.addAll(Arrays.asList(interceptors));
-               &#125;
-            &#125;
-         &#125;
-      &#125;
-      <span class="hljs-comment">//如果是引介切面</span>
-      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (advisor <span class="hljs-keyword">instanceof</span> IntroductionAdvisor) &#123;
-         IntroductionAdvisor ia = (IntroductionAdvisor) advisor;
-         <span class="hljs-keyword">if</span> (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) &#123;
-            Interceptor[] interceptors = registry.getInterceptors(advisor);
-            interceptorList.addAll(Arrays.asList(interceptors));
-         &#125;
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         Interceptor[] interceptors = registry.getInterceptors(advisor);
-         interceptorList.addAll(Arrays.asList(interceptors));
-      &#125;
-   &#125;
-
-   <span class="hljs-keyword">return</span> interceptorList;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> List&lt;Object&gt; <span class="hljs-title">getInterceptorsAndDynamicInterceptionAdvice</span><span class="hljs-params">(</span></span><br><span class="hljs-function"><span class="hljs-params">      Advised config, Method method, <span class="hljs-meta">@Nullable</span> Class&lt;?&gt; targetClass)</span> </span>&#123;<br><br>   <span class="hljs-comment">// This is somewhat tricky... We have to process introductions first,</span><br>   <span class="hljs-comment">// but we need to preserve order in the ultimate list.</span><br>   AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();<br>   <span class="hljs-comment">//从代理工厂中获得该被代理类的所有切面advisor，config就是代理工厂对象</span><br>   Advisor[] advisors = config.getAdvisors();<br>   List&lt;Object&gt; interceptorList = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(advisors.length);<br>   Class&lt;?&gt; actualClass = (targetClass != <span class="hljs-keyword">null</span> ? targetClass : method.getDeclaringClass());<br>   Boolean hasIntroductions = <span class="hljs-keyword">null</span>;<br><br>   <span class="hljs-keyword">for</span> (Advisor advisor : advisors) &#123;<br>      <span class="hljs-comment">//大部分走这里</span><br>      <span class="hljs-keyword">if</span> (advisor <span class="hljs-keyword">instanceof</span> PointcutAdvisor) &#123;<br>         <span class="hljs-comment">// Add it conditionally.</span><br>         PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;<br>         <span class="hljs-comment">//如果切面的pointCut和被代理对象是匹配的，说明是切面要拦截的对象</span><br>         <span class="hljs-keyword">if</span> (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) &#123;<br>            MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();<br>            <span class="hljs-keyword">boolean</span> match;<br>            <span class="hljs-keyword">if</span> (mm <span class="hljs-keyword">instanceof</span> IntroductionAwareMethodMatcher) &#123;<br>               <span class="hljs-keyword">if</span> (hasIntroductions == <span class="hljs-keyword">null</span>) &#123;<br>                  hasIntroductions = hasMatchingIntroductions(advisors, actualClass);<br>               &#125;<br>               match = ((IntroductionAwareMethodMatcher) mm).matches(method, actualClass, hasIntroductions);<br>            &#125;<br>            <span class="hljs-keyword">else</span> &#123;<br>               <span class="hljs-comment">//接下来判断方法是否是切面pointcut需要拦截的方法</span><br>               match = mm.matches(method, actualClass);<br>            &#125;<br>            <span class="hljs-comment">//如果类和方法都匹配</span><br>            <span class="hljs-keyword">if</span> (match) &#123;<br><br>               <span class="hljs-comment">//获取到切面advisor中的advice，并且包装成MethodInterceptor类型的对象</span><br>               MethodInterceptor[] interceptors = registry.getInterceptors(advisor);<br>               <span class="hljs-keyword">if</span> (mm.isRuntime()) &#123;<br>                  <span class="hljs-comment">// Creating a new object instance in the getInterceptors() method</span><br>                  <span class="hljs-comment">// isn&#x27;t a problem as we normally cache created chains.</span><br>                  <span class="hljs-keyword">for</span> (MethodInterceptor interceptor : interceptors) &#123;<br>                     interceptorList.add(<span class="hljs-keyword">new</span> InterceptorAndDynamicMethodMatcher(interceptor, mm));<br>                  &#125;<br>               &#125;<br>               <span class="hljs-keyword">else</span> &#123;<br>                  interceptorList.addAll(Arrays.asList(interceptors));<br>               &#125;<br>            &#125;<br>         &#125;<br>      &#125;<br>      <span class="hljs-comment">//如果是引介切面</span><br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (advisor <span class="hljs-keyword">instanceof</span> IntroductionAdvisor) &#123;<br>         IntroductionAdvisor ia = (IntroductionAdvisor) advisor;<br>         <span class="hljs-keyword">if</span> (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) &#123;<br>            Interceptor[] interceptors = registry.getInterceptors(advisor);<br>            interceptorList.addAll(Arrays.asList(interceptors));<br>         &#125;<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         Interceptor[] interceptors = registry.getInterceptors(advisor);<br>         interceptorList.addAll(Arrays.asList(interceptors));<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-keyword">return</span> interceptorList;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>proceed()方法</p>
 <p>该方法首先会判断执行链是否执行完毕，如果执行完毕会直接使用invokeJoinpoint()调用被代理方法。判断方式为当前执行位置是否与执行链长度相等。如果没有执行完毕会调用执行链中Advice的invoke()方法，此时的调用链的顺序与aspect中advice的出现顺序相同，invoke()方法执行完增强的逻辑后会再回调回proceed()方法。AspectJAroundAdvice类型的invoke()方法会直接通过反射调用aroud()方法，在aroud()方法中执行joinPoint.proceed()方法时会回调proceed()方法，MethodBeforeAdviceInterceptor在调用完before()方法后最后会执行proceed()方法，AspectJAfterAdvice类型的invoke()方法会先执行proceed()然后在finally块中调用after()方法。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">proceed</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-   <span class="hljs-comment">// We start with an index of -1 and increment early.</span>
-   <span class="hljs-comment">//如果执行链中的advice全部执行完，则直接调用joinPoint方法，就是被代理方法</span>
-   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.currentInterceptorIndex == <span class="hljs-keyword">this</span>.interceptorsAndDynamicMethodMatchers.size() - <span class="hljs-number">1</span>) &#123;
-      <span class="hljs-keyword">return</span> invokeJoinpoint();
-   &#125;
-
-   Object interceptorOrInterceptionAdvice =
-         <span class="hljs-keyword">this</span>.interceptorsAndDynamicMethodMatchers.get(++<span class="hljs-keyword">this</span>.currentInterceptorIndex);
-   <span class="hljs-keyword">if</span> (interceptorOrInterceptionAdvice <span class="hljs-keyword">instanceof</span> InterceptorAndDynamicMethodMatcher) &#123;
-      <span class="hljs-comment">// Evaluate dynamic method matcher here: static part will already have</span>
-      <span class="hljs-comment">// been evaluated and found to match.</span>
-      InterceptorAndDynamicMethodMatcher dm =
-            (InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
-      Class&lt;?&gt; targetClass = (<span class="hljs-keyword">this</span>.targetClass != <span class="hljs-keyword">null</span> ? <span class="hljs-keyword">this</span>.targetClass : <span class="hljs-keyword">this</span>.method.getDeclaringClass());
-      <span class="hljs-keyword">if</span> (dm.methodMatcher.matches(<span class="hljs-keyword">this</span>.method, targetClass, <span class="hljs-keyword">this</span>.arguments)) &#123;
-         <span class="hljs-keyword">return</span> dm.interceptor.invoke(<span class="hljs-keyword">this</span>);
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         <span class="hljs-comment">// Dynamic matching failed.</span>
-         <span class="hljs-comment">// Skip this interceptor and invoke the next in the chain.</span>
-         <span class="hljs-keyword">return</span> proceed();
-      &#125;
-   &#125;
-   <span class="hljs-keyword">else</span> &#123;
-      <span class="hljs-comment">// It&#x27;s an interceptor, so we just invoke it: The pointcut will have</span>
-      <span class="hljs-comment">// been evaluated statically before this object was constructed.</span>
-
-      <span class="hljs-comment">//调用MethodInterceptor中的invoke方法</span>
-      <span class="hljs-keyword">return</span> ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(<span class="hljs-keyword">this</span>);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">proceed</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>   <span class="hljs-comment">// We start with an index of -1 and increment early.</span><br>   <span class="hljs-comment">//如果执行链中的advice全部执行完，则直接调用joinPoint方法，就是被代理方法</span><br>   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.currentInterceptorIndex == <span class="hljs-keyword">this</span>.interceptorsAndDynamicMethodMatchers.size() - <span class="hljs-number">1</span>) &#123;<br>      <span class="hljs-keyword">return</span> invokeJoinpoint();<br>   &#125;<br><br>   Object interceptorOrInterceptionAdvice =<br>         <span class="hljs-keyword">this</span>.interceptorsAndDynamicMethodMatchers.get(++<span class="hljs-keyword">this</span>.currentInterceptorIndex);<br>   <span class="hljs-keyword">if</span> (interceptorOrInterceptionAdvice <span class="hljs-keyword">instanceof</span> InterceptorAndDynamicMethodMatcher) &#123;<br>      <span class="hljs-comment">// Evaluate dynamic method matcher here: static part will already have</span><br>      <span class="hljs-comment">// been evaluated and found to match.</span><br>      InterceptorAndDynamicMethodMatcher dm =<br>            (InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;<br>      Class&lt;?&gt; targetClass = (<span class="hljs-keyword">this</span>.targetClass != <span class="hljs-keyword">null</span> ? <span class="hljs-keyword">this</span>.targetClass : <span class="hljs-keyword">this</span>.method.getDeclaringClass());<br>      <span class="hljs-keyword">if</span> (dm.methodMatcher.matches(<span class="hljs-keyword">this</span>.method, targetClass, <span class="hljs-keyword">this</span>.arguments)) &#123;<br>         <span class="hljs-keyword">return</span> dm.interceptor.invoke(<span class="hljs-keyword">this</span>);<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         <span class="hljs-comment">// Dynamic matching failed.</span><br>         <span class="hljs-comment">// Skip this interceptor and invoke the next in the chain.</span><br>         <span class="hljs-keyword">return</span> proceed();<br>      &#125;<br>   &#125;<br>   <span class="hljs-keyword">else</span> &#123;<br>      <span class="hljs-comment">// It&#x27;s an interceptor, so we just invoke it: The pointcut will have</span><br>      <span class="hljs-comment">// been evaluated statically before this object was constructed.</span><br><br>      <span class="hljs-comment">//调用MethodInterceptor中的invoke方法</span><br>      <span class="hljs-keyword">return</span> ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(<span class="hljs-keyword">this</span>);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="cglib-1"><a href="#cglib-1" class="headerlink" title="cglib"></a>cglib</h3><h2 id="自定义实现的MethodInterceptor"><a href="#自定义实现的MethodInterceptor" class="headerlink" title="自定义实现的MethodInterceptor"></a>自定义实现的MethodInterceptor</h2><p>通过使用Spring提供的MethodInterceptor可以实现拦截所有切面方法</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyMethodInterceptor</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">MethodInterceptor</span> </span>&#123;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(MethodInvocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-        String method = invocation.getMethod().getName();
-        Object[] arguments = invocation.getArguments();
-        System.out.println(<span class="hljs-string">&quot;全局拦截器触发，method：&quot;</span> + method + <span class="hljs-string">&quot;，args：&quot;</span> + arguments);
-        Object proceed = invocation.proceed();
-        System.out.println(<span class="hljs-string">&quot;执行结果：&quot;</span> + proceed);
-        <span class="hljs-keyword">return</span> proceed;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyMethodInterceptor</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">MethodInterceptor</span> </span>&#123;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(MethodInvocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>        String method = invocation.getMethod().getName();<br>        Object[] arguments = invocation.getArguments();<br>        System.out.println(<span class="hljs-string">&quot;全局拦截器触发，method：&quot;</span> + method + <span class="hljs-string">&quot;，args：&quot;</span> + arguments);<br>        Object proceed = invocation.proceed();<br>        System.out.println(<span class="hljs-string">&quot;执行结果：&quot;</span> + proceed);<br>        <span class="hljs-keyword">return</span> proceed;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>test()方法</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">aopTest</span><span class="hljs-params">()</span></span>&#123;
-    AnnotationAwareAspectJAutoProxyCreator bean = applicationContext.getBean(AnnotationAwareAspectJAutoProxyCreator.class);
-    bean.setInterceptorNames(<span class="hljs-string">&quot;myMethodInterceptor&quot;</span>);
-    AopService aopService = applicationContext.getBean(AopService.class);
-    aopService.testInterceptor();
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">aopTest</span><span class="hljs-params">()</span></span>&#123;<br>    AnnotationAwareAspectJAutoProxyCreator bean = applicationContext.getBean(AnnotationAwareAspectJAutoProxyCreator.class);<br>    bean.setInterceptorNames(<span class="hljs-string">&quot;myMethodInterceptor&quot;</span>);<br>    AopService aopService = applicationContext.getBean(AopService.class);<br>    aopService.testInterceptor();<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>注意：在之前的aop分析中，spring会根据该类是否有切面来决定是否进入aop入口，aop的入口是在getBean()实例化完成后的initializeBean()方法中，完成aop处理之后会直接将创建的代理类放入缓存，之后的getBean()会直接从缓存中取不会触发实例化方法，也就不会再进入aop。所以，要保证自定义实现的MethodInterceptor能够正常触发，必须要保证setInterceptorNames()方法在getBean()之前完成，而且该类已经有对应的切面。</p>
 
@@ -994,8 +322,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -1086,17 +420,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -1105,7 +437,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -1113,7 +444,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -1140,6 +471,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -1157,11 +489,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -1181,7 +514,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

@@ -24,21 +24,28 @@ var searchFunc = function(path, search_id, content_id) {
   'use strict';
   var $input = document.getElementById(search_id);
   var $resultContent = document.getElementById(content_id);
-  $resultContent.innerHTML = '<div class="m-auto text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div><br/>Loading...</div>';
+
+  if ($resultContent.innerHTML.indexOf('list-group-item') === -1) {
+    $resultContent.innerHTML = '<div class="m-auto text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div><br/>Loading...</div>';
+  }
+
   $.ajax({
     // 0x01. load xml file
     url     : path,
     dataType: 'xml',
     success : function(xmlResponse) {
       // 0x02. parse xml file
-      var dataList = $('entry', xmlResponse).map(function() {
+      var dataList = jQuery('entry', xmlResponse).map(function() {
         return {
-          title  : $('title', this).text(),
-          content: $('content', this).text(),
-          url    : $('url', this).text()
+          title  : jQuery('title', this).text(),
+          content: jQuery('content', this).text(),
+          url    : jQuery('url', this).text()
         };
       }).get();
-      $resultContent.innerHTML = '';
+
+      if ($resultContent.innerHTML.indexOf('list-group-item') === -1) {
+        $resultContent.innerHTML = '';
+      }
 
       $input.addEventListener('input', function() {
         // 0x03. parse query to keywords list
@@ -116,7 +123,7 @@ var searchFunc = function(path, search_id, content_id) {
             }
           }
         });
-        const input = $('#local-search-input');
+        const input = jQuery('#local-search-input');
         if (str.indexOf('list-group-item') === -1) {
           return input.addClass('invalid').removeClass('valid');
         }
@@ -125,8 +132,9 @@ var searchFunc = function(path, search_id, content_id) {
       });
     }
   });
-  $(document).on('click', '#local-search-close', function() {
-    $('#local-search-input').val('').removeClass('invalid').removeClass('valid');
-    $('#local-search-result').html('');
+
+  jQuery('#local-search-close').on('click', function() {
+    jQuery('#local-search-input').val('').removeClass('invalid').removeClass('valid');
+    jQuery('#local-search-result').html('');
   });
 };

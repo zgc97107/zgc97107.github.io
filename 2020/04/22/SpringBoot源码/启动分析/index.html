@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>SpringBoot启动分析 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -234,265 +235,47 @@
 <li>调用refreshContext()方法，最终会调用到上下文对象的refresh()，与之前不同的是这里在refresh()的onrefresh()方法中会完成tomcat的启动。</li>
 </ol>
 <p>SPI在spring、springboot、tomcat中都有使用，SPI全称为service provider interface，核心思想是服务提供接口的发现。spring主要是从外部文件中发现服务，这么做是由于加载的类文件是由开发者指定的包名下的，是不包括第三方的jar包的，所以spring提供了这种方式来加载jar包中的类文件。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> ConfigurableApplicationContext <span class="hljs-title">run</span><span class="hljs-params">(String... args)</span> </span>&#123;
-   <span class="hljs-comment">// 统计时间用的工具类</span>
-   StopWatch stopWatch = <span class="hljs-keyword">new</span> StopWatch();
-   stopWatch.start();
-   ConfigurableApplicationContext context = <span class="hljs-keyword">null</span>;
-   Collection&lt;SpringBootExceptionReporter&gt; exceptionReporters = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-   configureHeadlessProperty();
-   <span class="hljs-comment">// 获取实现了SpringApplicationRunListener接口的实现类，通过SPI机制加载</span>
-   <span class="hljs-comment">// META-INF/spring.factories文件下的类</span>
-   SpringApplicationRunListeners listeners = getRunListeners(args);
-
-   <span class="hljs-comment">// 首先调用SpringApplicationRunListener的starting方法</span>
-   listeners.starting();
-   <span class="hljs-keyword">try</span> &#123;
-      ApplicationArguments applicationArguments = <span class="hljs-keyword">new</span> DefaultApplicationArguments(args);
-
-      <span class="hljs-comment">// 处理配置数据</span>
-      ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
-      configureIgnoreBeanInfo(environment);
-
-      <span class="hljs-comment">// 启动时打印banner</span>
-      Banner printedBanner = printBanner(environment);
-
-      <span class="hljs-comment">// 创建上下文对象</span>
-      context = createApplicationContext();
-
-      <span class="hljs-comment">// 获取SpringBootExceptionReporter接口的类，异常报告</span>
-      exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
-            <span class="hljs-keyword">new</span> Class[] &#123; ConfigurableApplicationContext.class &#125;, context);
-
-      prepareContext(context, environment, listeners, applicationArguments, printedBanner);
-
-      <span class="hljs-comment">// 核心方法，启动spring容器</span>
-      refreshContext(context);
-      afterRefresh(context, applicationArguments);
-
-      <span class="hljs-comment">// 统计结束</span>
-      stopWatch.stop();
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.logStartupInfo) &#123;
-         <span class="hljs-keyword">new</span> StartupInfoLogger(<span class="hljs-keyword">this</span>.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);
-      &#125;
-      <span class="hljs-comment">// 调用started</span>
-      listeners.started(context);
-
-      <span class="hljs-comment">// ApplicationRunner</span>
-      <span class="hljs-comment">// CommandLineRunner</span>
-      <span class="hljs-comment">// 获取这两个接口的实现类，并调用其run方法</span>
-      callRunners(context, applicationArguments);
-   &#125;
-   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-      handleRunFailure(context, ex, exceptionReporters, listeners);
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(ex);
-   &#125;
-
-   <span class="hljs-keyword">try</span> &#123;
-      <span class="hljs-comment">// 最后调用running方法</span>
-      listeners.running(context);
-   &#125;
-   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-      handleRunFailure(context, ex, exceptionReporters, <span class="hljs-keyword">null</span>);
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(ex);
-   &#125;
-   <span class="hljs-keyword">return</span> context;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> ConfigurableApplicationContext <span class="hljs-title">run</span><span class="hljs-params">(String... args)</span> </span>&#123;<br>   <span class="hljs-comment">// 统计时间用的工具类</span><br>   StopWatch stopWatch = <span class="hljs-keyword">new</span> StopWatch();<br>   stopWatch.start();<br>   ConfigurableApplicationContext context = <span class="hljs-keyword">null</span>;<br>   Collection&lt;SpringBootExceptionReporter&gt; exceptionReporters = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>   configureHeadlessProperty();<br>   <span class="hljs-comment">// 获取实现了SpringApplicationRunListener接口的实现类，通过SPI机制加载</span><br>   <span class="hljs-comment">// META-INF/spring.factories文件下的类</span><br>   SpringApplicationRunListeners listeners = getRunListeners(args);<br><br>   <span class="hljs-comment">// 首先调用SpringApplicationRunListener的starting方法</span><br>   listeners.starting();<br>   <span class="hljs-keyword">try</span> &#123;<br>      ApplicationArguments applicationArguments = <span class="hljs-keyword">new</span> DefaultApplicationArguments(args);<br><br>      <span class="hljs-comment">// 处理配置数据</span><br>      ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);<br>      configureIgnoreBeanInfo(environment);<br><br>      <span class="hljs-comment">// 启动时打印banner</span><br>      Banner printedBanner = printBanner(environment);<br><br>      <span class="hljs-comment">// 创建上下文对象</span><br>      context = createApplicationContext();<br><br>      <span class="hljs-comment">// 获取SpringBootExceptionReporter接口的类，异常报告</span><br>      exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,<br>            <span class="hljs-keyword">new</span> Class[] &#123; ConfigurableApplicationContext.class &#125;, context);<br><br>      prepareContext(context, environment, listeners, applicationArguments, printedBanner);<br><br>      <span class="hljs-comment">// 核心方法，启动spring容器</span><br>      refreshContext(context);<br>      afterRefresh(context, applicationArguments);<br><br>      <span class="hljs-comment">// 统计结束</span><br>      stopWatch.stop();<br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.logStartupInfo) &#123;<br>         <span class="hljs-keyword">new</span> StartupInfoLogger(<span class="hljs-keyword">this</span>.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);<br>      &#125;<br>      <span class="hljs-comment">// 调用started</span><br>      listeners.started(context);<br><br>      <span class="hljs-comment">// ApplicationRunner</span><br>      <span class="hljs-comment">// CommandLineRunner</span><br>      <span class="hljs-comment">// 获取这两个接口的实现类，并调用其run方法</span><br>      callRunners(context, applicationArguments);<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>      handleRunFailure(context, ex, exceptionReporters, listeners);<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(ex);<br>   &#125;<br><br>   <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-comment">// 最后调用running方法</span><br>      listeners.running(context);<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>      handleRunFailure(context, ex, exceptionReporters, <span class="hljs-keyword">null</span>);<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(ex);<br>   &#125;<br>   <span class="hljs-keyword">return</span> context;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="getRunListeners-方法"><a href="#getRunListeners-方法" class="headerlink" title="getRunListeners()方法"></a>getRunListeners()方法</h3><p>getSpringFactoriesInstances()是它的主要方法，该方法首先会通过loadFactoryNames()方法加载spring.factories中的内容，然后通过反射实例化。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">private</span> &lt;T&gt; <span class="hljs-function">Collection&lt;T&gt; <span class="hljs-title">getSpringFactoriesInstances</span><span class="hljs-params">(Class&lt;T&gt; type, Class&lt;?&gt;[] parameterTypes, Object... args)</span> </span>&#123;
-   ClassLoader classLoader = getClassLoader();
-   <span class="hljs-comment">// Use names and ensure unique to protect against duplicates</span>
-   Set&lt;String&gt; names = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;(SpringFactoriesLoader.loadFactoryNames(type, classLoader));
-   <span class="hljs-comment">// 加载后反射实例化</span>
-   List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);
-   AnnotationAwareOrderComparator.sort(instances);
-   <span class="hljs-keyword">return</span> instances;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> &lt;T&gt; <span class="hljs-function">Collection&lt;T&gt; <span class="hljs-title">getSpringFactoriesInstances</span><span class="hljs-params">(Class&lt;T&gt; type, Class&lt;?&gt;[] parameterTypes, Object... args)</span> </span>&#123;<br>   ClassLoader classLoader = getClassLoader();<br>   <span class="hljs-comment">// Use names and ensure unique to protect against duplicates</span><br>   Set&lt;String&gt; names = <span class="hljs-keyword">new</span> LinkedHashSet&lt;&gt;(SpringFactoriesLoader.loadFactoryNames(type, classLoader));<br>   <span class="hljs-comment">// 加载后反射实例化</span><br>   List&lt;T&gt; instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);<br>   AnnotationAwareOrderComparator.sort(instances);<br>   <span class="hljs-keyword">return</span> instances;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="createApplicationContext-方法"><a href="#createApplicationContext-方法" class="headerlink" title="createApplicationContext()方法"></a>createApplicationContext()方法</h3><p>该方法会加载AnnotationConfigServletWebServerApplicationContext对象。该对象与之前分析的spring基于注解的启动方式中的AnnotationConfigApplicaitonContext对象基本相同，初始化逻辑也基本相同。</p>
 <p>其构造函数中也会创建一个AnnotatedBeanDefinitionReader对象，AnnotatedBeanDefinitionReader的构造函数中会直接调用AnnotationConfigUtils.registerAnnotationConfigProcessors()将一些对象的转为BeanDefinition对象，这里有一个比较重要的对象：ConfigurationClassPostProcessor。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> ConfigurableApplicationContext <span class="hljs-title">createApplicationContext</span><span class="hljs-params">()</span> </span>&#123;
-   Class&lt;?&gt; contextClass = <span class="hljs-keyword">this</span>.applicationContextClass;
-   <span class="hljs-keyword">if</span> (contextClass == <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">try</span> &#123;
-         <span class="hljs-keyword">switch</span> (<span class="hljs-keyword">this</span>.webApplicationType) &#123;
-         <span class="hljs-keyword">case</span> SERVLET:
-            contextClass = Class.forName(DEFAULT_SERVLET_WEB_CONTEXT_CLASS);
-            <span class="hljs-keyword">break</span>;
-         <span class="hljs-keyword">case</span> REACTIVE:
-            contextClass = Class.forName(DEFAULT_REACTIVE_WEB_CONTEXT_CLASS);
-            <span class="hljs-keyword">break</span>;
-         <span class="hljs-keyword">default</span>:
-            contextClass = Class.forName(DEFAULT_CONTEXT_CLASS);
-         &#125;
-      &#125;
-      <span class="hljs-keyword">catch</span> (ClassNotFoundException ex) &#123;
-         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
-               <span class="hljs-string">&quot;Unable create a default ApplicationContext, please specify an ApplicationContextClass&quot;</span>, ex);
-      &#125;
-   &#125;
-   <span class="hljs-keyword">return</span> (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> ConfigurableApplicationContext <span class="hljs-title">createApplicationContext</span><span class="hljs-params">()</span> </span>&#123;<br>   Class&lt;?&gt; contextClass = <span class="hljs-keyword">this</span>.applicationContextClass;<br>   <span class="hljs-keyword">if</span> (contextClass == <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">try</span> &#123;<br>         <span class="hljs-keyword">switch</span> (<span class="hljs-keyword">this</span>.webApplicationType) &#123;<br>         <span class="hljs-keyword">case</span> SERVLET:<br>            contextClass = Class.forName(DEFAULT_SERVLET_WEB_CONTEXT_CLASS);<br>            <span class="hljs-keyword">break</span>;<br>         <span class="hljs-keyword">case</span> REACTIVE:<br>            contextClass = Class.forName(DEFAULT_REACTIVE_WEB_CONTEXT_CLASS);<br>            <span class="hljs-keyword">break</span>;<br>         <span class="hljs-keyword">default</span>:<br>            contextClass = Class.forName(DEFAULT_CONTEXT_CLASS);<br>         &#125;<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (ClassNotFoundException ex) &#123;<br>         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<br>               <span class="hljs-string">&quot;Unable create a default ApplicationContext, please specify an ApplicationContextClass&quot;</span>, ex);<br>      &#125;<br>   &#125;<br>   <span class="hljs-keyword">return</span> (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="onRefresh-方法"><a href="#onRefresh-方法" class="headerlink" title="onRefresh()方法"></a>onRefresh()方法</h3><p>该方法会调用到ServletWebServerApplicationContext类的onRefresh()方法，该方法完成父类容器的onRefresh()方法后会调用createWebServer()方法创建web容器。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onRefresh</span><span class="hljs-params">()</span> </span>&#123;
-   <span class="hljs-keyword">super</span>.onRefresh();
-   <span class="hljs-keyword">try</span> &#123;
-      createWebServer();
-   &#125;
-   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ApplicationContextException(<span class="hljs-string">&quot;Unable to start web server&quot;</span>, ex);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onRefresh</span><span class="hljs-params">()</span> </span>&#123;<br>   <span class="hljs-keyword">super</span>.onRefresh();<br>   <span class="hljs-keyword">try</span> &#123;<br>      createWebServer();<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ApplicationContextException(<span class="hljs-string">&quot;Unable to start web server&quot;</span>, ex);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>createWebServer()方法</p>
 <p>该方法会调用到Jetty、Undertow、Tomcat的getWebServer()创建方法，这里我们只分析Tomcat的创建方法。</p>
-<pre><code class="hljs java"><span class="hljs-comment">/*</span>
-<span class="hljs-comment"> * 创建servlet容器</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">createWebServer</span><span class="hljs-params">()</span> </span>&#123;
-   WebServer webServer = <span class="hljs-keyword">this</span>.webServer;
-   ServletContext servletContext = getServletContext();
-   <span class="hljs-keyword">if</span> (webServer == <span class="hljs-keyword">null</span> &amp;&amp; servletContext == <span class="hljs-keyword">null</span>) &#123;
-      ServletWebServerFactory factory = getWebServerFactory();
-      <span class="hljs-comment">// 主要看这个方法</span>
-      <span class="hljs-keyword">this</span>.webServer = factory.getWebServer(getSelfInitializer());
-   &#125;
-   <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (servletContext != <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">try</span> &#123;
-         getSelfInitializer().onStartup(servletContext);
-      &#125;
-      <span class="hljs-keyword">catch</span> (ServletException ex) &#123;
-         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ApplicationContextException(<span class="hljs-string">&quot;Cannot initialize servlet context&quot;</span>, ex);
-      &#125;
-   &#125;
-   initPropertySources();
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/*</span><br><span class="hljs-comment"> * 创建servlet容器</span><br><span class="hljs-comment"> */</span><br><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">createWebServer</span><span class="hljs-params">()</span> </span>&#123;<br>   WebServer webServer = <span class="hljs-keyword">this</span>.webServer;<br>   ServletContext servletContext = getServletContext();<br>   <span class="hljs-keyword">if</span> (webServer == <span class="hljs-keyword">null</span> &amp;&amp; servletContext == <span class="hljs-keyword">null</span>) &#123;<br>      ServletWebServerFactory factory = getWebServerFactory();<br>      <span class="hljs-comment">// 主要看这个方法</span><br>      <span class="hljs-keyword">this</span>.webServer = factory.getWebServer(getSelfInitializer());<br>   &#125;<br>   <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (servletContext != <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">try</span> &#123;<br>         getSelfInitializer().onStartup(servletContext);<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (ServletException ex) &#123;<br>         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ApplicationContextException(<span class="hljs-string">&quot;Cannot initialize servlet context&quot;</span>, ex);<br>      &#125;<br>   &#125;<br>   initPropertySources();<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getWebServer()方法</p>
 <p>该方法会创建一个Tomcat容器，并完成其工作路径、connection属性的设置。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> WebServer <span class="hljs-title">getWebServer</span><span class="hljs-params">(ServletContextInitializer... initializers)</span> </span>&#123;
-   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.disableMBeanRegistry) &#123;
-      Registry.disableRegistry();
-   &#125;
-   Tomcat tomcat = <span class="hljs-keyword">new</span> Tomcat();
-   File baseDir = (<span class="hljs-keyword">this</span>.baseDirectory != <span class="hljs-keyword">null</span>) ? <span class="hljs-keyword">this</span>.baseDirectory : createTempDir(<span class="hljs-string">&quot;tomcat&quot;</span>);
-   tomcat.setBaseDir(baseDir.getAbsolutePath());
-   Connector connector = <span class="hljs-keyword">new</span> Connector(<span class="hljs-keyword">this</span>.protocol);
-   connector.setThrowOnFailure(<span class="hljs-keyword">true</span>);
-   tomcat.getService().addConnector(connector);
-   customizeConnector(connector);
-   tomcat.setConnector(connector);
-   tomcat.getHost().setAutoDeploy(<span class="hljs-keyword">false</span>);
-   configureEngine(tomcat.getEngine());
-   <span class="hljs-keyword">for</span> (Connector additionalConnector : <span class="hljs-keyword">this</span>.additionalTomcatConnectors) &#123;
-      tomcat.getService().addConnector(additionalConnector);
-   &#125;
-   prepareContext(tomcat.getHost(), initializers);
-   <span class="hljs-keyword">return</span> getTomcatWebServer(tomcat);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> WebServer <span class="hljs-title">getWebServer</span><span class="hljs-params">(ServletContextInitializer... initializers)</span> </span>&#123;<br>   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.disableMBeanRegistry) &#123;<br>      Registry.disableRegistry();<br>   &#125;<br>   Tomcat tomcat = <span class="hljs-keyword">new</span> Tomcat();<br>   File baseDir = (<span class="hljs-keyword">this</span>.baseDirectory != <span class="hljs-keyword">null</span>) ? <span class="hljs-keyword">this</span>.baseDirectory : createTempDir(<span class="hljs-string">&quot;tomcat&quot;</span>);<br>   tomcat.setBaseDir(baseDir.getAbsolutePath());<br>   Connector connector = <span class="hljs-keyword">new</span> Connector(<span class="hljs-keyword">this</span>.protocol);<br>   connector.setThrowOnFailure(<span class="hljs-keyword">true</span>);<br>   tomcat.getService().addConnector(connector);<br>   customizeConnector(connector);<br>   tomcat.setConnector(connector);<br>   tomcat.getHost().setAutoDeploy(<span class="hljs-keyword">false</span>);<br>   configureEngine(tomcat.getEngine());<br>   <span class="hljs-keyword">for</span> (Connector additionalConnector : <span class="hljs-keyword">this</span>.additionalTomcatConnectors) &#123;<br>      tomcat.getService().addConnector(additionalConnector);<br>   &#125;<br>   prepareContext(tomcat.getHost(), initializers);<br>   <span class="hljs-keyword">return</span> getTomcatWebServer(tomcat);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="springboot的自动化配置分析"><a href="#springboot的自动化配置分析" class="headerlink" title="springboot的自动化配置分析"></a>springboot的自动化配置分析</h2><p>@SpringBootApplication中包含的注解：</p>
 <ul>
 <li>@ComponentScan注解：扫描包路径下的注解</li>
 <li>@EnableAutoConfiguration注解：开启自动配置</li>
 </ul>
-<pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span>
-<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
-<span class="hljs-meta">@Documented</span>
-<span class="hljs-meta">@Inherited</span>
-<span class="hljs-meta">@SpringBootConfiguration</span>
-<span class="hljs-meta">@EnableAutoConfiguration</span>
-<span class="hljs-meta">@ComponentScan(excludeFilters = &#123; @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),</span>
-<span class="hljs-meta">      @Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) &#125;)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> SpringBootApplication &#123;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Inherited</span><br><span class="hljs-meta">@SpringBootConfiguration</span><br><span class="hljs-meta">@EnableAutoConfiguration</span><br><span class="hljs-meta">@ComponentScan(excludeFilters = &#123; @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),</span><br><span class="hljs-meta">      @Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) &#125;)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> SpringBootApplication &#123;<br></code></pre></td></tr></table></figure>
 
 <h3 id="EnableAutoConfiguration自动配置的实现"><a href="#EnableAutoConfiguration自动配置的实现" class="headerlink" title="@EnableAutoConfiguration自动配置的实现"></a>@EnableAutoConfiguration自动配置的实现</h3><p>该注解会引入AutoConfigurationImportSelector类，这个类将通过spi来引入自动配置类。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span>
-<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
-<span class="hljs-meta">@Documented</span>
-<span class="hljs-meta">@Inherited</span>
-<span class="hljs-meta">@AutoConfigurationPackage</span>
-<span class="hljs-meta">@Import(AutoConfigurationImportSelector.class)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableAutoConfiguration &#123;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Inherited</span><br><span class="hljs-meta">@AutoConfigurationPackage</span><br><span class="hljs-meta">@Import(AutoConfigurationImportSelector.class)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableAutoConfiguration &#123;<br></code></pre></td></tr></table></figure>
 
 <h4 id="AutoConfigurationImportSelector类"><a href="#AutoConfigurationImportSelector类" class="headerlink" title="AutoConfigurationImportSelector类"></a>AutoConfigurationImportSelector类</h4><p>process()方法</p>
 <p>该方法会由上面注册的ConfigurationClassPostProcessor调用，首先调用getAutoConfigurationEntry()方法获取到自动配置的实体类，然后加入到spring容器，交由spring来管理。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">process</span><span class="hljs-params">(AnnotationMetadata annotationMetadata, DeferredImportSelector deferredImportSelector)</span> </span>&#123;
-   Assert.state(deferredImportSelector <span class="hljs-keyword">instanceof</span> AutoConfigurationImportSelector,
-         () -&gt; String.format(<span class="hljs-string">&quot;Only %s implementations are supported, got %s&quot;</span>,
-               AutoConfigurationImportSelector.class.getSimpleName(),
-               deferredImportSelector.getClass().getName()));
-   AutoConfigurationEntry autoConfigurationEntry = ((AutoConfigurationImportSelector) deferredImportSelector)
-         .getAutoConfigurationEntry(getAutoConfigurationMetadata(), annotationMetadata);
-   <span class="hljs-keyword">this</span>.autoConfigurationEntries.add(autoConfigurationEntry);
-   <span class="hljs-keyword">for</span> (String importClassName : autoConfigurationEntry.getConfigurations()) &#123;
-      <span class="hljs-keyword">this</span>.entries.putIfAbsent(importClassName, annotationMetadata);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">process</span><span class="hljs-params">(AnnotationMetadata annotationMetadata, DeferredImportSelector deferredImportSelector)</span> </span>&#123;<br>   Assert.state(deferredImportSelector <span class="hljs-keyword">instanceof</span> AutoConfigurationImportSelector,<br>         () -&gt; String.format(<span class="hljs-string">&quot;Only %s implementations are supported, got %s&quot;</span>,<br>               AutoConfigurationImportSelector.class.getSimpleName(),<br>               deferredImportSelector.getClass().getName()));<br>   AutoConfigurationEntry autoConfigurationEntry = ((AutoConfigurationImportSelector) deferredImportSelector)<br>         .getAutoConfigurationEntry(getAutoConfigurationMetadata(), annotationMetadata);<br>   <span class="hljs-keyword">this</span>.autoConfigurationEntries.add(autoConfigurationEntry);<br>   <span class="hljs-keyword">for</span> (String importClassName : autoConfigurationEntry.getConfigurations()) &#123;<br>      <span class="hljs-keyword">this</span>.entries.putIfAbsent(importClassName, annotationMetadata);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getAutoConfigurationEntry()方法</p>
 <p>该方法首先会通过getCandidateConfigurations()方法获取到META-INF/spring.factories中所有键为EnableAutoConfiguration.class的类，这里也是SPI的运用。然后对类进行过滤后封装为AutoConfigurationEntry对象。</p>
 <p>springboot主要是通过SPI加载配置文件的方式，把类加载到spring容器完成实例化。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> AutoConfigurationEntry <span class="hljs-title">getAutoConfigurationEntry</span><span class="hljs-params">(AutoConfigurationMetadata autoConfigurationMetadata,</span></span>
-<span class="hljs-function"><span class="hljs-params">      AnnotationMetadata annotationMetadata)</span> </span>&#123;
-   <span class="hljs-keyword">if</span> (!isEnabled(annotationMetadata)) &#123;
-      <span class="hljs-keyword">return</span> EMPTY_ENTRY;
-   &#125;
-   AnnotationAttributes attributes = getAttributes(annotationMetadata);
-   <span class="hljs-comment">// SPI获取EnableAutoConfiguration为key的所有实现类</span>
-   List&lt;String&gt; configurations = getCandidateConfigurations(annotationMetadata, attributes);
-   configurations = removeDuplicates(configurations);
-   Set&lt;String&gt; exclusions = getExclusions(annotationMetadata, attributes);
-   checkExcludedClasses(configurations, exclusions);
-   configurations.removeAll(exclusions);
-   <span class="hljs-comment">// 把某些自动配置类过滤掉</span>
-   configurations = filter(configurations, autoConfigurationMetadata);
-   fireAutoConfigurationImportEvents(configurations, exclusions);
-   <span class="hljs-comment">// 包装成自动配置实体类</span>
-   <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AutoConfigurationEntry(configurations, exclusions);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> AutoConfigurationEntry <span class="hljs-title">getAutoConfigurationEntry</span><span class="hljs-params">(AutoConfigurationMetadata autoConfigurationMetadata,</span></span><br><span class="hljs-function"><span class="hljs-params">      AnnotationMetadata annotationMetadata)</span> </span>&#123;<br>   <span class="hljs-keyword">if</span> (!isEnabled(annotationMetadata)) &#123;<br>      <span class="hljs-keyword">return</span> EMPTY_ENTRY;<br>   &#125;<br>   AnnotationAttributes attributes = getAttributes(annotationMetadata);<br>   <span class="hljs-comment">// SPI获取EnableAutoConfiguration为key的所有实现类</span><br>   List&lt;String&gt; configurations = getCandidateConfigurations(annotationMetadata, attributes);<br>   configurations = removeDuplicates(configurations);<br>   Set&lt;String&gt; exclusions = getExclusions(annotationMetadata, attributes);<br>   checkExcludedClasses(configurations, exclusions);<br>   configurations.removeAll(exclusions);<br>   <span class="hljs-comment">// 把某些自动配置类过滤掉</span><br>   configurations = filter(configurations, autoConfigurationMetadata);<br>   fireAutoConfigurationImportEvents(configurations, exclusions);<br>   <span class="hljs-comment">// 包装成自动配置实体类</span><br>   <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AutoConfigurationEntry(configurations, exclusions);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="AOP的自动配置"><a href="#AOP的自动配置" class="headerlink" title="AOP的自动配置"></a>AOP的自动配置</h3><p>AopAutoConfiguration类默认会开启@EnableAspectJAutoProxy注解，注意这里使用了@ConditionalOnProperty注解，判断<code>spring.aop.auto</code>的值，为true和缺失时都会加载，matchIfMissing在cglib的配置中为true，所以默认是采用cglib代理的。如果要使用jdk的需要在配置文件中加入<code>spring.aop.proxy-target-class=false</code>。其他自动配置的代码基本相同，都是采用@Conditional注解来判断是否加载，不再分析。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
-<span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;auto&quot;, havingValue = &quot;true&quot;, matchIfMissing = true)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AopAutoConfiguration</span> </span>&#123;
-
-   <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
-   <span class="hljs-meta">@ConditionalOnClass(Advice.class)</span>
-   <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AspectJAutoProxyingConfiguration</span> </span>&#123;
-
-      <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
-      <span class="hljs-meta">@EnableAspectJAutoProxy(proxyTargetClass = false)</span>
-      <span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;false&quot;,</span>
-<span class="hljs-meta">            matchIfMissing = false)</span>
-      <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JdkDynamicAutoProxyConfiguration</span> </span>&#123;
-      &#125;
-
-      <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
-      <span class="hljs-meta">@EnableAspectJAutoProxy(proxyTargetClass = true)</span>
-      <span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;true&quot;,</span>
-<span class="hljs-meta">            matchIfMissing = true)</span>
-      <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CglibAutoProxyConfiguration</span> </span>&#123;
-      &#125;
-   &#125;
-
-   <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span>
-   <span class="hljs-meta">@ConditionalOnMissingClass(&quot;org.aspectj.weaver.Advice&quot;)</span>
-   <span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;true&quot;,</span>
-<span class="hljs-meta">         matchIfMissing = true)</span>
-   <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ClassProxyingConfiguration</span> </span>&#123;
-
-      ClassProxyingConfiguration(BeanFactory beanFactory) &#123;
-         <span class="hljs-keyword">if</span> (beanFactory <span class="hljs-keyword">instanceof</span> BeanDefinitionRegistry) &#123;
-            BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
-            AopConfigUtils.registerAutoProxyCreatorIfNecessary(registry);
-            AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
-         &#125;
-      &#125;
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span><br><span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;auto&quot;, havingValue = &quot;true&quot;, matchIfMissing = true)</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AopAutoConfiguration</span> </span>&#123;<br><br>   <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span><br>   <span class="hljs-meta">@ConditionalOnClass(Advice.class)</span><br>   <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AspectJAutoProxyingConfiguration</span> </span>&#123;<br><br>      <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span><br>      <span class="hljs-meta">@EnableAspectJAutoProxy(proxyTargetClass = false)</span><br>      <span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;false&quot;,</span><br><span class="hljs-meta">            matchIfMissing = false)</span><br>      <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">JdkDynamicAutoProxyConfiguration</span> </span>&#123;<br>      &#125;<br><br>      <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span><br>      <span class="hljs-meta">@EnableAspectJAutoProxy(proxyTargetClass = true)</span><br>      <span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;true&quot;,</span><br><span class="hljs-meta">            matchIfMissing = true)</span><br>      <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CglibAutoProxyConfiguration</span> </span>&#123;<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-meta">@Configuration(proxyBeanMethods = false)</span><br>   <span class="hljs-meta">@ConditionalOnMissingClass(&quot;org.aspectj.weaver.Advice&quot;)</span><br>   <span class="hljs-meta">@ConditionalOnProperty(prefix = &quot;spring.aop&quot;, name = &quot;proxy-target-class&quot;, havingValue = &quot;true&quot;,</span><br><span class="hljs-meta">         matchIfMissing = true)</span><br>   <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ClassProxyingConfiguration</span> </span>&#123;<br><br>      ClassProxyingConfiguration(BeanFactory beanFactory) &#123;<br>         <span class="hljs-keyword">if</span> (beanFactory <span class="hljs-keyword">instanceof</span> BeanDefinitionRegistry) &#123;<br>            BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;<br>            AopConfigUtils.registerAutoProxyCreatorIfNecessary(registry);<br>            AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);<br>         &#125;<br>      &#125;<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="Conditional"><a href="#Conditional" class="headerlink" title="@Conditional"></a>@Conditional</h3><p>上面的代码中出现了@ConditionalOnProperty注解，这个是用来判断条件是否满足，通常与@Bean配合使用，完成有条件的初始化类的需求。spring的自动配置类中的组件初始化时，也会通过这个注解来决定是否初始化类。</p>
 <p>常用的有：</p>
@@ -503,155 +286,24 @@
 <li><code>@ConditionalOnExpression(&quot;$&#123;spring.datasource.max-idle&#125;=10&quot;)</code>：当spring.datasource.max-idle属性的值为10在进行加载</li>
 </ul>
 <p>还可以通过实现Condition接口来自定义Condition</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomCondition</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Condition</span> </span>&#123;
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">matches</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;
-        System.out.println(<span class="hljs-string">&quot;=====CustomCondition.matches======&quot;</span>);
-        String property = context.getEnvironment().getProperty(<span class="hljs-string">&quot;spring.redis.jedis.pool.max-active&quot;</span>);
-
-        <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;8&quot;</span>.equals(property)) &#123;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
-        &#125; <span class="hljs-keyword">else</span> &#123;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomCondition</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Condition</span> </span>&#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">matches</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;<br>        System.out.println(<span class="hljs-string">&quot;=====CustomCondition.matches======&quot;</span>);<br>        String property = context.getEnvironment().getProperty(<span class="hljs-string">&quot;spring.redis.jedis.pool.max-active&quot;</span>);<br><br>        <span class="hljs-keyword">if</span>(<span class="hljs-string">&quot;8&quot;</span>.equals(property)) &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">true</span>;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>然后使用@Conditional注解将值设置为自定义的Condition。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Bean</span>
-<span class="hljs-meta">@Conditional(value = CustomCondition.class)</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> User <span class="hljs-title">conditionalTest</span><span class="hljs-params">()</span> </span>&#123;
-    System.out.println(<span class="hljs-string">&quot;======ConfigFamliy.conditionalTest&quot;</span>);
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> User();
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Bean</span><br><span class="hljs-meta">@Conditional(value = CustomCondition.class)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> User <span class="hljs-title">conditionalTest</span><span class="hljs-params">()</span> </span>&#123;<br>    System.out.println(<span class="hljs-string">&quot;======ConfigFamliy.conditionalTest&quot;</span>);<br>    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> User();<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h4><p>实现原理也比较简单，spring完成BeanDefinition收集之后，会使用ConfigurationClassPostProcessor进行处理，所以只要在ConfigurationClassPostProcessor完成Condition的功能即可。</p>
 <p>ConfigurationClassPostProcessor会调用到ConfigurationClassParser类的processConfigurationClass()方法，该方法会调用shouldSkip()方法对类进行过滤。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">processConfigurationClass</span><span class="hljs-params">(ConfigurationClass configClass)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
-    <span class="hljs-comment">// 根据Condition接口来过滤类</span>
-    <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) &#123;
-        ConfigurationClass existingClass = (ConfigurationClass)<span class="hljs-keyword">this</span>.configurationClasses.get(configClass);
-        <span class="hljs-keyword">if</span> (existingClass != <span class="hljs-keyword">null</span>) &#123;
-            <span class="hljs-keyword">if</span> (configClass.isImported()) &#123;
-                <span class="hljs-keyword">if</span> (existingClass.isImported()) &#123;
-                    existingClass.mergeImportedBy(configClass);
-                &#125;
-
-                <span class="hljs-keyword">return</span>;
-            &#125;
-
-            <span class="hljs-keyword">this</span>.configurationClasses.remove(configClass);
-            <span class="hljs-keyword">this</span>.knownSuperclasses.values().removeIf(configClass::equals);
-        &#125;
-
-        ConfigurationClassParser.SourceClass sourceClass = <span class="hljs-keyword">this</span>.asSourceClass(configClass);
-
-        <span class="hljs-keyword">do</span> &#123;
-            sourceClass = <span class="hljs-keyword">this</span>.doProcessConfigurationClass(configClass, sourceClass);
-        &#125; <span class="hljs-keyword">while</span>(sourceClass != <span class="hljs-keyword">null</span>);
-
-        <span class="hljs-keyword">this</span>.configurationClasses.put(configClass, configClass);
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">processConfigurationClass</span><span class="hljs-params">(ConfigurationClass configClass)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br>    <span class="hljs-comment">// 根据Condition接口来过滤类</span><br>    <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) &#123;<br>        ConfigurationClass existingClass = (ConfigurationClass)<span class="hljs-keyword">this</span>.configurationClasses.get(configClass);<br>        <span class="hljs-keyword">if</span> (existingClass != <span class="hljs-keyword">null</span>) &#123;<br>            <span class="hljs-keyword">if</span> (configClass.isImported()) &#123;<br>                <span class="hljs-keyword">if</span> (existingClass.isImported()) &#123;<br>                    existingClass.mergeImportedBy(configClass);<br>                &#125;<br><br>                <span class="hljs-keyword">return</span>;<br>            &#125;<br><br>            <span class="hljs-keyword">this</span>.configurationClasses.remove(configClass);<br>            <span class="hljs-keyword">this</span>.knownSuperclasses.values().removeIf(configClass::equals);<br>        &#125;<br><br>        ConfigurationClassParser.SourceClass sourceClass = <span class="hljs-keyword">this</span>.asSourceClass(configClass);<br><br>        <span class="hljs-keyword">do</span> &#123;<br>            sourceClass = <span class="hljs-keyword">this</span>.doProcessConfigurationClass(configClass, sourceClass);<br>        &#125; <span class="hljs-keyword">while</span>(sourceClass != <span class="hljs-keyword">null</span>);<br><br>        <span class="hljs-keyword">this</span>.configurationClasses.put(configClass, configClass);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>shouldSkip()方法会获取到该类对应的所有Condition，然后调用matches()方法进行判断。</p>
 <h5 id="matches-方法"><a href="#matches-方法" class="headerlink" title="matches()方法"></a>matches()方法</h5><p>AnnotatedTypeMetadata中包含类的所有信息、ConditionOutcome用来封装匹配之后的结果。getMatchOutcome()会到用到子类</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">matches</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;
-   String classOrMethodName = getClassOrMethodName(metadata);
-   <span class="hljs-keyword">try</span> &#123;
-      <span class="hljs-comment">// 典型的钩子方法，调到用具体子类中方法。ConditionOutcome 这个类里面包装了是否需</span>
-      <span class="hljs-comment">// 跳过和打印的日志</span>
-      ConditionOutcome outcome = getMatchOutcome(context, metadata);
-      logOutcome(classOrMethodName, outcome);
-      recordEvaluation(context, classOrMethodName, outcome);
-      <span class="hljs-keyword">return</span> outcome.isMatch();
-   &#125;
-   <span class="hljs-keyword">catch</span> (NoClassDefFoundError ex) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Could not evaluate condition on &quot;</span> + classOrMethodName + <span class="hljs-string">&quot; due to &quot;</span>
-            + ex.getMessage() + <span class="hljs-string">&quot; not found. Make sure your own configuration does not rely on &quot;</span>
-            + <span class="hljs-string">&quot;that class. This can also happen if you are &quot;</span>
-            + <span class="hljs-string">&quot;@ComponentScanning a springframework package (e.g. if you &quot;</span>
-            + <span class="hljs-string">&quot;put a @ComponentScan in the default package by mistake)&quot;</span>, ex);
-   &#125;
-   <span class="hljs-keyword">catch</span> (RuntimeException ex) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Error processing condition on &quot;</span> + getName(metadata), ex);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">matches</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;<br>   String classOrMethodName = getClassOrMethodName(metadata);<br>   <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-comment">// 典型的钩子方法，调到用具体子类中方法。ConditionOutcome 这个类里面包装了是否需</span><br>      <span class="hljs-comment">// 跳过和打印的日志</span><br>      ConditionOutcome outcome = getMatchOutcome(context, metadata);<br>      logOutcome(classOrMethodName, outcome);<br>      recordEvaluation(context, classOrMethodName, outcome);<br>      <span class="hljs-keyword">return</span> outcome.isMatch();<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (NoClassDefFoundError ex) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Could not evaluate condition on &quot;</span> + classOrMethodName + <span class="hljs-string">&quot; due to &quot;</span><br>            + ex.getMessage() + <span class="hljs-string">&quot; not found. Make sure your own configuration does not rely on &quot;</span><br>            + <span class="hljs-string">&quot;that class. This can also happen if you are &quot;</span><br>            + <span class="hljs-string">&quot;@ComponentScanning a springframework package (e.g. if you &quot;</span><br>            + <span class="hljs-string">&quot;put a @ComponentScan in the default package by mistake)&quot;</span>, ex);<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (RuntimeException ex) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Error processing condition on &quot;</span> + getName(metadata), ex);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h6 id="OnClassCondition类的getMatchOutcome-方法"><a href="#OnClassCondition类的getMatchOutcome-方法" class="headerlink" title="OnClassCondition类的getMatchOutcome()方法"></a>OnClassCondition类的getMatchOutcome()方法</h6><p>该方法会使用Class.forname()寻找ConditionalOnClass注解中的类，如果有异常就说明上下文中没有这个类，就过滤掉。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> ConditionOutcome <span class="hljs-title">getMatchOutcome</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;
-   ClassLoader classLoader = context.getClassLoader();
-   ConditionMessage matchMessage = ConditionMessage.empty();
-   List&lt;String&gt; onClasses = getCandidates(metadata, ConditionalOnClass.class);
-   <span class="hljs-keyword">if</span> (onClasses != <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-comment">// 核心方法，过滤一下，其实就是Class.forname一下ConditionalOnClass注解中的类，如果有异常就说明</span>
-      <span class="hljs-comment">// 上下文中没这个类，没有就过滤掉</span>
-      List&lt;String&gt; missing = filter(onClasses, ClassNameFilter.MISSING, classLoader);
-      <span class="hljs-keyword">if</span> (!missing.isEmpty()) &#123;
-         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(ConditionMessage.forCondition(ConditionalOnClass.class)
-               .didNotFind(<span class="hljs-string">&quot;required class&quot;</span>, <span class="hljs-string">&quot;required classes&quot;</span>).items(Style.QUOTE, missing));
-      &#125;
-      matchMessage = matchMessage.andCondition(ConditionalOnClass.class)
-            .found(<span class="hljs-string">&quot;required class&quot;</span>, <span class="hljs-string">&quot;required classes&quot;</span>)
-            .items(Style.QUOTE, filter(onClasses, ClassNameFilter.PRESENT, classLoader));
-   &#125;
-   List&lt;String&gt; onMissingClasses = getCandidates(metadata, ConditionalOnMissingClass.class);
-   <span class="hljs-keyword">if</span> (onMissingClasses != <span class="hljs-keyword">null</span>) &#123;
-      List&lt;String&gt; present = filter(onMissingClasses, ClassNameFilter.PRESENT, classLoader);
-      <span class="hljs-keyword">if</span> (!present.isEmpty()) &#123;
-         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(ConditionMessage.forCondition(ConditionalOnMissingClass.class)
-               .found(<span class="hljs-string">&quot;unwanted class&quot;</span>, <span class="hljs-string">&quot;unwanted classes&quot;</span>).items(Style.QUOTE, present));
-      &#125;
-      matchMessage = matchMessage.andCondition(ConditionalOnMissingClass.class)
-            .didNotFind(<span class="hljs-string">&quot;unwanted class&quot;</span>, <span class="hljs-string">&quot;unwanted classes&quot;</span>)
-            .items(Style.QUOTE, filter(onMissingClasses, ClassNameFilter.MISSING, classLoader));
-   &#125;
-   <span class="hljs-keyword">return</span> ConditionOutcome.match(matchMessage);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> ConditionOutcome <span class="hljs-title">getMatchOutcome</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;<br>   ClassLoader classLoader = context.getClassLoader();<br>   ConditionMessage matchMessage = ConditionMessage.empty();<br>   List&lt;String&gt; onClasses = getCandidates(metadata, ConditionalOnClass.class);<br>   <span class="hljs-keyword">if</span> (onClasses != <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-comment">// 核心方法，过滤一下，其实就是Class.forname一下ConditionalOnClass注解中的类，如果有异常就说明</span><br>      <span class="hljs-comment">// 上下文中没这个类，没有就过滤掉</span><br>      List&lt;String&gt; missing = filter(onClasses, ClassNameFilter.MISSING, classLoader);<br>      <span class="hljs-keyword">if</span> (!missing.isEmpty()) &#123;<br>         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(ConditionMessage.forCondition(ConditionalOnClass.class)<br>               .didNotFind(<span class="hljs-string">&quot;required class&quot;</span>, <span class="hljs-string">&quot;required classes&quot;</span>).items(Style.QUOTE, missing));<br>      &#125;<br>      matchMessage = matchMessage.andCondition(ConditionalOnClass.class)<br>            .found(<span class="hljs-string">&quot;required class&quot;</span>, <span class="hljs-string">&quot;required classes&quot;</span>)<br>            .items(Style.QUOTE, filter(onClasses, ClassNameFilter.PRESENT, classLoader));<br>   &#125;<br>   List&lt;String&gt; onMissingClasses = getCandidates(metadata, ConditionalOnMissingClass.class);<br>   <span class="hljs-keyword">if</span> (onMissingClasses != <span class="hljs-keyword">null</span>) &#123;<br>      List&lt;String&gt; present = filter(onMissingClasses, ClassNameFilter.PRESENT, classLoader);<br>      <span class="hljs-keyword">if</span> (!present.isEmpty()) &#123;<br>         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(ConditionMessage.forCondition(ConditionalOnMissingClass.class)<br>               .found(<span class="hljs-string">&quot;unwanted class&quot;</span>, <span class="hljs-string">&quot;unwanted classes&quot;</span>).items(Style.QUOTE, present));<br>      &#125;<br>      matchMessage = matchMessage.andCondition(ConditionalOnMissingClass.class)<br>            .didNotFind(<span class="hljs-string">&quot;unwanted class&quot;</span>, <span class="hljs-string">&quot;unwanted classes&quot;</span>)<br>            .items(Style.QUOTE, filter(onMissingClasses, ClassNameFilter.MISSING, classLoader));<br>   &#125;<br>   <span class="hljs-keyword">return</span> ConditionOutcome.match(matchMessage);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h6 id="OnClassCondition类的getMatchOutcome-方法-1"><a href="#OnClassCondition类的getMatchOutcome-方法-1" class="headerlink" title="OnClassCondition类的getMatchOutcome()方法"></a>OnClassCondition类的getMatchOutcome()方法</h6><p>核心方法是判断spring容器中是否有ConditionalOnBean注解中的Bean。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> ConditionOutcome <span class="hljs-title">getMatchOutcome</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;
-   ConditionMessage matchMessage = ConditionMessage.empty();
-   <span class="hljs-comment">// 获取类上面的注解</span>
-   MergedAnnotations annotations = metadata.getAnnotations();
-   <span class="hljs-keyword">if</span> (annotations.isPresent(ConditionalOnBean.class)) &#123;
-      <span class="hljs-comment">// 包装一下</span>
-      Spec&lt;ConditionalOnBean&gt; spec = <span class="hljs-keyword">new</span> Spec&lt;&gt;(context, metadata, annotations, ConditionalOnBean.class);
-      <span class="hljs-comment">// 核心方法，其实就是判断spring容器中是否有ConditionalOnBean注解中的bean</span>
-      MatchResult matchResult = getMatchingBeans(context, spec);
-      <span class="hljs-keyword">if</span> (!matchResult.isAllMatched()) &#123;
-         String reason = createOnBeanNoMatchReason(matchResult);
-         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().because(reason));
-      &#125;
-      matchMessage = spec.message(matchMessage).found(<span class="hljs-string">&quot;bean&quot;</span>, <span class="hljs-string">&quot;beans&quot;</span>).items(Style.QUOTE,
-            matchResult.getNamesOfAllMatches());
-   &#125;
-   <span class="hljs-keyword">if</span> (metadata.isAnnotated(ConditionalOnSingleCandidate.class.getName())) &#123;
-      Spec&lt;ConditionalOnSingleCandidate&gt; spec = <span class="hljs-keyword">new</span> SingleCandidateSpec(context, metadata, annotations);
-      MatchResult matchResult = getMatchingBeans(context, spec);
-      <span class="hljs-keyword">if</span> (!matchResult.isAllMatched()) &#123;
-         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().didNotFind(<span class="hljs-string">&quot;any beans&quot;</span>).atAll());
-      &#125;
-      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!hasSingleAutowireCandidate(context.getBeanFactory(), matchResult.getNamesOfAllMatches(),
-            spec.getStrategy() == SearchStrategy.ALL)) &#123;
-         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().didNotFind(<span class="hljs-string">&quot;a primary bean from beans&quot;</span>)
-               .items(Style.QUOTE, matchResult.getNamesOfAllMatches()));
-      &#125;
-      matchMessage = spec.message(matchMessage).found(<span class="hljs-string">&quot;a primary bean from beans&quot;</span>).items(Style.QUOTE,
-            matchResult.getNamesOfAllMatches());
-   &#125;
-   <span class="hljs-keyword">if</span> (metadata.isAnnotated(ConditionalOnMissingBean.class.getName())) &#123;
-      Spec&lt;ConditionalOnMissingBean&gt; spec = <span class="hljs-keyword">new</span> Spec&lt;&gt;(context, metadata, annotations,
-            ConditionalOnMissingBean.class);
-      MatchResult matchResult = getMatchingBeans(context, spec);
-      <span class="hljs-keyword">if</span> (matchResult.isAnyMatched()) &#123;
-         String reason = createOnMissingBeanNoMatchReason(matchResult);
-         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().because(reason));
-      &#125;
-      matchMessage = spec.message(matchMessage).didNotFind(<span class="hljs-string">&quot;any beans&quot;</span>).atAll();
-   &#125;
-   <span class="hljs-keyword">return</span> ConditionOutcome.match(matchMessage);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> ConditionOutcome <span class="hljs-title">getMatchOutcome</span><span class="hljs-params">(ConditionContext context, AnnotatedTypeMetadata metadata)</span> </span>&#123;<br>   ConditionMessage matchMessage = ConditionMessage.empty();<br>   <span class="hljs-comment">// 获取类上面的注解</span><br>   MergedAnnotations annotations = metadata.getAnnotations();<br>   <span class="hljs-keyword">if</span> (annotations.isPresent(ConditionalOnBean.class)) &#123;<br>      <span class="hljs-comment">// 包装一下</span><br>      Spec&lt;ConditionalOnBean&gt; spec = <span class="hljs-keyword">new</span> Spec&lt;&gt;(context, metadata, annotations, ConditionalOnBean.class);<br>      <span class="hljs-comment">// 核心方法，其实就是判断spring容器中是否有ConditionalOnBean注解中的bean</span><br>      MatchResult matchResult = getMatchingBeans(context, spec);<br>      <span class="hljs-keyword">if</span> (!matchResult.isAllMatched()) &#123;<br>         String reason = createOnBeanNoMatchReason(matchResult);<br>         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().because(reason));<br>      &#125;<br>      matchMessage = spec.message(matchMessage).found(<span class="hljs-string">&quot;bean&quot;</span>, <span class="hljs-string">&quot;beans&quot;</span>).items(Style.QUOTE,<br>            matchResult.getNamesOfAllMatches());<br>   &#125;<br>   <span class="hljs-keyword">if</span> (metadata.isAnnotated(ConditionalOnSingleCandidate.class.getName())) &#123;<br>      Spec&lt;ConditionalOnSingleCandidate&gt; spec = <span class="hljs-keyword">new</span> SingleCandidateSpec(context, metadata, annotations);<br>      MatchResult matchResult = getMatchingBeans(context, spec);<br>      <span class="hljs-keyword">if</span> (!matchResult.isAllMatched()) &#123;<br>         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().didNotFind(<span class="hljs-string">&quot;any beans&quot;</span>).atAll());<br>      &#125;<br>      <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!hasSingleAutowireCandidate(context.getBeanFactory(), matchResult.getNamesOfAllMatches(),<br>            spec.getStrategy() == SearchStrategy.ALL)) &#123;<br>         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().didNotFind(<span class="hljs-string">&quot;a primary bean from beans&quot;</span>)<br>               .items(Style.QUOTE, matchResult.getNamesOfAllMatches()));<br>      &#125;<br>      matchMessage = spec.message(matchMessage).found(<span class="hljs-string">&quot;a primary bean from beans&quot;</span>).items(Style.QUOTE,<br>            matchResult.getNamesOfAllMatches());<br>   &#125;<br>   <span class="hljs-keyword">if</span> (metadata.isAnnotated(ConditionalOnMissingBean.class.getName())) &#123;<br>      Spec&lt;ConditionalOnMissingBean&gt; spec = <span class="hljs-keyword">new</span> Spec&lt;&gt;(context, metadata, annotations,<br>            ConditionalOnMissingBean.class);<br>      MatchResult matchResult = getMatchingBeans(context, spec);<br>      <span class="hljs-keyword">if</span> (matchResult.isAnyMatched()) &#123;<br>         String reason = createOnMissingBeanNoMatchReason(matchResult);<br>         <span class="hljs-keyword">return</span> ConditionOutcome.noMatch(spec.message().because(reason));<br>      &#125;<br>      matchMessage = spec.message(matchMessage).didNotFind(<span class="hljs-string">&quot;any beans&quot;</span>).atAll();<br>   &#125;<br>   <span class="hljs-keyword">return</span> ConditionOutcome.match(matchMessage);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 
             </div>
@@ -676,8 +328,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -768,17 +426,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -787,7 +443,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -795,7 +450,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -822,6 +477,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -839,11 +495,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -863,7 +520,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

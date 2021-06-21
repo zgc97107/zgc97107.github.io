@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>LongAdder原子类与Disruptor高速队列 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -232,7 +233,7 @@
 <p>在并发量较低的环境下，线程冲突的概率比较小，自旋的次数不会很多。但是，高并发环境下，N个线程同时进行自旋操作，会出现大量失败并不断自旋的情况，此时<strong>AtomicLong</strong>的自旋会成为瓶颈。</p>
 <p>这就是<strong>LongAdder</strong>引入的初衷——解决高并发环境下<strong>AtomicLong</strong>的自旋瓶颈问题。</p>
 <p><strong>AtomicLong</strong>中有个内部变量<strong>value</strong>保存着实际的long值，所有的操作都是针对该变量进行。也就是说，高并发环境下，value变量其实是一个热点，也就是N个线程竞争一个热点。</p>
-<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p><strong>LongAdder</strong>的基本思路就是<strong>分散热点</strong>，将value值分散到一个数组中，不同线程会命中到数组的不同槽中，各个线程只对自己槽中的那个值进行CAS操作，这样热点就被分散了，冲突的概率就小很多。如果要获取真正的long值，只要将各个槽中的变量值累加返回。</p>
 <p>这种做法和ConcurrentHashMap中的“分段锁”其实就是类似的思路。</p>
@@ -244,13 +245,13 @@
 <p>对于<strong>LongAdder</strong>来说，内部有一个base变量，一个Cell[]数组。</p>
 <p>base变量：非竞态条件下，直接累加到该变量上。</p>
 <p>Cell[]数组：竞态条件下，累加个各个线程自己的槽Cell[i]中。</p>
-<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>所以，最终结果的计算应该是</p>
-<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic3.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>在实际运用的时候，只有从未出现过并发冲突的时候，base基数才会使用到，一旦出现了并发冲突，之后所有的操作都只针对Cell[]数组中的单元Cell。</p>
-<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>而LongAdder最终结果的求和，并没有使用全局锁，返回值不是绝对准确的，因为调用这个方法时还有其他线程可能正在进行计数累加，所以只能得到某个时刻的近似值，这也就是<strong>LongAdder</strong>并不能完全替代<strong>LongAtomic</strong>的原因之一。</p>
 <p>而且从测试情况来看，线程数越多，并发操作数越大，LongAdder的优势越大，线程数较小时，AtomicLong的性能还超过了LongAdder。</p>
@@ -265,7 +266,7 @@
 <h4 id="传统队列问题"><a href="#传统队列问题" class="headerlink" title="传统队列问题"></a>传统队列问题</h4><p>在JDK中，Java内部的队列BlockQueue的各种实现，仔细分析可以得知，队列的底层数据结构一般分成三种：数组、链表和堆，堆这里是为了实现带有优先级特性的队列暂且不考虑。 </p>
 <p>在稳定性和性能要求特别高的系统中，为了防止生产者速度过快，导致内存溢出，只能选择有界队列；同时，为了减少Java的垃圾回收对系统性能的影响，会尽量选择 Array格式的数据结构。这样筛选下来，符合条件的队列就只有ArrayBlockingQueue。但是ArrayBlockingQueue是通过<strong>加锁</strong>的方式保证线程安全，而且ArrayBlockingQueue还存在<strong>伪共享</strong>问题，这两个问题严重影响了性能。</p>
 <p>ArrayBlockingQueue的这个伪共享问题存在于哪里呢，分析下核心的部分源码，其中最核心的三个成员变量为</p>
-<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic5.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>是在ArrayBlockingQueue的核心enqueue和dequeue方法中经常会用到的，这三个变量很容易放到同一个缓存行中，进而产生伪共享问题。</p>
 <h4 id="高性能的原理"><a href="#高性能的原理" class="headerlink" title="高性能的原理"></a>高性能的原理</h4><ol>
@@ -277,7 +278,7 @@
 </li>
 </ol>
 <p>环形数组结构是整个Disruptor的核心所在。 </p>
-<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/LongAdder%E4%B8%8EDisruptor/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>首先因为是数组，所以要比链表快，而且根据我们对上面缓存行的解释知道，数组中的一个元素加载，相邻的数组元素也是会被预加载的，因此在这样的结构中，cpu无需时不时去主存加载数组中的下一个元素。而且，你可以为数组预先分配内存，使得数组对象一直存在（除非程序终止）。这就意味着不需要花大量的时间用于垃圾回收。此外，不像链表那样，需要为每一个添加到其上面的对象创造节点对象—对应的，当删除节点时，需要执行相应的内存清理操作。环形数组中的元素采用覆盖方式，避免了jvm的GC。 </p>
 <p>其次结构作为环形，数组的大小为2的n次方，这样元素定位可以通过位运算效率会更高，这个跟一致性哈希中的环形策略有点像。在disruptor中，这个牛逼的环形结构就是RingBuffer，既然是数组，那么就有大小，而且这个大小必须是2的n次方</p>
@@ -311,8 +312,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -403,17 +410,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -422,7 +427,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -430,7 +434,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -457,6 +461,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -474,11 +479,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -498,7 +504,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

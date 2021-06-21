@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>缓存击穿 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,24 +217,24 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">缓存击穿</h1>
             
             <div class="markdown-body">
-              <h3 id="击穿现象分析"><a href="#击穿现象分析" class="headerlink" title="击穿现象分析"></a>击穿现象分析</h3><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic1.png" srcset="/blog/img/loading.gif" class>
+              <h3 id="击穿现象分析"><a href="#击穿现象分析" class="headerlink" title="击穿现象分析"></a>击穿现象分析</h3><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>缓存在某个时间点过期的时候，恰好在这个时间点对这个Key有大量的并发请求过来，这些请求发现缓存过期一般都会从后端DB加载数据并回设到缓存，这个时候大并发的请求可能会瞬间把后端DB压垮。</p>
 <p>上面查询红包排名就存在击穿现象，比如10万用户请求，此时缓存刚好过期，10万用户同时到达了第②个步骤，而且此时Redis中都判断没有数据，那么此时就都查询数据库，给数据库带来巨大的压力，甚至是宕机。</p>
 <h3 id="击穿解决方案"><a href="#击穿解决方案" class="headerlink" title="击穿解决方案"></a>击穿解决方案</h3><h4 id="定时器"><a href="#定时器" class="headerlink" title="定时器"></a>定时器</h4><p>后台定义一个job(定时任务)专门主动更新缓存数据.比如,一个缓存中的数据过期时间是1分钟,那么job每隔25秒刷新数据(将从数据库中查到的数据更新到缓存中)，或者缓存不过期，直接写定时任务定时更新即可。定时器需要择优选择，比如可以用 elastic-job , xxl-job 。</p>
 <p>这种方案比较容易理解，但会增加系统复杂度。比较适合那些 key 相对固定,cache 粒度较大的业务，key 比较分散的则不太适合，实现起来也比较复杂。</p>
-<h4 id="多级缓存"><a href="#多级缓存" class="headerlink" title="多级缓存"></a>多级缓存</h4><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic2.png" srcset="/blog/img/loading.gif" class>
+<h4 id="多级缓存"><a href="#多级缓存" class="headerlink" title="多级缓存"></a>多级缓存</h4><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>采用多级缓存也可以有效防止击穿现象，首先通过程序将缓存存入到Redis缓存，且永不过期，用户查询的时候，先查询Nginx缓存，如果Nginx缓存没有，则查询Redis缓存，并将Redis缓存存入到Nginx一级缓存中，并设置更新时间。这种方案不仅可以提升查询速度，同时又能防止击穿问题，并且提升了程序的抗压能力。</p>
 <h4 id="分布式锁"><a href="#分布式锁" class="headerlink" title="分布式锁"></a>分布式锁</h4><p>分布式锁主要是实现在分布式场景下保证数据的最终一致性。在单进程的系统中，存在多个线程可以同时改变某个变量（可变共享变量）时，就需要对变量或代码块做同步(lock—synchronized)，使其在修改这种变量时能够线性执行消除并发修改变量。但分布式系统是多部署、多进程的，开发语言提供的并发处理API在此场景下就无能为力了。</p>
@@ -273,228 +274,38 @@
 </li>
 </ol>
 <p>引入依赖</p>
-<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--Redission--&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-	<span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.redisson<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-	<span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>redisson-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-	<span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.11.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-comment">&lt;!--Redission--&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>	<span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.redisson<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>	<span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>redisson-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>	<span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.11.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p>锁操作方法实现</p>
 <p>要想用到分布式锁，我们就必须要实现获取锁和释放锁，获取锁和释放锁可以编写一个 DistributedLocker 接口，代码如下：</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">DistributedLocker</span> </span>&#123;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * lock(), 拿不到lock就不罢休，不然线程就一直block</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function">RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey)</span></span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * timeout为加锁时间，单位为秒</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeout</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
-<span class="hljs-comment">     */</span>
-
-    <span class="hljs-function">RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey, Long timeout)</span></span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * timeout为加锁时间，时间单位由unit确定</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeUtil</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeout</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function">RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey, Long timeout, TimeUnit timeUtil)</span></span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * tryLock()，马上返回，拿到lock就返回true，不然返回false。</span>
-<span class="hljs-comment">     * 带时间限制的tryLock()，拿不到lock，就等一段时间，超时返回false.</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeUtil</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> waitTime</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> leaseTime</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function">Boolean <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey, TimeUnit timeUtil, Long waitTime, Long leaseTime)</span></span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 解锁</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(String lockKey)</span></span>;
-
-    <span class="hljs-comment">/**</span>
-<span class="hljs-comment">     * 解锁</span>
-<span class="hljs-comment">     *</span>
-<span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lock</span>
-<span class="hljs-comment">     */</span>
-    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(RLock lock)</span></span>;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">DistributedLocker</span> </span>&#123;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * lock(), 拿不到lock就不罢休，不然线程就一直block</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function">RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * timeout为加锁时间，单位为秒</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeout</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment">     */</span><br><br>    <span class="hljs-function">RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey, Long timeout)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * timeout为加锁时间，时间单位由unit确定</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeUtil</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeout</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function">RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey, Long timeout, TimeUnit timeUtil)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * tryLock()，马上返回，拿到lock就返回true，不然返回false。</span><br><span class="hljs-comment">     * 带时间限制的tryLock()，拿不到lock，就等一段时间，超时返回false.</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> timeUtil</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> waitTime</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> leaseTime</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function">Boolean <span class="hljs-title">lock</span><span class="hljs-params">(String lockKey, TimeUnit timeUtil, Long waitTime, Long leaseTime)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 解锁</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lockKey</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(String lockKey)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 解锁</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> lock</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(RLock lock)</span></span>;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>实现上面接口中对应的锁管理方法,编写一个锁管理类 RedissonDistributedLocker ，代码如下：</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedissonDistributedLocker</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DistributedLocker</span> </span>&#123;
-
-    <span class="hljs-meta">@Autowired</span>
-    <span class="hljs-keyword">private</span> RedissonClient redissonClient;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey)</span> </span>&#123;
-        RLock lock = redissonClient.getLock(lockkey);
-        lock.lock();
-        <span class="hljs-keyword">return</span> lock;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey, Long lesstime)</span> </span>&#123;
-        RLock lock = redissonClient.getLock(lockkey);
-        lock.lock(lesstime, TimeUnit.SECONDS);
-        <span class="hljs-keyword">return</span> lock;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey, Long lesstime, TimeUnit timeUtil)</span> </span>&#123;
-        RLock lock = redissonClient.getLock(lockkey);
-        lock.lock(lesstime, timeUtil);
-        <span class="hljs-keyword">return</span> lock;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> Boolean <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey, Long lesstime, TimeUnit timeUtil, Long timeout)</span> </span>&#123;
-        <span class="hljs-keyword">try</span> &#123;
-            RLock lock = redissonClient.getLock(lockkey);
-            <span class="hljs-keyword">return</span> lock.tryLock(timeout, lesstime, timeUtil);
-        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-            e.printStackTrace();
-        &#125;
-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(String key)</span> </span>&#123;
-        RLock lock = redissonClient.getLock(key);
-        lock.unlock();
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(RLock rLock)</span> </span>&#123;
-        rLock.unlock();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Component</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedissonDistributedLocker</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">DistributedLocker</span> </span>&#123;<br><br>    <span class="hljs-meta">@Autowired</span><br>    <span class="hljs-keyword">private</span> RedissonClient redissonClient;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey)</span> </span>&#123;<br>        RLock lock = redissonClient.getLock(lockkey);<br>        lock.lock();<br>        <span class="hljs-keyword">return</span> lock;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey, Long lesstime)</span> </span>&#123;<br>        RLock lock = redissonClient.getLock(lockkey);<br>        lock.lock(lesstime, TimeUnit.SECONDS);<br>        <span class="hljs-keyword">return</span> lock;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> RLock <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey, Long lesstime, TimeUnit timeUtil)</span> </span>&#123;<br>        RLock lock = redissonClient.getLock(lockkey);<br>        lock.lock(lesstime, timeUtil);<br>        <span class="hljs-keyword">return</span> lock;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> Boolean <span class="hljs-title">lock</span><span class="hljs-params">(String lockkey, Long lesstime, TimeUnit timeUtil, Long timeout)</span> </span>&#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            RLock lock = redissonClient.getLock(lockkey);<br>            <span class="hljs-keyword">return</span> lock.tryLock(timeout, lesstime, timeUtil);<br>        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>            e.printStackTrace();<br>        &#125;<br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(String key)</span> </span>&#123;<br>        RLock lock = redissonClient.getLock(key);<br>        lock.unlock();<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">unlock</span><span class="hljs-params">(RLock rLock)</span> </span>&#123;<br>        rLock.unlock();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>配置Redis链接</p>
 <p>在resources下新建文件 redisson.yml ，主要用于配置redis集群节点链接配置，代码如下：</p>
-<pre><code class="hljs yaml"><span class="hljs-attr">clusterServersConfig:</span>
-  <span class="hljs-comment"># 连接空闲超时，单位：毫秒 默认10000</span>
-  <span class="hljs-attr">idleConnectionTimeout:</span> <span class="hljs-number">100000</span>
-  <span class="hljs-attr">pingTimeout:</span> <span class="hljs-number">10000</span>
-  <span class="hljs-comment"># 同任何节点建立连接时的等待超时。时间单位是毫秒 默认10000</span>
-  <span class="hljs-attr">connectTimeout:</span> <span class="hljs-number">100000</span>
-  <span class="hljs-comment"># 等待节点回复命令的时间。该时间从命令发送成功时开始计时。默认3000</span>
-  <span class="hljs-attr">timeout:</span> <span class="hljs-number">30000</span>
-  <span class="hljs-comment"># 命令失败重试次数</span>
-  <span class="hljs-attr">retryAttempts:</span> <span class="hljs-number">10</span>
-  <span class="hljs-comment"># 命令重试发送时间间隔，单位：毫秒</span>
-  <span class="hljs-attr">retryInterval:</span> <span class="hljs-number">1500</span>
-  <span class="hljs-comment"># 重新连接时间间隔，单位：毫秒</span>
-  <span class="hljs-attr">reconnectionTimeout:</span> <span class="hljs-number">30000</span>
-  <span class="hljs-comment"># 执行失败最大次数</span>
-  <span class="hljs-attr">failedAttempts:</span> <span class="hljs-number">10</span>
-  <span class="hljs-comment"># 密码</span>
-  <span class="hljs-comment">#password: test1234</span>
-  <span class="hljs-comment"># 单个连接最大订阅数量</span>
-  <span class="hljs-attr">subscriptionsPerConnection:</span> <span class="hljs-number">120</span>
-  <span class="hljs-attr">clientName:</span> <span class="hljs-literal">null</span>
-  <span class="hljs-comment"># loadBalancer 负载均衡算法类的选择</span>
-  <span class="hljs-attr">loadBalancer:</span> <span class="hljs-type">!&lt;org.redisson.connection.balancer.RoundRobinLoadBalancer&gt;</span> &#123;&#125;
-  <span class="hljs-comment">#从节点发布和订阅连接的最小空闲连接数</span>
-  <span class="hljs-attr">slaveSubscriptionConnectionMinimumIdleSize:</span> <span class="hljs-number">1</span>
-  <span class="hljs-comment">#从节点发布和订阅连接池大小 默认值50</span>
-  <span class="hljs-attr">slaveSubscriptionConnectionPoolSize:</span> <span class="hljs-number">50</span>
-  <span class="hljs-comment"># 从节点最小空闲连接数 默认值32</span>
-  <span class="hljs-attr">slaveConnectionMinimumIdleSize:</span> <span class="hljs-number">32</span>
-  <span class="hljs-comment"># 从节点连接池大小 默认64</span>
-  <span class="hljs-attr">slaveConnectionPoolSize:</span> <span class="hljs-number">64</span>
-  <span class="hljs-comment"># 主节点最小空闲连接数 默认32</span>
-  <span class="hljs-attr">masterConnectionMinimumIdleSize:</span> <span class="hljs-number">32</span>
-  <span class="hljs-comment"># 主节点连接池大小 默认64</span>
-  <span class="hljs-attr">masterConnectionPoolSize:</span> <span class="hljs-number">64</span>
-  <span class="hljs-comment"># 订阅操作的负载均衡模式</span>
-  <span class="hljs-attr">subscriptionMode:</span> <span class="hljs-string">SLAVE</span>
-  <span class="hljs-comment"># 只在从服务器读取</span>
-  <span class="hljs-attr">readMode:</span> <span class="hljs-string">SLAVE</span>
-  <span class="hljs-comment"># 集群地址</span>
-  <span class="hljs-attr">nodeAddresses:</span>
-    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7001&quot;</span>
-    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7002&quot;</span>
-    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7003&quot;</span>
-    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7004&quot;</span>
-    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7005&quot;</span>
-    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7006&quot;</span>
-  <span class="hljs-comment"># 对Redis集群节点状态扫描的时间间隔。单位是毫秒。默认1000</span>
-  <span class="hljs-attr">scanInterval:</span> <span class="hljs-number">1000</span>
-  <span class="hljs-comment">#这个线程池数量被所有RTopic对象监听器，RRemoteService调用者和RExecutorService任务共同共享。默认2</span>
-<span class="hljs-attr">threads:</span> <span class="hljs-number">10</span>
-<span class="hljs-comment">#这个线程池数量是在一个Redisson实例内，被其创建的所有分布式数据类型和服务，以及底层客户端所一同共享的线程池里保存的线程数量。默认2</span>
-<span class="hljs-attr">nettyThreads:</span> <span class="hljs-number">256</span>
-<span class="hljs-comment"># 编码方式 默认org.redisson.codec.JsonJacksonCodec</span>
-<span class="hljs-attr">codec:</span> <span class="hljs-type">!&lt;org.redisson.codec.JsonJacksonCodec&gt;</span> &#123;&#125;
-<span class="hljs-comment">#传输模式</span>
-<span class="hljs-attr">transportMode:</span> <span class="hljs-string">NIO</span>
-<span class="hljs-comment"># 分布式锁自动过期时间，防止死锁，默认30000</span>
-<span class="hljs-attr">lockWatchdogTimeout:</span> <span class="hljs-number">30000</span>
-<span class="hljs-comment"># 通过该参数来修改是否按订阅发布消息的接收顺序出来消息，如果选否将对消息实行并行处理，该参数只适用于订阅发布消息的情况, 默认true</span>
-<span class="hljs-attr">keepPubSubOrder:</span> <span class="hljs-literal">true</span>
-<span class="hljs-comment"># 用来指定高性能引擎的行为。由于该变量值的选用与使用场景息息相关（NORMAL除外）我们建议对每个参数值都进行尝试。</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment">#该参数仅限于Redisson PRO版本。</span>
-<span class="hljs-comment">#performanceMode: HIGHER_THROUGHPUT</span></code></pre>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">clusterServersConfig:</span><br>  <span class="hljs-comment"># 连接空闲超时，单位：毫秒 默认10000</span><br>  <span class="hljs-attr">idleConnectionTimeout:</span> <span class="hljs-number">100000</span><br>  <span class="hljs-attr">pingTimeout:</span> <span class="hljs-number">10000</span><br>  <span class="hljs-comment"># 同任何节点建立连接时的等待超时。时间单位是毫秒 默认10000</span><br>  <span class="hljs-attr">connectTimeout:</span> <span class="hljs-number">100000</span><br>  <span class="hljs-comment"># 等待节点回复命令的时间。该时间从命令发送成功时开始计时。默认3000</span><br>  <span class="hljs-attr">timeout:</span> <span class="hljs-number">30000</span><br>  <span class="hljs-comment"># 命令失败重试次数</span><br>  <span class="hljs-attr">retryAttempts:</span> <span class="hljs-number">10</span><br>  <span class="hljs-comment"># 命令重试发送时间间隔，单位：毫秒</span><br>  <span class="hljs-attr">retryInterval:</span> <span class="hljs-number">1500</span><br>  <span class="hljs-comment"># 重新连接时间间隔，单位：毫秒</span><br>  <span class="hljs-attr">reconnectionTimeout:</span> <span class="hljs-number">30000</span><br>  <span class="hljs-comment"># 执行失败最大次数</span><br>  <span class="hljs-attr">failedAttempts:</span> <span class="hljs-number">10</span><br>  <span class="hljs-comment"># 密码</span><br>  <span class="hljs-comment">#password: test1234</span><br>  <span class="hljs-comment"># 单个连接最大订阅数量</span><br>  <span class="hljs-attr">subscriptionsPerConnection:</span> <span class="hljs-number">120</span><br>  <span class="hljs-attr">clientName:</span> <span class="hljs-literal">null</span><br>  <span class="hljs-comment"># loadBalancer 负载均衡算法类的选择</span><br>  <span class="hljs-attr">loadBalancer:</span> <span class="hljs-type">!&lt;org.redisson.connection.balancer.RoundRobinLoadBalancer&gt;</span> &#123;&#125;<br>  <span class="hljs-comment">#从节点发布和订阅连接的最小空闲连接数</span><br>  <span class="hljs-attr">slaveSubscriptionConnectionMinimumIdleSize:</span> <span class="hljs-number">1</span><br>  <span class="hljs-comment">#从节点发布和订阅连接池大小 默认值50</span><br>  <span class="hljs-attr">slaveSubscriptionConnectionPoolSize:</span> <span class="hljs-number">50</span><br>  <span class="hljs-comment"># 从节点最小空闲连接数 默认值32</span><br>  <span class="hljs-attr">slaveConnectionMinimumIdleSize:</span> <span class="hljs-number">32</span><br>  <span class="hljs-comment"># 从节点连接池大小 默认64</span><br>  <span class="hljs-attr">slaveConnectionPoolSize:</span> <span class="hljs-number">64</span><br>  <span class="hljs-comment"># 主节点最小空闲连接数 默认32</span><br>  <span class="hljs-attr">masterConnectionMinimumIdleSize:</span> <span class="hljs-number">32</span><br>  <span class="hljs-comment"># 主节点连接池大小 默认64</span><br>  <span class="hljs-attr">masterConnectionPoolSize:</span> <span class="hljs-number">64</span><br>  <span class="hljs-comment"># 订阅操作的负载均衡模式</span><br>  <span class="hljs-attr">subscriptionMode:</span> <span class="hljs-string">SLAVE</span><br>  <span class="hljs-comment"># 只在从服务器读取</span><br>  <span class="hljs-attr">readMode:</span> <span class="hljs-string">SLAVE</span><br>  <span class="hljs-comment"># 集群地址</span><br>  <span class="hljs-attr">nodeAddresses:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7001&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7002&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7003&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7004&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7005&quot;</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-string">&quot;redis://192.168.211.141:7006&quot;</span><br>  <span class="hljs-comment"># 对Redis集群节点状态扫描的时间间隔。单位是毫秒。默认1000</span><br>  <span class="hljs-attr">scanInterval:</span> <span class="hljs-number">1000</span><br>  <span class="hljs-comment">#这个线程池数量被所有RTopic对象监听器，RRemoteService调用者和RExecutorService任务共同共享。默认2</span><br><span class="hljs-attr">threads:</span> <span class="hljs-number">10</span><br><span class="hljs-comment">#这个线程池数量是在一个Redisson实例内，被其创建的所有分布式数据类型和服务，以及底层客户端所一同共享的线程池里保存的线程数量。默认2</span><br><span class="hljs-attr">nettyThreads:</span> <span class="hljs-number">256</span><br><span class="hljs-comment"># 编码方式 默认org.redisson.codec.JsonJacksonCodec</span><br><span class="hljs-attr">codec:</span> <span class="hljs-type">!&lt;org.redisson.codec.JsonJacksonCodec&gt;</span> &#123;&#125;<br><span class="hljs-comment">#传输模式</span><br><span class="hljs-attr">transportMode:</span> <span class="hljs-string">NIO</span><br><span class="hljs-comment"># 分布式锁自动过期时间，防止死锁，默认30000</span><br><span class="hljs-attr">lockWatchdogTimeout:</span> <span class="hljs-number">30000</span><br><span class="hljs-comment"># 通过该参数来修改是否按订阅发布消息的接收顺序出来消息，如果选否将对消息实行并行处理，该参数只适用于订阅发布消息的情况, 默认true</span><br><span class="hljs-attr">keepPubSubOrder:</span> <span class="hljs-literal">true</span><br><span class="hljs-comment"># 用来指定高性能引擎的行为。由于该变量值的选用与使用场景息息相关（NORMAL除外）我们建议对每个参数值都进行尝试。</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment">#该参数仅限于Redisson PRO版本。</span><br><span class="hljs-comment">#performanceMode: HIGHER_THROUGHPUT</span><br></code></pre></td></tr></table></figure>
 
 <p>创建Redisson管理对象</p>
 <p>Redisson管理对象有2个，分别为 RedissonClient 和 RedissonConnectionFactory ，我们只用在项目的RedisConfig 中配置一下这2个对象即可，在 RedisConfig 中添加的代码如下：</p>
-<pre><code class="hljs java"><span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * Redisson客户端</span>
-<span class="hljs-comment"> * <span class="hljs-doctag">@return</span></span>
-<span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> Exception</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-meta">@Bean</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> RedissonClient <span class="hljs-title">redissonClient</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception</span>&#123;
-    ClassPathResource resource = <span class="hljs-keyword">new</span> ClassPathResource(<span class="hljs-string">&quot;redisson.yml&quot;</span>);
-    Config config = Config.fromYAML(resource.getInputStream());
-    <span class="hljs-keyword">return</span> Redisson.create(config);
-&#125;
-
-<span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * Redisson工厂对象</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-meta">@Bean</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> RedissonConnectionFactory <span class="hljs-title">redissonConnectionFactory</span><span class="hljs-params">(RedissonClient redissonClient)</span></span>&#123;
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RedissonConnectionFactory(redissonClient);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * Redisson客户端</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment"> * <span class="hljs-doctag">@throws</span> Exception</span><br><span class="hljs-comment"> */</span><br><span class="hljs-meta">@Bean</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> RedissonClient <span class="hljs-title">redissonClient</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception</span>&#123;<br>    ClassPathResource resource = <span class="hljs-keyword">new</span> ClassPathResource(<span class="hljs-string">&quot;redisson.yml&quot;</span>);<br>    Config config = Config.fromYAML(resource.getInputStream());<br>    <span class="hljs-keyword">return</span> Redisson.create(config);<br>&#125;<br><br><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * Redisson工厂对象</span><br><span class="hljs-comment"> */</span><br><span class="hljs-meta">@Bean</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> RedissonConnectionFactory <span class="hljs-title">redissonConnectionFactory</span><span class="hljs-params">(RedissonClient redissonClient)</span></span>&#123;<br>    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RedissonConnectionFactory(redissonClient);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>分布式锁实现</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic3.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h4 id="队列术"><a href="#队列术" class="headerlink" title="队列术"></a>队列术</h4><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic4.png" srcset="/blog/img/loading.gif" class>
+<h4 id="队列术"><a href="#队列术" class="headerlink" title="队列术"></a>队列术</h4><img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>上面我们已经使用过队列术了，队列术在面对零点洪峰流量时，是相当有效，可以直接将所有流量存入到队列中，让后台不用同时处理很多请求，而是从队列中逐个消费逐个处理，上图是实现流程，由于前面抢单已经实现过该流程，所以这里不再重复讲解。</p>
 <p>基于Nginx缓存队列术</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic5.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>针对一些特定操作，如果请求并发量极高，我们可以采用Nginx自身的队列术，在上一章我们已经学过了Nginx的代理缓存，其中有一个属性叫 proxy_cache_lock ，该属性的意思是：当多个客户端请求一个缓存中不存在的文件（或称之为一个MISS），只有这些请求中的第一个被允许发送至服务器。其他请求在第一个请求得到满意结果之后在缓存中得到文件。如果不启用 proxy_cache_lock ，则所有在缓存中找不到文件的请求都会直接与服务器通信。proxy_cache_lock 的作用其实和队列术及其类似，只不过发生的地方以及处理的语言不同而已。</p>
 <p>我们正好可以使用代理缓存来处理一些查询量大的相同数据，例如查询抢红包Top100就可以用Nginx的代理缓存中proxy_cache_lock 来实现。</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>后台代码移除分布式锁：</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>此时只有第1次从后台获取数据，当然这里会请求3次后才会从缓存拿数据，因为有个属性<code>proxy_cache_min_use 3</code>属性。</p>
 <h3 id="缓存雪崩解决方案"><a href="#缓存雪崩解决方案" class="headerlink" title="缓存雪崩解决方案"></a>缓存雪崩解决方案</h3><h4 id="缓存雪崩介绍"><a href="#缓存雪崩介绍" class="headerlink" title="缓存雪崩介绍"></a>缓存雪崩介绍</h4><p>缓存雪崩是指，由于缓存层承载着大量请求，有效的保护了存储层，但是如果缓存层由于某些原因整体不能提供服<br>务，于是所有的请求都会达到存储层，存储层的调用量会暴增，造成存储层也会挂掉的情况。</p>
@@ -539,8 +350,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -631,17 +448,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -650,7 +465,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -658,7 +472,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -685,6 +499,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -702,11 +517,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -726,7 +542,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>tomcat嵌入式与性能优化 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -194,7 +195,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      44
+      45
        分钟
     </span>
   
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -235,69 +236,18 @@
 <p><strong>微服务架构</strong></p>
 <p>现在微服务已经是主流的架构，其中微服务中每项服务都拥有自己的进程并利用轻量化机制实现通讯。这些服务都是围绕业务功能建立，可以自动化部署或独立部署。将微服务架构与Tomcat技术相结合，可以轻松将系统部署到云服务器上。当前SpringBoot支持的嵌入式服务器组件就是Tomcat。</p>
 <h2 id="嵌入式启动实战"><a href="#嵌入式启动实战" class="headerlink" title="嵌入式启动实战"></a>嵌入式启动实战</h2><p>pom文件中</p>
-<pre><code class="hljs xml"><span class="hljs-comment">&lt;!--嵌入式Tomcat --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.tomcat.embed<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>tomcat-embed-core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>8.5.34<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
-<span class="hljs-comment">&lt;!--嵌入式Tomcat的JSP 支持--&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.tomcat.embed<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>tomcat-embed-jasper<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>8.5.34<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-comment">&lt;!--嵌入式Tomcat --&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.tomcat.embed<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>tomcat-embed-core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>8.5.34<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br><span class="hljs-comment">&lt;!--嵌入式Tomcat的JSP 支持--&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.tomcat.embed<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>tomcat-embed-jasper<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>8.5.34<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p> 启动类</p>
-<pre><code class="hljs java"><span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * 手动的创建一个servlet，然后加入到tomcat中</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ServletDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * 手动的创建一个servlet，然后加入到tomcat中</span><br><span class="hljs-comment"> */</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ServletDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br><br>        <span class="hljs-comment">//自定义的一个Servlet(专门处理http请求)</span><br>        HttpServlet httpServlet = <span class="hljs-keyword">new</span> HttpServlet() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">service</span><span class="hljs-params">(ServletRequest req, ServletResponse res)</span> <span class="hljs-keyword">throws</span> ServletException, IOException </span>&#123;<br>                res.getWriter().write(<span class="hljs-string">&quot;hello world!&quot;</span>);<br>            &#125;<br>        &#125;;<br>        <span class="hljs-comment">//引入嵌入式Tomcat</span><br>        Tomcat tomcat = <span class="hljs-keyword">new</span> Tomcat();<br>        <span class="hljs-comment">//部署应用的context</span><br>        Context context = tomcat.addContext(<span class="hljs-string">&quot;/demo&quot;</span>,<span class="hljs-keyword">null</span>);<br>        <span class="hljs-comment">//相当于往应用中添加Servlet</span><br>        tomcat.addServlet(context,<span class="hljs-string">&quot;hello&quot;</span>,httpServlet);<br>        <span class="hljs-comment">//相当于添加了servletMapping 映射信息</span><br>        context.addServletMappingDecoded(<span class="hljs-string">&quot;/hello&quot;</span>,<span class="hljs-string">&quot;hello&quot;</span>);<br>        <span class="hljs-comment">//启动Tomcat  ---生命周期</span><br>        tomcat.init();<br>        tomcat.start();<br>        <span class="hljs-comment">//用于阻塞Tomcat,等待请求过来</span><br>        tomcat.getServer().await();<br>        <span class="hljs-comment">//http://localhost:8080/demo/hello</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-        <span class="hljs-comment">//自定义的一个Servlet(专门处理http请求)</span>
-        HttpServlet httpServlet = <span class="hljs-keyword">new</span> HttpServlet() &#123;
-            <span class="hljs-meta">@Override</span>
-            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">service</span><span class="hljs-params">(ServletRequest req, ServletResponse res)</span> <span class="hljs-keyword">throws</span> ServletException, IOException </span>&#123;
-                res.getWriter().write(<span class="hljs-string">&quot;hello world!&quot;</span>);
-            &#125;
-        &#125;;
-        <span class="hljs-comment">//引入嵌入式Tomcat</span>
-        Tomcat tomcat = <span class="hljs-keyword">new</span> Tomcat();
-        <span class="hljs-comment">//部署应用的context</span>
-        Context context = tomcat.addContext(<span class="hljs-string">&quot;/demo&quot;</span>,<span class="hljs-keyword">null</span>);
-        <span class="hljs-comment">//相当于往应用中添加Servlet</span>
-        tomcat.addServlet(context,<span class="hljs-string">&quot;hello&quot;</span>,httpServlet);
-        <span class="hljs-comment">//相当于添加了servletMapping 映射信息</span>
-        context.addServletMappingDecoded(<span class="hljs-string">&quot;/hello&quot;</span>,<span class="hljs-string">&quot;hello&quot;</span>);
-        <span class="hljs-comment">//启动Tomcat  ---生命周期</span>
-        tomcat.init();
-        tomcat.start();
-        <span class="hljs-comment">//用于阻塞Tomcat,等待请求过来</span>
-        tomcat.getServer().await();
-        <span class="hljs-comment">//http://localhost:8080/demo/hello</span>
-    &#125;
-&#125;</code></pre>
-
-<pre><code class="hljs java"><span class="hljs-comment">/**</span>
-<span class="hljs-comment"> * 要用嵌入式启动的方式启动一个SpringMVc的项目</span>
-<span class="hljs-comment"> */</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebAppDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span>  Exception</span>&#123;
-        Tomcat tomcat = <span class="hljs-keyword">new</span> Tomcat();
-        tomcat.addWebapp(<span class="hljs-string">&quot;/ref&quot;</span>,<span class="hljs-string">&quot;D:\\work_tomcat\\ref-comet&quot;</span>);
-        tomcat.getConnector().setPort(<span class="hljs-number">80</span>);
-        tomcat.init();
-        tomcat.start();
-        tomcat.getServer().await();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * 要用嵌入式启动的方式启动一个SpringMVc的项目</span><br><span class="hljs-comment"> */</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebAppDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span>  Exception</span>&#123;<br>        Tomcat tomcat = <span class="hljs-keyword">new</span> Tomcat();<br>        tomcat.addWebapp(<span class="hljs-string">&quot;/ref&quot;</span>,<span class="hljs-string">&quot;D:\\work_tomcat\\ref-comet&quot;</span>);<br>        tomcat.getConnector().setPort(<span class="hljs-number">80</span>);<br>        tomcat.init();<br>        tomcat.start();<br>        tomcat.getServer().await();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="tomcat性能优化"><a href="#tomcat性能优化" class="headerlink" title="tomcat性能优化"></a>tomcat性能优化</h2><h3 id="server-xml优化"><a href="#server-xml优化" class="headerlink" title="server.xml优化"></a>server.xml优化</h3><p>tomcat其实自带了参数说明文档</p>
-<img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>这时会出现一个英文的tomcat配置参数文档界面，这个界面中包含了所有tomcat配置信息。</p>
-<img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="Connector连接器优化"><a href="#Connector连接器优化" class="headerlink" title="Connector连接器优化"></a>Connector连接器优化</h4><ul>
 <li><p>IO模型优化策略：连接器模式改为NIO模式,NIO模式最大化压榨了CPU，把时间片更好利用起来，NIO适合大量长连接。</p>
@@ -305,36 +255,15 @@
 <li><p>最大线程优化策略：maxThreads属性默认设置为200，可以根据生产计算机上的处理器数量线性增加。在具有四个处理器的计算机上，将此值设置为800到1000之间的任何值都不会导致问题。如果配置的数量最终远远超过所需的线程数，则当服务器负载较低时，线程池将自然缩减线程数。</p>
 </li>
 <li><p>压缩gzip连接器传输：客户端和服务器之间的任何主要是文本的通信，无论是HTML，XML还是简单的Unicode，都可以使用简单的标准GZIP算法定期压缩高达90％。这可以对减少网络流量产生巨大影响，允许响应更快地发送回客户端，同时允许更多网络带宽可用于其他网络繁重的应用程序。设置方式为：</p>
-<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Connector</span> <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;80&quot;</span> <span class="hljs-attr">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span></span>
-<span class="hljs-tag">      <span class="hljs-attr">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span></span>
-<span class="hljs-tag">      <span class="hljs-attr">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> <span class="hljs-attr">executor</span>=<span class="hljs-string">&quot;tomcatThreadPool&quot;</span> <span class="hljs-attr">URIEncoding</span>=<span class="hljs-string">&quot;utf-8&quot;</span></span>
-<span class="hljs-tag">            <span class="hljs-attr">compression</span>=<span class="hljs-string">&quot;on&quot;</span></span>
-<span class="hljs-tag">            <span class="hljs-attr">compressionMinSize</span>=<span class="hljs-string">&quot;50&quot;</span> <span class="hljs-attr">noCompressionUserAgents</span>=<span class="hljs-string">&quot;gozilla, traviata&quot;</span></span>
-<span class="hljs-tag">            <span class="hljs-attr">compressableMimeType</span>=<span class="hljs-string">&quot;text/html,text/xml,text/javascript,text/css,text/plain&quot;</span> /&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Connector</span> <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;80&quot;</span> <span class="hljs-attr">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span></span><br><span class="hljs-tag">      <span class="hljs-attr">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span></span><br><span class="hljs-tag">      <span class="hljs-attr">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span> <span class="hljs-attr">executor</span>=<span class="hljs-string">&quot;tomcatThreadPool&quot;</span> <span class="hljs-attr">URIEncoding</span>=<span class="hljs-string">&quot;utf-8&quot;</span></span><br><span class="hljs-tag">            <span class="hljs-attr">compression</span>=<span class="hljs-string">&quot;on&quot;</span></span><br><span class="hljs-tag">            <span class="hljs-attr">compressionMinSize</span>=<span class="hljs-string">&quot;50&quot;</span> <span class="hljs-attr">noCompressionUserAgents</span>=<span class="hljs-string">&quot;gozilla, traviata&quot;</span></span><br><span class="hljs-tag">            <span class="hljs-attr">compressableMimeType</span>=<span class="hljs-string">&quot;text/html,text/xml,text/javascript,text/css,text/plain&quot;</span> /&gt;</span><br></code></pre></td></tr></table></figure>
 
 </li>
 </ul>
 <h4 id="配置Executor线程池"><a href="#配置Executor线程池" class="headerlink" title="配置Executor线程池"></a>配置Executor线程池</h4><p>Executor必须出现在Connector之前。配置方式如下：</p>
-<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Executor</span> </span>
-    name=&quot;tomcatThreadPool&quot;&lt;!--线程名称--&gt;
-    namePrefix=&quot;catalina-exec-&quot;
-    maxThreads=&quot;150&quot;<span class="hljs-comment">&lt;!--最大处理连接数线程--&gt;</span>
-    minSpareThreads=&quot;4&quot; /&gt;<span class="hljs-comment">&lt;!--保留最少线程数--&gt;</span>
-<span class="hljs-comment">&lt;!-- 将原有的Connector 替换为带有线程池的Connector如下,其实servlet.xml已经有了,只要打开就可以了,将原来的去掉   --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">Connector</span> </span>
-<span class="hljs-tag">    <span class="hljs-attr">executor</span>=<span class="hljs-string">&quot;tomcatThreadPool&quot;</span></span>
-<span class="hljs-tag">    <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;8080&quot;</span></span>
-<span class="hljs-tag">    <span class="hljs-attr">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span></span>
-<span class="hljs-tag">    <span class="hljs-attr">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span></span>
-<span class="hljs-tag">    <span class="hljs-attr">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span></span>
-    minProcessors=&quot;5&quot;&lt;!-- 同时处理请求的最小数 --&gt;
-    maxProcessors=&quot;75&quot;<span class="hljs-comment">&lt;!-- 同时处理请求的最大数 --&gt;</span>
-    acceptCount=&quot;1000&quot; /&gt;<span class="hljs-comment">&lt;!-- 接受最大并发数量 ,超过这个数量就会返回连接被拒绝 --&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Executor</span> </span><br>    name=&quot;tomcatThreadPool&quot;&lt;!--线程名称--&gt;<br>    namePrefix=&quot;catalina-exec-&quot;<br>    maxThreads=&quot;150&quot;<span class="hljs-comment">&lt;!--最大处理连接数线程--&gt;</span><br>    minSpareThreads=&quot;4&quot; /&gt;<span class="hljs-comment">&lt;!--保留最少线程数--&gt;</span><br><span class="hljs-comment">&lt;!-- 将原有的Connector 替换为带有线程池的Connector如下,其实servlet.xml已经有了,只要打开就可以了,将原来的去掉   --&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">Connector</span> </span><br><span class="hljs-tag">    <span class="hljs-attr">executor</span>=<span class="hljs-string">&quot;tomcatThreadPool&quot;</span></span><br><span class="hljs-tag">    <span class="hljs-attr">port</span>=<span class="hljs-string">&quot;8080&quot;</span></span><br><span class="hljs-tag">    <span class="hljs-attr">protocol</span>=<span class="hljs-string">&quot;HTTP/1.1&quot;</span></span><br><span class="hljs-tag">    <span class="hljs-attr">connectionTimeout</span>=<span class="hljs-string">&quot;20000&quot;</span></span><br><span class="hljs-tag">    <span class="hljs-attr">redirectPort</span>=<span class="hljs-string">&quot;8443&quot;</span></span><br>    minProcessors=&quot;5&quot;&lt;!-- 同时处理请求的最小数 --&gt;<br>    maxProcessors=&quot;75&quot;<span class="hljs-comment">&lt;!-- 同时处理请求的最大数 --&gt;</span><br>    acceptCount=&quot;1000&quot; /&gt;<span class="hljs-comment">&lt;!-- 接受最大并发数量 ,超过这个数量就会返回连接被拒绝 --&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p>详细的配置可以在tomcat配置信息的Executor页面中查看。</p>
-<h4 id="去掉value访问tomcat记录"><a href="#去掉value访问tomcat记录" class="headerlink" title="去掉value访问tomcat记录"></a>去掉value访问tomcat记录</h4><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Valve</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.valves.AccessLogValve&quot;</span> <span class="hljs-attr">directory</span>=<span class="hljs-string">&quot;logs&quot;</span></span>
-<span class="hljs-tag">               <span class="hljs-attr">prefix</span>=<span class="hljs-string">&quot;localhost_access_log&quot;</span> <span class="hljs-attr">suffix</span>=<span class="hljs-string">&quot;.txt&quot;</span></span>
-<span class="hljs-tag">               <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;%h %l %u %t &quot;</span>%<span class="hljs-attr">r</span>&quot; %<span class="hljs-attr">s</span> %<span class="hljs-attr">b</span>&quot; /&gt;</span></code></pre>
+<h4 id="去掉value访问tomcat记录"><a href="#去掉value访问tomcat记录" class="headerlink" title="去掉value访问tomcat记录"></a>去掉value访问tomcat记录</h4><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Valve</span> <span class="hljs-attr">className</span>=<span class="hljs-string">&quot;org.apache.catalina.valves.AccessLogValve&quot;</span> <span class="hljs-attr">directory</span>=<span class="hljs-string">&quot;logs&quot;</span></span><br><span class="hljs-tag">               <span class="hljs-attr">prefix</span>=<span class="hljs-string">&quot;localhost_access_log&quot;</span> <span class="hljs-attr">suffix</span>=<span class="hljs-string">&quot;.txt&quot;</span></span><br><span class="hljs-tag">               <span class="hljs-attr">pattern</span>=<span class="hljs-string">&quot;%h %l %u %t &quot;</span>%<span class="hljs-attr">r</span>&quot; %<span class="hljs-attr">s</span> %<span class="hljs-attr">b</span>&quot; /&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p>可以删除servler.xml中的value节点，来删除日志访问记录以提高性能。</p>
 <h4 id="关闭自动重载，热部署方式"><a href="#关闭自动重载，热部署方式" class="headerlink" title="关闭自动重载，热部署方式"></a>关闭自动重载，热部署方式</h4><p>关闭自动重载，默认为true（不同版本中有差异），自动加载会增加运行是 开销并且很容易内存溢出。</p>
@@ -363,23 +292,22 @@
 <li>suppressSmap - 是否禁止JSR45调试时生成SMAP信息？true 或 false，缺省为false。</li>
 <li>trimSpaces - 是否去掉模板文本中行为和指令之间的空格。缺省为false。 · xpoweredBy - 确定生成的Servlet是否加上X-Powered-By 响应头？true 或 false，缺省为false。</li>
 </ol>
-<h2 id="tomcat常见问题解决"><a href="#tomcat常见问题解决" class="headerlink" title="tomcat常见问题解决"></a>tomcat常见问题解决</h2><h3 id="迁移指南"><a href="#迁移指南" class="headerlink" title="迁移指南"></a>迁移指南</h3><img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic3.png" srcset="/blog/img/loading.gif" class>
+<h2 id="tomcat常见问题解决"><a href="#tomcat常见问题解决" class="headerlink" title="tomcat常见问题解决"></a>tomcat常见问题解决</h2><h3 id="迁移指南"><a href="#迁移指南" class="headerlink" title="迁移指南"></a>迁移指南</h3><img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h3 id="安全通告"><a href="#安全通告" class="headerlink" title="安全通告"></a>安全通告</h3><img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic4.png" srcset="/blog/img/loading.gif" class>
+<h3 id="安全通告"><a href="#安全通告" class="headerlink" title="安全通告"></a>安全通告</h3><img src="/blog/2020/05/06/Tomcat%E8%A7%A3%E6%9E%90/tomcat%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h2 id="tomcat常见的面试题"><a href="#tomcat常见的面试题" class="headerlink" title="tomcat常见的面试题"></a>tomcat常见的面试题</h2><h3 id="tomcat有哪几种部署方式？"><a href="#tomcat有哪几种部署方式？" class="headerlink" title="tomcat有哪几种部署方式？"></a>tomcat有哪几种部署方式？</h3><p><strong>隐式部署</strong></p>
 <p>直接丢文件夹、war、jar到webapps目录，tomcat会根据文件夹名称自动生成虚拟路径，简单，但是需要重启Tomcat服务器，包括要修改端口和访问路径的也需要重启。</p>
 <p><strong>显式部署</strong></p>
 <p>添加context元素</p>
 <p>server.xml中的Host加入一个Context（指定路径和文件地址），例如：</p>
-<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Host</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;localhost&quot;</span>&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">path</span>=<span class="hljs-string">&quot;/comet&quot;</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;D:\work_tomcat\ref-comet.war&quot;</span> /&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Host</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;localhost&quot;</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">path</span>=<span class="hljs-string">&quot;/comet&quot;</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;D:\work_tomcat\ref-comet.war&quot;</span> /&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p>即/comet 这个虚拟路径映射到了D:\work_tomcat\ref-comet目录下(war会解压成文件)，修改完servler.xml需要重启tomcat 服务器。</p>
 <p>创建xml文件</p>
 <p>在conf/Catalina/localhost中创建xml文件，访问路径为文件名，例如：</p>
 <p>在localhost目录下新建demo.xml，内容为：</p>
-<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;D:\work_tomcat\ref-comet&quot;</span> /&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">Context</span> <span class="hljs-attr">docBase</span>=<span class="hljs-string">&quot;D:\work_tomcat\ref-comet&quot;</span> /&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p>不需要写path，虚拟目录就是文件名demo，path默认为/demo，添加demo.xml不需要重启 tomcat服务器。</p>
 <p><strong>三种方式比较：</strong></p>
@@ -403,7 +331,7 @@
 <p>对于I/0选择，要根据业务场景来定，一般高并发场景下，APR和NIO2的性能要优于NIO和BIO，（linux操作系统支持的NIO2由于是一个假的，并没有真正实现AIO，所以一般linux上推荐使用NIO，如果是APR的话，需要安装APR库，而Windows上默认安装了），所以在8.5的版本中默认是NIO。</p>
 <h3 id="tomcat容器是如何创建servlet类实例？用到了什么原理？"><a href="#tomcat容器是如何创建servlet类实例？用到了什么原理？" class="headerlink" title="tomcat容器是如何创建servlet类实例？用到了什么原理？"></a>tomcat容器是如何创建servlet类实例？用到了什么原理？</h3><p>当容器启动时，会读取在webapps目录下所有的web应用中的web.xml文件，然后对xml文件进行解析，并读取servlet注册信息。然后，将每个应用中注册的servlet类都进行加载，并通过反射的方式实例化（也有可能是在第一次请求时实例化）。</p>
 <h3 id="tomcat中JVM如何调优"><a href="#tomcat中JVM如何调优" class="headerlink" title="tomcat中JVM如何调优"></a>tomcat中JVM如何调优</h3><p>一般我们优化启动时的堆内存设置,Windows下,在文件{tomcat_home}/bin/catalina.bat，Unix下，在文件$CATALINA_HOME/bin/catalina.sh的前面，增加如下设置：</p>
-<pre><code class="hljs ini"><span class="hljs-attr">JAVA_OPTS</span>=”‘<span class="hljs-variable">$JAVA_OPTS</span>” -Xms[初始化内存大小] -Xmx[可以使用的最大内存]</code></pre>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs ini"><span class="hljs-attr">JAVA_OPTS</span>=”‘<span class="hljs-variable">$JAVA_OPTS</span>” -Xms[初始化内存大小] -Xmx[可以使用的最大内存]<br></code></pre></td></tr></table></figure>
 
 <p>一般说来，你应该使用物理内存的 80% 作为堆大小。建议设置为70％；建议设置[[初始化内存大小]等于[可以使用的最大内存]，这样可以减少平凡分配堆而降低性能。</p>
 <h3 id="tomcat中类加载的顺序"><a href="#tomcat中类加载的顺序" class="headerlink" title="tomcat中类加载的顺序"></a>tomcat中类加载的顺序</h3><p>当应用需要到某个类时，则会按照下面的顺序进行类加载：</p>
@@ -446,8 +374,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -538,17 +472,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -557,7 +489,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -565,7 +496,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -592,6 +523,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -609,11 +541,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -633,7 +566,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

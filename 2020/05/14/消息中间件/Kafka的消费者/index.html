@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Kafka的消费者 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,103 +217,35 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">Kafka的消费者</h1>
             
             <div class="markdown-body">
-              <h2 id="消费者的工作流程"><a href="#消费者的工作流程" class="headerlink" title="消费者的工作流程"></a>消费者的工作流程</h2><img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic3.png" srcset="/blog/img/loading.gif" class>
+              <h2 id="消费者的工作流程"><a href="#消费者的工作流程" class="headerlink" title="消费者的工作流程"></a>消费者的工作流程</h2><img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="消费者"><a href="#消费者" class="headerlink" title="消费者"></a>消费者</h3><p>消费者的含义，与一般消息中间件中消费者的概念相同。在高并发的情况下，生产者产生消息的速度是远大于消费者消费的速度，单个消费者很可能会 负担不起，此时有必要对消费者进行横向伸缩，于是我们可以使用多个消费者从同一个主题读取消息，对消息进行分流。</p>
 <h3 id="消费者群组"><a href="#消费者群组" class="headerlink" title="消费者群组"></a>消费者群组</h3><p>Kafka里的消费者从属于消费者群组，一个群组里的消费者订阅的都是同一个主题，每个消费者接收主题一部分分区的消息。</p>
-<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>往消费者群组里增加消费者是进行横向伸缩能力的主要方式。所以我们有必要为主题设定合适规模的分区，在负载均衡的时候可以加入更多的消费者。但是要记住，如果群组里消费者数量超过了主题的分区数量，多出来的消费者是没有用处的。</p>
-<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>如果是多个应用程序，需要从同一个主题中读取数据，只要保证每个应用程序有自己的消费者群组就行了。</p>
 <h2 id="消费者的消费方式"><a href="#消费者的消费方式" class="headerlink" title="消费者的消费方式"></a>消费者的消费方式</h2><p>kafka的消费者并不是线程安全的，所以在多线程的环境下，使用KafkaConsumer的实例时需要保证每个消费者线程拥有自己的KafkaConsumer实例。</p>
 <p>创建消费者后，使用subscribe()方法订阅主题，这个方法接受一个主题列表为参数，也可以接受一个正则表达式为参数，正则表达式可以匹配多个主题。如果新创建了新主题，并且主题名字和正则表达式匹配，那么会立即触发一次再均衡，消费者就可以读取新添加的主题。比如，要订阅所有和test相关的主题，可以subscribe(“test.*”)。</p>
 <p>然后使用poll()方法主动的从kafka中获取数据，为了不断的获取消息，需要在循环中不断的进行调用。poll()方法的参数为超时时间，控制poll()方法的阻塞时间，它会让消费者在指定的毫秒数内一直等待broker返回数据。poll()方法将会返回一个记录（消息）列表，每一条记录都包含了记录所属的主题信息，记录所在分区信息，记录在分区里的偏移量，以及记录的键值对。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GroupAConsumer1</span> </span>&#123;
-
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> KafkaConsumer&lt;String,String&gt; consumer = <span class="hljs-keyword">null</span>;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        <span class="hljs-comment">/*消费配置的实例*/</span>
-        Properties properties
-                = KafkaConst.consumerConfig(BusiConst.CONSUMER_GROUP_A,
-                StringDeserializer.class,
-                StringDeserializer.class);
-        <span class="hljs-comment">/*消息消费者*/</span>
-        consumer = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-keyword">try</span> &#123;
-            <span class="hljs-comment">//可以订阅多个主题</span>
-            consumer.subscribe(Collections.singletonList(BusiConst.CONSUMER_GROUP_TOPIC));
-            consumer.poll(<span class="hljs-number">0</span>);
-            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
-                <span class="hljs-comment">//kafka只能通过拉取获得消息</span>
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">500</span>);
-                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;
-                    System.out.println(String.format(
-                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,
-                            record.topic(),record.partition(),record.offset(),
-                            record.key(),record.value()));
-                    <span class="hljs-comment">//do our work</span>
-                &#125;
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GroupAConsumer1</span> </span>&#123;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> KafkaConsumer&lt;String,String&gt; consumer = <span class="hljs-keyword">null</span>;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        <span class="hljs-comment">/*消费配置的实例*/</span><br>        Properties properties<br>                = KafkaConst.consumerConfig(BusiConst.CONSUMER_GROUP_A,<br>                StringDeserializer.class,<br>                StringDeserializer.class);<br>        <span class="hljs-comment">/*消息消费者*/</span><br>        consumer = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-comment">//可以订阅多个主题</span><br>            consumer.subscribe(Collections.singletonList(BusiConst.CONSUMER_GROUP_TOPIC));<br>            consumer.poll(<span class="hljs-number">0</span>);<br>            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;<br>                <span class="hljs-comment">//kafka只能通过拉取获得消息</span><br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">500</span>);<br>                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;<br>                    System.out.println(String.format(<br>                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,<br>                            record.topic(),record.partition(),record.offset(),<br>                            record.key(),record.value()));<br>                    <span class="hljs-comment">//do our work</span><br>                &#125;<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="轮询"><a href="#轮询" class="headerlink" title="轮询"></a>轮询</h3><p>poll()方法不仅仅只是获取数据，在新消费者第一次调用时，它会负责查找群组，加入群组，接受分配的分区。如果发生了再均衡，整个过程也是在轮询期间进行的。</p>
 <h2 id="消费者的配置"><a href="#消费者的配置" class="headerlink" title="消费者的配置"></a>消费者的配置</h2><p>消费者有很多属性可以设置，大部分都有合理的默认值，无需调整。有些参数可能对内存使用，性能和可靠性方面有较大影响，可以参考org.apache.kafka.clients.consumer包下ConsumerConfig类。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigKafkaConsumer</span> </span>&#123;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        <span class="hljs-comment">//TODO 消费者三个属性必须指定(broker地址清单、key和value的反序列化器)</span>
-        Properties properties = <span class="hljs-keyword">new</span> Properties();
-        properties.put(<span class="hljs-string">&quot;bootstrap.servers&quot;</span>,<span class="hljs-string">&quot;127.0.0.1:9092&quot;</span>);
-        properties.put(<span class="hljs-string">&quot;key.deserializer&quot;</span>, StringDeserializer.class);
-        properties.put(<span class="hljs-string">&quot;value.deserializer&quot;</span>, StringDeserializer.class);
-        <span class="hljs-comment">//TODO 群组并非完全必须</span>
-        properties.put(ConsumerConfig.GROUP_ID_CONFIG,<span class="hljs-string">&quot;test1&quot;</span>);
-        <span class="hljs-comment">//TODO 更多消费者配置（重要的）</span>
-        properties.put(<span class="hljs-string">&quot;auto.offset.reset&quot;</span>,<span class="hljs-string">&quot;latest&quot;</span>); <span class="hljs-comment">//消费者在读取一个没有偏移量的分区或者偏移量无效的情况下，如何处理</span>
-        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>,<span class="hljs-keyword">true</span>); <span class="hljs-comment">// 表明消费者是否自动提交偏移 默认值true</span>
-        properties.put(<span class="hljs-string">&quot;max.poll.records&quot;</span>,<span class="hljs-number">500</span>); <span class="hljs-comment">// 控制每次poll方法返回的的记录数量 默认值500</span>
-        <span class="hljs-comment">//分区分配给消费者的策略。系统提供两种策略。默认为Range</span>
-   properties.put(<span class="hljs-string">&quot;partition.assignment.strategy&quot;</span>,Collections.singletonList(RangeAssignor.class));
-        KafkaConsumer&lt;String,String&gt; consumer = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-keyword">try</span> &#123;
-            <span class="hljs-comment">//TODO 消费者订阅主题（可以多个）</span>
-            consumer.subscribe(Collections.singletonList(BusiConst.HELLO_TOPIC));
-            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
-                <span class="hljs-comment">//TODO 拉取（新版本）</span>
-                ConsumerRecords&lt;String, String&gt; records = consumer.poll(Duration.ofMillis(<span class="hljs-number">500</span>));
-                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;
-                    System.out.println(String.format(<span class="hljs-string">&quot;topic:%s,分区：%d,偏移量：%d,&quot;</span> + <span class="hljs-string">&quot;key:%s,value:%s&quot;</span>,record.topic(),record.partition(),
-                            record.offset(),record.key(),record.value()));
-                    <span class="hljs-comment">//do my work</span>
-                    <span class="hljs-comment">//打包任务投入线程池</span>
-                    <span class="hljs-comment">// ex</span>
-                &#125;
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConfigKafkaConsumer</span> </span>&#123;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        <span class="hljs-comment">//TODO 消费者三个属性必须指定(broker地址清单、key和value的反序列化器)</span><br>        Properties properties = <span class="hljs-keyword">new</span> Properties();<br>        properties.put(<span class="hljs-string">&quot;bootstrap.servers&quot;</span>,<span class="hljs-string">&quot;127.0.0.1:9092&quot;</span>);<br>        properties.put(<span class="hljs-string">&quot;key.deserializer&quot;</span>, StringDeserializer.class);<br>        properties.put(<span class="hljs-string">&quot;value.deserializer&quot;</span>, StringDeserializer.class);<br>        <span class="hljs-comment">//TODO 群组并非完全必须</span><br>        properties.put(ConsumerConfig.GROUP_ID_CONFIG,<span class="hljs-string">&quot;test1&quot;</span>);<br>        <span class="hljs-comment">//TODO 更多消费者配置（重要的）</span><br>        properties.put(<span class="hljs-string">&quot;auto.offset.reset&quot;</span>,<span class="hljs-string">&quot;latest&quot;</span>); <span class="hljs-comment">//消费者在读取一个没有偏移量的分区或者偏移量无效的情况下，如何处理</span><br>        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>,<span class="hljs-keyword">true</span>); <span class="hljs-comment">// 表明消费者是否自动提交偏移 默认值true</span><br>        properties.put(<span class="hljs-string">&quot;max.poll.records&quot;</span>,<span class="hljs-number">500</span>); <span class="hljs-comment">// 控制每次poll方法返回的的记录数量 默认值500</span><br>        <span class="hljs-comment">//分区分配给消费者的策略。系统提供两种策略。默认为Range</span><br>   properties.put(<span class="hljs-string">&quot;partition.assignment.strategy&quot;</span>,Collections.singletonList(RangeAssignor.class));<br>        KafkaConsumer&lt;String,String&gt; consumer = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-comment">//TODO 消费者订阅主题（可以多个）</span><br>            consumer.subscribe(Collections.singletonList(BusiConst.HELLO_TOPIC));<br>            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;<br>                <span class="hljs-comment">//TODO 拉取（新版本）</span><br>                ConsumerRecords&lt;String, String&gt; records = consumer.poll(Duration.ofMillis(<span class="hljs-number">500</span>));<br>                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;<br>                    System.out.println(String.format(<span class="hljs-string">&quot;topic:%s,分区：%d,偏移量：%d,&quot;</span> + <span class="hljs-string">&quot;key:%s,value:%s&quot;</span>,record.topic(),record.partition(),<br>                            record.offset(),record.key(),record.value()));<br>                    <span class="hljs-comment">//do my work</span><br>                    <span class="hljs-comment">//打包任务投入线程池</span><br>                    <span class="hljs-comment">// ex</span><br>                &#125;<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <ul>
 <li>auto.offset.reset：消费者在读取一个没有偏移量的分区或者偏移量无效的情况下，如何处理。默认值是latest，从最新的记录开始读取，另一个值是earliest，表示消费者从起始位置读取分区的记录。注意:如果是消费者在读取一个没有偏移量的分区或者偏移量无效的情况（因消费者长时间失效，包含的偏移量记录已经过时并被删除）下，默认值是latest的话，消费者将从最新的记录开始读取数据（在消费者启动之后生成的记录），所以一般先启动生产者，再启动消费者。</li>
@@ -332,13 +265,13 @@
 <h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="多线程安全问题"><a href="#多线程安全问题" class="headerlink" title="多线程安全问题"></a>多线程安全问题</h3><p>KafkaConsumer的实现不是线程安全的，所以我们在多线程的环境下，使用KafkaConsumer的实例要小心，必须保证每个消费数据的线程拥有自己的KafkaConsumer实例。</p>
 <h3 id="群组协调"><a href="#群组协调" class="headerlink" title="群组协调"></a>群组协调</h3><p>消费者要加入群组时，会向群组协调器发送一个JoinGroup请求，第一个加入群组的消费者成为群主，群主会获得群组的成员列表，并负责给每一个 消费者分配分区。分配完毕后，群组把分配情况发送给群组协调器，协调器再把这些信息发送给所有的消费者，每个消费者只能看到自己的分配信息， 只有群主知道群组里所有消费者的分配信息，这个过程在每次再均衡时都会发生。</p>
 <h3 id="分区再均衡"><a href="#分区再均衡" class="headerlink" title="分区再均衡"></a>分区再均衡</h3><p>当消费者群组里的消费者发生变化，或者主题里的分区发生了变化，都会导致再均衡现象的发生。Kafka中存在着消费者对分区所有权的关系，这样无论是消费者变化，比如增加了消费者，新消费者会读取原本由其他消费者读取的分区，消费者减少，原本由它负责的分区要由其他消费者来读取，增加了分区，哪个消费者来读取这个新增的分区，这些行为，都会导致分区所有权的变化，这种变化就被称为再均衡。</p>
-<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>再均衡对Kafka很重要，这是消费者群组带来高可用性和伸缩性的关键所在。不过一般情况下，尽量减少再均衡，因为再均衡期间，消费者是无法读取消息的，会造成整个群组一小段时间的不可用（STW）。</p>
 <p>消费者通过向称为群组协调器的broker（不同的群组有不同的协调器）发送心跳来维持它和群组的从属关系以及对分区的所有权关系。如果消费者长时间不发送心跳，群组协调器认为它已经死亡，就会触发一次再均衡。在0.10.1及以后的版本中，心跳由单独的线程负责，相关的控制参数为max.poll.interval.ms。</p>
 <h3 id="提交和偏移量"><a href="#提交和偏移量" class="headerlink" title="提交和偏移量"></a>提交和偏移量</h3><p>当我们调用poll()方法的时候，broker返回的是生产者写入Kafka但是还没有被消费者读取过的记录，消费者可以使用Kafka来追踪消息在分区里的位置，我们称之为偏移量。消费者更新自己读取到哪个消息的操作，我们称之为提交。</p>
 <p>消费者会往一个叫做_consumer_offset的特殊主题发送一个消息，里面会包括每个分区的偏移量。发生了再均衡之后，消费者可能会被分配新的分区，为了能够继续工作，消费者需要读取每个分区最后一次提交的偏移量，然后从指定的地方，继续做处理。这时可能会导致两个问题：</p>
-<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic5.png" srcset="/blog/img/loading.gif" class title="">
+<img src="/blog/2020/05/14/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/Kafka%E7%9A%84%E6%B6%88%E8%B4%B9%E8%80%85/pic5.png" srcset="/blog/img/loading.gif" lazyload class title="">
 
 <ul>
 <li>如果提交的偏移量小于消费者实际处理的最后一个消息的偏移量，处于两个偏移量之间的消息会被重复处理。</li>
@@ -350,353 +283,35 @@
 <p>自动提交虽然方便，但是很明显是一种基于时间提交的方式,不过并没有为我们留有余地来避免重复处理消息。</p>
 <h3 id="手动提交（同步）"><a href="#手动提交（同步）" class="headerlink" title="手动提交（同步）"></a>手动提交（同步）</h3><p>我们通过控制偏移量提交时间来消除丢失消息的可能性，并在发生再均衡时减少重复消息的数量。消费者API提供了另一种提交偏移量的方式，开发者可以在必要的时候提交当前偏移量，而不是基于时间间隔。</p>
 <p>auto.commit.offset设为false后，使用commitSync()提交偏移量最简单也最可靠。这个方法会提交由poll()方法返回的最新偏移量，提交成功后马上返回，如果提交失败就抛出异常。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitSync</span> </span>&#123;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        Properties properties = KafkaConst.consumerConfig(<span class="hljs-string">&quot;CommitSync&quot;</span>,
-                StringDeserializer.class,
-                StringDeserializer.class);
-        <span class="hljs-comment">//取消自动提交</span>
-        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,<span class="hljs-keyword">false</span>);
-        KafkaConsumer&lt;String,String&gt; consumer
-                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-keyword">try</span> &#123;
-            consumer.subscribe(Collections.singletonList(
-                    BusiConst.CONSUMER_COMMIT_TOPIC));
-            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">500</span>);
-                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;
-                    System.out.println(String.format(
-                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,
-                            record.topic(),record.partition(),record.offset(),
-                            record.key(),record.value()));
-                &#125;
-                <span class="hljs-comment">//手动提交</span>
-                consumer.commitSync();
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitSync</span> </span>&#123;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        Properties properties = KafkaConst.consumerConfig(<span class="hljs-string">&quot;CommitSync&quot;</span>,<br>                StringDeserializer.class,<br>                StringDeserializer.class);<br>        <span class="hljs-comment">//取消自动提交</span><br>        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,<span class="hljs-keyword">false</span>);<br>        KafkaConsumer&lt;String,String&gt; consumer<br>                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-keyword">try</span> &#123;<br>            consumer.subscribe(Collections.singletonList(<br>                    BusiConst.CONSUMER_COMMIT_TOPIC));<br>            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;<br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">500</span>);<br>                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;<br>                    System.out.println(String.format(<br>                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,<br>                            record.topic(),record.partition(),record.offset(),<br>                            record.key(),record.value()));<br>                &#125;<br>                <span class="hljs-comment">//手动提交</span><br>                consumer.commitSync();<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>注意：commitSync()将会提交由poll()返回的最新偏移量，所以在处理完所有记录后要确保调用了commitSync()，否则还是会有丢失消息的风险。如果发生了再均衡，从最近批消息到发生再均衡之间的所有消息都将被重复处理。</p>
 <h3 id="异步提交"><a href="#异步提交" class="headerlink" title="异步提交"></a>异步提交</h3><p>手动提交时，在broker对提交请求作出回应之前，应用程序会一直阻塞。这时我们可以使用commitAsync()方法异步提交，我们只管发送提交请求，无需等待broker的响应。在成功提交或碰到无法恢复的错误之前，commitSync()会一直重试，但是commitAsync不会。它之所以不进行重试，是因为在它收到服务器响应的时候,<br>可能有一个更大的偏移量已经提交成功。</p>
 <p>假设我们发出一个请求用于提交偏移量2000，这个时候发生了短暂的通信问题，服务器收不到请求，自然也不会作出任何响应。与此同时，我们处理了另外一批消息，并成功提交了偏移量3000。如果commitAsync()重新尝试提交偏移量2000，它有可能在偏移量3000之后提交成功。这个时候如果发生再均衡，就会出现重复消息。<br>commitAsync()也支持回调，在broker作出响应时会执行回调。回调经常被用于记录提交错误或生成度量指标。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitAsync</span> </span>&#123;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        Properties properties = KafkaConst.consumerConfig(
-                <span class="hljs-string">&quot;CommitAsync&quot;</span>,
-                StringDeserializer.class,
-                StringDeserializer.class);
-        <span class="hljs-comment">/*取消自动提交*/</span>
-        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>, <span class="hljs-keyword">false</span>);
-
-        KafkaConsumer&lt;String, String&gt; consumer
-                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-keyword">try</span> &#123;
-            consumer.subscribe(Collections.singletonList(
-                    BusiConst.CONSUMER_COMMIT_TOPIC));
-            <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">500</span>);
-                <span class="hljs-keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;
-                    System.out.println(String.format(
-                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,
-                            record.topic(), record.partition(), record.offset(),
-                            record.key(), record.value()));
-                &#125;
-                <span class="hljs-comment">//异步提交回调方法</span>
-                consumer.commitAsync(<span class="hljs-keyword">new</span> OffsetCommitCallback() &#123;
-                    <span class="hljs-meta">@Override</span>
-                    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onComplete</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">                            Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets,</span></span>
-<span class="hljs-function"><span class="hljs-params">                            Exception exception)</span> </span>&#123;
-                        <span class="hljs-keyword">if</span>(exception!=<span class="hljs-keyword">null</span>)&#123;
-                            System.out.print(<span class="hljs-string">&quot;Commmit failed for offsets &quot;</span>);
-                            System.out.println(offsets);
-                            exception.printStackTrace();
-                        &#125;
-                    &#125;
-                &#125;);
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitAsync</span> </span>&#123;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        Properties properties = KafkaConst.consumerConfig(<br>                <span class="hljs-string">&quot;CommitAsync&quot;</span>,<br>                StringDeserializer.class,<br>                StringDeserializer.class);<br>        <span class="hljs-comment">/*取消自动提交*/</span><br>        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>, <span class="hljs-keyword">false</span>);<br><br>        KafkaConsumer&lt;String, String&gt; consumer<br>                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-keyword">try</span> &#123;<br>            consumer.subscribe(Collections.singletonList(<br>                    BusiConst.CONSUMER_COMMIT_TOPIC));<br>            <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;<br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">500</span>);<br>                <span class="hljs-keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;<br>                    System.out.println(String.format(<br>                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,<br>                            record.topic(), record.partition(), record.offset(),<br>                            record.key(), record.value()));<br>                &#125;<br>                <span class="hljs-comment">//异步提交回调方法</span><br>                consumer.commitAsync(<span class="hljs-keyword">new</span> OffsetCommitCallback() &#123;<br>                    <span class="hljs-meta">@Override</span><br>                    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onComplete</span><span class="hljs-params">(</span></span><br><span class="hljs-function"><span class="hljs-params">                            Map&lt;TopicPartition, OffsetAndMetadata&gt; offsets,</span></span><br><span class="hljs-function"><span class="hljs-params">                            Exception exception)</span> </span>&#123;<br>                        <span class="hljs-keyword">if</span>(exception!=<span class="hljs-keyword">null</span>)&#123;<br>                            System.out.print(<span class="hljs-string">&quot;Commmit failed for offsets &quot;</span>);<br>                            System.out.println(offsets);<br>                            exception.printStackTrace();<br>                        &#125;<br>                    &#125;<br>                &#125;);<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="同步和异步组合"><a href="#同步和异步组合" class="headerlink" title="同步和异步组合"></a>同步和异步组合</h3><p>因为同步提交一定会成功、异步可能会失败，所以一般的场景是同步和异步一起来做。一般情况下，针对偶尔出现的提交失败，不进行重试不会有太大问题，因为如果提交失败是因为临时问题导致的，那么后续的提交总会有成功的。但如果这是发生在关闭消费者或再均衡前的最后一次提交，就要确保能够提交成功。</p>
 <p>因此，在消费者关闭前一般会组合使用commitAsync()和commitsync()。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SyncAndAsync</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        <span class="hljs-comment">/*消息消费者*/</span>
-        Properties properties = KafkaConst.consumerConfig(<span class="hljs-string">&quot;SyncAndAsync&quot;</span>,
-                StringDeserializer.class,
-                StringDeserializer.class);
-        <span class="hljs-comment">/*取消自动提交*/</span>
-        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>,<span class="hljs-keyword">false</span>);
-
-        KafkaConsumer&lt;String,String&gt; consumer
-                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-keyword">try</span> &#123;
-            consumer.subscribe(Collections.singletonList(
-                    BusiConst.CONSUMER_COMMIT_TOPIC));
-            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">500</span>);
-                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;
-                    System.out.println(String.format(
-                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,
-                            record.topic(),record.partition(),record.offset(),
-                            record.key(),record.value()));
-                &#125;
-                <span class="hljs-comment">//异步提交</span>
-                consumer.commitAsync();
-            &#125;
-        &#125; <span class="hljs-keyword">catch</span> (CommitFailedException e) &#123;
-            System.out.println(<span class="hljs-string">&quot;Commit failed:&quot;</span>);
-            e.printStackTrace();
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                <span class="hljs-comment">//同步提交</span>
-                consumer.commitSync();
-            &#125; <span class="hljs-keyword">finally</span> &#123;
-                consumer.close();
-            &#125;
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SyncAndAsync</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        <span class="hljs-comment">/*消息消费者*/</span><br>        Properties properties = KafkaConst.consumerConfig(<span class="hljs-string">&quot;SyncAndAsync&quot;</span>,<br>                StringDeserializer.class,<br>                StringDeserializer.class);<br>        <span class="hljs-comment">/*取消自动提交*/</span><br>        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>,<span class="hljs-keyword">false</span>);<br><br>        KafkaConsumer&lt;String,String&gt; consumer<br>                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-keyword">try</span> &#123;<br>            consumer.subscribe(Collections.singletonList(<br>                    BusiConst.CONSUMER_COMMIT_TOPIC));<br>            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;<br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">500</span>);<br>                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;<br>                    System.out.println(String.format(<br>                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,<br>                            record.topic(),record.partition(),record.offset(),<br>                            record.key(),record.value()));<br>                &#125;<br>                <span class="hljs-comment">//异步提交</span><br>                consumer.commitAsync();<br>            &#125;<br>        &#125; <span class="hljs-keyword">catch</span> (CommitFailedException e) &#123;<br>            System.out.println(<span class="hljs-string">&quot;Commit failed:&quot;</span>);<br>            e.printStackTrace();<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                <span class="hljs-comment">//同步提交</span><br>                consumer.commitSync();<br>            &#125; <span class="hljs-keyword">finally</span> &#123;<br>                consumer.close();<br>            &#125;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="特定提交"><a href="#特定提交" class="headerlink" title="特定提交"></a>特定提交</h3><p>在我们前面的提交中，提交偏移量的频率与处理消息批次的频率是一样的。但如果想要更频繁地提交，比如<br>poll()方法返回一大批数据，为了避免因再均衡引起的重复处理整批消息，想要在批次中间提交偏移量，这时无法通过调用commitSync()或commitAsync()来实现，因为它们只会提交最后一个偏移量，而此时该批次里的消息还没有处理完。</p>
 <p>消费者API允许在调用commitSync()和commitAsync()方法时传进去希望提交的分区和偏移量的Map。假设我们处理了半个批次的消息，最后一个来自主题“customers”，分区3的消息的偏移量是5000，你可以调用commitSync()方法来提交它。不过，因为消费者可能不只读取一个分区，因为我们需要跟踪所有分区的偏移量，所以在这个层面上控制偏移量的提交会让代码变复杂。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitSpecial</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        <span class="hljs-comment">/*消息消费者*/</span>
-        Properties properties = KafkaConst.consumerConfig(
-                <span class="hljs-string">&quot;CommitSpecial&quot;</span>,
-                StringDeserializer.class,
-                StringDeserializer.class);
-        <span class="hljs-comment">/*取消自动提交*/</span>
-        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>,<span class="hljs-keyword">false</span>);
-        KafkaConsumer&lt;String,String&gt; consumer
-                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-comment">//创建特定提交所需要的Map</span>
-        Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets
-                = <span class="hljs-keyword">new</span> HashMap&lt;TopicPartition, OffsetAndMetadata&gt;();
-        <span class="hljs-keyword">int</span> count = <span class="hljs-number">0</span>;
-        <span class="hljs-keyword">try</span> &#123;
-            consumer.subscribe(Collections.singletonList(
-                    BusiConst.CONSUMER_COMMIT_TOPIC));
-            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">500</span>);
-                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;
-                    System.out.println(String.format(
-                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,
-                            record.topic(),record.partition(),record.offset(),
-                            record.key(),record.value()));
-                    <span class="hljs-comment">//创建并放入对象</span>
-                    currOffsets.put(<span class="hljs-keyword">new</span> TopicPartition(record.topic(),record.partition()),
-                            <span class="hljs-keyword">new</span> OffsetAndMetadata(record.offset()+<span class="hljs-number">1</span>,<span class="hljs-string">&quot;no meta&quot;</span>));
-                    <span class="hljs-keyword">if</span>(count%<span class="hljs-number">11</span>==<span class="hljs-number">0</span>)&#123;
-                        <span class="hljs-comment">//提交</span>
-                        consumer.commitAsync(currOffsets,<span class="hljs-keyword">null</span>);
-                    &#125;
-                    count++;
-                &#125;
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommitSpecial</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        <span class="hljs-comment">/*消息消费者*/</span><br>        Properties properties = KafkaConst.consumerConfig(<br>                <span class="hljs-string">&quot;CommitSpecial&quot;</span>,<br>                StringDeserializer.class,<br>                StringDeserializer.class);<br>        <span class="hljs-comment">/*取消自动提交*/</span><br>        properties.put(<span class="hljs-string">&quot;enable.auto.commit&quot;</span>,<span class="hljs-keyword">false</span>);<br>        KafkaConsumer&lt;String,String&gt; consumer<br>                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-comment">//创建特定提交所需要的Map</span><br>        Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets<br>                = <span class="hljs-keyword">new</span> HashMap&lt;TopicPartition, OffsetAndMetadata&gt;();<br>        <span class="hljs-keyword">int</span> count = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">try</span> &#123;<br>            consumer.subscribe(Collections.singletonList(<br>                    BusiConst.CONSUMER_COMMIT_TOPIC));<br>            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;<br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">500</span>);<br>                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;<br>                    System.out.println(String.format(<br>                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,<br>                            record.topic(),record.partition(),record.offset(),<br>                            record.key(),record.value()));<br>                    <span class="hljs-comment">//创建并放入对象</span><br>                    currOffsets.put(<span class="hljs-keyword">new</span> TopicPartition(record.topic(),record.partition()),<br>                            <span class="hljs-keyword">new</span> OffsetAndMetadata(record.offset()+<span class="hljs-number">1</span>,<span class="hljs-string">&quot;no meta&quot;</span>));<br>                    <span class="hljs-keyword">if</span>(count%<span class="hljs-number">11</span>==<span class="hljs-number">0</span>)&#123;<br>                        <span class="hljs-comment">//提交</span><br>                        consumer.commitAsync(currOffsets,<span class="hljs-keyword">null</span>);<br>                    &#125;<br>                    count++;<br>                &#125;<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="再均衡监听器"><a href="#再均衡监听器" class="headerlink" title="再均衡监听器"></a>再均衡监听器</h2><p>消费者在退出和进行分区再均衡之前会做一些清理工作比如提交偏移量、关闭文件句柄、数据库连接等。 在为消费者分配新分区或移除旧分区时，可以通过消费者API执行一些应用程序代码来实现一些功能，然后在调用subscribe()方法时传进去一个 ConsumerRebalancelistener实例就可以了。比如实现从特定偏移量处开始获取记录。</p>
 <p>到目前为止，我们知道了如何使用poll()方法从各个分区的最新偏移量处开始处理消息。不过，有时候我们也需要从特定的偏移量处开始读取消息。如果想从分区的起始位置开始读取消息，或者直接跳到分区的末尾开始读取消息，可以使seekToBeginning(Collection&lt;TopicPartition&gt;tp)和seekToEnd(Collection&lt;TopicPartition&gt;tp)这两个方法。不过，Kaka也为我们提供了用于查找特定偏移量的API。它有很多用途，比如向后回退几个消息或者向前跳过几个消息（对时间比较敏感的应用程序在处理滞后的情况下希望能够向前跳过若干个消息）。在使用Kafka以外的系统来存储偏移量时，它将给我们带来更大的惊喜–让消息的业务处理和偏移量的提交变得一致。</p>
 <p>试想一下这样的场景：应用程序从Kaka读取事件对它们进行处理后把结果保存到数据库。如果不想丢失任何数据，也不想在数据库里多次保存相同的结果。可以毎处理一条记录就提交一次偏移量。尽管如此，在记录被保存到数据库之后以及偏移量被提交之前，应用程序仍然有可能发生崩溃，导致重复处理数据，数据库里就会出现重复记录。</p>
 <p>如果保存记录和偏移量可以在一个原子操作里完成，就可以避免出现上述情况。记录和偏移量要么都被成功提交,要么都不提交。如果记录是保存在数据库里而偏移量是提交到Kafka上，那么就无法实现原子操作不过，如果在同一个事务里把记录和偏移量都写到数据库里就可以保证操作的原子性。</p>
 <p>在消费者启动或分配到新分区时，可以使用seck()方法查找保存在数据库里的偏移量。可以使用ConsumerRebalancelistener和seek()方法确保我们是从数据库里保存的偏移量所指定的位置开始处理消息的。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HandlerRebalance</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ConsumerRebalanceListener</span> </span>&#123;
-
-    <span class="hljs-comment">/*模拟一个保存分区偏移量的数据库表*/</span>
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> ConcurrentHashMap&lt;TopicPartition, Long&gt;
-            PARTITION_OFFSET_MAP = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;TopicPartition, Long&gt;();
-
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> KafkaConsumer&lt;String, String&gt; consumer;
-    <span class="hljs-comment">//private final Transaction  tr事务类的实例</span>
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">HandlerRebalance</span><span class="hljs-params">(Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets,</span></span>
-<span class="hljs-function"><span class="hljs-params">                            KafkaConsumer&lt;String, String&gt; consumer)</span> </span>&#123;
-        <span class="hljs-keyword">this</span>.currOffsets = currOffsets;
-        <span class="hljs-keyword">this</span>.consumer = consumer;
-    &#125;
-
-    <span class="hljs-comment">//分区再均衡之前</span>
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onPartitionsRevoked</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">            Collection&lt;TopicPartition&gt; partitions)</span> </span>&#123;
-        <span class="hljs-keyword">final</span> String id = Thread.currentThread().getId() + <span class="hljs-string">&quot;&quot;</span>;
-        System.out.println(id + <span class="hljs-string">&quot;-onPartitionsRevoked参数值为：&quot;</span> + partitions);
-        System.out.println(id + <span class="hljs-string">&quot;-服务器准备分区再均衡，提交偏移量。当前偏移量为：&quot;</span>
-                + currOffsets);
-        <span class="hljs-comment">//我们可以不使用consumer.commitSync(currOffsets);</span>
-        <span class="hljs-comment">//提交偏移量到kafka,由我们自己维护*/</span>
-        <span class="hljs-comment">//开始事务</span>
-        <span class="hljs-comment">//偏移量写入数据库</span>
-        System.out.println(<span class="hljs-string">&quot;分区偏移量表中：&quot;</span> + PARTITION_OFFSET_MAP);
-        <span class="hljs-keyword">for</span> (TopicPartition topicPartition : partitions) &#123;
-            PARTITION_OFFSET_MAP.put(topicPartition,
-                    currOffsets.get(topicPartition).offset());
-        &#125;
-        consumer.commitSync(currOffsets);
-        <span class="hljs-comment">//提交业务数和偏移量入库  tr.commit</span>
-    &#125;
-
-    <span class="hljs-comment">//分区再均衡完成以后</span>
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onPartitionsAssigned</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">            Collection&lt;TopicPartition&gt; partitions)</span> </span>&#123;
-        <span class="hljs-keyword">final</span> String id = Thread.currentThread().getId() + <span class="hljs-string">&quot;&quot;</span>;
-        System.out.println(id + <span class="hljs-string">&quot;-再均衡完成，onPartitionsAssigned参数值为：&quot;</span> + partitions);
-        System.out.println(<span class="hljs-string">&quot;分区偏移量表中：&quot;</span> + PARTITION_OFFSET_MAP);
-        <span class="hljs-keyword">for</span> (TopicPartition topicPartition : partitions) &#123;
-            System.out.println(id + <span class="hljs-string">&quot;-topicPartition&quot;</span> + topicPartition);
-            <span class="hljs-comment">//模拟从数据库中取得上次的偏移量</span>
-            Long offset = PARTITION_OFFSET_MAP.get(topicPartition);
-            <span class="hljs-keyword">if</span> (offset == <span class="hljs-keyword">null</span>) <span class="hljs-keyword">continue</span>;
-            consumer.seek(topicPartition, PARTITION_OFFSET_MAP.get(topicPartition));
-        &#125;
-
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HandlerRebalance</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">ConsumerRebalanceListener</span> </span>&#123;<br><br>    <span class="hljs-comment">/*模拟一个保存分区偏移量的数据库表*/</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">static</span> ConcurrentHashMap&lt;TopicPartition, Long&gt;<br>            PARTITION_OFFSET_MAP = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;TopicPartition, Long&gt;();<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> KafkaConsumer&lt;String, String&gt; consumer;<br>    <span class="hljs-comment">//private final Transaction  tr事务类的实例</span><br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">HandlerRebalance</span><span class="hljs-params">(Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets,</span></span><br><span class="hljs-function"><span class="hljs-params">                            KafkaConsumer&lt;String, String&gt; consumer)</span> </span>&#123;<br>        <span class="hljs-keyword">this</span>.currOffsets = currOffsets;<br>        <span class="hljs-keyword">this</span>.consumer = consumer;<br>    &#125;<br><br>    <span class="hljs-comment">//分区再均衡之前</span><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onPartitionsRevoked</span><span class="hljs-params">(</span></span><br><span class="hljs-function"><span class="hljs-params">            Collection&lt;TopicPartition&gt; partitions)</span> </span>&#123;<br>        <span class="hljs-keyword">final</span> String id = Thread.currentThread().getId() + <span class="hljs-string">&quot;&quot;</span>;<br>        System.out.println(id + <span class="hljs-string">&quot;-onPartitionsRevoked参数值为：&quot;</span> + partitions);<br>        System.out.println(id + <span class="hljs-string">&quot;-服务器准备分区再均衡，提交偏移量。当前偏移量为：&quot;</span><br>                + currOffsets);<br>        <span class="hljs-comment">//我们可以不使用consumer.commitSync(currOffsets);</span><br>        <span class="hljs-comment">//提交偏移量到kafka,由我们自己维护*/</span><br>        <span class="hljs-comment">//开始事务</span><br>        <span class="hljs-comment">//偏移量写入数据库</span><br>        System.out.println(<span class="hljs-string">&quot;分区偏移量表中：&quot;</span> + PARTITION_OFFSET_MAP);<br>        <span class="hljs-keyword">for</span> (TopicPartition topicPartition : partitions) &#123;<br>            PARTITION_OFFSET_MAP.put(topicPartition,<br>                    currOffsets.get(topicPartition).offset());<br>        &#125;<br>        consumer.commitSync(currOffsets);<br>        <span class="hljs-comment">//提交业务数和偏移量入库  tr.commit</span><br>    &#125;<br><br>    <span class="hljs-comment">//分区再均衡完成以后</span><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onPartitionsAssigned</span><span class="hljs-params">(</span></span><br><span class="hljs-function"><span class="hljs-params">            Collection&lt;TopicPartition&gt; partitions)</span> </span>&#123;<br>        <span class="hljs-keyword">final</span> String id = Thread.currentThread().getId() + <span class="hljs-string">&quot;&quot;</span>;<br>        System.out.println(id + <span class="hljs-string">&quot;-再均衡完成，onPartitionsAssigned参数值为：&quot;</span> + partitions);<br>        System.out.println(<span class="hljs-string">&quot;分区偏移量表中：&quot;</span> + PARTITION_OFFSET_MAP);<br>        <span class="hljs-keyword">for</span> (TopicPartition topicPartition : partitions) &#123;<br>            System.out.println(id + <span class="hljs-string">&quot;-topicPartition&quot;</span> + topicPartition);<br>            <span class="hljs-comment">//模拟从数据库中取得上次的偏移量</span><br>            Long offset = PARTITION_OFFSET_MAP.get(topicPartition);<br>            <span class="hljs-keyword">if</span> (offset == <span class="hljs-keyword">null</span>) <span class="hljs-keyword">continue</span>;<br>            consumer.seek(topicPartition, PARTITION_OFFSET_MAP.get(topicPartition));<br>        &#125;<br><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>消费者中</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConsumerWorker</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Runnable</span> </span>&#123;
-
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> KafkaConsumer&lt;String, String&gt; consumer;
-    <span class="hljs-comment">/*用来保存每个消费者当前读取分区的偏移量*/</span>
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets;
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> isStop;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ConsumerWorker</span><span class="hljs-params">(<span class="hljs-keyword">boolean</span> isStop)</span> </span>&#123;
-        <span class="hljs-comment">/*消息消费者配置*/</span>
-        Properties properties = KafkaConst.consumerConfig(
-                RebalanceConsumer.GROUP_ID,
-                StringDeserializer.class,
-                StringDeserializer.class);
-        <span class="hljs-comment">/*取消自动提交*/</span>
-        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG
-                , <span class="hljs-keyword">false</span>);
-        <span class="hljs-keyword">this</span>.isStop = isStop;
-        <span class="hljs-keyword">this</span>.consumer
-                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        <span class="hljs-keyword">this</span>.currOffsets
-                = <span class="hljs-keyword">new</span> HashMap&lt;TopicPartition, OffsetAndMetadata&gt;();
-        <span class="hljs-comment">//设置ConsumerRebalancelistener</span>
-        consumer.subscribe(Collections.singletonList(BusiConst.REBALANCE_TOPIC),
-                <span class="hljs-keyword">new</span> HandlerRebalance(currOffsets, consumer));
-    &#125;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;
-        <span class="hljs-keyword">final</span> String id = Thread.currentThread().getId() + <span class="hljs-string">&quot;&quot;</span>;
-        <span class="hljs-keyword">int</span> count = <span class="hljs-number">0</span>;
-        TopicPartition topicPartition = <span class="hljs-keyword">null</span>;
-        <span class="hljs-keyword">long</span> offset = <span class="hljs-number">0</span>;
-        <span class="hljs-keyword">try</span> &#123;
-            <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">500</span>);
-                <span class="hljs-comment">//业务处理</span>
-                <span class="hljs-comment">//开始事务</span>
-                <span class="hljs-keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;
-                    System.out.println(id + <span class="hljs-string">&quot;|&quot;</span> + String.format(
-                            <span class="hljs-string">&quot;处理主题：%s，分区：%d，偏移量：%d，&quot;</span> +
-                                    <span class="hljs-string">&quot;key：%s，value：%s&quot;</span>,
-                            record.topic(), record.partition(),
-                            record.offset(), record.key(), record.value()));
-                    topicPartition = <span class="hljs-keyword">new</span> TopicPartition(record.topic(),
-                            record.partition());
-                    offset = record.offset() + <span class="hljs-number">1</span>;
-                    currOffsets.put(topicPartition, <span class="hljs-keyword">new</span> OffsetAndMetadata(offset,
-                            <span class="hljs-string">&quot;no&quot;</span>));
-                    count++;
-                    <span class="hljs-comment">//执行业务sql</span>
-                &#125;
-                <span class="hljs-keyword">if</span> (currOffsets.size() &gt; <span class="hljs-number">0</span>) &#123;
-                    <span class="hljs-comment">//提交事务,同时将业务和偏移量放入HandlerRebalance</span>
-                    <span class="hljs-keyword">for</span> (TopicPartition topicPartitionkey : currOffsets.keySet()) &#123;
-                        HandlerRebalance.PARTITION_OFFSET_MAP.put(topicPartitionkey,
-                                currOffsets.get(topicPartitionkey).offset());
-                    &#125;
-                &#125;
-                <span class="hljs-keyword">if</span> (isStop &amp;&amp; count &gt;= <span class="hljs-number">5</span>) &#123;
-                    System.out.println(id + <span class="hljs-string">&quot;-将关闭，当前偏移量为：&quot;</span> + currOffsets);
-                    consumer.commitSync();
-                    <span class="hljs-keyword">break</span>;
-                &#125;
-                consumer.commitSync();
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ConsumerWorker</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">Runnable</span> </span>&#123;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> KafkaConsumer&lt;String, String&gt; consumer;<br>    <span class="hljs-comment">/*用来保存每个消费者当前读取分区的偏移量*/</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Map&lt;TopicPartition, OffsetAndMetadata&gt; currOffsets;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> isStop;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ConsumerWorker</span><span class="hljs-params">(<span class="hljs-keyword">boolean</span> isStop)</span> </span>&#123;<br>        <span class="hljs-comment">/*消息消费者配置*/</span><br>        Properties properties = KafkaConst.consumerConfig(<br>                RebalanceConsumer.GROUP_ID,<br>                StringDeserializer.class,<br>                StringDeserializer.class);<br>        <span class="hljs-comment">/*取消自动提交*/</span><br>        properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG<br>                , <span class="hljs-keyword">false</span>);<br>        <span class="hljs-keyword">this</span>.isStop = isStop;<br>        <span class="hljs-keyword">this</span>.consumer<br>                = <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        <span class="hljs-keyword">this</span>.currOffsets<br>                = <span class="hljs-keyword">new</span> HashMap&lt;TopicPartition, OffsetAndMetadata&gt;();<br>        <span class="hljs-comment">//设置ConsumerRebalancelistener</span><br>        consumer.subscribe(Collections.singletonList(BusiConst.REBALANCE_TOPIC),<br>                <span class="hljs-keyword">new</span> HandlerRebalance(currOffsets, consumer));<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">final</span> String id = Thread.currentThread().getId() + <span class="hljs-string">&quot;&quot;</span>;<br>        <span class="hljs-keyword">int</span> count = <span class="hljs-number">0</span>;<br>        TopicPartition topicPartition = <span class="hljs-keyword">null</span>;<br>        <span class="hljs-keyword">long</span> offset = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;<br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">500</span>);<br>                <span class="hljs-comment">//业务处理</span><br>                <span class="hljs-comment">//开始事务</span><br>                <span class="hljs-keyword">for</span> (ConsumerRecord&lt;String, String&gt; record : records) &#123;<br>                    System.out.println(id + <span class="hljs-string">&quot;|&quot;</span> + String.format(<br>                            <span class="hljs-string">&quot;处理主题：%s，分区：%d，偏移量：%d，&quot;</span> +<br>                                    <span class="hljs-string">&quot;key：%s，value：%s&quot;</span>,<br>                            record.topic(), record.partition(),<br>                            record.offset(), record.key(), record.value()));<br>                    topicPartition = <span class="hljs-keyword">new</span> TopicPartition(record.topic(),<br>                            record.partition());<br>                    offset = record.offset() + <span class="hljs-number">1</span>;<br>                    currOffsets.put(topicPartition, <span class="hljs-keyword">new</span> OffsetAndMetadata(offset,<br>                            <span class="hljs-string">&quot;no&quot;</span>));<br>                    count++;<br>                    <span class="hljs-comment">//执行业务sql</span><br>                &#125;<br>                <span class="hljs-keyword">if</span> (currOffsets.size() &gt; <span class="hljs-number">0</span>) &#123;<br>                    <span class="hljs-comment">//提交事务,同时将业务和偏移量放入HandlerRebalance</span><br>                    <span class="hljs-keyword">for</span> (TopicPartition topicPartitionkey : currOffsets.keySet()) &#123;<br>                        HandlerRebalance.PARTITION_OFFSET_MAP.put(topicPartitionkey,<br>                                currOffsets.get(topicPartitionkey).offset());<br>                    &#125;<br>                &#125;<br>                <span class="hljs-keyword">if</span> (isStop &amp;&amp; count &gt;= <span class="hljs-number">5</span>) &#123;<br>                    System.out.println(id + <span class="hljs-string">&quot;-将关闭，当前偏移量为：&quot;</span> + currOffsets);<br>                    consumer.commitSync();<br>                    <span class="hljs-keyword">break</span>;<br>                &#125;<br>                consumer.commitSync();<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="优雅的退出"><a href="#优雅的退出" class="headerlink" title="优雅的退出"></a>优雅的退出</h2><p>如果确定要退出循环，可以通过另一个线程调用consumer.wakeup()方法。如果循环运行在主线程里，可以在ShutdownHook里调用该方法。要记住，consumer.wakeup()是消费者唯一一个可以从其他线程里安全调用的方法。调用consumer.wakeup()可以退出poll()，并抛出WakeupException异常。我们不需要处理WakeupException，因为它只是用于跳出循环的一种方式。不过，在退出consumer之前仍需要调用consumer.close()方法，它会提交任何还没有提交的东西，并向群组协调器发送消息，告知自己要离开群组，接下来就会触发再均衡，而不需要等待会话超时。</p>
 <h2 id="独立消费者"><a href="#独立消费者" class="headerlink" title="独立消费者"></a>独立消费者</h2><p>到目前为止，我们讨论了消费者群组，分区被自动分配给群组里的消费者，在群组里新增或移除消费者时自动触发再均衡。不过有时候可能只需要一个消费者从一个主题的所有分区或者某个特定的分区读取数据。这个时候就不需要消费者群组和再均衡了，只需要把主题或者分区分配给消费者，然后开始读取消息并提交偏移量。</p>
 <p>如果是这样的话，就不需要订阅主题，取而代之的是为自己分配分区。一个独立消费者可以订阅主题，并加入消费者群组，或者为自己分配分区，但不能同时做这两件事情。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">IndependConsumer</span> </span>&#123;
-
-    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> KafkaConsumer&lt;String,String&gt; consumer = <span class="hljs-keyword">null</span>;
-    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String SINGLE_CONSUMER_TOPIC = <span class="hljs-string">&quot;single-consumer&quot;</span>;
-
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        Properties properties = <span class="hljs-keyword">new</span> Properties();
-        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                KafkaConst.LOCAL_BROKER);
-        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                StringDeserializer.class.getName());
-        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                StringDeserializer.class.getName());
-
-        <span class="hljs-comment">/*独立消息消费者*/</span>
-        consumer= <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);
-        List&lt;TopicPartition&gt; topicPartitionList = <span class="hljs-keyword">new</span> ArrayList&lt;TopicPartition&gt;();
-        <span class="hljs-comment">//独立消费者不需要订阅主题，只需要分配主题中的分区即可</span>
-        List&lt;PartitionInfo&gt; partitionInfos
-                = consumer.partitionsFor(SINGLE_CONSUMER_TOPIC);
-        <span class="hljs-comment">//构造分区list（这里全部消费）</span>
-        <span class="hljs-keyword">if</span>(<span class="hljs-keyword">null</span>!=partitionInfos)&#123;
-            <span class="hljs-keyword">for</span>(PartitionInfo partitionInfo:partitionInfos)&#123;
-                topicPartitionList.add(<span class="hljs-keyword">new</span> TopicPartition(partitionInfo.topic(),
-                        partitionInfo.partition()));
-            &#125;
-        &#125;
-        <span class="hljs-comment">//订阅分区消息</span>
-        consumer.assign(topicPartitionList);
-        <span class="hljs-keyword">try</span> &#123;
-
-            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;
-                ConsumerRecords&lt;String, String&gt; records
-                        = consumer.poll(<span class="hljs-number">1000</span>);
-                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;
-                    System.out.println(String.format(
-                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,
-                            record.topic(),record.partition(),record.offset(),
-                            record.key(),record.value()));
-                    <span class="hljs-comment">//do our work</span>
-                &#125;
-            &#125;
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            consumer.close();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">IndependConsumer</span> </span>&#123;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> KafkaConsumer&lt;String,String&gt; consumer = <span class="hljs-keyword">null</span>;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String SINGLE_CONSUMER_TOPIC = <span class="hljs-string">&quot;single-consumer&quot;</span>;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        Properties properties = <span class="hljs-keyword">new</span> Properties();<br>        properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,<br>                KafkaConst.LOCAL_BROKER);<br>        properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,<br>                StringDeserializer.class.getName());<br>        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,<br>                StringDeserializer.class.getName());<br><br>        <span class="hljs-comment">/*独立消息消费者*/</span><br>        consumer= <span class="hljs-keyword">new</span> KafkaConsumer&lt;String, String&gt;(properties);<br>        List&lt;TopicPartition&gt; topicPartitionList = <span class="hljs-keyword">new</span> ArrayList&lt;TopicPartition&gt;();<br>        <span class="hljs-comment">//独立消费者不需要订阅主题，只需要分配主题中的分区即可</span><br>        List&lt;PartitionInfo&gt; partitionInfos<br>                = consumer.partitionsFor(SINGLE_CONSUMER_TOPIC);<br>        <span class="hljs-comment">//构造分区list（这里全部消费）</span><br>        <span class="hljs-keyword">if</span>(<span class="hljs-keyword">null</span>!=partitionInfos)&#123;<br>            <span class="hljs-keyword">for</span>(PartitionInfo partitionInfo:partitionInfos)&#123;<br>                topicPartitionList.add(<span class="hljs-keyword">new</span> TopicPartition(partitionInfo.topic(),<br>                        partitionInfo.partition()));<br>            &#125;<br>        &#125;<br>        <span class="hljs-comment">//订阅分区消息</span><br>        consumer.assign(topicPartitionList);<br>        <span class="hljs-keyword">try</span> &#123;<br><br>            <span class="hljs-keyword">while</span>(<span class="hljs-keyword">true</span>)&#123;<br>                ConsumerRecords&lt;String, String&gt; records<br>                        = consumer.poll(<span class="hljs-number">1000</span>);<br>                <span class="hljs-keyword">for</span>(ConsumerRecord&lt;String, String&gt; record:records)&#123;<br>                    System.out.println(String.format(<br>                            <span class="hljs-string">&quot;主题：%s，分区：%d，偏移量：%d，key：%s，value：%s&quot;</span>,<br>                            record.topic(),record.partition(),record.offset(),<br>                            record.key(),record.value()));<br>                    <span class="hljs-comment">//do our work</span><br>                &#125;<br>            &#125;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            consumer.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>注意：独立消费者相当于自己来分配分区，但是这样做的好处是自己控制，但是就没有动态的支持了，包括加入消费者(分区再均衡之类的)，新增分区， 这些都需要代码中去解决，所以一般情况下不推荐使用。</p>
 
@@ -724,8 +339,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -816,17 +437,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -835,7 +454,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -843,7 +461,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -870,6 +488,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -887,11 +506,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -911,7 +531,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

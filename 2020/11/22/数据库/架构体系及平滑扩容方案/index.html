@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>数据库架构体系及平滑扩容简述 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -243,25 +244,25 @@
 <h4 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计</h4><p>在一个系统中,我们设计数据库架构,需要考虑以下几个原则:可用性、 读性能、 一致性、 拓展性。</p>
 <h5 id="可用性设计"><a href="#可用性设计" class="headerlink" title="可用性设计"></a>可用性设计</h5><ol>
 <li><p>单点</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>在最原始的架构中，是单一数据库，一旦数据库宕机之后，整个服务都不可用，不存在高可用。</p>
 </li>
 <li><p>主从复制</p>
 <p>解决高可用的思路，就是冗余、复制；</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>在这种主从的架构中，即使Master节点挂掉，还有Slave节点，整个数据库的数据依赖存在，但是在这种架构中，无法保证读、写的高可用，而且会存在一致性问题。</p>
 </li>
 <li><p>“读”高可用</p>
 <p>为保证读的高可用，可以对读（从）库进行冗余，但是冗余读库，也会存在副作用：读写有延时，可能存在不一致。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic5.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>在上图中确实是保证了”读”高可用，但是写节点依然是单点，不能保证写高可用。</p>
 </li>
 <li><p>“写”高可用</p>
 <p>保证”写”高可用，就可以在上述架构的基础上,再冗余写库，采用双主双从模式。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>而在这种架构下，两个主库，都会执行写请求，而且互相同步。</p>
 <p>那么可能会存在以下问题： 双主同步，主键如果是自增的，会存在冲突，解决方案：</p>
@@ -280,18 +281,18 @@
 </ul>
 <ol>
 <li><p>不同库建立不同的索引</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>主库只提供写操作， 不建立索引；</p>
 <p>从库提供读操作，在从库上建立适当的索引 ；</p>
 </li>
 <li><p>增加从库，负载均衡</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic8.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>这种做法上面已经提到，会存在主从不一致的问题，从库数量越多，主从延时越长，不一致问题越严重。</p>
 </li>
 <li><p>缓存</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic9.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <ol>
 <li>发生写请求时，先淘汰缓存，再写数据库</li>
@@ -301,17 +302,17 @@
 </ol>
 <h5 id="一致性设计"><a href="#一致性设计" class="headerlink" title="一致性设计"></a>一致性设计</h5><ol>
 <li><p>引入中间件</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic10.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>通过中间件将key写操作路由到主， 在一定时间范围内，该key上的读也路由到主，当主从同步完成后再将读操作路由到从。</p>
 </li>
 <li><p>读写都到主</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic11.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>读写都到主，不做读写分离，也就不存在主从不一致的情况。</p>
 </li>
 <li><p>缓存两次淘汰</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic12.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>异常的读写时序，或导致旧数据入缓存，一次淘汰不够，要进行二次淘汰</p>
 <ol>
@@ -324,286 +325,66 @@
 <ol>
 <li><p>垂直拆分</p>
 <p>根据业务划分，将不同的数据库表切分到不同的数据库上，以实现扩容的目的；</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic13.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>水平拆分</p>
 <p>将同一块业务的数据库表，进行拆分，将一张表的数据根据一定的规则（取模，hash等）切分到不同的数据库上。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic14.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>而上述的架构中是没有考虑高可用的，当其中的任何一个节点挂掉之后，数据就不完整了，考虑高可用的架构如下：</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic15.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>平滑、高效扩容</p>
 <p>随着业务系统的扩张，数据库中的数据量会不断增加，如果实现扩容，最为直接了当的办法就是直接增加服务器，从而实现更多数据的存储；</p>
 <p>如果按照以下的思路扩容，会存在大量的数据迁移。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic16.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic16.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>如何来完成高效、平滑的扩容呢， 可以按照以下架构进行。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic17.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic17.png" srcset="/blog/img/loading.gif" lazyload class>
 
 </li>
 </ol>
 <h4 id="高可用架构搭建"><a href="#高可用架构搭建" class="headerlink" title="高可用架构搭建"></a>高可用架构搭建</h4><h5 id="双主同步"><a href="#双主同步" class="headerlink" title="双主同步"></a>双主同步</h5><p>安装MySQL服务</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#docker安装mysql1</span>
-docker run -p 3306:3306 --name mysql1 -v /opt/docker_v/mysql1/conf:/etc/mysql/mysql.conf.d -e MYSQL_ROOT_PASSWORD=mysql@971107zhao mysql:5.7.31
-<span class="hljs-comment">#docker安装mysql2</span>
-docker run -p 3307:3306 --name mysql2 -v /opt/docker_v/mysql2/conf:/etc/mysql/mysql.conf.d -e MYSQL_ROOT_PASSWORD=mysql@971107zhao mysql:5.7.31</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#docker安装mysql1</span><br>docker run -p 3306:3306 --name mysql1 -v /opt/docker_v/mysql1/conf:/etc/mysql/mysql.conf.d -e MYSQL_ROOT_PASSWORD=mysql@971107zhao mysql:5.7.31<br><span class="hljs-comment">#docker安装mysql2</span><br>docker run -p 3307:3306 --name mysql2 -v /opt/docker_v/mysql2/conf:/etc/mysql/mysql.conf.d -e MYSQL_ROOT_PASSWORD=mysql@971107zhao mysql:5.7.31<br></code></pre></td></tr></table></figure>
 
 <p>在/opt/docker_v/mysql1/conf中添加mysqld.cnf内容为：</p>
-<pre><code class="hljs ini"><span class="hljs-comment"># Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># This program is free software; you can redistribute it and/or modify</span>
-<span class="hljs-comment"># it under the terms of the GNU General Public License, version 2.0,</span>
-<span class="hljs-comment"># as published by the Free Software Foundation.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># This program is also distributed with certain software (including</span>
-<span class="hljs-comment"># but not limited to OpenSSL) that is licensed under separate terms,</span>
-<span class="hljs-comment"># as designated in a particular file or component or in included license</span>
-<span class="hljs-comment"># documentation.  The authors of MySQL hereby grant you an additional</span>
-<span class="hljs-comment"># permission to link the program and your derivative works with the</span>
-<span class="hljs-comment"># separately licensed software that they have included with MySQL.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># This program is distributed in the hope that it will be useful,</span>
-<span class="hljs-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="hljs-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="hljs-comment"># GNU General Public License, version 2.0, for more details.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># You should have received a copy of the GNU General Public License</span>
-<span class="hljs-comment"># along with this program; if not, write to the Free Software</span>
-<span class="hljs-comment"># Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA</span>
-
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># The MySQL  Server configuration file.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># For explanations see</span>
-<span class="hljs-comment"># http://dev.mysql.com/doc/mysql/en/server-system-variables.html</span>
-
-<span class="hljs-section">[mysqld]</span>
-<span class="hljs-attr">pid-file</span>	= /var/run/mysqld/mysqld.pid
-<span class="hljs-attr">socket</span>		= /var/run/mysqld/mysqld.sock
-<span class="hljs-attr">datadir</span>		= /var/lib/mysql
-<span class="hljs-comment">#log-error	= /var/log/mysql/error.log</span>
-<span class="hljs-comment"># By default we only accept connections from localhost</span>
-<span class="hljs-comment">#bind-address	= 127.0.0.1</span>
-<span class="hljs-comment"># Disabling symbolic-links is recommended to prevent assorted security risks</span>
-<span class="hljs-attr">symbolic-links</span>=<span class="hljs-number">0</span>
-
-<span class="hljs-attr">log-bin</span>		= mysql-bin
-<span class="hljs-attr">binlog-format</span>	= ROW
-<span class="hljs-attr">server-id</span>	= <span class="hljs-number">1</span>
-<span class="hljs-comment">#主设置</span>
-<span class="hljs-comment">#屏蔽系统库同步</span>
-<span class="hljs-attr">binlog-ignore-db</span>=mysql
-<span class="hljs-attr">binlog-ignore-db</span>=information_schema
-<span class="hljs-attr">binlog-ignore-db</span>=performance_schema
-<span class="hljs-comment">#需要同步的数据库</span>
-<span class="hljs-comment">#binlog-do-db=user_db</span>
-
-<span class="hljs-comment">#从设置</span>
-<span class="hljs-comment">#屏蔽系统数据库表同步</span>
-<span class="hljs-attr">replicate-wild-ignore-table</span>=mysql.%
-<span class="hljs-attr">replicate-wild-ignore-table</span>=information_schema.%
-<span class="hljs-attr">replicate-wild-ignore-table</span>=performance_schema.%
-<span class="hljs-comment">#设置需要同步的数据库</span>
-<span class="hljs-comment">##replicate-wild-do-table=user_db.%</span></code></pre>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><code class="hljs ini"><span class="hljs-comment"># Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># This program is free software; you can redistribute it and/or modify</span><br><span class="hljs-comment"># it under the terms of the GNU General Public License, version 2.0,</span><br><span class="hljs-comment"># as published by the Free Software Foundation.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># This program is also distributed with certain software (including</span><br><span class="hljs-comment"># but not limited to OpenSSL) that is licensed under separate terms,</span><br><span class="hljs-comment"># as designated in a particular file or component or in included license</span><br><span class="hljs-comment"># documentation.  The authors of MySQL hereby grant you an additional</span><br><span class="hljs-comment"># permission to link the program and your derivative works with the</span><br><span class="hljs-comment"># separately licensed software that they have included with MySQL.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># This program is distributed in the hope that it will be useful,</span><br><span class="hljs-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span><br><span class="hljs-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span><br><span class="hljs-comment"># GNU General Public License, version 2.0, for more details.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># You should have received a copy of the GNU General Public License</span><br><span class="hljs-comment"># along with this program; if not, write to the Free Software</span><br><span class="hljs-comment"># Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA</span><br><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># The MySQL  Server configuration file.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># For explanations see</span><br><span class="hljs-comment"># http://dev.mysql.com/doc/mysql/en/server-system-variables.html</span><br><br><span class="hljs-section">[mysqld]</span><br><span class="hljs-attr">pid-file</span>	= /var/run/mysqld/mysqld.pid<br><span class="hljs-attr">socket</span>		= /var/run/mysqld/mysqld.sock<br><span class="hljs-attr">datadir</span>		= /var/lib/mysql<br><span class="hljs-comment">#log-error	= /var/log/mysql/error.log</span><br><span class="hljs-comment"># By default we only accept connections from localhost</span><br><span class="hljs-comment">#bind-address	= 127.0.0.1</span><br><span class="hljs-comment"># Disabling symbolic-links is recommended to prevent assorted security risks</span><br><span class="hljs-attr">symbolic-links</span>=<span class="hljs-number">0</span><br><br><span class="hljs-attr">log-bin</span>		= mysql-bin<br><span class="hljs-attr">binlog-format</span>	= ROW<br><span class="hljs-attr">server-id</span>	= <span class="hljs-number">1</span><br><span class="hljs-comment">#主设置</span><br><span class="hljs-comment">#屏蔽系统库同步</span><br><span class="hljs-attr">binlog-ignore-db</span>=mysql<br><span class="hljs-attr">binlog-ignore-db</span>=information_schema<br><span class="hljs-attr">binlog-ignore-db</span>=performance_schema<br><span class="hljs-comment">#需要同步的数据库</span><br><span class="hljs-comment">#binlog-do-db=user_db</span><br><br><span class="hljs-comment">#从设置</span><br><span class="hljs-comment">#屏蔽系统数据库表同步</span><br><span class="hljs-attr">replicate-wild-ignore-table</span>=mysql.%<br><span class="hljs-attr">replicate-wild-ignore-table</span>=information_schema.%<br><span class="hljs-attr">replicate-wild-ignore-table</span>=performance_schema.%<br><span class="hljs-comment">#设置需要同步的数据库</span><br><span class="hljs-comment">##replicate-wild-do-table=user_db.%</span><br></code></pre></td></tr></table></figure>
 
 <p>在/opt/docker_v/mysql2/conf中添加mysqld.cnf内容为：</p>
-<pre><code class="hljs ini"><span class="hljs-comment"># Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># This program is free software; you can redistribute it and/or modify</span>
-<span class="hljs-comment"># it under the terms of the GNU General Public License, version 2.0,</span>
-<span class="hljs-comment"># as published by the Free Software Foundation.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># This program is also distributed with certain software (including</span>
-<span class="hljs-comment"># but not limited to OpenSSL) that is licensed under separate terms,</span>
-<span class="hljs-comment"># as designated in a particular file or component or in included license</span>
-<span class="hljs-comment"># documentation.  The authors of MySQL hereby grant you an additional</span>
-<span class="hljs-comment"># permission to link the program and your derivative works with the</span>
-<span class="hljs-comment"># separately licensed software that they have included with MySQL.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># This program is distributed in the hope that it will be useful,</span>
-<span class="hljs-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
-<span class="hljs-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
-<span class="hljs-comment"># GNU General Public License, version 2.0, for more details.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># You should have received a copy of the GNU General Public License</span>
-<span class="hljs-comment"># along with this program; if not, write to the Free Software</span>
-<span class="hljs-comment"># Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA</span>
-
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># The MySQL  Server configuration file.</span>
-<span class="hljs-comment">#</span>
-<span class="hljs-comment"># For explanations see</span>
-<span class="hljs-comment"># http://dev.mysql.com/doc/mysql/en/server-system-variables.html</span>
-
-<span class="hljs-section">[mysqld]</span>
-<span class="hljs-attr">pid-file</span>	= /var/run/mysqld/mysqld.pid
-<span class="hljs-attr">socket</span>		= /var/run/mysqld/mysqld.sock
-<span class="hljs-attr">datadir</span>		= /var/lib/mysql
-<span class="hljs-comment">#log-error	= /var/log/mysql/error.log</span>
-<span class="hljs-comment"># By default we only accept connections from localhost</span>
-<span class="hljs-comment">#bind-address	= 127.0.0.1</span>
-<span class="hljs-comment"># Disabling symbolic-links is recommended to prevent assorted security risks</span>
-<span class="hljs-attr">symbolic-links</span>=<span class="hljs-number">0</span>
-
-<span class="hljs-attr">log-bin</span>		= mysql-bin
-<span class="hljs-attr">binlog-format</span>	= ROW
-<span class="hljs-attr">server-id</span>	= <span class="hljs-number">2</span>
-<span class="hljs-comment">#主设置</span>
-<span class="hljs-comment">#屏蔽系统库同步</span>
-<span class="hljs-attr">binlog-ignore-db</span>=mysql
-<span class="hljs-attr">binlog-ignore-db</span>=information_schema
-<span class="hljs-attr">binlog-ignore-db</span>=performance_schema
-<span class="hljs-comment">#需要同步的数据库</span>
-<span class="hljs-comment">#binlog-do-db=user_db</span>
-
-<span class="hljs-comment">#从设置</span>
-<span class="hljs-comment">#屏蔽系统数据库表同步</span>
-<span class="hljs-attr">replicate-wild-ignore-table</span>=mysql.%
-<span class="hljs-attr">replicate-wild-ignore-table</span>=information_schema.%
-<span class="hljs-attr">replicate-wild-ignore-table</span>=performance_schema.%
-<span class="hljs-comment">#设置需要同步的数据库</span>
-<span class="hljs-comment">#replicate-wild-do-table=user_db.%</span></code></pre>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><code class="hljs ini"><span class="hljs-comment"># Copyright (c) 2014, 2016, Oracle and/or its affiliates. All rights reserved.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># This program is free software; you can redistribute it and/or modify</span><br><span class="hljs-comment"># it under the terms of the GNU General Public License, version 2.0,</span><br><span class="hljs-comment"># as published by the Free Software Foundation.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># This program is also distributed with certain software (including</span><br><span class="hljs-comment"># but not limited to OpenSSL) that is licensed under separate terms,</span><br><span class="hljs-comment"># as designated in a particular file or component or in included license</span><br><span class="hljs-comment"># documentation.  The authors of MySQL hereby grant you an additional</span><br><span class="hljs-comment"># permission to link the program and your derivative works with the</span><br><span class="hljs-comment"># separately licensed software that they have included with MySQL.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># This program is distributed in the hope that it will be useful,</span><br><span class="hljs-comment"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span><br><span class="hljs-comment"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span><br><span class="hljs-comment"># GNU General Public License, version 2.0, for more details.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># You should have received a copy of the GNU General Public License</span><br><span class="hljs-comment"># along with this program; if not, write to the Free Software</span><br><span class="hljs-comment"># Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA</span><br><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># The MySQL  Server configuration file.</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment"># For explanations see</span><br><span class="hljs-comment"># http://dev.mysql.com/doc/mysql/en/server-system-variables.html</span><br><br><span class="hljs-section">[mysqld]</span><br><span class="hljs-attr">pid-file</span>	= /var/run/mysqld/mysqld.pid<br><span class="hljs-attr">socket</span>		= /var/run/mysqld/mysqld.sock<br><span class="hljs-attr">datadir</span>		= /var/lib/mysql<br><span class="hljs-comment">#log-error	= /var/log/mysql/error.log</span><br><span class="hljs-comment"># By default we only accept connections from localhost</span><br><span class="hljs-comment">#bind-address	= 127.0.0.1</span><br><span class="hljs-comment"># Disabling symbolic-links is recommended to prevent assorted security risks</span><br><span class="hljs-attr">symbolic-links</span>=<span class="hljs-number">0</span><br><br><span class="hljs-attr">log-bin</span>		= mysql-bin<br><span class="hljs-attr">binlog-format</span>	= ROW<br><span class="hljs-attr">server-id</span>	= <span class="hljs-number">2</span><br><span class="hljs-comment">#主设置</span><br><span class="hljs-comment">#屏蔽系统库同步</span><br><span class="hljs-attr">binlog-ignore-db</span>=mysql<br><span class="hljs-attr">binlog-ignore-db</span>=information_schema<br><span class="hljs-attr">binlog-ignore-db</span>=performance_schema<br><span class="hljs-comment">#需要同步的数据库</span><br><span class="hljs-comment">#binlog-do-db=user_db</span><br><br><span class="hljs-comment">#从设置</span><br><span class="hljs-comment">#屏蔽系统数据库表同步</span><br><span class="hljs-attr">replicate-wild-ignore-table</span>=mysql.%<br><span class="hljs-attr">replicate-wild-ignore-table</span>=information_schema.%<br><span class="hljs-attr">replicate-wild-ignore-table</span>=performance_schema.%<br><span class="hljs-comment">#设置需要同步的数据库</span><br><span class="hljs-comment">#replicate-wild-do-table=user_db.%</span><br></code></pre></td></tr></table></figure>
 
 <p>在mysql1、mysql2中执行</p>
-<pre><code class="hljs mysql">#授权主备复制专用账户
-GRANT replication SLAVE ON *.* TO &#39;db_sync&#39;@&#39;%&#39; IDENTIFIED by &#39;db_sync&#39;;
-#刷新权限
-FLUSH PRIVILEGES;
-#确认文件名及位点
-SHOW MASTER STATUS;</code></pre>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs mysql">#授权主备复制专用账户<br>GRANT replication SLAVE ON *.* TO &#39;db_sync&#39;@&#39;%&#39; IDENTIFIED by &#39;db_sync&#39;;<br>#刷新权限<br>FLUSH PRIVILEGES;<br>#确认文件名及位点<br>SHOW MASTER STATUS;<br></code></pre></td></tr></table></figure>
 
 <p>设置主从同步，并检查链路</p>
-<pre><code class="hljs mysql">#停止同步
-STOP SLAVE;
-#修改从库的主库指向，使用上一步记录的文件名及位点
-CHANGE MASTER TO
-  master_host&#x3D;&#39;localhost&#39;,
-  master_user&#x3D;&#39;db_sync&#39;,
-  master_password&#x3D;&#39;db_sync&#39;,
-  master_port&#x3D;&#39;3306&#39;,
-  master_log_file&#x3D;&#39;mysql-bin.000001&#39;,
-  master_log_pos&#x3D;592;
-#启动同步
-START SLAVE;
-#查看从库状态
-SHOW SLAVE STATUS;
-#如果Slave_IO_Running和Slave_SQL_Runing都为yes说明同步成功
-#如果不为yes,请 检查error_Log，然后排查相关异常</code></pre>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs mysql">#停止同步<br>STOP SLAVE;<br>#修改从库的主库指向，使用上一步记录的文件名及位点<br>CHANGE MASTER TO<br>  master_host&#x3D;&#39;localhost&#39;,<br>  master_user&#x3D;&#39;db_sync&#39;,<br>  master_password&#x3D;&#39;db_sync&#39;,<br>  master_port&#x3D;&#39;3306&#39;,<br>  master_log_file&#x3D;&#39;mysql-bin.000001&#39;,<br>  master_log_pos&#x3D;592;<br>#启动同步<br>START SLAVE;<br>#查看从库状态<br>SHOW SLAVE STATUS;<br>#如果Slave_IO_Running和Slave_SQL_Runing都为yes说明同步成功<br>#如果不为yes,请 检查error_Log，然后排查相关异常<br></code></pre></td></tr></table></figure>
 
 <p>最后测试在主库修改数据库，看从库是否能够同步成功。</p>
 <p>在主库中修改user_db数据库表中的字段值，看从库中表中的相应字段值是否改变，如果改变则同步成功，否则失败。</p>
 <h5 id="KeepAlive安装"><a href="#KeepAlive安装" class="headerlink" title="KeepAlive安装"></a>KeepAlive安装</h5><p>在server1与Server2两台节点安装keepalived</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#安装</span>
-yum -y install keepalived</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#安装</span><br>yum -y install keepalived<br></code></pre></td></tr></table></figure>
 
 <p>server1、server2中配置/etc/keepalived/keepalived.conf</p>
 <p>server1</p>
-<pre><code class="hljs p">global_defs &#123;
-  notification_email &#123;
-    gavin@ixmsoft.com             # 定义通知邮箱,有多个可以换行添加
-  &#125;
-  notification_email_from admin@ixmsoft.com# 定义发送邮件的邮箱
-  smtp_server mail.ixmsoft.com             # 定义发件服务器
-  smtp_connect_timeout 30                  # 定义连接smtp服务器超时时间
-  router_id vip1                           # 机器标识，和主机名保持一致
-&#125;
-vrrp_instance VI_1 &#123;
-  state BACKUP          # lvs的状态模式，MASTER代表主，这里两台都设置BACKUP
-  interface ens160      # 绑定对外访问的网卡
-  virtual_router_id 51  # 虚拟路由标识，同一个vrrp实例采用唯一标识
-  priority 100          # 优先级，100为最大优先级，backup设置90
-  advert_int 1          # master与backup节点同步检查的时间间隔，单位为秒
-  nopreempt             # 不主动抢占资源，只在master这台优先级高的设置，backup不设置
-  authentication &#123;      # 设置验证信息
-    auth_type PASS      # 有PASS和AH两种
-    auth_pass 1111      # 验证密码，跟BACKUP密码保持一致
-  &#125;
-  virtual_ipaddress &#123;   # keepAlived虚拟的IP地址
-    192.168.5.88
-  &#125;
-&#125;
-virtual_server 192.168.5.88 3306 &#123;  # 配置虚拟服务器ip
-  delay_loop 6            # 健康检查时间
-  lb_algo rr              # LVS算法，rr表示轮询
-  lb_kind DR              # LVS模式，负载均衡妆发规则
-  persistence_timeout 50  # 同一IP的连接50秒内被分配到同一台真实服务器
-  protocol TCP
-  real_server 192.168.5.53 3306 &#123;   # 检测本地mysql节点
-    weight 1                        # 设置权重
-    notify_down &#x2F;usr&#x2F;local&#x2F;shell&#x2F;mariadb.sh    # 当服务挂掉，执行此脚本，结束keepalived进程
-    TCP_CHECK &#123;
-      connect_timeout 10   # 连接超时，单位秒
-      nb_get_retry 3       # 重试次数
-      delay_before_retry 3 # 重试间隔时间
-      connect_port 3306    # 链接端口，和上面保持一致
-    &#125;
-  &#125;
-&#125;
-</code></pre>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><code class="hljs p">global_defs &#123;<br>  notification_email &#123;<br>    gavin@ixmsoft.com             # 定义通知邮箱,有多个可以换行添加<br>  &#125;<br>  notification_email_from admin@ixmsoft.com# 定义发送邮件的邮箱<br>  smtp_server mail.ixmsoft.com             # 定义发件服务器<br>  smtp_connect_timeout 30                  # 定义连接smtp服务器超时时间<br>  router_id vip1                           # 机器标识，和主机名保持一致<br>&#125;<br>vrrp_instance VI_1 &#123;<br>  state BACKUP          # lvs的状态模式，MASTER代表主，这里两台都设置BACKUP<br>  interface ens160      # 绑定对外访问的网卡<br>  virtual_router_id 51  # 虚拟路由标识，同一个vrrp实例采用唯一标识<br>  priority 100          # 优先级，100为最大优先级，backup设置90<br>  advert_int 1          # master与backup节点同步检查的时间间隔，单位为秒<br>  nopreempt             # 不主动抢占资源，只在master这台优先级高的设置，backup不设置<br>  authentication &#123;      # 设置验证信息<br>    auth_type PASS      # 有PASS和AH两种<br>    auth_pass 1111      # 验证密码，跟BACKUP密码保持一致<br>  &#125;<br>  virtual_ipaddress &#123;   # keepAlived虚拟的IP地址<br>    192.168.5.88<br>  &#125;<br>&#125;<br>virtual_server 192.168.5.88 3306 &#123;  # 配置虚拟服务器ip<br>  delay_loop 6            # 健康检查时间<br>  lb_algo rr              # LVS算法，rr表示轮询<br>  lb_kind DR              # LVS模式，负载均衡妆发规则<br>  persistence_timeout 50  # 同一IP的连接50秒内被分配到同一台真实服务器<br>  protocol TCP<br>  real_server 192.168.5.53 3306 &#123;   # 检测本地mysql节点<br>    weight 1                        # 设置权重<br>    notify_down &#x2F;usr&#x2F;local&#x2F;shell&#x2F;mariadb.sh    # 当服务挂掉，执行此脚本，结束keepalived进程<br>    TCP_CHECK &#123;<br>      connect_timeout 10   # 连接超时，单位秒<br>      nb_get_retry 3       # 重试次数<br>      delay_before_retry 3 # 重试间隔时间<br>      connect_port 3306    # 链接端口，和上面保持一致<br>    &#125;<br>  &#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
 
 <p>server2</p>
-<pre><code class="hljs tap">global_defs &#123;
-  notification_email &#123;
-    gavin@ixmsoft.com             <span class="hljs-comment"># 定义通知邮箱,有多个可以换行添加</span>
-  &#125;
-  notification_email_from admin@ixmsoft.com<span class="hljs-comment"># 定义发送邮件的邮箱</span>
-  smtp_server mail.ixmsoft.com             <span class="hljs-comment"># 定义发件服务器</span>
-  smtp_connect_timeout<span class="hljs-number"> 30 </span>                 <span class="hljs-comment"># 定义连接smtp服务器超时时间</span>
-  router_id vip2                           <span class="hljs-comment"># 机器标识，和主机名保持一致</span>
-&#125;
-vrrp_instance VI_1 &#123;
-  state BACKUP          <span class="hljs-comment"># lvs的状态模式，MASTER代表主，这里两台都设置BACKUP</span>
-  interface ens160      <span class="hljs-comment"># 绑定对外访问的网卡</span>
-  virtual_router_id<span class="hljs-number"> 51 </span> <span class="hljs-comment"># 虚拟路由标识，同一个vrrp实例采用唯一标识</span>
-  priority<span class="hljs-number"> 98 </span>          <span class="hljs-comment"># 优先级，100为最大优先级，backup设置90</span>
-  advert_int<span class="hljs-number"> 1 </span>         <span class="hljs-comment"># master与backup节点同步检查的时间间隔，单位为秒</span>
-  nopreempt             <span class="hljs-comment"># 不主动抢占资源，只在master这台优先级高的设置，backup不设置</span>
-  authentication &#123;      <span class="hljs-comment"># 设置验证信息</span>
-    auth_type PASS      <span class="hljs-comment"># 有PASS和AH两种</span>
-    auth_pass<span class="hljs-number"> 1111 </span>     <span class="hljs-comment"># 验证密码，跟BACKUP密码保持一致</span>
-  &#125;
-  virtual_ipaddress &#123;   <span class="hljs-comment"># keepAlived虚拟的IP地址</span>
-    192.168.5.88
-  &#125;
-&#125;
-virtual_server 192.168.5.88<span class="hljs-number"> 3306 </span>&#123;  <span class="hljs-comment"># 配置虚拟服务器ip</span>
-  delay_loop<span class="hljs-number"> 6 </span>           <span class="hljs-comment"># 健康检查时间</span>
-  lb_algo rr              <span class="hljs-comment"># LVS算法，rr表示轮询</span>
-  lb_kind DR              <span class="hljs-comment"># LVS模式，负载均衡妆发规则</span>
-  persistence_timeout<span class="hljs-number"> 50 </span> <span class="hljs-comment"># 同一IP的连接50秒内被分配到同一台真实服务器</span>
-  protocol TCP
-  real_server 192.168.5.52<span class="hljs-number"> 3306 </span>&#123;   <span class="hljs-comment"># 检测本地mysql节点</span>
-    weight<span class="hljs-number"> 1 </span>                       <span class="hljs-comment"># 设置权重</span>
-    notify_down /usr/local/shell/mariadb.sh    <span class="hljs-comment"># 当服务挂掉，执行此脚本，结束keepalived进程</span>
-    TCP_CHECK &#123;
-      connect_timeout<span class="hljs-number"> 10 </span>  <span class="hljs-comment"># 连接超时，单位秒</span>
-      nb_get_retry<span class="hljs-number"> 3 </span>      <span class="hljs-comment"># 重试次数</span>
-      delay_before_retry<span class="hljs-number"> 3 </span><span class="hljs-comment"># 重试间隔时间</span>
-      connect_port<span class="hljs-number"> 3306 </span>   <span class="hljs-comment"># 链接端口，和上面保持一致</span>
-    &#125;
-  &#125;
-&#125;</code></pre>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs tap">global_defs &#123;<br>  notification_email &#123;<br>    gavin@ixmsoft.com             <span class="hljs-comment"># 定义通知邮箱,有多个可以换行添加</span><br>  &#125;<br>  notification_email_from admin@ixmsoft.com<span class="hljs-comment"># 定义发送邮件的邮箱</span><br>  smtp_server mail.ixmsoft.com             <span class="hljs-comment"># 定义发件服务器</span><br>  smtp_connect_timeout<span class="hljs-number"> 30 </span>                 <span class="hljs-comment"># 定义连接smtp服务器超时时间</span><br>  router_id vip2                           <span class="hljs-comment"># 机器标识，和主机名保持一致</span><br>&#125;<br>vrrp_instance VI_1 &#123;<br>  state BACKUP          <span class="hljs-comment"># lvs的状态模式，MASTER代表主，这里两台都设置BACKUP</span><br>  interface ens160      <span class="hljs-comment"># 绑定对外访问的网卡</span><br>  virtual_router_id<span class="hljs-number"> 51 </span> <span class="hljs-comment"># 虚拟路由标识，同一个vrrp实例采用唯一标识</span><br>  priority<span class="hljs-number"> 98 </span>          <span class="hljs-comment"># 优先级，100为最大优先级，backup设置90</span><br>  advert_int<span class="hljs-number"> 1 </span>         <span class="hljs-comment"># master与backup节点同步检查的时间间隔，单位为秒</span><br>  nopreempt             <span class="hljs-comment"># 不主动抢占资源，只在master这台优先级高的设置，backup不设置</span><br>  authentication &#123;      <span class="hljs-comment"># 设置验证信息</span><br>    auth_type PASS      <span class="hljs-comment"># 有PASS和AH两种</span><br>    auth_pass<span class="hljs-number"> 1111 </span>     <span class="hljs-comment"># 验证密码，跟BACKUP密码保持一致</span><br>  &#125;<br>  virtual_ipaddress &#123;   <span class="hljs-comment"># keepAlived虚拟的IP地址</span><br>    192.168.5.88<br>  &#125;<br>&#125;<br>virtual_server 192.168.5.88<span class="hljs-number"> 3306 </span>&#123;  <span class="hljs-comment"># 配置虚拟服务器ip</span><br>  delay_loop<span class="hljs-number"> 6 </span>           <span class="hljs-comment"># 健康检查时间</span><br>  lb_algo rr              <span class="hljs-comment"># LVS算法，rr表示轮询</span><br>  lb_kind DR              <span class="hljs-comment"># LVS模式，负载均衡妆发规则</span><br>  persistence_timeout<span class="hljs-number"> 50 </span> <span class="hljs-comment"># 同一IP的连接50秒内被分配到同一台真实服务器</span><br>  protocol TCP<br>  real_server 192.168.5.52<span class="hljs-number"> 3306 </span>&#123;   <span class="hljs-comment"># 检测本地mysql节点</span><br>    weight<span class="hljs-number"> 1 </span>                       <span class="hljs-comment"># 设置权重</span><br>    notify_down /usr/local/shell/mariadb.sh    <span class="hljs-comment"># 当服务挂掉，执行此脚本，结束keepalived进程</span><br>    TCP_CHECK &#123;<br>      connect_timeout<span class="hljs-number"> 10 </span>  <span class="hljs-comment"># 连接超时，单位秒</span><br>      nb_get_retry<span class="hljs-number"> 3 </span>      <span class="hljs-comment"># 重试次数</span><br>      delay_before_retry<span class="hljs-number"> 3 </span><span class="hljs-comment"># 重试间隔时间</span><br>      connect_port<span class="hljs-number"> 3306 </span>   <span class="hljs-comment"># 链接端口，和上面保持一致</span><br>    &#125;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>server1、server2配置文件的差异</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">router_id</span> vip<span class="hljs-number">2</span>                  # 机器标识，和主机名保持一致、
-<span class="hljs-attribute">priority</span> <span class="hljs-number">98</span>                     # 优先级，<span class="hljs-number">100</span>代表最大优先级， 数字越大优先级越高
-<span class="hljs-attribute">real_server</span> <span class="hljs-number">10.10.20.126</span> <span class="hljs-number">3306</span>   # 检测本地服务节点</code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">router_id</span> vip<span class="hljs-number">2</span>                  # 机器标识，和主机名保持一致、<br><span class="hljs-attribute">priority</span> <span class="hljs-number">98</span>                     # 优先级，<span class="hljs-number">100</span>代表最大优先级， 数字越大优先级越高<br><span class="hljs-attribute">real_server</span> <span class="hljs-number">10.10.20.126</span> <span class="hljs-number">3306</span>   # 检测本地服务节点<br></code></pre></td></tr></table></figure>
 
 <p>注意，两台节点都设置为BACKUP</p>
-<pre><code class="hljs pf">virtual_router_id <span class="hljs-number">111</span>           <span class="hljs-comment"># 同一个vrrp实例采用唯一标示</span>
-<span class="hljs-keyword">state</span> BACKUP                    <span class="hljs-comment"># lvs的状态模式，MASTER代表主，这里两台都设置BACKUP</span></code></pre>
+<figure class="highlight pf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs pf">virtual_router_id <span class="hljs-number">111</span>           <span class="hljs-comment"># 同一个vrrp实例采用唯一标示</span><br><span class="hljs-keyword">state</span> BACKUP                    <span class="hljs-comment"># lvs的状态模式，MASTER代表主，这里两台都设置BACKUP</span><br></code></pre></td></tr></table></figure>
 
 <p>如果不想重启后， 争夺备用节点的VIP， 可以设置此项</p>
-<pre><code class="hljs mipsasm"><span class="hljs-keyword">nopreempt </span>                      <span class="hljs-comment"># 不主动抢占资源</span></code></pre>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm"><span class="hljs-keyword">nopreempt </span>                      <span class="hljs-comment"># 不主动抢占资源</span><br></code></pre></td></tr></table></figure>
 
 <p>创建关闭脚本mariadb.sh</p>
-<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash">位于/usr/<span class="hljs-built_in">local</span>/shell/mariadb.sh</span> 
-pkill keepalived</code></pre>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash">位于/usr/<span class="hljs-built_in">local</span>/shell/mariadb.sh</span> <br>pkill keepalived<br></code></pre></td></tr></table></figure>
 
 <p>修改权限</p>
-<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash">加入执行权限</span>
-chmod a+x mariadb.sh</code></pre>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash">加入执行权限</span><br>chmod a+x mariadb.sh<br></code></pre></td></tr></table></figure>
 
 <p>验证高可用</p>
 <p>停止主节点MariaDB服务， 验证是否自动切换。</p>
@@ -613,7 +394,7 @@ chmod a+x mariadb.sh</code></pre>
 <li><p>停写方案实施步骤：支持读写分离-&gt;升级公告-&gt;中断写操作，隔离写数据源（或拦截返回统一提示）-&gt;数据同步处理-&gt;数据校验-&gt;更改配置-&gt;恢复写操作-&gt;数据清理-&gt;回滚预案</p>
 </li>
 </ul>
-<h4 id="平滑扩容之双写方案（中小型数据）"><a href="#平滑扩容之双写方案（中小型数据）" class="headerlink" title="平滑扩容之双写方案（中小型数据）"></a>平滑扩容之双写方案（中小型数据）</h4><img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic1.jpg" srcset="/blog/img/loading.gif" class>
+<h4 id="平滑扩容之双写方案（中小型数据）"><a href="#平滑扩容之双写方案（中小型数据）" class="headerlink" title="平滑扩容之双写方案（中小型数据）"></a>平滑扩容之双写方案（中小型数据）</h4><img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic1.jpg" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>双写方案可通过canal或mq做实现。</p>
 <ol>
@@ -656,8 +437,14 @@ chmod a+x mariadb.sh</code></pre>
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -748,17 +535,15 @@ chmod a+x mariadb.sh</code></pre>
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -767,7 +552,6 @@ chmod a+x mariadb.sh</code></pre>
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -775,7 +559,7 @@ chmod a+x mariadb.sh</code></pre>
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -802,6 +586,7 @@ chmod a+x mariadb.sh</code></pre>
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -819,11 +604,12 @@ chmod a+x mariadb.sh</code></pre>
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -843,7 +629,6 @@ chmod a+x mariadb.sh</code></pre>
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

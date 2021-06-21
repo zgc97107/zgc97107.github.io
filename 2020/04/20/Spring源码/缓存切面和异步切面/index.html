@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Spring的缓存切面和异步切面 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -233,223 +234,28 @@
 <p>@CacheEvict：删除key对应的注解。</p>
 <p>在使用注解是需要通过cacheNames属性指定使用哪一个缓存，因为缓存管理器中可能会有多个缓存要使用的缓存对象。</p>
 <h3 id="切面的注册"><a href="#切面的注册" class="headerlink" title="切面的注册"></a>切面的注册</h3><p>同样的，@EnableCaching注解也会引入CachingConfigurationSelector类</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span>
-<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
-<span class="hljs-meta">@Documented</span>
-<span class="hljs-meta">@Import(CachingConfigurationSelector.class)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableCaching &#123;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Import(CachingConfigurationSelector.class)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableCaching &#123;<br></code></pre></td></tr></table></figure>
 
 <p>CachingConfigurationSelector类</p>
 <p>这个类也会引入ProxyCachingConfiguration类来注册切面。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CachingConfigurationSelector</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AdviceModeImportSelector</span>&lt;<span class="hljs-title">EnableCaching</span>&gt; </span>&#123;
-
-   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String PROXY_JCACHE_CONFIGURATION_CLASS =
-         <span class="hljs-string">&quot;org.springframework.cache.jcache.config.ProxyJCacheConfiguration&quot;</span>;
-
-   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String CACHE_ASPECT_CONFIGURATION_CLASS_NAME =
-         <span class="hljs-string">&quot;org.springframework.cache.aspectj.AspectJCachingConfiguration&quot;</span>;
-
-   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String JCACHE_ASPECT_CONFIGURATION_CLASS_NAME =
-         <span class="hljs-string">&quot;org.springframework.cache.aspectj.AspectJJCacheConfiguration&quot;</span>;
-
-
-   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> jsr107Present;
-
-   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> jcacheImplPresent;
-
-   <span class="hljs-keyword">static</span> &#123;
-      ClassLoader classLoader = CachingConfigurationSelector.class.getClassLoader();
-      jsr107Present = ClassUtils.isPresent(<span class="hljs-string">&quot;javax.cache.Cache&quot;</span>, classLoader);
-      jcacheImplPresent = ClassUtils.isPresent(PROXY_JCACHE_CONFIGURATION_CLASS, classLoader);
-   &#125;
-
-
-   <span class="hljs-comment">/**</span>
-<span class="hljs-comment">    * Returns &#123;<span class="hljs-doctag">@link</span> ProxyCachingConfiguration&#125; or &#123;<span class="hljs-doctag">@code</span> AspectJCachingConfiguration&#125;</span>
-<span class="hljs-comment">    * for &#123;<span class="hljs-doctag">@code</span> PROXY&#125; and &#123;<span class="hljs-doctag">@code</span> ASPECTJ&#125; values of &#123;<span class="hljs-doctag">@link</span> EnableCaching#mode()&#125;,</span>
-<span class="hljs-comment">    * respectively. Potentially includes corresponding JCache configuration as well.</span>
-<span class="hljs-comment">    */</span>
-   <span class="hljs-meta">@Override</span>
-   <span class="hljs-keyword">public</span> String[] selectImports(AdviceMode adviceMode) &#123;
-      <span class="hljs-keyword">switch</span> (adviceMode) &#123;
-         <span class="hljs-keyword">case</span> PROXY:
-            <span class="hljs-keyword">return</span> getProxyImports();
-         <span class="hljs-keyword">case</span> ASPECTJ:
-            <span class="hljs-keyword">return</span> getAspectJImports();
-         <span class="hljs-keyword">default</span>:
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-      &#125;
-   &#125;
-
-   <span class="hljs-comment">/**</span>
-<span class="hljs-comment">    * Return the imports to use if the &#123;<span class="hljs-doctag">@link</span> AdviceMode&#125; is set to &#123;<span class="hljs-doctag">@link</span> AdviceMode#PROXY&#125;.</span>
-<span class="hljs-comment">    * &lt;p&gt;Take care of adding the necessary JSR-107 import if it is available.</span>
-<span class="hljs-comment">    */</span>
-   <span class="hljs-keyword">private</span> String[] getProxyImports() &#123;
-      List&lt;String&gt; result = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-number">3</span>);
-      result.add(AutoProxyRegistrar.class.getName());
-      result.add(ProxyCachingConfiguration.class.getName());
-      <span class="hljs-keyword">if</span> (jsr107Present &amp;&amp; jcacheImplPresent) &#123;
-         result.add(PROXY_JCACHE_CONFIGURATION_CLASS);
-      &#125;
-      <span class="hljs-keyword">return</span> StringUtils.toStringArray(result);
-   &#125;
-
-   <span class="hljs-comment">/**</span>
-<span class="hljs-comment">    * Return the imports to use if the &#123;<span class="hljs-doctag">@link</span> AdviceMode&#125; is set to &#123;<span class="hljs-doctag">@link</span> AdviceMode#ASPECTJ&#125;.</span>
-<span class="hljs-comment">    * &lt;p&gt;Take care of adding the necessary JSR-107 import if it is available.</span>
-<span class="hljs-comment">    */</span>
-   <span class="hljs-keyword">private</span> String[] getAspectJImports() &#123;
-      List&lt;String&gt; result = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-number">2</span>);
-      result.add(CACHE_ASPECT_CONFIGURATION_CLASS_NAME);
-      <span class="hljs-keyword">if</span> (jsr107Present &amp;&amp; jcacheImplPresent) &#123;
-         result.add(JCACHE_ASPECT_CONFIGURATION_CLASS_NAME);
-      &#125;
-      <span class="hljs-keyword">return</span> StringUtils.toStringArray(result);
-   &#125;
-
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CachingConfigurationSelector</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AdviceModeImportSelector</span>&lt;<span class="hljs-title">EnableCaching</span>&gt; </span>&#123;<br><br>   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String PROXY_JCACHE_CONFIGURATION_CLASS =<br>         <span class="hljs-string">&quot;org.springframework.cache.jcache.config.ProxyJCacheConfiguration&quot;</span>;<br><br>   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String CACHE_ASPECT_CONFIGURATION_CLASS_NAME =<br>         <span class="hljs-string">&quot;org.springframework.cache.aspectj.AspectJCachingConfiguration&quot;</span>;<br><br>   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String JCACHE_ASPECT_CONFIGURATION_CLASS_NAME =<br>         <span class="hljs-string">&quot;org.springframework.cache.aspectj.AspectJJCacheConfiguration&quot;</span>;<br><br><br>   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> jsr107Present;<br><br>   <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">boolean</span> jcacheImplPresent;<br><br>   <span class="hljs-keyword">static</span> &#123;<br>      ClassLoader classLoader = CachingConfigurationSelector.class.getClassLoader();<br>      jsr107Present = ClassUtils.isPresent(<span class="hljs-string">&quot;javax.cache.Cache&quot;</span>, classLoader);<br>      jcacheImplPresent = ClassUtils.isPresent(PROXY_JCACHE_CONFIGURATION_CLASS, classLoader);<br>   &#125;<br><br><br>   <span class="hljs-comment">/**</span><br><span class="hljs-comment">    * Returns &#123;<span class="hljs-doctag">@link</span> ProxyCachingConfiguration&#125; or &#123;<span class="hljs-doctag">@code</span> AspectJCachingConfiguration&#125;</span><br><span class="hljs-comment">    * for &#123;<span class="hljs-doctag">@code</span> PROXY&#125; and &#123;<span class="hljs-doctag">@code</span> ASPECTJ&#125; values of &#123;<span class="hljs-doctag">@link</span> EnableCaching#mode()&#125;,</span><br><span class="hljs-comment">    * respectively. Potentially includes corresponding JCache configuration as well.</span><br><span class="hljs-comment">    */</span><br>   <span class="hljs-meta">@Override</span><br>   <span class="hljs-keyword">public</span> String[] selectImports(AdviceMode adviceMode) &#123;<br>      <span class="hljs-keyword">switch</span> (adviceMode) &#123;<br>         <span class="hljs-keyword">case</span> PROXY:<br>            <span class="hljs-keyword">return</span> getProxyImports();<br>         <span class="hljs-keyword">case</span> ASPECTJ:<br>            <span class="hljs-keyword">return</span> getAspectJImports();<br>         <span class="hljs-keyword">default</span>:<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-comment">/**</span><br><span class="hljs-comment">    * Return the imports to use if the &#123;<span class="hljs-doctag">@link</span> AdviceMode&#125; is set to &#123;<span class="hljs-doctag">@link</span> AdviceMode#PROXY&#125;.</span><br><span class="hljs-comment">    * &lt;p&gt;Take care of adding the necessary JSR-107 import if it is available.</span><br><span class="hljs-comment">    */</span><br>   <span class="hljs-keyword">private</span> String[] getProxyImports() &#123;<br>      List&lt;String&gt; result = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-number">3</span>);<br>      result.add(AutoProxyRegistrar.class.getName());<br>      result.add(ProxyCachingConfiguration.class.getName());<br>      <span class="hljs-keyword">if</span> (jsr107Present &amp;&amp; jcacheImplPresent) &#123;<br>         result.add(PROXY_JCACHE_CONFIGURATION_CLASS);<br>      &#125;<br>      <span class="hljs-keyword">return</span> StringUtils.toStringArray(result);<br>   &#125;<br><br>   <span class="hljs-comment">/**</span><br><span class="hljs-comment">    * Return the imports to use if the &#123;<span class="hljs-doctag">@link</span> AdviceMode&#125; is set to &#123;<span class="hljs-doctag">@link</span> AdviceMode#ASPECTJ&#125;.</span><br><span class="hljs-comment">    * &lt;p&gt;Take care of adding the necessary JSR-107 import if it is available.</span><br><span class="hljs-comment">    */</span><br>   <span class="hljs-keyword">private</span> String[] getAspectJImports() &#123;<br>      List&lt;String&gt; result = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;(<span class="hljs-number">2</span>);<br>      result.add(CACHE_ASPECT_CONFIGURATION_CLASS_NAME);<br>      <span class="hljs-keyword">if</span> (jsr107Present &amp;&amp; jcacheImplPresent) &#123;<br>         result.add(JCACHE_ASPECT_CONFIGURATION_CLASS_NAME);<br>      &#125;<br>      <span class="hljs-keyword">return</span> StringUtils.toStringArray(result);<br>   &#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>ProxyCachingConfiguration类</p>
 <p>这个类会创建一个缓存的advisor，此时的pointCut为检查类上是否有缓存相关的注解，Inteceptor为CacheInterceptor。同样的缓存切面也需要创建一个cacheManager缓存管理器。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProxyCachingConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractCachingConfiguration</span> </span>&#123;
-
-   <span class="hljs-meta">@Bean(name = CacheManagementConfigUtils.CACHE_ADVISOR_BEAN_NAME)</span>
-   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span>
-   <span class="hljs-function"><span class="hljs-keyword">public</span> BeanFactoryCacheOperationSourceAdvisor <span class="hljs-title">cacheAdvisor</span><span class="hljs-params">()</span> </span>&#123;
-      BeanFactoryCacheOperationSourceAdvisor advisor = <span class="hljs-keyword">new</span> BeanFactoryCacheOperationSourceAdvisor();
-      advisor.setCacheOperationSource(cacheOperationSource());
-      advisor.setAdvice(cacheInterceptor());
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.enableCaching != <span class="hljs-keyword">null</span>) &#123;
-         advisor.setOrder(<span class="hljs-keyword">this</span>.enableCaching.&lt;Integer&gt;getNumber(<span class="hljs-string">&quot;order&quot;</span>));
-      &#125;
-      <span class="hljs-keyword">return</span> advisor;
-   &#125;
-
-   <span class="hljs-meta">@Bean</span>
-   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span>
-   <span class="hljs-function"><span class="hljs-keyword">public</span> CacheOperationSource <span class="hljs-title">cacheOperationSource</span><span class="hljs-params">()</span> </span>&#123;
-      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AnnotationCacheOperationSource();
-   &#125;
-
-   <span class="hljs-meta">@Bean</span>
-   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span>
-   <span class="hljs-function"><span class="hljs-keyword">public</span> CacheInterceptor <span class="hljs-title">cacheInterceptor</span><span class="hljs-params">()</span> </span>&#123;
-      CacheInterceptor interceptor = <span class="hljs-keyword">new</span> CacheInterceptor();
-      interceptor.configure(<span class="hljs-keyword">this</span>.errorHandler, <span class="hljs-keyword">this</span>.keyGenerator, <span class="hljs-keyword">this</span>.cacheResolver, <span class="hljs-keyword">this</span>.cacheManager);
-      interceptor.setCacheOperationSource(cacheOperationSource());
-      <span class="hljs-keyword">return</span> interceptor;
-   &#125;
-
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProxyCachingConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractCachingConfiguration</span> </span>&#123;<br><br>   <span class="hljs-meta">@Bean(name = CacheManagementConfigUtils.CACHE_ADVISOR_BEAN_NAME)</span><br>   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span><br>   <span class="hljs-function"><span class="hljs-keyword">public</span> BeanFactoryCacheOperationSourceAdvisor <span class="hljs-title">cacheAdvisor</span><span class="hljs-params">()</span> </span>&#123;<br>      BeanFactoryCacheOperationSourceAdvisor advisor = <span class="hljs-keyword">new</span> BeanFactoryCacheOperationSourceAdvisor();<br>      advisor.setCacheOperationSource(cacheOperationSource());<br>      advisor.setAdvice(cacheInterceptor());<br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.enableCaching != <span class="hljs-keyword">null</span>) &#123;<br>         advisor.setOrder(<span class="hljs-keyword">this</span>.enableCaching.&lt;Integer&gt;getNumber(<span class="hljs-string">&quot;order&quot;</span>));<br>      &#125;<br>      <span class="hljs-keyword">return</span> advisor;<br>   &#125;<br><br>   <span class="hljs-meta">@Bean</span><br>   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span><br>   <span class="hljs-function"><span class="hljs-keyword">public</span> CacheOperationSource <span class="hljs-title">cacheOperationSource</span><span class="hljs-params">()</span> </span>&#123;<br>      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AnnotationCacheOperationSource();<br>   &#125;<br><br>   <span class="hljs-meta">@Bean</span><br>   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span><br>   <span class="hljs-function"><span class="hljs-keyword">public</span> CacheInterceptor <span class="hljs-title">cacheInterceptor</span><span class="hljs-params">()</span> </span>&#123;<br>      CacheInterceptor interceptor = <span class="hljs-keyword">new</span> CacheInterceptor();<br>      interceptor.configure(<span class="hljs-keyword">this</span>.errorHandler, <span class="hljs-keyword">this</span>.keyGenerator, <span class="hljs-keyword">this</span>.cacheResolver, <span class="hljs-keyword">this</span>.cacheManager);<br>      interceptor.setCacheOperationSource(cacheOperationSource());<br>      <span class="hljs-keyword">return</span> interceptor;<br>   &#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="缓存管理器的创建"><a href="#缓存管理器的创建" class="headerlink" title="缓存管理器的创建"></a>缓存管理器的创建</h3><p>同样的缓存切面也需要一个缓存管理器。缓存管理器中管理了缓存对象，比如redis缓存，map缓存，mongodb缓存，这些缓存对象都实现了Cache接口。</p>
 <p>xml的创建方式</p>
-<pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;cacheManager&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.cache.support.SimpleCacheManager&quot;</span>&gt;</span>
-    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;caches&quot;</span>&gt;</span>
-        <span class="hljs-tag">&lt;<span class="hljs-name">set</span>&gt;</span>
-            <span class="hljs-comment">&lt;!-- 这里可以配置多个redis --&gt;</span>
-            <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;com.xiangxue.jack.cache.RedisCache&quot;</span>&gt;</span>
-                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;redisTemplate&quot;</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;redisTemplate&quot;</span> /&gt;</span>
-                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;name&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;redisCache&quot;</span>/&gt;</span>
-                <span class="hljs-comment">&lt;!-- name对应的名称要在类或方法的注解中使用 --&gt;</span>
-            <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
-            <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean&quot;</span>&gt;</span>
-                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;name&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;mapCache&quot;</span>/&gt;</span>
-            <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
-            <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;com.xiangxue.jack.cache.MongodbCache&quot;</span>&gt;</span>
-                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;collection&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;mongo_cache&quot;</span>/&gt;</span>
-                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;name&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;mongoCache&quot;</span>/&gt;</span>
-                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;mongoTemplate&quot;</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;mongoTemplate&quot;</span>/&gt;</span>
-            <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span>
-        <span class="hljs-tag">&lt;/<span class="hljs-name">set</span>&gt;</span>
-    <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span>
-<span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span></code></pre>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;cacheManager&quot;</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.cache.support.SimpleCacheManager&quot;</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;caches&quot;</span>&gt;</span><br>        <span class="hljs-tag">&lt;<span class="hljs-name">set</span>&gt;</span><br>            <span class="hljs-comment">&lt;!-- 这里可以配置多个redis --&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;com.xiangxue.jack.cache.RedisCache&quot;</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;redisTemplate&quot;</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;redisTemplate&quot;</span> /&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;name&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;redisCache&quot;</span>/&gt;</span><br>                <span class="hljs-comment">&lt;!-- name对应的名称要在类或方法的注解中使用 --&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean&quot;</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;name&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;mapCache&quot;</span>/&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span><br>            <span class="hljs-tag">&lt;<span class="hljs-name">bean</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;com.xiangxue.jack.cache.MongodbCache&quot;</span>&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;collection&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;mongo_cache&quot;</span>/&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;name&quot;</span> <span class="hljs-attr">value</span>=<span class="hljs-string">&quot;mongoCache&quot;</span>/&gt;</span><br>                <span class="hljs-tag">&lt;<span class="hljs-name">property</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;mongoTemplate&quot;</span> <span class="hljs-attr">ref</span>=<span class="hljs-string">&quot;mongoTemplate&quot;</span>/&gt;</span><br>            <span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span><br>        <span class="hljs-tag">&lt;/<span class="hljs-name">set</span>&gt;</span><br>    <span class="hljs-tag">&lt;/<span class="hljs-name">property</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">bean</span>&gt;</span><br></code></pre></td></tr></table></figure>
 
 <p>注解的创建方式</p>
-<pre><code class="hljs java"><span class="hljs-meta">@PropertySource(&quot;classpath:redis/redis.properties&quot;)</span>
-<span class="hljs-meta">@Component</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedisConfig</span> </span>&#123;
-    <span class="hljs-meta">@Value(&quot;$&#123;redis.maxIdle&#125;&quot;)</span>
-    <span class="hljs-keyword">private</span> Integer maxIdle;
-    <span class="hljs-meta">@Value(&quot;$&#123;redis.maxWait&#125;&quot;)</span>
-    <span class="hljs-keyword">private</span> Long maxWaitMillis;
-    <span class="hljs-meta">@Value(&quot;$&#123;redis.testOnBorrow&#125;&quot;)</span>
-    <span class="hljs-keyword">private</span> Boolean testOnBorrow;
-    <span class="hljs-meta">@Value(&quot;$&#123;redis.host&#125;&quot;)</span>
-    <span class="hljs-keyword">private</span> String hostName;
-    <span class="hljs-meta">@Value(&quot;$&#123;redis.port&#125;&quot;)</span>
-    <span class="hljs-keyword">private</span> Integer port;
-
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> JedisPoolConfig <span class="hljs-title">jedisPoolConfig</span><span class="hljs-params">()</span></span>&#123;
-        JedisPoolConfig jedisPoolConfig = <span class="hljs-keyword">new</span> JedisPoolConfig();
-        jedisPoolConfig.setMaxIdle(maxIdle);
-        jedisPoolConfig.setMaxWaitMillis(maxWaitMillis);
-        jedisPoolConfig.setTestOnBorrow(testOnBorrow);
-        <span class="hljs-keyword">return</span> jedisPoolConfig;
-    &#125;
-
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> RedisTemplate&lt;String, String&gt; <span class="hljs-title">redisTemplate</span><span class="hljs-params">(JedisConnectionFactory jedisConnectionFactory)</span></span>&#123;
-        RedisTemplate template = <span class="hljs-keyword">new</span> RedisTemplate();
-        template.setConnectionFactory(jedisConnectionFactory);
-        <span class="hljs-keyword">return</span> template;
-    &#125;
-
-    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setSerializer</span><span class="hljs-params">(StringRedisTemplate template)</span></span>&#123;
-        <span class="hljs-meta">@SuppressWarnings(&#123; &quot;rawtypes&quot;, &quot;unchecked&quot; &#125;)</span>
-        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = <span class="hljs-keyword">new</span> Jackson2JsonRedisSerializer(Object.class);
-        ObjectMapper om = <span class="hljs-keyword">new</span> ObjectMapper();
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
-        jackson2JsonRedisSerializer.setObjectMapper(om);
-        template.setValueSerializer(jackson2JsonRedisSerializer);
-    &#125;
-
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> JedisConnectionFactory <span class="hljs-title">jedisConnectionFactory</span><span class="hljs-params">(JedisPoolConfig jedisPoolConfig)</span></span>&#123;
-        JedisConnectionFactory jedisConnectionFactory = <span class="hljs-keyword">new</span> JedisConnectionFactory();
-        jedisConnectionFactory.setHostName(hostName);
-        jedisConnectionFactory.setPort(port);
-        jedisConnectionFactory.setPoolConfig(jedisPoolConfig);
-        <span class="hljs-keyword">return</span> jedisConnectionFactory;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@PropertySource(&quot;classpath:redis/redis.properties&quot;)</span><br><span class="hljs-meta">@Component</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RedisConfig</span> </span>&#123;<br>    <span class="hljs-meta">@Value(&quot;$&#123;redis.maxIdle&#125;&quot;)</span><br>    <span class="hljs-keyword">private</span> Integer maxIdle;<br>    <span class="hljs-meta">@Value(&quot;$&#123;redis.maxWait&#125;&quot;)</span><br>    <span class="hljs-keyword">private</span> Long maxWaitMillis;<br>    <span class="hljs-meta">@Value(&quot;$&#123;redis.testOnBorrow&#125;&quot;)</span><br>    <span class="hljs-keyword">private</span> Boolean testOnBorrow;<br>    <span class="hljs-meta">@Value(&quot;$&#123;redis.host&#125;&quot;)</span><br>    <span class="hljs-keyword">private</span> String hostName;<br>    <span class="hljs-meta">@Value(&quot;$&#123;redis.port&#125;&quot;)</span><br>    <span class="hljs-keyword">private</span> Integer port;<br><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> JedisPoolConfig <span class="hljs-title">jedisPoolConfig</span><span class="hljs-params">()</span></span>&#123;<br>        JedisPoolConfig jedisPoolConfig = <span class="hljs-keyword">new</span> JedisPoolConfig();<br>        jedisPoolConfig.setMaxIdle(maxIdle);<br>        jedisPoolConfig.setMaxWaitMillis(maxWaitMillis);<br>        jedisPoolConfig.setTestOnBorrow(testOnBorrow);<br>        <span class="hljs-keyword">return</span> jedisPoolConfig;<br>    &#125;<br><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> RedisTemplate&lt;String, String&gt; <span class="hljs-title">redisTemplate</span><span class="hljs-params">(JedisConnectionFactory jedisConnectionFactory)</span></span>&#123;<br>        RedisTemplate template = <span class="hljs-keyword">new</span> RedisTemplate();<br>        template.setConnectionFactory(jedisConnectionFactory);<br>        <span class="hljs-keyword">return</span> template;<br>    &#125;<br><br>    <span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setSerializer</span><span class="hljs-params">(StringRedisTemplate template)</span></span>&#123;<br>        <span class="hljs-meta">@SuppressWarnings(&#123; &quot;rawtypes&quot;, &quot;unchecked&quot; &#125;)</span><br>        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = <span class="hljs-keyword">new</span> Jackson2JsonRedisSerializer(Object.class);<br>        ObjectMapper om = <span class="hljs-keyword">new</span> ObjectMapper();<br>        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);<br>        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);<br>        jackson2JsonRedisSerializer.setObjectMapper(om);<br>        template.setValueSerializer(jackson2JsonRedisSerializer);<br>    &#125;<br><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> JedisConnectionFactory <span class="hljs-title">jedisConnectionFactory</span><span class="hljs-params">(JedisPoolConfig jedisPoolConfig)</span></span>&#123;<br>        JedisConnectionFactory jedisConnectionFactory = <span class="hljs-keyword">new</span> JedisConnectionFactory();<br>        jedisConnectionFactory.setHostName(hostName);<br>        jedisConnectionFactory.setPort(port);<br>        jedisConnectionFactory.setPoolConfig(jedisPoolConfig);<br>        <span class="hljs-keyword">return</span> jedisConnectionFactory;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>CacheInterceptor与TransactionInterceptor中的流程基本相同只是实现功能不同，不再进行分析</p>
 <h2 id="异步切面"><a href="#异步切面" class="headerlink" title="异步切面"></a>异步切面</h2><p>开启异步注解@EnableAsync，异步的使用也比较简单，直接在方法上加上Async即可，这里需要注意一下，如果采用异步，那么事务传播传播属性就会收到影响，异步是通过创建线程来实现的，这时是拿不到上个事务绑定的连接对象的，只能创建一个新的事务。</p>
 <p>注册切面的过程基本一致，这里我们简单看下他的MethodInterceptor实现类AsyncExecutionInterceptor的invoke()方法</p>
 <p>invoke()方法中会创建一个Callable类，然后将类交给executor去执行，如果返回值是一个Future类型，就会阻塞直到拿到返回值。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(<span class="hljs-keyword">final</span> MethodInvocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-   Class&lt;?&gt; targetClass = (invocation.getThis() != <span class="hljs-keyword">null</span> ? AopUtils.getTargetClass(invocation.getThis()) : <span class="hljs-keyword">null</span>);
-   Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);
-   <span class="hljs-keyword">final</span> Method userDeclaredMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
-
-   AsyncTaskExecutor executor = determineAsyncExecutor(userDeclaredMethod);
-   <span class="hljs-keyword">if</span> (executor == <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
-            <span class="hljs-string">&quot;No executor specified and no default executor set on AsyncExecutionInterceptor either&quot;</span>);
-   &#125;
-
-   Callable&lt;Object&gt; task = () -&gt; &#123;
-      <span class="hljs-keyword">try</span> &#123;
-         Object result = invocation.proceed();
-         <span class="hljs-keyword">if</span> (result <span class="hljs-keyword">instanceof</span> Future) &#123;
-            <span class="hljs-keyword">return</span> ((Future&lt;?&gt;) result).get();
-         &#125;
-      &#125;
-      <span class="hljs-keyword">catch</span> (ExecutionException ex) &#123;
-         handleError(ex.getCause(), userDeclaredMethod, invocation.getArguments());
-      &#125;
-      <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-         handleError(ex, userDeclaredMethod, invocation.getArguments());
-      &#125;
-      <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-   &#125;;
-
-   <span class="hljs-keyword">return</span> doSubmit(task, executor, invocation.getMethod().getReturnType());
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(<span class="hljs-keyword">final</span> MethodInvocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>   Class&lt;?&gt; targetClass = (invocation.getThis() != <span class="hljs-keyword">null</span> ? AopUtils.getTargetClass(invocation.getThis()) : <span class="hljs-keyword">null</span>);<br>   Method specificMethod = ClassUtils.getMostSpecificMethod(invocation.getMethod(), targetClass);<br>   <span class="hljs-keyword">final</span> Method userDeclaredMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);<br><br>   AsyncTaskExecutor executor = determineAsyncExecutor(userDeclaredMethod);<br>   <span class="hljs-keyword">if</span> (executor == <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<br>            <span class="hljs-string">&quot;No executor specified and no default executor set on AsyncExecutionInterceptor either&quot;</span>);<br>   &#125;<br><br>   Callable&lt;Object&gt; task = () -&gt; &#123;<br>      <span class="hljs-keyword">try</span> &#123;<br>         Object result = invocation.proceed();<br>         <span class="hljs-keyword">if</span> (result <span class="hljs-keyword">instanceof</span> Future) &#123;<br>            <span class="hljs-keyword">return</span> ((Future&lt;?&gt;) result).get();<br>         &#125;<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (ExecutionException ex) &#123;<br>         handleError(ex.getCause(), userDeclaredMethod, invocation.getArguments());<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>         handleError(ex, userDeclaredMethod, invocation.getArguments());<br>      &#125;<br>      <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>   &#125;;<br><br>   <span class="hljs-keyword">return</span> doSubmit(task, executor, invocation.getMethod().getReturnType());<br>&#125;<br></code></pre></td></tr></table></figure>
             </div>
             <hr>
             <div>
@@ -474,8 +280,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -566,17 +378,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -585,7 +395,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -593,7 +402,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -620,6 +429,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -637,11 +447,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -661,7 +472,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

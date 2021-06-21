@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Spring的事务解析 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -228,24 +229,10 @@
             
             <div class="markdown-body">
               <h2 id="入口类的注册"><a href="#入口类的注册" class="headerlink" title="入口类的注册"></a>入口类的注册</h2><p>@EnableTransactionManaement注解中会引入TransactionManagementConfigurationSelector类</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span>
-<span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
-<span class="hljs-meta">@Documented</span>
-<span class="hljs-meta">@Import(TransactionManagementConfigurationSelector.class)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableTransactionManagement &#123;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Import(TransactionManagementConfigurationSelector.class)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableTransactionManagement &#123;<br></code></pre></td></tr></table></figure>
 
 <p>TransactionManagementConfigurationSelector类的selectImports()方法会在ConfigurationClassPostProcessor接口中调用，向spring中注册事务相关的切面对象。这里只分析比较重要的ProxyTransactionManagementConfiguration类。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">protected</span> String[] selectImports(AdviceMode adviceMode) &#123;
-   <span class="hljs-keyword">switch</span> (adviceMode) &#123;
-      <span class="hljs-keyword">case</span> PROXY:
-         <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> String[] &#123;AutoProxyRegistrar.class.getName(),
-               ProxyTransactionManagementConfiguration.class.getName()&#125;;
-      <span class="hljs-keyword">case</span> ASPECTJ:
-         <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> String[] &#123;determineTransactionAspectClass()&#125;;
-      <span class="hljs-keyword">default</span>:
-         <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> String[] selectImports(AdviceMode adviceMode) &#123;<br>   <span class="hljs-keyword">switch</span> (adviceMode) &#123;<br>      <span class="hljs-keyword">case</span> PROXY:<br>         <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> String[] &#123;AutoProxyRegistrar.class.getName(),<br>               ProxyTransactionManagementConfiguration.class.getName()&#125;;<br>      <span class="hljs-keyword">case</span> ASPECTJ:<br>         <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> String[] &#123;determineTransactionAspectClass()&#125;;<br>      <span class="hljs-keyword">default</span>:<br>         <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>TransactionManagementConfigurationSelector类</p>
 <p>主要功能为：</p>
@@ -255,220 +242,27 @@
 <li>创建一个DataSourceTransationManager事务管理器。</li>
 </ol>
 <p>在注册aop入口类时，如果已经被注册则会比较优先级，优先级比现有的入口类高才会注册进去替换到现有入口。优先级从低到高依次为：InfrastructureAdvisorAutoProxyCreator、AspectJAwareAdvisorAutoProxyGreator、AnnotationAwareAspectJAutoProxyCreator。第一个为事务AOP入口类，第二个为xml配置方式注册的入口类，第三个为注解方式的入口类。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Configuration</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProxyTransactionManagementConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractTransactionManagementConfiguration</span> </span>&#123;
-
-   <span class="hljs-comment">/*</span>
-<span class="hljs-comment">   * 创建事务切面实例</span>
-<span class="hljs-comment">   * BeanFactoryTransactionAttributeSourceAdvisor</span>
-<span class="hljs-comment">   *</span>
-<span class="hljs-comment">   * */</span>
-   <span class="hljs-meta">@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)</span>
-   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span>
-   <span class="hljs-function"><span class="hljs-keyword">public</span> BeanFactoryTransactionAttributeSourceAdvisor <span class="hljs-title">transactionAdvisor</span><span class="hljs-params">()</span> </span>&#123;
-      BeanFactoryTransactionAttributeSourceAdvisor advisor = <span class="hljs-keyword">new</span> BeanFactoryTransactionAttributeSourceAdvisor();
-      advisor.setTransactionAttributeSource(transactionAttributeSource());
-      <span class="hljs-comment">//设置通知类</span>
-      advisor.setAdvice(transactionInterceptor());
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.enableTx != <span class="hljs-keyword">null</span>) &#123;
-         advisor.setOrder(<span class="hljs-keyword">this</span>.enableTx.&lt;Integer&gt;getNumber(<span class="hljs-string">&quot;order&quot;</span>));
-      &#125;
-      <span class="hljs-keyword">return</span> advisor;
-   &#125;
-
-   <span class="hljs-meta">@Bean</span>
-   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span>
-   <span class="hljs-function"><span class="hljs-keyword">public</span> TransactionAttributeSource <span class="hljs-title">transactionAttributeSource</span><span class="hljs-params">()</span> </span>&#123;
-      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AnnotationTransactionAttributeSource();
-   &#125;
-
-   <span class="hljs-comment">/*</span>
-<span class="hljs-comment">   * 创建事务advice</span>
-<span class="hljs-comment">   * TransactionInterceptor</span>
-<span class="hljs-comment">   * */</span>
-   <span class="hljs-meta">@Bean</span>
-   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span>
-   <span class="hljs-function"><span class="hljs-keyword">public</span> TransactionInterceptor <span class="hljs-title">transactionInterceptor</span><span class="hljs-params">()</span> </span>&#123;
-      TransactionInterceptor interceptor = <span class="hljs-keyword">new</span> TransactionInterceptor();
-      interceptor.setTransactionAttributeSource(transactionAttributeSource());
-      <span class="hljs-comment">//事务管理器要跟数据源挂钩，所以需要自己定义</span>
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.txManager != <span class="hljs-keyword">null</span>) &#123;
-         interceptor.setTransactionManager(<span class="hljs-keyword">this</span>.txManager);
-      &#125;
-      <span class="hljs-keyword">return</span> interceptor;
-   &#125;
-
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Configuration</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ProxyTransactionManagementConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractTransactionManagementConfiguration</span> </span>&#123;<br><br>   <span class="hljs-comment">/*</span><br><span class="hljs-comment">   * 创建事务切面实例</span><br><span class="hljs-comment">   * BeanFactoryTransactionAttributeSourceAdvisor</span><br><span class="hljs-comment">   *</span><br><span class="hljs-comment">   * */</span><br>   <span class="hljs-meta">@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)</span><br>   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span><br>   <span class="hljs-function"><span class="hljs-keyword">public</span> BeanFactoryTransactionAttributeSourceAdvisor <span class="hljs-title">transactionAdvisor</span><span class="hljs-params">()</span> </span>&#123;<br>      BeanFactoryTransactionAttributeSourceAdvisor advisor = <span class="hljs-keyword">new</span> BeanFactoryTransactionAttributeSourceAdvisor();<br>      advisor.setTransactionAttributeSource(transactionAttributeSource());<br>      <span class="hljs-comment">//设置通知类</span><br>      advisor.setAdvice(transactionInterceptor());<br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.enableTx != <span class="hljs-keyword">null</span>) &#123;<br>         advisor.setOrder(<span class="hljs-keyword">this</span>.enableTx.&lt;Integer&gt;getNumber(<span class="hljs-string">&quot;order&quot;</span>));<br>      &#125;<br>      <span class="hljs-keyword">return</span> advisor;<br>   &#125;<br><br>   <span class="hljs-meta">@Bean</span><br>   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span><br>   <span class="hljs-function"><span class="hljs-keyword">public</span> TransactionAttributeSource <span class="hljs-title">transactionAttributeSource</span><span class="hljs-params">()</span> </span>&#123;<br>      <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> AnnotationTransactionAttributeSource();<br>   &#125;<br><br>   <span class="hljs-comment">/*</span><br><span class="hljs-comment">   * 创建事务advice</span><br><span class="hljs-comment">   * TransactionInterceptor</span><br><span class="hljs-comment">   * */</span><br>   <span class="hljs-meta">@Bean</span><br>   <span class="hljs-meta">@Role(BeanDefinition.ROLE_INFRASTRUCTURE)</span><br>   <span class="hljs-function"><span class="hljs-keyword">public</span> TransactionInterceptor <span class="hljs-title">transactionInterceptor</span><span class="hljs-params">()</span> </span>&#123;<br>      TransactionInterceptor interceptor = <span class="hljs-keyword">new</span> TransactionInterceptor();<br>      interceptor.setTransactionAttributeSource(transactionAttributeSource());<br>      <span class="hljs-comment">//事务管理器要跟数据源挂钩，所以需要自己定义</span><br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.txManager != <span class="hljs-keyword">null</span>) &#123;<br>         interceptor.setTransactionManager(<span class="hljs-keyword">this</span>.txManager);<br>      &#125;<br>      <span class="hljs-keyword">return</span> interceptor;<br>   &#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>自定义事务管理器的方式：</p>
 <ul>
 <li>实现TransactionManagementConfigurer接口</li>
 </ul>
-<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TransactionManagementConfigurerBean</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">TransactionManagementConfigurer</span> </span>&#123;
-
-    <span class="hljs-meta">@Autowired</span>
-    <span class="hljs-keyword">private</span> DataSource dataSource;
-
-    <span class="hljs-meta">@Override</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> PlatformTransactionManager <span class="hljs-title">annotationDrivenTransactionManager</span><span class="hljs-params">()</span> </span>&#123;
-        DataSourceTransactionManager dtm = <span class="hljs-keyword">new</span> DataSourceTransactionManager();
-        dtm.setDataSource(dataSource);
-        <span class="hljs-keyword">return</span> dtm;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Component</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TransactionManagementConfigurerBean</span> <span class="hljs-keyword">implements</span> <span class="hljs-title">TransactionManagementConfigurer</span> </span>&#123;<br><br>    <span class="hljs-meta">@Autowired</span><br>    <span class="hljs-keyword">private</span> DataSource dataSource;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> PlatformTransactionManager <span class="hljs-title">annotationDrivenTransactionManager</span><span class="hljs-params">()</span> </span>&#123;<br>        DataSourceTransactionManager dtm = <span class="hljs-keyword">new</span> DataSourceTransactionManager();<br>        dtm.setDataSource(dataSource);<br>        <span class="hljs-keyword">return</span> dtm;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <ul>
 <li>创建PlatformTransactionManager类</li>
 </ul>
-<pre><code class="hljs java"><span class="hljs-meta">@Component</span>
-<span class="hljs-meta">@EnableTransactionManagement(proxyTargetClass = false)</span>
-<span class="hljs-meta">@MapperScan(basePackages = &#123;&quot;com.xiangxue.jack.dao&quot;&#125;,annotationClass = Repository.class)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EnableTransactionManagementBean</span> </span>&#123;
-
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> SqlSessionFactoryBean <span class="hljs-title">sqlSessionFactoryBean</span><span class="hljs-params">(DataSource dataSource)</span> </span>&#123;
-        SqlSessionFactoryBean sqlSessionFactoryBean = <span class="hljs-keyword">new</span> SqlSessionFactoryBean();
-        sqlSessionFactoryBean.setDataSource(dataSource);
-        <span class="hljs-keyword">return</span> sqlSessionFactoryBean;
-    &#125;
-
-    <span class="hljs-meta">@Bean</span>
-    <span class="hljs-function"><span class="hljs-keyword">public</span> PlatformTransactionManager <span class="hljs-title">annotationDrivenTransactionManager</span><span class="hljs-params">(DataSource dataSource)</span> </span>&#123;
-        DataSourceTransactionManager dtm = <span class="hljs-keyword">new</span> DataSourceTransactionManager();
-        dtm.setDataSource(dataSource);
-        <span class="hljs-keyword">return</span> dtm;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Component</span><br><span class="hljs-meta">@EnableTransactionManagement(proxyTargetClass = false)</span><br><span class="hljs-meta">@MapperScan(basePackages = &#123;&quot;com.xiangxue.jack.dao&quot;&#125;,annotationClass = Repository.class)</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EnableTransactionManagementBean</span> </span>&#123;<br><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> SqlSessionFactoryBean <span class="hljs-title">sqlSessionFactoryBean</span><span class="hljs-params">(DataSource dataSource)</span> </span>&#123;<br>        SqlSessionFactoryBean sqlSessionFactoryBean = <span class="hljs-keyword">new</span> SqlSessionFactoryBean();<br>        sqlSessionFactoryBean.setDataSource(dataSource);<br>        <span class="hljs-keyword">return</span> sqlSessionFactoryBean;<br>    &#125;<br><br>    <span class="hljs-meta">@Bean</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> PlatformTransactionManager <span class="hljs-title">annotationDrivenTransactionManager</span><span class="hljs-params">(DataSource dataSource)</span> </span>&#123;<br>        DataSourceTransactionManager dtm = <span class="hljs-keyword">new</span> DataSourceTransactionManager();<br>        dtm.setDataSource(dataSource);<br>        <span class="hljs-keyword">return</span> dtm;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="TransactionInterceptor的分析"><a href="#TransactionInterceptor的分析" class="headerlink" title="TransactionInterceptor的分析"></a>TransactionInterceptor的分析</h2><p>在之前对aop的分析中，对代理方法的调用最终会落到Interceptor的invoke()方法，invokeWithinTransaction()方法是TransactionInterceptor.invoke()的主要方法，执行具体的事务操作。</p>
 <p>该方法首先会调用getTransactionAttributeSource()获取到@Transactional的属性，然后获取到事务管理器，调用createTransactionIfNecessary()方法创建事务对象，然后进行调用链的火炬传递，最终会进入到被代理方法。如果被代理方法出现异常，就会进入catch中调用cleanupTransactionInfo()方法进行事务的回滚。如果没有异常然后调用commitTransactionAfterReturning()进行事务的提交。在事务提交和回滚的代码中会判断事务状态是否为最新，只要在事务状态为最新时，才会提交或回滚，提交完之后会回收数据库连接。</p>
 <p>在有嵌套事务时内层的commitTransactionAfterReturning()方法会判断是否有savepoint，如果有就会抹掉所有savepoint，这样到达最外层的commitTransactionAfterReturning()时检测不到savepoint，就会全部提交。</p>
 <p>在有嵌套事务时内层的cleanupTransactionInfo()方法会判断是否有savepoint，如果有就会按照savepoint回滚，注意，内层异常会向外层抛出，尽管内层按照回滚点回滚，但由于嵌套事务的connection与外层相同，外层捕获到异常触发cleanupTransactionInfo()后会导致全部回滚。解决方法为在外层手动捕获异常，避免触发cleanupTransactionInfo()。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">invokeWithinTransaction</span><span class="hljs-params">(Method method, <span class="hljs-meta">@Nullable</span> Class&lt;?&gt; targetClass,</span></span>
-<span class="hljs-function"><span class="hljs-params">      <span class="hljs-keyword">final</span> InvocationCallback invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-
-   <span class="hljs-comment">// If the transaction attribute is null, the method is non-transactional.</span>
-   <span class="hljs-comment">//获取事务属性类 AnnotationTransactionAttributeSource</span>
-   TransactionAttributeSource tas = getTransactionAttributeSource();
-
-   <span class="hljs-comment">//获取方法上面有@Transactional注解的属性</span>
-   <span class="hljs-keyword">final</span> TransactionAttribute txAttr = (tas != <span class="hljs-keyword">null</span> ? tas.getTransactionAttribute(method, targetClass) : <span class="hljs-keyword">null</span>);
-
-   <span class="hljs-comment">//获取事务管理器</span>
-   <span class="hljs-keyword">final</span> PlatformTransactionManager tm = determineTransactionManager(txAttr);
-   <span class="hljs-keyword">final</span> String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
-
-   <span class="hljs-keyword">if</span> (txAttr == <span class="hljs-keyword">null</span> || !(tm <span class="hljs-keyword">instanceof</span> CallbackPreferringPlatformTransactionManager)) &#123;
-      <span class="hljs-comment">// Standard transaction demarcation with getTransaction and commit/rollback calls.</span>
-      TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
-      Object retVal = <span class="hljs-keyword">null</span>;
-      <span class="hljs-keyword">try</span> &#123;
-         <span class="hljs-comment">// This is an around advice: Invoke the next interceptor in the chain.</span>
-         <span class="hljs-comment">// This will normally result in a target object being invoked.</span>
-         <span class="hljs-comment">//火炬传递</span>
-         retVal = invocation.proceedWithInvocation();
-      &#125;
-      <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-         <span class="hljs-comment">// target invocation exception</span>
-         <span class="hljs-comment">//事务回滚</span>
-         completeTransactionAfterThrowing(txInfo, ex);
-         <span class="hljs-keyword">throw</span> ex;
-      &#125;
-      <span class="hljs-keyword">finally</span> &#123;
-         cleanupTransactionInfo(txInfo);
-      &#125;
-      <span class="hljs-comment">//事务提交</span>
-      commitTransactionAfterReturning(txInfo);
-      <span class="hljs-keyword">return</span> retVal;
-   &#125;
-   <span class="hljs-comment">// 编程式事务，一般不会走</span>
-   <span class="hljs-keyword">else</span> &#123;
-      <span class="hljs-keyword">final</span> ThrowableHolder throwableHolder = <span class="hljs-keyword">new</span> ThrowableHolder();
-
-      <span class="hljs-comment">// It&#x27;s a CallbackPreferringPlatformTransactionManager: pass a TransactionCallback in.</span>
-      <span class="hljs-keyword">try</span> &#123;
-         Object result = ((CallbackPreferringPlatformTransactionManager) tm).execute(txAttr, status -&gt; &#123;
-            TransactionInfo txInfo = prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
-            <span class="hljs-keyword">try</span> &#123;
-               <span class="hljs-keyword">return</span> invocation.proceedWithInvocation();
-            &#125;
-            <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-               <span class="hljs-keyword">if</span> (txAttr.rollbackOn(ex)) &#123;
-                  <span class="hljs-comment">// A RuntimeException: will lead to a rollback.</span>
-                  <span class="hljs-keyword">if</span> (ex <span class="hljs-keyword">instanceof</span> RuntimeException) &#123;
-                     <span class="hljs-keyword">throw</span> (RuntimeException) ex;
-                  &#125;
-                  <span class="hljs-keyword">else</span> &#123;
-                     <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ThrowableHolderException(ex);
-                  &#125;
-               &#125;
-               <span class="hljs-keyword">else</span> &#123;
-                  <span class="hljs-comment">// A normal return value: will lead to a commit.</span>
-                  throwableHolder.throwable = ex;
-                  <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-               &#125;
-            &#125;
-            <span class="hljs-keyword">finally</span> &#123;
-               cleanupTransactionInfo(txInfo);
-            &#125;
-         &#125;);
-
-         <span class="hljs-comment">// Check result state: It might indicate a Throwable to rethrow.</span>
-         <span class="hljs-keyword">if</span> (throwableHolder.throwable != <span class="hljs-keyword">null</span>) &#123;
-            <span class="hljs-keyword">throw</span> throwableHolder.throwable;
-         &#125;
-         <span class="hljs-keyword">return</span> result;
-      &#125;
-      <span class="hljs-keyword">catch</span> (ThrowableHolderException ex) &#123;
-         <span class="hljs-keyword">throw</span> ex.getCause();
-      &#125;
-      <span class="hljs-keyword">catch</span> (TransactionSystemException ex2) &#123;
-         <span class="hljs-keyword">if</span> (throwableHolder.throwable != <span class="hljs-keyword">null</span>) &#123;
-            logger.error(<span class="hljs-string">&quot;Application exception overridden by commit exception&quot;</span>, throwableHolder.throwable);
-            ex2.initApplicationException(throwableHolder.throwable);
-         &#125;
-         <span class="hljs-keyword">throw</span> ex2;
-      &#125;
-      <span class="hljs-keyword">catch</span> (Throwable ex2) &#123;
-         <span class="hljs-keyword">if</span> (throwableHolder.throwable != <span class="hljs-keyword">null</span>) &#123;
-            logger.error(<span class="hljs-string">&quot;Application exception overridden by commit exception&quot;</span>, throwableHolder.throwable);
-         &#125;
-         <span class="hljs-keyword">throw</span> ex2;
-      &#125;
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">invokeWithinTransaction</span><span class="hljs-params">(Method method, <span class="hljs-meta">@Nullable</span> Class&lt;?&gt; targetClass,</span></span><br><span class="hljs-function"><span class="hljs-params">      <span class="hljs-keyword">final</span> InvocationCallback invocation)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br><br>   <span class="hljs-comment">// If the transaction attribute is null, the method is non-transactional.</span><br>   <span class="hljs-comment">//获取事务属性类 AnnotationTransactionAttributeSource</span><br>   TransactionAttributeSource tas = getTransactionAttributeSource();<br><br>   <span class="hljs-comment">//获取方法上面有@Transactional注解的属性</span><br>   <span class="hljs-keyword">final</span> TransactionAttribute txAttr = (tas != <span class="hljs-keyword">null</span> ? tas.getTransactionAttribute(method, targetClass) : <span class="hljs-keyword">null</span>);<br><br>   <span class="hljs-comment">//获取事务管理器</span><br>   <span class="hljs-keyword">final</span> PlatformTransactionManager tm = determineTransactionManager(txAttr);<br>   <span class="hljs-keyword">final</span> String joinpointIdentification = methodIdentification(method, targetClass, txAttr);<br><br>   <span class="hljs-keyword">if</span> (txAttr == <span class="hljs-keyword">null</span> || !(tm <span class="hljs-keyword">instanceof</span> CallbackPreferringPlatformTransactionManager)) &#123;<br>      <span class="hljs-comment">// Standard transaction demarcation with getTransaction and commit/rollback calls.</span><br>      TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);<br>      Object retVal = <span class="hljs-keyword">null</span>;<br>      <span class="hljs-keyword">try</span> &#123;<br>         <span class="hljs-comment">// This is an around advice: Invoke the next interceptor in the chain.</span><br>         <span class="hljs-comment">// This will normally result in a target object being invoked.</span><br>         <span class="hljs-comment">//火炬传递</span><br>         retVal = invocation.proceedWithInvocation();<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>         <span class="hljs-comment">// target invocation exception</span><br>         <span class="hljs-comment">//事务回滚</span><br>         completeTransactionAfterThrowing(txInfo, ex);<br>         <span class="hljs-keyword">throw</span> ex;<br>      &#125;<br>      <span class="hljs-keyword">finally</span> &#123;<br>         cleanupTransactionInfo(txInfo);<br>      &#125;<br>      <span class="hljs-comment">//事务提交</span><br>      commitTransactionAfterReturning(txInfo);<br>      <span class="hljs-keyword">return</span> retVal;<br>   &#125;<br>   <span class="hljs-comment">// 编程式事务，一般不会走</span><br>   <span class="hljs-keyword">else</span> &#123;<br>      <span class="hljs-keyword">final</span> ThrowableHolder throwableHolder = <span class="hljs-keyword">new</span> ThrowableHolder();<br><br>      <span class="hljs-comment">// It&#x27;s a CallbackPreferringPlatformTransactionManager: pass a TransactionCallback in.</span><br>      <span class="hljs-keyword">try</span> &#123;<br>         Object result = ((CallbackPreferringPlatformTransactionManager) tm).execute(txAttr, status -&gt; &#123;<br>            TransactionInfo txInfo = prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);<br>            <span class="hljs-keyword">try</span> &#123;<br>               <span class="hljs-keyword">return</span> invocation.proceedWithInvocation();<br>            &#125;<br>            <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>               <span class="hljs-keyword">if</span> (txAttr.rollbackOn(ex)) &#123;<br>                  <span class="hljs-comment">// A RuntimeException: will lead to a rollback.</span><br>                  <span class="hljs-keyword">if</span> (ex <span class="hljs-keyword">instanceof</span> RuntimeException) &#123;<br>                     <span class="hljs-keyword">throw</span> (RuntimeException) ex;<br>                  &#125;<br>                  <span class="hljs-keyword">else</span> &#123;<br>                     <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ThrowableHolderException(ex);<br>                  &#125;<br>               &#125;<br>               <span class="hljs-keyword">else</span> &#123;<br>                  <span class="hljs-comment">// A normal return value: will lead to a commit.</span><br>                  throwableHolder.throwable = ex;<br>                  <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>               &#125;<br>            &#125;<br>            <span class="hljs-keyword">finally</span> &#123;<br>               cleanupTransactionInfo(txInfo);<br>            &#125;<br>         &#125;);<br><br>         <span class="hljs-comment">// Check result state: It might indicate a Throwable to rethrow.</span><br>         <span class="hljs-keyword">if</span> (throwableHolder.throwable != <span class="hljs-keyword">null</span>) &#123;<br>            <span class="hljs-keyword">throw</span> throwableHolder.throwable;<br>         &#125;<br>         <span class="hljs-keyword">return</span> result;<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (ThrowableHolderException ex) &#123;<br>         <span class="hljs-keyword">throw</span> ex.getCause();<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (TransactionSystemException ex2) &#123;<br>         <span class="hljs-keyword">if</span> (throwableHolder.throwable != <span class="hljs-keyword">null</span>) &#123;<br>            logger.error(<span class="hljs-string">&quot;Application exception overridden by commit exception&quot;</span>, throwableHolder.throwable);<br>            ex2.initApplicationException(throwableHolder.throwable);<br>         &#125;<br>         <span class="hljs-keyword">throw</span> ex2;<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (Throwable ex2) &#123;<br>         <span class="hljs-keyword">if</span> (throwableHolder.throwable != <span class="hljs-keyword">null</span>) &#123;<br>            logger.error(<span class="hljs-string">&quot;Application exception overridden by commit exception&quot;</span>, throwableHolder.throwable);<br>         &#125;<br>         <span class="hljs-keyword">throw</span> ex2;<br>      &#125;<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="createTransactionIfNecessary-方法"><a href="#createTransactionIfNecessary-方法" class="headerlink" title="createTransactionIfNecessary()方法"></a>createTransactionIfNecessary()方法</h3><p>主要逻辑为调用事务管理器的getTransaction()方法创建事务并返回一个事务状态对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> TransactionInfo <span class="hljs-title">createTransactionIfNecessary</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> PlatformTransactionManager tm,</span></span>
-<span class="hljs-function"><span class="hljs-params">      <span class="hljs-meta">@Nullable</span> TransactionAttribute txAttr, <span class="hljs-keyword">final</span> String joinpointIdentification)</span> </span>&#123;
-
-   <span class="hljs-comment">// If no name specified, apply method identification as transaction name.</span>
-   <span class="hljs-keyword">if</span> (txAttr != <span class="hljs-keyword">null</span> &amp;&amp; txAttr.getName() == <span class="hljs-keyword">null</span>) &#123;
-      txAttr = <span class="hljs-keyword">new</span> DelegatingTransactionAttribute(txAttr) &#123;
-         <span class="hljs-meta">@Override</span>
-         <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getName</span><span class="hljs-params">()</span> </span>&#123;
-            <span class="hljs-keyword">return</span> joinpointIdentification;
-         &#125;
-      &#125;;
-   &#125;
-
-   TransactionStatus status = <span class="hljs-keyword">null</span>;
-   <span class="hljs-keyword">if</span> (txAttr != <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">if</span> (tm != <span class="hljs-keyword">null</span>) &#123;
-         <span class="hljs-comment">//开启事务，这里重点看</span>
-         status = tm.getTransaction(txAttr);
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         <span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-            logger.debug(<span class="hljs-string">&quot;Skipping transactional joinpoint [&quot;</span> + joinpointIdentification +
-                  <span class="hljs-string">&quot;] because no transaction manager has been configured&quot;</span>);
-         &#125;
-      &#125;
-   &#125;
-   <span class="hljs-comment">//创建事务信息对象，记录新老事务信息对象</span>
-   <span class="hljs-keyword">return</span> prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> TransactionInfo <span class="hljs-title">createTransactionIfNecessary</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> PlatformTransactionManager tm,</span></span><br><span class="hljs-function"><span class="hljs-params">      <span class="hljs-meta">@Nullable</span> TransactionAttribute txAttr, <span class="hljs-keyword">final</span> String joinpointIdentification)</span> </span>&#123;<br><br>   <span class="hljs-comment">// If no name specified, apply method identification as transaction name.</span><br>   <span class="hljs-keyword">if</span> (txAttr != <span class="hljs-keyword">null</span> &amp;&amp; txAttr.getName() == <span class="hljs-keyword">null</span>) &#123;<br>      txAttr = <span class="hljs-keyword">new</span> DelegatingTransactionAttribute(txAttr) &#123;<br>         <span class="hljs-meta">@Override</span><br>         <span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">getName</span><span class="hljs-params">()</span> </span>&#123;<br>            <span class="hljs-keyword">return</span> joinpointIdentification;<br>         &#125;<br>      &#125;;<br>   &#125;<br><br>   TransactionStatus status = <span class="hljs-keyword">null</span>;<br>   <span class="hljs-keyword">if</span> (txAttr != <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">if</span> (tm != <span class="hljs-keyword">null</span>) &#123;<br>         <span class="hljs-comment">//开启事务，这里重点看</span><br>         status = tm.getTransaction(txAttr);<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         <span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;<br>            logger.debug(<span class="hljs-string">&quot;Skipping transactional joinpoint [&quot;</span> + joinpointIdentification +<br>                  <span class="hljs-string">&quot;] because no transaction manager has been configured&quot;</span>);<br>         &#125;<br>      &#125;<br>   &#125;<br>   <span class="hljs-comment">//创建事务信息对象，记录新老事务信息对象</span><br>   <span class="hljs-keyword">return</span> prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="getTransaction-方法"><a href="#getTransaction-方法" class="headerlink" title="getTransaction()方法"></a>getTransaction()方法</h3><ol>
 <li><p>调用doGetTransaction()方法创建事务对象，如果当前线程已有connection会直接使用这个连接设置到事务对象，如果没有会在dobegin()方法中创建连接并绑定到当前线程，再次进入这个方法时会直接使用这个连接设置到事务对象。</p>
@@ -488,375 +282,38 @@
 <p>PROPAGATION_REQUIRED：如果没有事务就新建一个事务，如果有就加入到当前事务。</p>
 <p>PROPAGATION_REQUIRES_NEW：如果没有事务就新建一个事务，如果有就挂起当前事务。</p>
 <p>PROPAGATION_NESTED：如果有事务就嵌套在事务中执行。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> TransactionStatus <span class="hljs-title">getTransaction</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> TransactionDefinition definition)</span> <span class="hljs-keyword">throws</span> TransactionException </span>&#123;
-   <span class="hljs-comment">//这里重点看，.DataSourceTransactionObject拿到对象</span>
-   Object transaction = doGetTransaction();
-
-   <span class="hljs-comment">// Cache debug flag to avoid repeated checks.</span>
-   <span class="hljs-keyword">boolean</span> debugEnabled = logger.isDebugEnabled();
-
-   <span class="hljs-keyword">if</span> (definition == <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-comment">// Use defaults if no transaction definition given.</span>
-      definition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();
-   &#125;
-
-   <span class="hljs-comment">//第一次进来connectionHolder为空的，所以不存在事务</span>
-   <span class="hljs-keyword">if</span> (isExistingTransaction(transaction)) &#123;
-      <span class="hljs-comment">// Existing transaction found -&gt; check propagation behavior to find out how to behave.</span>
-      <span class="hljs-keyword">return</span> handleExistingTransaction(definition, transaction, debugEnabled);
-   &#125;
-
-   <span class="hljs-comment">// Check definition settings for new transaction.</span>
-   <span class="hljs-keyword">if</span> (definition.getTimeout() &lt; TransactionDefinition.TIMEOUT_DEFAULT) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> InvalidTimeoutException(<span class="hljs-string">&quot;Invalid transaction timeout&quot;</span>, definition.getTimeout());
-   &#125;
-
-   <span class="hljs-comment">// No existing transaction found -&gt; check propagation behavior to find out how to proceed.</span>
-   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_MANDATORY) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(
-            <span class="hljs-string">&quot;No existing transaction found for transaction marked with propagation &#x27;mandatory&#x27;&quot;</span>);
-   &#125;
-   <span class="hljs-comment">//第一次进来大部分会走这里、对事务状态进行判断</span>
-   <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
-         definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
-         definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) &#123;
-      <span class="hljs-comment">//先挂起</span>
-      SuspendedResourcesHolder suspendedResources = suspend(<span class="hljs-keyword">null</span>);
-         <span class="hljs-keyword">if</span> (debugEnabled) &#123;
-            logger.debug(<span class="hljs-string">&quot;Creating new transaction with name [&quot;</span> + definition.getName() + <span class="hljs-string">&quot;]: &quot;</span> + definition);
-         &#125;
-         <span class="hljs-keyword">try</span> &#123;
-            <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
-            <span class="hljs-comment">//创建事务状态对象，其实就是封装了事务对象的一些信息，记录事务状态的</span>
-            DefaultTransactionStatus status = newTransactionStatus(
-                  definition, transaction, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, suspendedResources);
-
-            <span class="hljs-comment">//开启事务,重点看看 DataSourceTransactionObject</span>
-            doBegin(transaction, definition);
-
-            <span class="hljs-comment">//开启事务后，改变事务状态</span>
-            prepareSynchronization(status, definition);
-            <span class="hljs-keyword">return</span> status;
-      &#125;
-      <span class="hljs-keyword">catch</span> (RuntimeException | Error ex) &#123;
-         resume(<span class="hljs-keyword">null</span>, suspendedResources);
-         <span class="hljs-keyword">throw</span> ex;
-      &#125;
-   &#125;
-   <span class="hljs-keyword">else</span> &#123;
-      <span class="hljs-comment">// Create &quot;empty&quot; transaction: no actual transaction, but potentially synchronization.</span>
-      <span class="hljs-keyword">if</span> (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT &amp;&amp; logger.isWarnEnabled()) &#123;
-         logger.warn(<span class="hljs-string">&quot;Custom isolation level specified but no actual transaction initiated; &quot;</span> +
-               <span class="hljs-string">&quot;isolation level will effectively be ignored: &quot;</span> + definition);
-      &#125;
-      <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);
-      <span class="hljs-keyword">return</span> prepareTransactionStatus(definition, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, <span class="hljs-keyword">null</span>);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> TransactionStatus <span class="hljs-title">getTransaction</span><span class="hljs-params">(<span class="hljs-meta">@Nullable</span> TransactionDefinition definition)</span> <span class="hljs-keyword">throws</span> TransactionException </span>&#123;<br>   <span class="hljs-comment">//这里重点看，.DataSourceTransactionObject拿到对象</span><br>   Object transaction = doGetTransaction();<br><br>   <span class="hljs-comment">// Cache debug flag to avoid repeated checks.</span><br>   <span class="hljs-keyword">boolean</span> debugEnabled = logger.isDebugEnabled();<br><br>   <span class="hljs-keyword">if</span> (definition == <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-comment">// Use defaults if no transaction definition given.</span><br>      definition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();<br>   &#125;<br><br>   <span class="hljs-comment">//第一次进来connectionHolder为空的，所以不存在事务</span><br>   <span class="hljs-keyword">if</span> (isExistingTransaction(transaction)) &#123;<br>      <span class="hljs-comment">// Existing transaction found -&gt; check propagation behavior to find out how to behave.</span><br>      <span class="hljs-keyword">return</span> handleExistingTransaction(definition, transaction, debugEnabled);<br>   &#125;<br><br>   <span class="hljs-comment">// Check definition settings for new transaction.</span><br>   <span class="hljs-keyword">if</span> (definition.getTimeout() &lt; TransactionDefinition.TIMEOUT_DEFAULT) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> InvalidTimeoutException(<span class="hljs-string">&quot;Invalid transaction timeout&quot;</span>, definition.getTimeout());<br>   &#125;<br><br>   <span class="hljs-comment">// No existing transaction found -&gt; check propagation behavior to find out how to proceed.</span><br>   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_MANDATORY) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(<br>            <span class="hljs-string">&quot;No existing transaction found for transaction marked with propagation &#x27;mandatory&#x27;&quot;</span>);<br>   &#125;<br>   <span class="hljs-comment">//第一次进来大部分会走这里、对事务状态进行判断</span><br>   <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||<br>         definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||<br>         definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) &#123;<br>      <span class="hljs-comment">//先挂起</span><br>      SuspendedResourcesHolder suspendedResources = suspend(<span class="hljs-keyword">null</span>);<br>         <span class="hljs-keyword">if</span> (debugEnabled) &#123;<br>            logger.debug(<span class="hljs-string">&quot;Creating new transaction with name [&quot;</span> + definition.getName() + <span class="hljs-string">&quot;]: &quot;</span> + definition);<br>         &#125;<br>         <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);<br>            <span class="hljs-comment">//创建事务状态对象，其实就是封装了事务对象的一些信息，记录事务状态的</span><br>            DefaultTransactionStatus status = newTransactionStatus(<br>                  definition, transaction, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, suspendedResources);<br><br>            <span class="hljs-comment">//开启事务,重点看看 DataSourceTransactionObject</span><br>            doBegin(transaction, definition);<br><br>            <span class="hljs-comment">//开启事务后，改变事务状态</span><br>            prepareSynchronization(status, definition);<br>            <span class="hljs-keyword">return</span> status;<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (RuntimeException | Error ex) &#123;<br>         resume(<span class="hljs-keyword">null</span>, suspendedResources);<br>         <span class="hljs-keyword">throw</span> ex;<br>      &#125;<br>   &#125;<br>   <span class="hljs-keyword">else</span> &#123;<br>      <span class="hljs-comment">// Create &quot;empty&quot; transaction: no actual transaction, but potentially synchronization.</span><br>      <span class="hljs-keyword">if</span> (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT &amp;&amp; logger.isWarnEnabled()) &#123;<br>         logger.warn(<span class="hljs-string">&quot;Custom isolation level specified but no actual transaction initiated; &quot;</span> +<br>               <span class="hljs-string">&quot;isolation level will effectively be ignored: &quot;</span> + definition);<br>      &#125;<br>      <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);<br>      <span class="hljs-keyword">return</span> prepareTransactionStatus(definition, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, <span class="hljs-keyword">null</span>);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="doGetTransaction-方法"><a href="#doGetTransaction-方法" class="headerlink" title="doGetTransaction()方法"></a>doGetTransaction()方法</h4><p>该方法中首先会创建DataSourceTransactionObject事务对象，设置事务是否允许嵌套，然后调用getResource()方法获取数据库的连接。DataSourceTransactionObject中持有一个包装后的连接对象。传播属性主要用于控制方法是否使用事务，是否使用同一个事务。事务对象的作用是标识当前线程是否有事务，是否是最新的，包装connection对象。是否使用同一个事务是靠控制事务对象的connection来实现的。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">doGetTransaction</span><span class="hljs-params">()</span> </span>&#123;
-   <span class="hljs-comment">//管理connection对象，创建回滚点，按照回滚点回滚，释放回滚点</span>
-   DataSourceTransactionObject txObject = <span class="hljs-keyword">new</span> DataSourceTransactionObject();
-
-   <span class="hljs-comment">//DataSourceTransactionManager默认是允许嵌套事务的</span>
-   txObject.setSavepointAllowed(isNestedTransactionAllowed());
-
-   <span class="hljs-comment">//obtainDataSource() 获取数据源对象，其实就是数据库连接块对象</span>
-   ConnectionHolder conHolder =
-         (ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());
-   txObject.setConnectionHolder(conHolder, <span class="hljs-keyword">false</span>);
-   <span class="hljs-keyword">return</span> txObject;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">doGetTransaction</span><span class="hljs-params">()</span> </span>&#123;<br>   <span class="hljs-comment">//管理connection对象，创建回滚点，按照回滚点回滚，释放回滚点</span><br>   DataSourceTransactionObject txObject = <span class="hljs-keyword">new</span> DataSourceTransactionObject();<br><br>   <span class="hljs-comment">//DataSourceTransactionManager默认是允许嵌套事务的</span><br>   txObject.setSavepointAllowed(isNestedTransactionAllowed());<br><br>   <span class="hljs-comment">//obtainDataSource() 获取数据源对象，其实就是数据库连接块对象</span><br>   ConnectionHolder conHolder =<br>         (ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());<br>   txObject.setConnectionHolder(conHolder, <span class="hljs-keyword">false</span>);<br>   <span class="hljs-keyword">return</span> txObject;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>getResource()方法</p>
 <p>doGetResource()是getResource()方法的主要方法，主要逻辑为从resources对象中获取数据库连接对象。resources对象为Map类型的ThreadLocal容器，Map存储的是连接池对象与连接对象的映射。如果事务传播属性为REQUIRED，则会获取同一个连接对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Object <span class="hljs-title">doGetResource</span><span class="hljs-params">(Object actualKey)</span> </span>&#123;
-   Map&lt;Object, Object&gt; map = resources.get();
-   <span class="hljs-keyword">if</span> (map == <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-   &#125;
-   Object value = map.get(actualKey);
-   <span class="hljs-comment">// Transparently remove ResourceHolder that was marked as void...</span>
-   <span class="hljs-keyword">if</span> (value <span class="hljs-keyword">instanceof</span> ResourceHolder &amp;&amp; ((ResourceHolder) value).isVoid()) &#123;
-      map.remove(actualKey);
-      <span class="hljs-comment">// Remove entire ThreadLocal if empty...</span>
-      <span class="hljs-keyword">if</span> (map.isEmpty()) &#123;
-         resources.remove();
-      &#125;
-      value = <span class="hljs-keyword">null</span>;
-   &#125;
-   <span class="hljs-keyword">return</span> value;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Object <span class="hljs-title">doGetResource</span><span class="hljs-params">(Object actualKey)</span> </span>&#123;<br>   Map&lt;Object, Object&gt; map = resources.get();<br>   <span class="hljs-keyword">if</span> (map == <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>   &#125;<br>   Object value = map.get(actualKey);<br>   <span class="hljs-comment">// Transparently remove ResourceHolder that was marked as void...</span><br>   <span class="hljs-keyword">if</span> (value <span class="hljs-keyword">instanceof</span> ResourceHolder &amp;&amp; ((ResourceHolder) value).isVoid()) &#123;<br>      map.remove(actualKey);<br>      <span class="hljs-comment">// Remove entire ThreadLocal if empty...</span><br>      <span class="hljs-keyword">if</span> (map.isEmpty()) &#123;<br>         resources.remove();<br>      &#125;<br>      value = <span class="hljs-keyword">null</span>;<br>   &#125;<br>   <span class="hljs-keyword">return</span> value;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="doBegin-方法"><a href="#doBegin-方法" class="headerlink" title="doBegin()方法"></a>doBegin()方法</h4><p>如果没有数据库连接首先会获取数据库连接，设置到事务对象，然后设置事务的隔离级别、将连接的autoCommit()设置为false开启事务、设置事务是否只读、将事务对象设置为活跃的，最后如果是新创建的事务就调用bindResource()方法绑定连接对象。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doBegin</span><span class="hljs-params">(Object transaction, TransactionDefinition definition)</span> </span>&#123;
-   DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
-   Connection con = <span class="hljs-keyword">null</span>;
-
-   <span class="hljs-keyword">try</span> &#123;
-      <span class="hljs-comment">//如果没有数据库连接</span>
-      <span class="hljs-keyword">if</span> (!txObject.hasConnectionHolder() ||
-            txObject.getConnectionHolder().isSynchronizedWithTransaction()) &#123;
-         <span class="hljs-comment">//从连接池里面获取连接</span>
-         Connection newCon = obtainDataSource().getConnection();
-         <span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-            logger.debug(<span class="hljs-string">&quot;Acquired Connection [&quot;</span> + newCon + <span class="hljs-string">&quot;] for JDBC transaction&quot;</span>);
-         &#125;
-         <span class="hljs-comment">//把连接包装成ConnectionHolder，然后设置到事务对象中</span>
-         txObject.setConnectionHolder(<span class="hljs-keyword">new</span> ConnectionHolder(newCon), <span class="hljs-keyword">true</span>);
-      &#125;
-
-      txObject.getConnectionHolder().setSynchronizedWithTransaction(<span class="hljs-keyword">true</span>);
-      con = txObject.getConnectionHolder().getConnection();
-
-      <span class="hljs-comment">//从数据库连接中获取隔离级别</span>
-      Integer previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(con, definition);
-      txObject.setPreviousIsolationLevel(previousIsolationLevel);
-
-      <span class="hljs-comment">// Switch to manual commit if necessary. This is very expensive in some JDBC drivers,</span>
-      <span class="hljs-comment">// so we don&#x27;t want to do it unnecessarily (for example if we&#x27;ve explicitly</span>
-      <span class="hljs-comment">// configured the connection pool to set it already).</span>
-      <span class="hljs-keyword">if</span> (con.getAutoCommit()) &#123;
-         txObject.setMustRestoreAutoCommit(<span class="hljs-keyword">true</span>);
-         <span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;
-            logger.debug(<span class="hljs-string">&quot;Switching JDBC Connection [&quot;</span> + con + <span class="hljs-string">&quot;] to manual commit&quot;</span>);
-         &#125;
-         <span class="hljs-comment">//关闭连接的自动提交，其实这步就是开启了事务</span>
-         con.setAutoCommit(<span class="hljs-keyword">false</span>);
-      &#125;
-
-      <span class="hljs-comment">//设置只读事务 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！</span>
-      <span class="hljs-comment">//设置只读事务就是告诉数据库，我这个事务内没有新增，修改，删除操作只有查询操作，不需要数据库锁等操作，减少数据库压力</span>
-      prepareTransactionalConnection(con, definition);
-
-      <span class="hljs-comment">//自己提交关闭了，就说明已经开启事务了，事务是活动的</span>
-      txObject.getConnectionHolder().setTransactionActive(<span class="hljs-keyword">true</span>);
-
-      <span class="hljs-keyword">int</span> timeout = determineTimeout(definition);
-      <span class="hljs-keyword">if</span> (timeout != TransactionDefinition.TIMEOUT_DEFAULT) &#123;
-         txObject.getConnectionHolder().setTimeoutInSeconds(timeout);
-      &#125;
-
-      <span class="hljs-comment">// Bind the connection holder to the thread.</span>
-      <span class="hljs-keyword">if</span> (txObject.isNewConnectionHolder()) &#123;
-         <span class="hljs-comment">//如果是新创建的事务，则建立当前线程和数据库连接的关系</span>
-         TransactionSynchronizationManager.bindResource(obtainDataSource(), txObject.getConnectionHolder());
-      &#125;
-   &#125;
-
-   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;
-      <span class="hljs-keyword">if</span> (txObject.isNewConnectionHolder()) &#123;
-         DataSourceUtils.releaseConnection(con, obtainDataSource());
-         txObject.setConnectionHolder(<span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>);
-      &#125;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> CannotCreateTransactionException(<span class="hljs-string">&quot;Could not open JDBC Connection for transaction&quot;</span>, ex);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doBegin</span><span class="hljs-params">(Object transaction, TransactionDefinition definition)</span> </span>&#123;<br>   DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;<br>   Connection con = <span class="hljs-keyword">null</span>;<br><br>   <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-comment">//如果没有数据库连接</span><br>      <span class="hljs-keyword">if</span> (!txObject.hasConnectionHolder() ||<br>            txObject.getConnectionHolder().isSynchronizedWithTransaction()) &#123;<br>         <span class="hljs-comment">//从连接池里面获取连接</span><br>         Connection newCon = obtainDataSource().getConnection();<br>         <span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;<br>            logger.debug(<span class="hljs-string">&quot;Acquired Connection [&quot;</span> + newCon + <span class="hljs-string">&quot;] for JDBC transaction&quot;</span>);<br>         &#125;<br>         <span class="hljs-comment">//把连接包装成ConnectionHolder，然后设置到事务对象中</span><br>         txObject.setConnectionHolder(<span class="hljs-keyword">new</span> ConnectionHolder(newCon), <span class="hljs-keyword">true</span>);<br>      &#125;<br><br>      txObject.getConnectionHolder().setSynchronizedWithTransaction(<span class="hljs-keyword">true</span>);<br>      con = txObject.getConnectionHolder().getConnection();<br><br>      <span class="hljs-comment">//从数据库连接中获取隔离级别</span><br>      Integer previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(con, definition);<br>      txObject.setPreviousIsolationLevel(previousIsolationLevel);<br><br>      <span class="hljs-comment">// Switch to manual commit if necessary. This is very expensive in some JDBC drivers,</span><br>      <span class="hljs-comment">// so we don&#x27;t want to do it unnecessarily (for example if we&#x27;ve explicitly</span><br>      <span class="hljs-comment">// configured the connection pool to set it already).</span><br>      <span class="hljs-keyword">if</span> (con.getAutoCommit()) &#123;<br>         txObject.setMustRestoreAutoCommit(<span class="hljs-keyword">true</span>);<br>         <span class="hljs-keyword">if</span> (logger.isDebugEnabled()) &#123;<br>            logger.debug(<span class="hljs-string">&quot;Switching JDBC Connection [&quot;</span> + con + <span class="hljs-string">&quot;] to manual commit&quot;</span>);<br>         &#125;<br>         <span class="hljs-comment">//关闭连接的自动提交，其实这步就是开启了事务</span><br>         con.setAutoCommit(<span class="hljs-keyword">false</span>);<br>      &#125;<br><br>      <span class="hljs-comment">//设置只读事务 从这一点设置的时间点开始（时间点a）到这个事务结束的过程中，其他事务所提交的数据，该事务将看不见！</span><br>      <span class="hljs-comment">//设置只读事务就是告诉数据库，我这个事务内没有新增，修改，删除操作只有查询操作，不需要数据库锁等操作，减少数据库压力</span><br>      prepareTransactionalConnection(con, definition);<br><br>      <span class="hljs-comment">//自己提交关闭了，就说明已经开启事务了，事务是活动的</span><br>      txObject.getConnectionHolder().setTransactionActive(<span class="hljs-keyword">true</span>);<br><br>      <span class="hljs-keyword">int</span> timeout = determineTimeout(definition);<br>      <span class="hljs-keyword">if</span> (timeout != TransactionDefinition.TIMEOUT_DEFAULT) &#123;<br>         txObject.getConnectionHolder().setTimeoutInSeconds(timeout);<br>      &#125;<br><br>      <span class="hljs-comment">// Bind the connection holder to the thread.</span><br>      <span class="hljs-keyword">if</span> (txObject.isNewConnectionHolder()) &#123;<br>         <span class="hljs-comment">//如果是新创建的事务，则建立当前线程和数据库连接的关系</span><br>         TransactionSynchronizationManager.bindResource(obtainDataSource(), txObject.getConnectionHolder());<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>      <span class="hljs-keyword">if</span> (txObject.isNewConnectionHolder()) &#123;<br>         DataSourceUtils.releaseConnection(con, obtainDataSource());<br>         txObject.setConnectionHolder(<span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>);<br>      &#125;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> CannotCreateTransactionException(<span class="hljs-string">&quot;Could not open JDBC Connection for transaction&quot;</span>, ex);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>bindResource()方法</p>
 <p>将map设置到resources对象中与当前线程绑定，并将连接池对象与连接对象的映射关系放入map中提供给创建事务对象时调用的getResource()方法使用。这里绑定连接池对象与连接对象的是为了处理多数据源的情况。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">bindResource</span><span class="hljs-params">(Object key, Object value)</span> <span class="hljs-keyword">throws</span> IllegalStateException </span>&#123;
-   Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
-   Assert.notNull(value, <span class="hljs-string">&quot;Value must not be null&quot;</span>);
-   Map&lt;Object, Object&gt; map = resources.get();
-   <span class="hljs-comment">// set ThreadLocal Map if none found</span>
-   <span class="hljs-keyword">if</span> (map == <span class="hljs-keyword">null</span>) &#123;
-      map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();
-      resources.set(map);
-   &#125;
-   Object oldValue = map.put(actualKey, value);
-   <span class="hljs-comment">// Transparently suppress a ResourceHolder that was marked as void...</span>
-   <span class="hljs-keyword">if</span> (oldValue <span class="hljs-keyword">instanceof</span> ResourceHolder &amp;&amp; ((ResourceHolder) oldValue).isVoid()) &#123;
-      oldValue = <span class="hljs-keyword">null</span>;
-   &#125;
-   <span class="hljs-keyword">if</span> (oldValue != <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Already value [&quot;</span> + oldValue + <span class="hljs-string">&quot;] for key [&quot;</span> +
-            actualKey + <span class="hljs-string">&quot;] bound to thread [&quot;</span> + Thread.currentThread().getName() + <span class="hljs-string">&quot;]&quot;</span>);
-   &#125;
-   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;
-      logger.trace(<span class="hljs-string">&quot;Bound value [&quot;</span> + value + <span class="hljs-string">&quot;] for key [&quot;</span> + actualKey + <span class="hljs-string">&quot;] to thread [&quot;</span> +
-            Thread.currentThread().getName() + <span class="hljs-string">&quot;]&quot;</span>);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">bindResource</span><span class="hljs-params">(Object key, Object value)</span> <span class="hljs-keyword">throws</span> IllegalStateException </span>&#123;<br>   Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);<br>   Assert.notNull(value, <span class="hljs-string">&quot;Value must not be null&quot;</span>);<br>   Map&lt;Object, Object&gt; map = resources.get();<br>   <span class="hljs-comment">// set ThreadLocal Map if none found</span><br>   <span class="hljs-keyword">if</span> (map == <span class="hljs-keyword">null</span>) &#123;<br>      map = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();<br>      resources.set(map);<br>   &#125;<br>   Object oldValue = map.put(actualKey, value);<br>   <span class="hljs-comment">// Transparently suppress a ResourceHolder that was marked as void...</span><br>   <span class="hljs-keyword">if</span> (oldValue <span class="hljs-keyword">instanceof</span> ResourceHolder &amp;&amp; ((ResourceHolder) oldValue).isVoid()) &#123;<br>      oldValue = <span class="hljs-keyword">null</span>;<br>   &#125;<br>   <span class="hljs-keyword">if</span> (oldValue != <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Already value [&quot;</span> + oldValue + <span class="hljs-string">&quot;] for key [&quot;</span> +<br>            actualKey + <span class="hljs-string">&quot;] bound to thread [&quot;</span> + Thread.currentThread().getName() + <span class="hljs-string">&quot;]&quot;</span>);<br>   &#125;<br>   <span class="hljs-keyword">if</span> (logger.isTraceEnabled()) &#123;<br>      logger.trace(<span class="hljs-string">&quot;Bound value [&quot;</span> + value + <span class="hljs-string">&quot;] for key [&quot;</span> + actualKey + <span class="hljs-string">&quot;] to thread [&quot;</span> +<br>            Thread.currentThread().getName() + <span class="hljs-string">&quot;]&quot;</span>);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="handleExistingTransaction-方法"><a href="#handleExistingTransaction-方法" class="headerlink" title="handleExistingTransaction()方法"></a>handleExistingTransaction()方法</h4><p>主要是根据传播属性对事务进行处理，这里只着重分析PROPAGATION_REQUIRES_NEW跟PROPAGATION_NESTED的情况。</p>
 <p>PROPAGATION_REQUIRES_NEW会挂起当前事务，然后调用dobegin()方法为事务对象重新设置连接。挂起的逻辑比较简单就是将事务对象的connection设置为空，然后解除connection跟线程的绑定关系。</p>
 <p>PROPAGATION_NESTED会将事务状态设置为非最新，然后创建一个savepoint。</p>
 <p>如果是默认传播属性，只将事务状态设置为非最新。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> TransactionStatus <span class="hljs-title">handleExistingTransaction</span><span class="hljs-params">(</span></span>
-<span class="hljs-function"><span class="hljs-params">      TransactionDefinition definition, Object transaction, <span class="hljs-keyword">boolean</span> debugEnabled)</span></span>
-<span class="hljs-function">      <span class="hljs-keyword">throws</span> TransactionException </span>&#123;
-
-   <span class="hljs-comment">//不允许有事务，直接异常</span>
-   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NEVER) &#123;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(
-            <span class="hljs-string">&quot;Existing transaction found for transaction marked with propagation &#x27;never&#x27;&quot;</span>);
-   &#125;
-
-   <span class="hljs-comment">//以非事务方式执行操作，如果当前存在事务，就把当前事务挂起</span>
-   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NOT_SUPPORTED) &#123;
-      <span class="hljs-keyword">if</span> (debugEnabled) &#123;
-         logger.debug(<span class="hljs-string">&quot;Suspending current transaction&quot;</span>);
-      &#125;
-      <span class="hljs-comment">//挂起当前事务</span>
-      Object suspendedResources = suspend(transaction);
-      <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);
-      <span class="hljs-comment">//修改事务状态信息，把事务的一些信息存储到当前线程中，ThreadLocal中</span>
-      <span class="hljs-keyword">return</span> prepareTransactionStatus(
-            definition, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>, newSynchronization, debugEnabled, suspendedResources);
-   &#125;
-
-   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW) &#123;
-      <span class="hljs-keyword">if</span> (debugEnabled) &#123;
-         logger.debug(<span class="hljs-string">&quot;Suspending current transaction, creating new transaction with name [&quot;</span> +
-               definition.getName() + <span class="hljs-string">&quot;]&quot;</span>);
-      &#125;
-      <span class="hljs-comment">//挂起</span>
-      SuspendedResourcesHolder suspendedResources = suspend(transaction);
-      <span class="hljs-keyword">try</span> &#123;
-         <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
-         DefaultTransactionStatus status = newTransactionStatus(
-               definition, transaction, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, suspendedResources);
-         doBegin(transaction, definition);
-         prepareSynchronization(status, definition);
-         <span class="hljs-keyword">return</span> status;
-      &#125;
-      <span class="hljs-keyword">catch</span> (RuntimeException | Error beginEx) &#123;
-         resumeAfterBeginException(transaction, suspendedResources, beginEx);
-         <span class="hljs-keyword">throw</span> beginEx;
-      &#125;
-   &#125;
-
-   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) &#123;
-      <span class="hljs-keyword">if</span> (!isNestedTransactionAllowed()) &#123;
-         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> NestedTransactionNotSupportedException(
-               <span class="hljs-string">&quot;Transaction manager does not allow nested transactions by default - &quot;</span> +
-               <span class="hljs-string">&quot;specify &#x27;nestedTransactionAllowed&#x27; property with value &#x27;true&#x27;&quot;</span>);
-      &#125;
-      <span class="hljs-keyword">if</span> (debugEnabled) &#123;
-         logger.debug(<span class="hljs-string">&quot;Creating nested transaction with name [&quot;</span> + definition.getName() + <span class="hljs-string">&quot;]&quot;</span>);
-      &#125;
-      <span class="hljs-comment">//默认是可以嵌套事务的</span>
-      <span class="hljs-keyword">if</span> (useSavepointForNestedTransaction()) &#123;
-         <span class="hljs-comment">// Create savepoint within existing Spring-managed transaction,</span>
-         <span class="hljs-comment">// through the SavepointManager API implemented by TransactionStatus.</span>
-         <span class="hljs-comment">// Usually uses JDBC 3.0 savepoints. Never activates Spring synchronization.</span>
-         DefaultTransactionStatus status =
-               prepareTransactionStatus(definition, transaction, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>, debugEnabled, <span class="hljs-keyword">null</span>);
-         <span class="hljs-comment">//创建回滚点</span>
-         status.createAndHoldSavepoint();
-         <span class="hljs-keyword">return</span> status;
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         <span class="hljs-comment">// Nested transaction through nested begin and commit/rollback calls.</span>
-         <span class="hljs-comment">// Usually only for JTA: Spring synchronization might get activated here</span>
-         <span class="hljs-comment">// in case of a pre-existing JTA transaction.</span>
-         <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
-         DefaultTransactionStatus status = newTransactionStatus(
-               definition, transaction, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, <span class="hljs-keyword">null</span>);
-         doBegin(transaction, definition);
-         prepareSynchronization(status, definition);
-         <span class="hljs-keyword">return</span> status;
-      &#125;
-   &#125;
-
-   <span class="hljs-comment">// Assumably PROPAGATION_SUPPORTS or PROPAGATION_REQUIRED.</span>
-   <span class="hljs-keyword">if</span> (debugEnabled) &#123;
-      logger.debug(<span class="hljs-string">&quot;Participating in existing transaction&quot;</span>);
-   &#125;
-   <span class="hljs-keyword">if</span> (isValidateExistingTransaction()) &#123;
-      <span class="hljs-keyword">if</span> (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) &#123;
-         Integer currentIsolationLevel = TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
-         <span class="hljs-keyword">if</span> (currentIsolationLevel == <span class="hljs-keyword">null</span> || currentIsolationLevel != definition.getIsolationLevel()) &#123;
-            Constants isoConstants = DefaultTransactionDefinition.constants;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(<span class="hljs-string">&quot;Participating transaction with definition [&quot;</span> +
-                  definition + <span class="hljs-string">&quot;] specifies isolation level which is incompatible with existing transaction: &quot;</span> +
-                  (currentIsolationLevel != <span class="hljs-keyword">null</span> ?
-                        isoConstants.toCode(currentIsolationLevel, DefaultTransactionDefinition.PREFIX_ISOLATION) :
-                        <span class="hljs-string">&quot;(unknown)&quot;</span>));
-         &#125;
-      &#125;
-      <span class="hljs-keyword">if</span> (!definition.isReadOnly()) &#123;
-         <span class="hljs-keyword">if</span> (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(<span class="hljs-string">&quot;Participating transaction with definition [&quot;</span> +
-                  definition + <span class="hljs-string">&quot;] is not marked as read-only but existing transaction is&quot;</span>);
-         &#125;
-      &#125;
-   &#125;
-   <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
-   <span class="hljs-keyword">return</span> prepareTransactionStatus(definition, transaction, <span class="hljs-keyword">false</span>, newSynchronization, debugEnabled, <span class="hljs-keyword">null</span>);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> TransactionStatus <span class="hljs-title">handleExistingTransaction</span><span class="hljs-params">(</span></span><br><span class="hljs-function"><span class="hljs-params">      TransactionDefinition definition, Object transaction, <span class="hljs-keyword">boolean</span> debugEnabled)</span></span><br><span class="hljs-function">      <span class="hljs-keyword">throws</span> TransactionException </span>&#123;<br><br>   <span class="hljs-comment">//不允许有事务，直接异常</span><br>   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NEVER) &#123;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(<br>            <span class="hljs-string">&quot;Existing transaction found for transaction marked with propagation &#x27;never&#x27;&quot;</span>);<br>   &#125;<br><br>   <span class="hljs-comment">//以非事务方式执行操作，如果当前存在事务，就把当前事务挂起</span><br>   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NOT_SUPPORTED) &#123;<br>      <span class="hljs-keyword">if</span> (debugEnabled) &#123;<br>         logger.debug(<span class="hljs-string">&quot;Suspending current transaction&quot;</span>);<br>      &#125;<br>      <span class="hljs-comment">//挂起当前事务</span><br>      Object suspendedResources = suspend(transaction);<br>      <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);<br>      <span class="hljs-comment">//修改事务状态信息，把事务的一些信息存储到当前线程中，ThreadLocal中</span><br>      <span class="hljs-keyword">return</span> prepareTransactionStatus(<br>            definition, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">false</span>, newSynchronization, debugEnabled, suspendedResources);<br>   &#125;<br><br>   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW) &#123;<br>      <span class="hljs-keyword">if</span> (debugEnabled) &#123;<br>         logger.debug(<span class="hljs-string">&quot;Suspending current transaction, creating new transaction with name [&quot;</span> +<br>               definition.getName() + <span class="hljs-string">&quot;]&quot;</span>);<br>      &#125;<br>      <span class="hljs-comment">//挂起</span><br>      SuspendedResourcesHolder suspendedResources = suspend(transaction);<br>      <span class="hljs-keyword">try</span> &#123;<br>         <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);<br>         DefaultTransactionStatus status = newTransactionStatus(<br>               definition, transaction, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, suspendedResources);<br>         doBegin(transaction, definition);<br>         prepareSynchronization(status, definition);<br>         <span class="hljs-keyword">return</span> status;<br>      &#125;<br>      <span class="hljs-keyword">catch</span> (RuntimeException | Error beginEx) &#123;<br>         resumeAfterBeginException(transaction, suspendedResources, beginEx);<br>         <span class="hljs-keyword">throw</span> beginEx;<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-keyword">if</span> (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) &#123;<br>      <span class="hljs-keyword">if</span> (!isNestedTransactionAllowed()) &#123;<br>         <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> NestedTransactionNotSupportedException(<br>               <span class="hljs-string">&quot;Transaction manager does not allow nested transactions by default - &quot;</span> +<br>               <span class="hljs-string">&quot;specify &#x27;nestedTransactionAllowed&#x27; property with value &#x27;true&#x27;&quot;</span>);<br>      &#125;<br>      <span class="hljs-keyword">if</span> (debugEnabled) &#123;<br>         logger.debug(<span class="hljs-string">&quot;Creating nested transaction with name [&quot;</span> + definition.getName() + <span class="hljs-string">&quot;]&quot;</span>);<br>      &#125;<br>      <span class="hljs-comment">//默认是可以嵌套事务的</span><br>      <span class="hljs-keyword">if</span> (useSavepointForNestedTransaction()) &#123;<br>         <span class="hljs-comment">// Create savepoint within existing Spring-managed transaction,</span><br>         <span class="hljs-comment">// through the SavepointManager API implemented by TransactionStatus.</span><br>         <span class="hljs-comment">// Usually uses JDBC 3.0 savepoints. Never activates Spring synchronization.</span><br>         DefaultTransactionStatus status =<br>               prepareTransactionStatus(definition, transaction, <span class="hljs-keyword">false</span>, <span class="hljs-keyword">false</span>, debugEnabled, <span class="hljs-keyword">null</span>);<br>         <span class="hljs-comment">//创建回滚点</span><br>         status.createAndHoldSavepoint();<br>         <span class="hljs-keyword">return</span> status;<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         <span class="hljs-comment">// Nested transaction through nested begin and commit/rollback calls.</span><br>         <span class="hljs-comment">// Usually only for JTA: Spring synchronization might get activated here</span><br>         <span class="hljs-comment">// in case of a pre-existing JTA transaction.</span><br>         <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);<br>         DefaultTransactionStatus status = newTransactionStatus(<br>               definition, transaction, <span class="hljs-keyword">true</span>, newSynchronization, debugEnabled, <span class="hljs-keyword">null</span>);<br>         doBegin(transaction, definition);<br>         prepareSynchronization(status, definition);<br>         <span class="hljs-keyword">return</span> status;<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-comment">// Assumably PROPAGATION_SUPPORTS or PROPAGATION_REQUIRED.</span><br>   <span class="hljs-keyword">if</span> (debugEnabled) &#123;<br>      logger.debug(<span class="hljs-string">&quot;Participating in existing transaction&quot;</span>);<br>   &#125;<br>   <span class="hljs-keyword">if</span> (isValidateExistingTransaction()) &#123;<br>      <span class="hljs-keyword">if</span> (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) &#123;<br>         Integer currentIsolationLevel = TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();<br>         <span class="hljs-keyword">if</span> (currentIsolationLevel == <span class="hljs-keyword">null</span> || currentIsolationLevel != definition.getIsolationLevel()) &#123;<br>            Constants isoConstants = DefaultTransactionDefinition.constants;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(<span class="hljs-string">&quot;Participating transaction with definition [&quot;</span> +<br>                  definition + <span class="hljs-string">&quot;] specifies isolation level which is incompatible with existing transaction: &quot;</span> +<br>                  (currentIsolationLevel != <span class="hljs-keyword">null</span> ?<br>                        isoConstants.toCode(currentIsolationLevel, DefaultTransactionDefinition.PREFIX_ISOLATION) :<br>                        <span class="hljs-string">&quot;(unknown)&quot;</span>));<br>         &#125;<br>      &#125;<br>      <span class="hljs-keyword">if</span> (!definition.isReadOnly()) &#123;<br>         <span class="hljs-keyword">if</span> (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalTransactionStateException(<span class="hljs-string">&quot;Participating transaction with definition [&quot;</span> +<br>                  definition + <span class="hljs-string">&quot;] is not marked as read-only but existing transaction is&quot;</span>);<br>         &#125;<br>      &#125;<br>   &#125;<br>   <span class="hljs-keyword">boolean</span> newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);<br>   <span class="hljs-keyword">return</span> prepareTransactionStatus(definition, transaction, <span class="hljs-keyword">false</span>, newSynchronization, debugEnabled, <span class="hljs-keyword">null</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="编程式事务"><a href="#编程式事务" class="headerlink" title="编程式事务"></a>编程式事务</h2><p>编程式事务相比注解式事务粒度更细，如果方法流程很长注解式事务会产生连接占用问题，导致整个系统吞吐量下降。注解事务由于隔离级别的不同，可能导致可重复读的问题，比如使用数据库实现的乐观锁，在重复竞争锁时由于都是同一个连接对象，所以每次查询的数据都是一样的，这就会导致一个死循环。</p>
 <p>getTicket()方法递归调用的时候，在可重复读的隔离级别下查询的数据是一样的，永远获取不到锁。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Transactional</span>
-<span class="hljs-meta">@Override</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getTicket</span><span class="hljs-params">()</span> </span>&#123;
-    <span class="hljs-comment">//1、获取锁</span>
-    List&lt;ZgTicket&gt; zgTickets = commonMapper.queryTicketById(<span class="hljs-string">&quot;12306&quot;</span>);
-    Map lockmap = <span class="hljs-keyword">new</span> HashMap();
-    lockmap.put(<span class="hljs-string">&quot;ticketId&quot;</span>, <span class="hljs-string">&quot;12306&quot;</span>);
-    lockmap.put(<span class="hljs-string">&quot;version&quot;</span>, zgTickets.get(<span class="hljs-number">0</span>).getVersion());
-    <span class="hljs-keyword">int</span> i = commonMapper.updateLock(lockmap);
-
-    <span class="hljs-keyword">if</span> (i &gt; <span class="hljs-number">0</span>) &#123;
-        <span class="hljs-comment">//抢票</span>
-        ZgTicket zgTicket = zgTickets.get(<span class="hljs-number">0</span>);
-        zgTicket.setTicketCount(<span class="hljs-number">2</span>);
-        <span class="hljs-keyword">int</span> i1 = commonMapper.updateTicket(zgTicket);
-    &#125; <span class="hljs-keyword">else</span> &#123;
-        <span class="hljs-comment">//继续抢</span>
-        ((TransationService) AopContext.currentProxy()).getTicket();
-    &#125;
-
-    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Transactional</span><br><span class="hljs-meta">@Override</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getTicket</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-comment">//1、获取锁</span><br>    List&lt;ZgTicket&gt; zgTickets = commonMapper.queryTicketById(<span class="hljs-string">&quot;12306&quot;</span>);<br>    Map lockmap = <span class="hljs-keyword">new</span> HashMap();<br>    lockmap.put(<span class="hljs-string">&quot;ticketId&quot;</span>, <span class="hljs-string">&quot;12306&quot;</span>);<br>    lockmap.put(<span class="hljs-string">&quot;version&quot;</span>, zgTickets.get(<span class="hljs-number">0</span>).getVersion());<br>    <span class="hljs-keyword">int</span> i = commonMapper.updateLock(lockmap);<br><br>    <span class="hljs-keyword">if</span> (i &gt; <span class="hljs-number">0</span>) &#123;<br>        <span class="hljs-comment">//抢票</span><br>        ZgTicket zgTicket = zgTickets.get(<span class="hljs-number">0</span>);<br>        zgTicket.setTicketCount(<span class="hljs-number">2</span>);<br>        <span class="hljs-keyword">int</span> i1 = commonMapper.updateTicket(zgTicket);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-comment">//继续抢</span><br>        ((TransationService) AopContext.currentProxy()).getTicket();<br>    &#125;<br><br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>编程式事务在执行execute()前会自动开启时候，执行后就自动提交了事务。</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getTicketModeOne</span><span class="hljs-params">()</span> </span>&#123;
-    Integer execute = transactionTemplate.execute(status -&gt; &#123;
-        <span class="hljs-comment">//1、获取锁</span>
-        List&lt;ZgTicket&gt; zgTickets = commonMapper.queryTicketById(<span class="hljs-string">&quot;12306&quot;</span>);
-        Map lockmap = <span class="hljs-keyword">new</span> HashMap();
-        lockmap.put(<span class="hljs-string">&quot;ticketId&quot;</span>, <span class="hljs-string">&quot;12306&quot;</span>);
-        lockmap.put(<span class="hljs-string">&quot;version&quot;</span>, zgTickets.get(<span class="hljs-number">0</span>).getVersion());
-        <span class="hljs-keyword">int</span> i = commonMapper.updateLock(lockmap);
-
-        <span class="hljs-keyword">if</span> (i &gt; <span class="hljs-number">0</span>) &#123;
-            <span class="hljs-comment">//抢票</span>
-            ZgTicket zgTicket = zgTickets.get(<span class="hljs-number">0</span>);
-            zgTicket.setTicketCount(<span class="hljs-number">2</span>);
-            <span class="hljs-keyword">int</span> i1 = commonMapper.updateTicket(zgTicket);
-        &#125;
-        <span class="hljs-keyword">return</span> i;
-    &#125;);
-    <span class="hljs-keyword">if</span> (execute == <span class="hljs-number">0</span>) &#123;
-        <span class="hljs-comment">//继续抢</span>
-        getTicketModeOne();
-    &#125;
-    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">getTicketModeOne</span><span class="hljs-params">()</span> </span>&#123;<br>    Integer execute = transactionTemplate.execute(status -&gt; &#123;<br>        <span class="hljs-comment">//1、获取锁</span><br>        List&lt;ZgTicket&gt; zgTickets = commonMapper.queryTicketById(<span class="hljs-string">&quot;12306&quot;</span>);<br>        Map lockmap = <span class="hljs-keyword">new</span> HashMap();<br>        lockmap.put(<span class="hljs-string">&quot;ticketId&quot;</span>, <span class="hljs-string">&quot;12306&quot;</span>);<br>        lockmap.put(<span class="hljs-string">&quot;version&quot;</span>, zgTickets.get(<span class="hljs-number">0</span>).getVersion());<br>        <span class="hljs-keyword">int</span> i = commonMapper.updateLock(lockmap);<br><br>        <span class="hljs-keyword">if</span> (i &gt; <span class="hljs-number">0</span>) &#123;<br>            <span class="hljs-comment">//抢票</span><br>            ZgTicket zgTicket = zgTickets.get(<span class="hljs-number">0</span>);<br>            zgTicket.setTicketCount(<span class="hljs-number">2</span>);<br>            <span class="hljs-keyword">int</span> i1 = commonMapper.updateTicket(zgTicket);<br>        &#125;<br>        <span class="hljs-keyword">return</span> i;<br>    &#125;);<br>    <span class="hljs-keyword">if</span> (execute == <span class="hljs-number">0</span>) &#123;<br>        <span class="hljs-comment">//继续抢</span><br>        getTicketModeOne();<br>    &#125;<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>编程式事务控制粒度更细，不需要事务控制的代码可以不放在execute()方法内。</p>
 <p>还可以手动控制事务</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Autowired</span>
-PlatformTransactionManager platformTransactionManager;
-
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">xxx</span><span class="hljs-params">()</span> </span>&#123;
-    DefaultTransactionDefinition defaultTransactionDefinition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();
-    defaultTransactionDefinition.setPropagationBehavior(<span class="hljs-number">0</span>);
-    TransactionStatus transaction = platformTransactionManager.getTransaction(defaultTransactionDefinition);
-
-    <span class="hljs-keyword">try</span> &#123;
-        System.out.println(<span class="hljs-string">&quot;业务代码&quot;</span>);
-    &#125;<span class="hljs-keyword">catch</span> (Exception e) &#123;
-        platformTransactionManager.rollback(transaction);
-    &#125;
-
-    platformTransactionManager.commit(transaction);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Autowired</span><br>PlatformTransactionManager platformTransactionManager;<br><br><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">xxx</span><span class="hljs-params">()</span> </span>&#123;<br>    DefaultTransactionDefinition defaultTransactionDefinition = <span class="hljs-keyword">new</span> DefaultTransactionDefinition();<br>    defaultTransactionDefinition.setPropagationBehavior(<span class="hljs-number">0</span>);<br>    TransactionStatus transaction = platformTransactionManager.getTransaction(defaultTransactionDefinition);<br><br>    <span class="hljs-keyword">try</span> &#123;<br>        System.out.println(<span class="hljs-string">&quot;业务代码&quot;</span>);<br>    &#125;<span class="hljs-keyword">catch</span> (Exception e) &#123;<br>        platformTransactionManager.rollback(transaction);<br>    &#125;<br><br>    platformTransactionManager.commit(transaction);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>把控制代码可以写到切面中，跟业务代码解耦。</p>
 
@@ -884,8 +341,14 @@ PlatformTransactionManager platformTransactionManager;
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -976,17 +439,15 @@ PlatformTransactionManager platformTransactionManager;
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -995,7 +456,6 @@ PlatformTransactionManager platformTransactionManager;
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -1003,7 +463,7 @@ PlatformTransactionManager platformTransactionManager;
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -1030,6 +490,7 @@ PlatformTransactionManager platformTransactionManager;
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -1047,11 +508,12 @@ PlatformTransactionManager platformTransactionManager;
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -1071,7 +533,6 @@ PlatformTransactionManager platformTransactionManager;
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

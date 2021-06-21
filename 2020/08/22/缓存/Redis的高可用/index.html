@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Redis的高可用 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -241,110 +242,37 @@
 </li>
 </ol>
 <h4 id="配置Redis信息"><a href="#配置Redis信息" class="headerlink" title="配置Redis信息"></a>配置Redis信息</h4><p>创建 redis-cluster.tmpl 配置Redis信息</p>
-<pre><code class="hljs yaml"><span class="hljs-comment">#端口</span>
-<span class="hljs-string">port</span> <span class="hljs-string">$&#123;PORT&#125;</span>
-<span class="hljs-comment">#非保护模式</span>
-<span class="hljs-string">protected-mode</span> <span class="hljs-literal">no</span>
-<span class="hljs-comment">#启用集群模式</span>
-<span class="hljs-string">cluster-enabled</span> <span class="hljs-literal">yes</span>
-<span class="hljs-string">cluster-config-file</span> <span class="hljs-string">nodes.conf</span>
-<span class="hljs-comment">#超时时间</span>
-<span class="hljs-string">cluster-node-timeout</span> <span class="hljs-number">5000</span>
-<span class="hljs-comment">#集群各节点IP地址</span>
-<span class="hljs-string">cluster-announce-ip</span> <span class="hljs-string">$&#123;Native_IP&#125;</span>
-<span class="hljs-comment">#集群节点映射端口</span>
-<span class="hljs-string">cluster-announce-port</span> <span class="hljs-string">$&#123;PORT&#125;</span>
-<span class="hljs-comment">#集群总线端口</span>
-<span class="hljs-string">cluster-announce-bus-port</span> <span class="hljs-number">1</span><span class="hljs-string">$&#123;PORT&#125;</span>
-<span class="hljs-comment">#开启aof持久化策略</span>
-<span class="hljs-string">appendonly</span> <span class="hljs-literal">yes</span>
-<span class="hljs-comment">#后台运行</span>
-<span class="hljs-comment">#daemonize yes </span>
-<span class="hljs-comment">#进程号存储</span>
-<span class="hljs-string">pidfile</span>  <span class="hljs-string">/var/run/redis_$&#123;PORT&#125;.pid</span>
-<span class="hljs-comment">#集群加密</span>
-<span class="hljs-comment">#masterauth itheima </span>
-<span class="hljs-comment">#requirepass itheima</span></code></pre>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment">#端口</span><br><span class="hljs-string">port</span> <span class="hljs-string">$&#123;PORT&#125;</span><br><span class="hljs-comment">#非保护模式</span><br><span class="hljs-string">protected-mode</span> <span class="hljs-literal">no</span><br><span class="hljs-comment">#启用集群模式</span><br><span class="hljs-string">cluster-enabled</span> <span class="hljs-literal">yes</span><br><span class="hljs-string">cluster-config-file</span> <span class="hljs-string">nodes.conf</span><br><span class="hljs-comment">#超时时间</span><br><span class="hljs-string">cluster-node-timeout</span> <span class="hljs-number">5000</span><br><span class="hljs-comment">#集群各节点IP地址</span><br><span class="hljs-string">cluster-announce-ip</span> <span class="hljs-string">$&#123;Native_IP&#125;</span><br><span class="hljs-comment">#集群节点映射端口</span><br><span class="hljs-string">cluster-announce-port</span> <span class="hljs-string">$&#123;PORT&#125;</span><br><span class="hljs-comment">#集群总线端口</span><br><span class="hljs-string">cluster-announce-bus-port</span> <span class="hljs-number">1</span><span class="hljs-string">$&#123;PORT&#125;</span><br><span class="hljs-comment">#开启aof持久化策略</span><br><span class="hljs-string">appendonly</span> <span class="hljs-literal">yes</span><br><span class="hljs-comment">#后台运行</span><br><span class="hljs-comment">#daemonize yes </span><br><span class="hljs-comment">#进程号存储</span><br><span class="hljs-string">pidfile</span>  <span class="hljs-string">/var/run/redis_$&#123;PORT&#125;.pid</span><br><span class="hljs-comment">#集群加密</span><br><span class="hljs-comment">#masterauth itheima </span><br><span class="hljs-comment">#requirepass itheima</span><br></code></pre></td></tr></table></figure>
 
 <h4 id="Redis创建配置"><a href="#Redis创建配置" class="headerlink" title="Redis创建配置"></a>Redis创建配置</h4><p>创建redis.sh配置需要创建的Redis集群</p>
-<pre><code class="hljs sh"><span class="hljs-meta">#!/bin/bash</span>
-<span class="hljs-comment">#在/usr/local/server/redis-cluster下生成conf和data目标，并生成配置信息</span>
-
-<span class="hljs-comment">#输入信息</span>
-<span class="hljs-built_in">read</span> -p <span class="hljs-string">&quot;请输入本机IP地址：&quot;</span> Native_IP
-
-<span class="hljs-comment"># 创建文件夹</span>
-mkdir -p /usr/<span class="hljs-built_in">local</span>/server/redis-cluster
-<span class="hljs-comment"># 下载redis配置模板</span>
-<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在下载redis-cluster.tmpl配置模板&quot;</span>;
-wget -P /usr/<span class="hljs-built_in">local</span>/server/redis-cluster https://srv-file22.gofile.io/download/RoGvVk/redis-cluster.tmpl
-
-<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在创建redis-net网络&quot;</span>;
-<span class="hljs-comment">#c创建网络</span>
-docker network create redis-net
-
-<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在创建redis配置文件&quot;</span>;
-<span class="hljs-keyword">for</span> port <span class="hljs-keyword">in</span> `seq 7001 7006`; 
-<span class="hljs-keyword">do</span> 
-  mkdir -p /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf &amp;&amp; PORT=<span class="hljs-variable">$&#123;port&#125;</span> Native_IP=<span class="hljs-variable">$&#123;Native_IP&#125;</span>  envsubst &lt; /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/redis-cluster.tmpl &gt; /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf &amp;&amp; mkdir -p /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/data;
-<span class="hljs-keyword">done</span>
-<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在启动redis容器&quot;</span>;
-<span class="hljs-comment">#创建6个redis容器</span>
-<span class="hljs-keyword">for</span> port <span class="hljs-keyword">in</span> `seq 7001 7006`;
-<span class="hljs-keyword">do</span>
-	docker run -d -it -p <span class="hljs-variable">$&#123;port&#125;</span>:<span class="hljs-variable">$&#123;port&#125;</span> -p 1<span class="hljs-variable">$&#123;port&#125;</span>:1<span class="hljs-variable">$&#123;port&#125;</span> -v /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf:/usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf -v /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/data:/data --privileged=<span class="hljs-literal">true</span> --restart always --name redis-<span class="hljs-variable">$&#123;port&#125;</span> --net redis-net --sysctl net.core.somaxconn=1024 redis redis-server /usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf;
-<span class="hljs-keyword">done</span>
-<span class="hljs-comment">#查找ip</span>
-<span class="hljs-keyword">for</span> port <span class="hljs-keyword">in</span> `seq 7001 7006`;
-<span class="hljs-keyword">do</span>
-	<span class="hljs-built_in">echo</span>  -n <span class="hljs-string">&quot;<span class="hljs-subst">$(docker inspect --format &#x27;&#123;&#123; (index .NetworkSettings.Networks <span class="hljs-string">&quot;redis-net&quot;</span>)</span>.IPAddress &#125;&#125;&#x27; &quot;</span>redis-<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot;)&quot;</span>:<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot; &quot;</span>;
-<span class="hljs-keyword">done</span>
-<span class="hljs-comment">#换行</span>
-<span class="hljs-built_in">echo</span> -e <span class="hljs-string">&quot;\n&quot;</span>
-<span class="hljs-comment">#输入信息</span>
-<span class="hljs-built_in">read</span> -p <span class="hljs-string">&quot;请把输入要启动的docker容器名称，默认redis-7001：&quot;</span> DOCKER_NAME
-<span class="hljs-comment">#判断是否为空</span>
-<span class="hljs-keyword">if</span> [ ! <span class="hljs-variable">$DOCKER_NAME</span> ]; 
-	<span class="hljs-keyword">then</span> DOCKER_NAME=<span class="hljs-string">&#x27;redis-7001&#x27;</span>; 
-<span class="hljs-keyword">fi</span>
-<span class="hljs-comment">#进入容器</span>
-docker <span class="hljs-built_in">exec</span> -it redis-7001 /bin/bash
-
-<span class="hljs-comment"># 删除容器</span>
-<span class="hljs-comment">#docker rm -f $(docker ps -a |  grep &quot;redis-*&quot;  | awk &#x27;&#123;print $1&#125;&#x27;)</span></code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-meta">#!/bin/bash</span><br><span class="hljs-comment">#在/usr/local/server/redis-cluster下生成conf和data目标，并生成配置信息</span><br><br><span class="hljs-comment">#输入信息</span><br><span class="hljs-built_in">read</span> -p <span class="hljs-string">&quot;请输入本机IP地址：&quot;</span> Native_IP<br><br><span class="hljs-comment"># 创建文件夹</span><br>mkdir -p /usr/<span class="hljs-built_in">local</span>/server/redis-cluster<br><span class="hljs-comment"># 下载redis配置模板</span><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在下载redis-cluster.tmpl配置模板&quot;</span>;<br>wget -P /usr/<span class="hljs-built_in">local</span>/server/redis-cluster https://srv-file22.gofile.io/download/RoGvVk/redis-cluster.tmpl<br><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在创建redis-net网络&quot;</span>;<br><span class="hljs-comment">#c创建网络</span><br>docker network create redis-net<br><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在创建redis配置文件&quot;</span>;<br><span class="hljs-keyword">for</span> port <span class="hljs-keyword">in</span> `seq 7001 7006`; <br><span class="hljs-keyword">do</span> <br>  mkdir -p /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf &amp;&amp; PORT=<span class="hljs-variable">$&#123;port&#125;</span> Native_IP=<span class="hljs-variable">$&#123;Native_IP&#125;</span>  envsubst &lt; /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/redis-cluster.tmpl &gt; /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf &amp;&amp; mkdir -p /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/data;<br><span class="hljs-keyword">done</span><br><span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;正在启动redis容器&quot;</span>;<br><span class="hljs-comment">#创建6个redis容器</span><br><span class="hljs-keyword">for</span> port <span class="hljs-keyword">in</span> `seq 7001 7006`;<br><span class="hljs-keyword">do</span><br>	docker run -d -it -p <span class="hljs-variable">$&#123;port&#125;</span>:<span class="hljs-variable">$&#123;port&#125;</span> -p 1<span class="hljs-variable">$&#123;port&#125;</span>:1<span class="hljs-variable">$&#123;port&#125;</span> -v /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf:/usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf -v /usr/<span class="hljs-built_in">local</span>/server/redis-cluster/<span class="hljs-variable">$&#123;port&#125;</span>/data:/data --privileged=<span class="hljs-literal">true</span> --restart always --name redis-<span class="hljs-variable">$&#123;port&#125;</span> --net redis-net --sysctl net.core.somaxconn=1024 redis redis-server /usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf;<br><span class="hljs-keyword">done</span><br><span class="hljs-comment">#查找ip</span><br><span class="hljs-keyword">for</span> port <span class="hljs-keyword">in</span> `seq 7001 7006`;<br><span class="hljs-keyword">do</span><br>	<span class="hljs-built_in">echo</span>  -n <span class="hljs-string">&quot;<span class="hljs-subst">$(docker inspect --format &#x27;&#123;&#123; (index .NetworkSettings.Networks <span class="hljs-string">&quot;redis-net&quot;</span>)</span>.IPAddress &#125;&#125;&#x27; &quot;</span>redis-<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot;)&quot;</span>:<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot; &quot;</span>;<br><span class="hljs-keyword">done</span><br><span class="hljs-comment">#换行</span><br><span class="hljs-built_in">echo</span> -e <span class="hljs-string">&quot;\n&quot;</span><br><span class="hljs-comment">#输入信息</span><br><span class="hljs-built_in">read</span> -p <span class="hljs-string">&quot;请把输入要启动的docker容器名称，默认redis-7001：&quot;</span> DOCKER_NAME<br><span class="hljs-comment">#判断是否为空</span><br><span class="hljs-keyword">if</span> [ ! <span class="hljs-variable">$DOCKER_NAME</span> ]; <br>	<span class="hljs-keyword">then</span> DOCKER_NAME=<span class="hljs-string">&#x27;redis-7001&#x27;</span>; <br><span class="hljs-keyword">fi</span><br><span class="hljs-comment">#进入容器</span><br>docker <span class="hljs-built_in">exec</span> -it redis-7001 /bin/bash<br><br><span class="hljs-comment"># 删除容器</span><br><span class="hljs-comment">#docker rm -f $(docker ps -a |  grep &quot;redis-*&quot;  | awk &#x27;&#123;print $1&#125;&#x27;)</span><br></code></pre></td></tr></table></figure>
 
 <p>移除脚本创建</p>
 <p>创建stop.sh脚本，用于停止Redis容器，并且移除对应容器</p>
-<pre><code class="hljs sh"><span class="hljs-meta">#!/bin/bash</span>
-docker stop redis-7001 redis-7002 redis-7003 redis-7004 redis-7005 redis-7006
-docker rm redis-7001 redis-7002 redis-7003 redis-7004 redis-7005 redis-7006
-rm -rf 7001 7002 7003 7004 7005 7006</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-meta">#!/bin/bash</span><br>docker stop redis-7001 redis-7002 redis-7003 redis-7004 redis-7005 redis-7006<br>docker rm redis-7001 redis-7002 redis-7003 redis-7004 redis-7005 redis-7006<br>rm -rf 7001 7002 7003 7004 7005 7006<br></code></pre></td></tr></table></figure>
 
 <p>脚本授权：给 redis.sh 和 stop.sh 添加可执行权限：</p>
-<pre><code class="hljs sh">chmod +x redis.sh 
-chmod +x stop.sh</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh">chmod +x redis.sh <br>chmod +x stop.sh<br></code></pre></td></tr></table></figure>
 
 <p>执行脚本开始安装Redis节点，并进入到 /usr/local/bin 目录下执行 redis-cli 创建集群关联：</p>
-<pre><code class="hljs sh">./redis.sh redis-cli \
---cluster create 172.18.0.2:7001 172.18.0.3:7002 172.18.0.4:7003 172.18.0.5:7004 172.18.0.6:7005 172.18.0.7:7006 \
---cluster-replicas 1</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs sh">./redis.sh redis-cli \<br>--cluster create 172.18.0.2:7001 172.18.0.3:7002 172.18.0.4:7003 172.18.0.5:7004 172.18.0.6:7005 172.18.0.7:7006 \<br>--cluster-replicas 1<br></code></pre></td></tr></table></figure>
 
 <p><strong>–cluster-replicas</strong> 表示有一个主有几个slave。</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic21.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic21.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>安装好了后，链接Redis效果如下：</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic22.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic22.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h3 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h3><h4 id="主从拓扑"><a href="#主从拓扑" class="headerlink" title="主从拓扑"></a>主从拓扑</h4><h5 id="一主一从"><a href="#一主一从" class="headerlink" title="一主一从"></a>一主一从</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic1.png" srcset="/blog/img/loading.gif" class>
+<h3 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h3><h4 id="主从拓扑"><a href="#主从拓扑" class="headerlink" title="主从拓扑"></a>主从拓扑</h4><h5 id="一主一从"><a href="#一主一从" class="headerlink" title="一主一从"></a>一主一从</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>主节点的写入命令会同步到从节点，当需要持久化时，可以只在从节点开启AOF。</p>
-<h5 id="一主多从"><a href="#一主多从" class="headerlink" title="一主多从"></a>一主多从</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic2.png" srcset="/blog/img/loading.gif" class>
+<h5 id="一主多从"><a href="#一主多从" class="headerlink" title="一主多从"></a>一主多从</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>针对读较多的场景，读由多个从节点来分担，但节点越多，主节点同步到多节点的次数也越多，影响带宽，也加重主节点的稳定。</p>
-<h5 id="树状主从"><a href="#树状主从" class="headerlink" title="树状主从"></a>树状主从</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic3.png" srcset="/blog/img/loading.gif" class>
+<h5 id="树状主从"><a href="#树状主从" class="headerlink" title="树状主从"></a>树状主从</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>用来解决一主多从主节点的推送压力，主节点只推送一次数据到从节点B，再由从节点B推送到C和D，减轻主节点推送的压力</p>
-<h4 id="复制原理"><a href="#复制原理" class="headerlink" title="复制原理"></a>复制原理</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic4.png" srcset="/blog/img/loading.gif" class>
+<h4 id="复制原理"><a href="#复制原理" class="headerlink" title="复制原理"></a>复制原理</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <ol>
 <li><p>Slave服务启动，主动连接Master，并发送SYNC命令，请求初始化同步； </p>
@@ -393,104 +321,66 @@ chmod +x stop.sh</code></pre>
 </tr>
 </tbody></table>
 <p>基于Docker安装Redis这里编写了一个脚本，安装脚本 redis-port.sh 如下：</p>
-<pre><code class="hljs sh"><span class="hljs-meta">#!/bin/bash </span>
-<span class="hljs-comment">#在/usr/local/server/redis‐cluster下生成conf和data目标，并生成配置信息 </span>
-<span class="hljs-comment">#换行</span>
-<span class="hljs-built_in">echo</span> ‐e <span class="hljs-string">&quot;\n&quot;</span> 
-<span class="hljs-comment">#输入信息 </span>
-<span class="hljs-built_in">read</span> ‐p <span class="hljs-string">&quot;请输入容器端口：&quot;</span> DOCKER_PORT 
-
-<span class="hljs-comment">#输入端口赋值 </span>
-port=<span class="hljs-variable">$DOCKER_PORT</span>; 
-
-<span class="hljs-built_in">echo</span> ‐e <span class="hljs-string">&quot;<span class="hljs-variable">$port</span>&quot;</span>
-
-<span class="hljs-comment">#创建配置文件 </span>
-mkdir ‐p ./<span class="hljs-variable">$&#123;port&#125;</span>/conf &amp;&amp; PORT=<span class="hljs-variable">$&#123;port&#125;</span> envsubst &lt; ./redis‐cluster.tmpl &gt; ./<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf &amp;&amp; mkdir ‐p ./<span class="hljs-variable">$&#123;port&#125;</span>/data; 
-<span class="hljs-comment">#创建redis容器 </span>
-docker run ‐d ‐it ‐p <span class="hljs-variable">$&#123;port&#125;</span>:<span class="hljs-variable">$&#123;port&#125;</span> ‐p 1<span class="hljs-variable">$&#123;port&#125;</span>:1<span class="hljs-variable">$&#123;port&#125;</span> ‐v /usr/<span class="hljs-built_in">local</span>/server/redis‐ cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf:/usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf ‐v /usr/<span class="hljs-built_in">local</span>/server/redis‐ cluster/<span class="hljs-variable">$&#123;port&#125;</span>/data:/data ‐‐privileged=<span class="hljs-literal">true</span> ‐‐restart always ‐‐name redis‐<span class="hljs-variable">$&#123;port&#125;</span> ‐‐net redis‐ net ‐‐sysctl net.core.somaxconn=1024 redis redis‐server /usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf; 
-<span class="hljs-comment">#查找ip</span>
-<span class="hljs-built_in">echo</span> ‐n <span class="hljs-string">&quot;启动<span class="hljs-subst">$(docker inspect ‐‐format &#x27;&#123;&#123; (index .NetworkSettings.Networks <span class="hljs-string">&quot;redis‐ net&quot;</span>)</span>.IPAddress &#125;&#125;&#x27; &quot;</span>redis‐<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot;)&quot;</span>:<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot; 成功！&quot;</span>;
-<span class="hljs-built_in">echo</span> ‐e <span class="hljs-string">&quot;\n&quot;</span></code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-meta">#!/bin/bash </span><br><span class="hljs-comment">#在/usr/local/server/redis‐cluster下生成conf和data目标，并生成配置信息 </span><br><span class="hljs-comment">#换行</span><br><span class="hljs-built_in">echo</span> ‐e <span class="hljs-string">&quot;\n&quot;</span> <br><span class="hljs-comment">#输入信息 </span><br><span class="hljs-built_in">read</span> ‐p <span class="hljs-string">&quot;请输入容器端口：&quot;</span> DOCKER_PORT <br><br><span class="hljs-comment">#输入端口赋值 </span><br>port=<span class="hljs-variable">$DOCKER_PORT</span>; <br><br><span class="hljs-built_in">echo</span> ‐e <span class="hljs-string">&quot;<span class="hljs-variable">$port</span>&quot;</span><br><br><span class="hljs-comment">#创建配置文件 </span><br>mkdir ‐p ./<span class="hljs-variable">$&#123;port&#125;</span>/conf &amp;&amp; PORT=<span class="hljs-variable">$&#123;port&#125;</span> envsubst &lt; ./redis‐cluster.tmpl &gt; ./<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf &amp;&amp; mkdir ‐p ./<span class="hljs-variable">$&#123;port&#125;</span>/data; <br><span class="hljs-comment">#创建redis容器 </span><br>docker run ‐d ‐it ‐p <span class="hljs-variable">$&#123;port&#125;</span>:<span class="hljs-variable">$&#123;port&#125;</span> ‐p 1<span class="hljs-variable">$&#123;port&#125;</span>:1<span class="hljs-variable">$&#123;port&#125;</span> ‐v /usr/<span class="hljs-built_in">local</span>/server/redis‐ cluster/<span class="hljs-variable">$&#123;port&#125;</span>/conf/redis.conf:/usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf ‐v /usr/<span class="hljs-built_in">local</span>/server/redis‐ cluster/<span class="hljs-variable">$&#123;port&#125;</span>/data:/data ‐‐privileged=<span class="hljs-literal">true</span> ‐‐restart always ‐‐name redis‐<span class="hljs-variable">$&#123;port&#125;</span> ‐‐net redis‐ net ‐‐sysctl net.core.somaxconn=1024 redis redis‐server /usr/<span class="hljs-built_in">local</span>/etc/redis/redis.conf; <br><span class="hljs-comment">#查找ip</span><br><span class="hljs-built_in">echo</span> ‐n <span class="hljs-string">&quot;启动<span class="hljs-subst">$(docker inspect ‐‐format &#x27;&#123;&#123; (index .NetworkSettings.Networks <span class="hljs-string">&quot;redis‐ net&quot;</span>)</span>.IPAddress &#125;&#125;&#x27; &quot;</span>redis‐<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot;)&quot;</span>:<span class="hljs-variable">$&#123;port&#125;</span><span class="hljs-string">&quot; 成功！&quot;</span>;<br><span class="hljs-built_in">echo</span> ‐e <span class="hljs-string">&quot;\n&quot;</span><br></code></pre></td></tr></table></figure>
 
 <p>执行 redis-port.sh 脚本，实现 7007,7008,7009 节点安装。</p>
 <p>查看集群状态 </p>
 <p>主节点查看：</p>
 <p><code>./redis‐cli ‐p 7001 cluster nodes|grep master</code></p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic23.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic23.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>主节点状态信息如下： </p>
 <p>从节点查看： </p>
 <p><code>./redis‐cli ‐p 7001 cluster nodes|grep slave </code></p>
-<p><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic24.png" srcset="/blog/img/loading.gif" class></p>
+<p><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic24.png" srcset="/blog/img/loading.gif" lazyload class></p>
 <p>从上面信息我们可以看出集群关系：</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">Master</span>：<span class="hljs-number">7001</span> Slave：<span class="hljs-number">7005</span> 
-<span class="hljs-attribute">Master</span>：<span class="hljs-number">7002</span> Slave：<span class="hljs-number">7006</span> 
-<span class="hljs-attribute">Master</span>：<span class="hljs-number">7003</span> Slave：<span class="hljs-number">7004</span></code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">Master</span>：<span class="hljs-number">7001</span> Slave：<span class="hljs-number">7005</span> <br><span class="hljs-attribute">Master</span>：<span class="hljs-number">7002</span> Slave：<span class="hljs-number">7006</span> <br><span class="hljs-attribute">Master</span>：<span class="hljs-number">7003</span> Slave：<span class="hljs-number">7004</span><br></code></pre></td></tr></table></figure>
 
 <h5 id="添加集群主节点"><a href="#添加集群主节点" class="headerlink" title="添加集群主节点"></a>添加集群主节点</h5><p>我们需要给集群节点添加一个主节点，我们需要将 192.168.211.141:7007 节点添加到 192.168.211.141:7001 节点所在的集群中，并且添加后作为主节点，添加命令行如下：</p>
 <p><code>./redis‐cli ‐‐cluster add‐node 192.168.211.141:7007 192.168.211.141:7001</code></p>
 <p>执行命令后，效果如下： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic25.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic25.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>此时我们可以进入到集群节点之一查看此时的集群状态，我们进入到 7002 节点中输入 cluster node 查询，操作方法如下：</p>
-<pre><code class="hljs sh">进入容器 
-docker <span class="hljs-built_in">exec</span> ‐it redis‐7002 /bin/bash 
-
-进入到redis‐cli脚本目录 
-<span class="hljs-built_in">cd</span> /usr/<span class="hljs-built_in">local</span>/bin 
-
-登录7002节点 
-./redis‐cli ‐p 7002 ‐c 
-
-查询集群状态 
-cluster nodes</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs sh">进入容器 <br>docker <span class="hljs-built_in">exec</span> ‐it redis‐7002 /bin/bash <br><br>进入到redis‐cli脚本目录 <br><span class="hljs-built_in">cd</span> /usr/<span class="hljs-built_in">local</span>/bin <br><br>登录7002节点 <br>./redis‐cli ‐p 7002 ‐c <br><br>查询集群状态 <br>cluster nodes<br></code></pre></td></tr></table></figure>
 
 <p>效果如下</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic26.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic26.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h5 id="哈希槽分配"><a href="#哈希槽分配" class="headerlink" title="哈希槽分配"></a>哈希槽分配</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic27.png" srcset="/blog/img/loading.gif" class>
+<h5 id="哈希槽分配"><a href="#哈希槽分配" class="headerlink" title="哈希槽分配"></a>哈希槽分配</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic27.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>从上面的集群节点信息我们可以看出一个问题，其他主节点都有一串数字范围，而刚才添加的 7007 节点没有这段数字范围，这和Redis集群原理有关系，我们来讲解一下集群的原理，然后实现新增节点哈希槽(这段数字范围)的分配。</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic28.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic28.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>Redis Cluster 特性之一是引入了槽的概念。一个redis集群包含 16384 个哈希槽。 集群时，会将16384个哈希槽分别分配给每个Master节点，每个Master节点占16384个哈希槽中的一部分。执行GET/SET/DEL时，都会根据key进行操作，Redis通过CRC16算法对key进行计算得到该key所属Redis节点。 根据key去指定Redis节点操作数据。</p>
 <p>从原理上分析，因为之前 7001,7002,7003 已经瓜分了16384个哈希槽，所以再增加一个新节点是没有剩余哈希槽分配的，所以新增的 7007 节点没有分配到哈希槽。我们只能重新分配哈希槽，才能让新增节点分配到一定的哈希槽，重新分配哈希槽后，我们还要考虑之前其他Redis节点中的数据迁移。  </p>
 <p>重新分配<strong>Hash</strong>槽 </p>
 <p>将 7001,7002,7003 中的 100 个哈希槽挪给 7007 ，命令如下： </p>
-<pre><code class="hljs pgsql">./redis‐cli ‐‐<span class="hljs-keyword">cluster</span> reshard <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span>:<span class="hljs-number">7001</span> \
-‐‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">from</span> c9687b2ebec8b99ee14fcbb885b5c3439c58827f,<span class="hljs-number">80</span>a69bb8af3737bce2913b2952b4456430a89eb3,<span class="hljs-number">612e4</span>af8eae484 <span class="hljs-number">26938</span>ce65d12a7d7376b0b37e3 \
-‐‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">to</span> <span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a02235822a7 \
-‐‐<span class="hljs-keyword">cluster</span>‐slots <span class="hljs-number">100</span></code></pre>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">./redis‐cli ‐‐<span class="hljs-keyword">cluster</span> reshard <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span>:<span class="hljs-number">7001</span> \<br>‐‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">from</span> c9687b2ebec8b99ee14fcbb885b5c3439c58827f,<span class="hljs-number">80</span>a69bb8af3737bce2913b2952b4456430a89eb3,<span class="hljs-number">612e4</span>af8eae484 <span class="hljs-number">26938</span>ce65d12a7d7376b0b37e3 \<br>‐‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">to</span> <span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a02235822a7 \<br>‐‐<span class="hljs-keyword">cluster</span>‐slots <span class="hljs-number">100</span><br></code></pre></td></tr></table></figure>
 
 <p>将节点c9687b2ebec8b99ee14fcbb885b5c3439c58827f、80a69bb8af3737bce2913b2952b4456430a89eb3、612e4af8eae48426938ce65d12a7d7376b0b37e3中的100个哈希槽移动到443096af2ff8c1e89f1160faed4f6a02235822a7中</p>
 <p>参数说明： </p>
-<pre><code class="hljs crmsh">‐‐cluster‐from：表示slot目前所在的节点的<span class="hljs-keyword">node</span> <span class="hljs-title">ID</span>，多个ID用逗号分隔
-‐‐cluster‐to：表示需要新分配节点的<span class="hljs-keyword">node</span> <span class="hljs-title">ID</span>
-‐‐cluster‐slots：分配的slot数量</code></pre>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs crmsh">‐‐cluster‐from：表示slot目前所在的节点的<span class="hljs-keyword">node</span> <span class="hljs-title">ID</span>，多个ID用逗号分隔<br>‐‐cluster‐to：表示需要新分配节点的<span class="hljs-keyword">node</span> <span class="hljs-title">ID</span><br>‐‐cluster‐slots：分配的slot数量<br></code></pre></td></tr></table></figure>
 
 <p>将100个哈希槽挪给7007后，我们查询下节点信息：</p>
 <p><code>./redis‐cli ‐p 7001 cluster nodes|grep master </code></p>
 <p>效果如下：</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic29.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic29.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h5 id="添加集群从节点"><a href="#添加集群从节点" class="headerlink" title="添加集群从节点"></a>添加集群从节点</h5><p>我们需要往集群中给 7007 节点添加一个从节点 7008 ，添加从节点的主要目的是提高高可用，防止主节点宕机后该节点无法提供服务。添加从节点命令如下：</p>
-<pre><code class="hljs crmsh">./redis‐cli ‐‐cluster add‐<span class="hljs-keyword">node</span> <span class="hljs-title">192</span>.<span class="hljs-number">168.211</span>.<span class="hljs-number">141</span>:<span class="hljs-number">7008</span> <span class="hljs-number">192.168</span>.<span class="hljs-number">211.141</span>:<span class="hljs-number">7007</span> \
-‐‐cluster‐<span class="hljs-literal">slave</span> ‐‐cluster‐<span class="hljs-literal">master</span>‐id <span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a02235822a7</code></pre>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs crmsh">./redis‐cli ‐‐cluster add‐<span class="hljs-keyword">node</span> <span class="hljs-title">192</span>.<span class="hljs-number">168.211</span>.<span class="hljs-number">141</span>:<span class="hljs-number">7008</span> <span class="hljs-number">192.168</span>.<span class="hljs-number">211.141</span>:<span class="hljs-number">7007</span> \<br>‐‐cluster‐<span class="hljs-literal">slave</span> ‐‐cluster‐<span class="hljs-literal">master</span>‐id <span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a02235822a7<br></code></pre></td></tr></table></figure>
 
 <p>命令说明： </p>
-<pre><code class="hljs dns">将<span class="hljs-number">192.168.211.141</span>:<span class="hljs-number">7008</span>节点添加到<span class="hljs-number">192.168.211.141</span>:<span class="hljs-number">7007</span>对应的集群中，并且加入的节点为从节点，对应的主节点id是<span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a<span class="hljs-number">02235822a7</span></code></pre>
+<figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs dns">将<span class="hljs-number">192.168.211.141</span>:<span class="hljs-number">7008</span>节点添加到<span class="hljs-number">192.168.211.141</span>:<span class="hljs-number">7007</span>对应的集群中，并且加入的节点为从节点，对应的主节点id是<span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a<span class="hljs-number">02235822a7</span> <br></code></pre></td></tr></table></figure>
 
 <p>参数说明： </p>
-<pre><code class="hljs crmsh">add‐<span class="hljs-keyword">node</span><span class="hljs-title">: 后面的分别跟着新加入的slave</span>和<span class="hljs-literal">slave</span>对应的<span class="hljs-keyword">master</span> <span class="hljs-title"></span>
-<span class="hljs-title">cluster</span>‐<span class="hljs-literal">slave</span>：表示加入的是<span class="hljs-literal">slave</span>节点 
-‐‐cluster‐<span class="hljs-literal">master</span>‐id：表示<span class="hljs-literal">slave</span>对应的<span class="hljs-literal">master</span>的<span class="hljs-keyword">node</span> <span class="hljs-title">ID</span></code></pre>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs crmsh">add‐<span class="hljs-keyword">node</span><span class="hljs-title">: 后面的分别跟着新加入的slave</span>和<span class="hljs-literal">slave</span>对应的<span class="hljs-keyword">master</span> <span class="hljs-title"></span><br><span class="hljs-title">cluster</span>‐<span class="hljs-literal">slave</span>：表示加入的是<span class="hljs-literal">slave</span>节点 <br>‐‐cluster‐<span class="hljs-literal">master</span>‐id：表示<span class="hljs-literal">slave</span>对应的<span class="hljs-literal">master</span>的<span class="hljs-keyword">node</span> <span class="hljs-title">ID</span><br></code></pre></td></tr></table></figure>
 
 <p>执行命令后，效果如下：</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic30.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic30.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>集群信息查看： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic31.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic31.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h5 id="缩容"><a href="#缩容" class="headerlink" title="缩容"></a>缩容</h5><p>在真实生产环境中，我们也会跟着我们的业务和环境执行缩容处理，比如双十一过后，流量没有那么大了，我们往往会缩容处理，服务器开销。 </p>
 <p>Redis实现缩容，需要哈希槽重新分配，将需要移除的节点所分配的所有哈希槽值分配给其他需要运行工作的节点，还需要移除该节点的从节点，然后再删除该节点。 </p>
@@ -500,68 +390,59 @@ cluster nodes</code></pre>
 <p>参数说明： </p>
 <p><code>del‐node:删除节点，后面跟着slave节点的 ip:port 和node ID</code></p>
 <p>删除后，我们再来查看集群节点，此时再无7008节点</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic32.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic32.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>迁移<strong>Master</strong>的<strong>Slot</strong></p>
 <p>我们需要将 7007 节点的哈希槽迁移到 7001,7002,7003 节点上，仍然用上面用过的 redis-cli –cluster reshard语法，命令如下： </p>
 <p>第1次迁移：</p>
-<pre><code class="hljs pgsql">./redis‐cli ‐‐<span class="hljs-keyword">cluster</span> reshard <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span>:<span class="hljs-number">7007</span> ‐\
-‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">from</span> <span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a02235822a7 \
-‐‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">to</span> <span class="hljs-number">80</span>a69bb8af3737bce2913b2952b4456430a89eb3 \
-‐‐<span class="hljs-keyword">cluster</span>‐slots <span class="hljs-number">33</span> ‐‐<span class="hljs-keyword">cluster</span>‐yes</code></pre>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">./redis‐cli ‐‐<span class="hljs-keyword">cluster</span> reshard <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span>:<span class="hljs-number">7007</span> ‐\<br>‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">from</span> <span class="hljs-number">443096</span>af2ff8c1e89f1160faed4f6a02235822a7 \<br>‐‐<span class="hljs-keyword">cluster</span>‐<span class="hljs-keyword">to</span> <span class="hljs-number">80</span>a69bb8af3737bce2913b2952b4456430a89eb3 \<br>‐‐<span class="hljs-keyword">cluster</span>‐slots <span class="hljs-number">33</span> ‐‐<span class="hljs-keyword">cluster</span>‐yes <br></code></pre></td></tr></table></figure>
 
 <p>命令说明： </p>
 <p>将192.168.211.141:7007节点所在集群中443096af2ff8c1e89f1160faed4f6a02235822a7节点的33个哈希槽迁移给 80a69bb8af3737bce2913b2952b4456430a89eb3节点，不回显需要迁移的slot，直接迁移。</p>
 <p>效果如下：</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic33.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic33.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>查看集群节点： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic34.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic34.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>我们再次迁移其他哈希槽到其他节点，将剩余的哈希槽迁移到7002和7003去。 </p>
 <p>第2次迁移： </p>
-<pre><code class="hljs sh">./redis‐cli ‐‐cluster reshard 192.168.211.141:7007 \
-‐‐cluster‐from 443096af2ff8c1e89f1160faed4f6a02235822a7 \
-‐‐cluster‐to c9687b2ebec8b99ee14fcbb885b5c3439c58827f \
-‐‐cluster‐slots 34 ‐‐cluster‐yes</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh">./redis‐cli ‐‐cluster reshard 192.168.211.141:7007 \<br>‐‐cluster‐from 443096af2ff8c1e89f1160faed4f6a02235822a7 \<br>‐‐cluster‐to c9687b2ebec8b99ee14fcbb885b5c3439c58827f \<br>‐‐cluster‐slots 34 ‐‐cluster‐yes <br></code></pre></td></tr></table></figure>
 
 <p>第3次迁移： </p>
-<pre><code class="hljs sh">./redis‐cli ‐‐cluster reshard 192.168.211.141:7007 \
-‐‐cluster‐from 443096af2ff8c1e89f1160faed4f6a02235822a7 \
-‐‐cluster‐to 612e4af8eae48426938ce65d12a7d7376b0b37e3 \
-‐‐cluster‐slots 33 ‐‐cluster‐yes</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh">./redis‐cli ‐‐cluster reshard 192.168.211.141:7007 \<br>‐‐cluster‐from 443096af2ff8c1e89f1160faed4f6a02235822a7 \<br>‐‐cluster‐to 612e4af8eae48426938ce65d12a7d7376b0b37e3 \<br>‐‐cluster‐slots 33 ‐‐cluster‐yes <br></code></pre></td></tr></table></figure>
 
 <p>集群状态查询： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic35.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic35.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>删除<strong>7007</strong>主节点</p>
 <p>删除节点命令如下： </p>
 <p><code>./redis‐cli ‐‐cluster del‐node 192.168.211.141:7007 443096af2ff8c1e89f1160faed4f6a02235822a7</code></p>
 <p>效果如下：</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic36.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic36.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>集群节点查看： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic37.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic37.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h2 id="Redis-Sentinel"><a href="#Redis-Sentinel" class="headerlink" title="Redis Sentinel"></a>Redis Sentinel</h2><p>redis主从复制结构主节点故障时，仍需要人工重新在从节点中执行<code>slaveof no one</code>后变为新主节点，其他的节点成为新主节点的丛节点，并从新节点复制数据，然后通知我们的应用程序更新了主节点的地址。这种处理方式无法实现高可用，使用哨兵机制可以在主节点出现故障时，由Redis Sentinel自动完成故障发现和转移，并通知应用方，实现高可用性。</p>
 <p>注意：在代码中连接redis时，需要连接哨兵节点，由哨兵节点动态的选择redis主节点。</p>
-<h4 id="监控机制"><a href="#监控机制" class="headerlink" title="监控机制"></a>监控机制</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic5.png" srcset="/blog/img/loading.gif" class>
+<h4 id="监控机制"><a href="#监控机制" class="headerlink" title="监控机制"></a>监控机制</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>哨兵的数量一般是奇数个，当节点出现故障是，首先使用Raft算法实现选举机制，选出一个哨兵节点来完成转移和通知。</p>
 <p>哨兵有三个定时监控任务完成对各节点的发现和监控：</p>
 <ul>
 <li><p>每个哨兵节点每10秒会向主节点和从节点发送info命令获取最拓扑结构图，哨兵配置时只要配置对主节点的监控即可，通过向主节点发送info，获取从节点的信息，并当有新的从节点加入时可以马上感知到。</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic38.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic38.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>每个哨兵节点每隔2秒会向redis数据节点的 __sentinel__：hello频道上发送该哨兵节点对于主节点的判断以及当前哨兵节点的信息，同时每个哨兵节点也会订阅该频道，来了解其它哨兵节点的信息及对主节点的判断，其实就是通过消息publish和subscribe来完成的。该定时任务主要有2个作用：</p>
 <ul>
 <li>发现新的Sentinel节点：通过订阅主节点的__sentinel__：hello了解其他的Sentinel节点信息，如果是新加入的Sentinel节点，将该Sentinel节点信息保存起来，并与该Sentinel节点创建连接。 </li>
 <li>Sentinel节点之间交换主节点的状态，作为后面客观下线以及领导者选举的依据。 </li>
 </ul>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic39.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic39.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>每隔1秒每个哨兵会向主节点、从节点及其余哨兵节点发送一次ping命令做一次心跳检测，来确认这些节点当前是否可达，从而实现检查每个节点的健康状态。 </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic40.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic40.png" srcset="/blog/img/loading.gif" lazyload class>
 
 </li>
 </ul>
@@ -586,7 +467,7 @@ cluster nodes</code></pre>
 <li>当主节点出现故障，此时3个Sentinel节点共同选举了Sentinel3节点为领导，负载处理主节点的故障转移。</li>
 <li>由Sentinel3领导者节点执行故障转移，过程和主从复制一样，但是自动执行。</li>
 </ol>
-<h4 id="故障处理流程"><a href="#故障处理流程" class="headerlink" title="故障处理流程"></a>故障处理流程</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic6.png" srcset="/blog/img/loading.gif" class>
+<h4 id="故障处理流程"><a href="#故障处理流程" class="headerlink" title="故障处理流程"></a>故障处理流程</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <ol>
 <li>将slave-1脱离原从节点，升级主节点，</li>
@@ -594,9 +475,9 @@ cluster nodes</code></pre>
 <li>通知客户端主节点已更换。</li>
 <li>将原主节点（oldMaster）变成从节点，指向新的主节点。</li>
 </ol>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h4 id="主节点的选择方式"><a href="#主节点的选择方式" class="headerlink" title="主节点的选择方式"></a>主节点的选择方式</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic8.png" srcset="/blog/img/loading.gif" class>
+<h4 id="主节点的选择方式"><a href="#主节点的选择方式" class="headerlink" title="主节点的选择方式"></a>主节点的选择方式</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <ol>
 <li>过滤掉不健康的(下线或断线)，没有回复过哨兵ping响应的从节点</li>
@@ -634,152 +515,70 @@ cluster nodes</code></pre>
 </tbody></table>
 <p>新建文件夹 sentinel1 , sentinel2 , sentinel3 ，并在每个文件夹中创建 conf , data 目录，分别在每个 conf 目录下创建 sentinel.conf 文件,在 sentinelX 目录下执行安装命令。 </p>
 <p>sentinel1/sentinel.conf配置： </p>
-<pre><code class="hljs sh"><span class="hljs-comment">#端口 </span>
-port 8001 
-<span class="hljs-comment"># 配好master即可，sentinel可通过master找到slave </span>
-sentinel monitor redis‐7001 192.168.211.141 7001 1 
-sentinel monitor redis‐7002 192.168.211.141 7002 1 
-sentinel monitor redis‐7003 192.168.211.141 7003 1 
-<span class="hljs-comment"># 配置master的访问密码，否则master一直显示sdown </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7001 123456 </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7002 123456 </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7003 123456</span>
-<span class="hljs-comment"># 以下默认值即可，不需要配置 </span>
-<span class="hljs-comment"># sentinel down‐after‐milliseconds &#123;masterName&#125; &#123;time&#125; </span>
-<span class="hljs-comment"># sentinel parallel‐syncs &#123;masterName&#125; &#123;number&#125; </span>
-<span class="hljs-comment"># sentinel failover‐timeout &#123;masterName&#125; &#123;time&#125;</span></code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#端口 </span><br>port 8001 <br><span class="hljs-comment"># 配好master即可，sentinel可通过master找到slave </span><br>sentinel monitor redis‐7001 192.168.211.141 7001 1 <br>sentinel monitor redis‐7002 192.168.211.141 7002 1 <br>sentinel monitor redis‐7003 192.168.211.141 7003 1 <br><span class="hljs-comment"># 配置master的访问密码，否则master一直显示sdown </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7001 123456 </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7002 123456 </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7003 123456</span><br><span class="hljs-comment"># 以下默认值即可，不需要配置 </span><br><span class="hljs-comment"># sentinel down‐after‐milliseconds &#123;masterName&#125; &#123;time&#125; </span><br><span class="hljs-comment"># sentinel parallel‐syncs &#123;masterName&#125; &#123;number&#125; </span><br><span class="hljs-comment"># sentinel failover‐timeout &#123;masterName&#125; &#123;time&#125;</span><br></code></pre></td></tr></table></figure>
 
 <p>配置说明： </p>
-<pre><code class="hljs crmsh">【sentinel <span class="hljs-literal">monitor</span> <span class="hljs-tag">&lt;master‐name&gt;</span> <span class="hljs-tag">&lt;ip&gt;</span> <span class="hljs-tag">&lt;redis‐port&gt;</span> <span class="hljs-tag">&lt;quorum&gt;</span>】 
-告诉sentinel去监听地址为ip:port的一个<span class="hljs-literal">master</span>，这里的<span class="hljs-literal">master</span>‐name可以自定义，quorum是一个数字，指明当有多 少个sentinel认为一个<span class="hljs-literal">master</span>失效时，<span class="hljs-literal">master</span>才算真正失效。<span class="hljs-literal">master</span>‐name只能包含英文字母，数字，和“.‐_”这三个 字符需要注意的是<span class="hljs-literal">master</span>‐ip 要写真实的ip地址而不要用回环地址（<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>）。 
-【sentinel auth‐pass <span class="hljs-tag">&lt;master‐name&gt;</span> <span class="hljs-tag">&lt;password&gt;</span>】 设置连接<span class="hljs-literal">master</span>和<span class="hljs-literal">slave</span>时的密码，注意的是sentinel不能分别为<span class="hljs-literal">master</span>和<span class="hljs-literal">slave</span>设置不同的密码，因此<span class="hljs-literal">master</span>和 <span class="hljs-literal">slave</span>的密码应该设置相同。 
-配置示例：sentinel auth‐pass itheima itheima</code></pre>
+<figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs crmsh">【sentinel <span class="hljs-literal">monitor</span> <span class="hljs-tag">&lt;master‐name&gt;</span> <span class="hljs-tag">&lt;ip&gt;</span> <span class="hljs-tag">&lt;redis‐port&gt;</span> <span class="hljs-tag">&lt;quorum&gt;</span>】 <br>告诉sentinel去监听地址为ip:port的一个<span class="hljs-literal">master</span>，这里的<span class="hljs-literal">master</span>‐name可以自定义，quorum是一个数字，指明当有多 少个sentinel认为一个<span class="hljs-literal">master</span>失效时，<span class="hljs-literal">master</span>才算真正失效。<span class="hljs-literal">master</span>‐name只能包含英文字母，数字，和“.‐_”这三个 字符需要注意的是<span class="hljs-literal">master</span>‐ip 要写真实的ip地址而不要用回环地址（<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>）。 <br>【sentinel auth‐pass <span class="hljs-tag">&lt;master‐name&gt;</span> <span class="hljs-tag">&lt;password&gt;</span>】 设置连接<span class="hljs-literal">master</span>和<span class="hljs-literal">slave</span>时的密码，注意的是sentinel不能分别为<span class="hljs-literal">master</span>和<span class="hljs-literal">slave</span>设置不同的密码，因此<span class="hljs-literal">master</span>和 <span class="hljs-literal">slave</span>的密码应该设置相同。 <br>配置示例：sentinel auth‐pass itheima itheima<br></code></pre></td></tr></table></figure>
 
 <p>sentinel2/sentinel.conf</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#端口 </span>
-port 8002
-<span class="hljs-comment"># 配好master即可，sentinel可通过master找到slave </span>
-sentinel monitor redis‐7001 192.168.211.141 7001 1 
-sentinel monitor redis‐7002 192.168.211.141 7002 1 
-sentinel monitor redis‐7003 192.168.211.141 7003 1 
-<span class="hljs-comment"># 配置master的访问密码，否则master一直显示sdown </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7001 123456 </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7002 123456 </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7003 123456</span>
-<span class="hljs-comment"># 以下默认值即可，不需要配置 </span>
-<span class="hljs-comment"># sentinel down‐after‐milliseconds &#123;masterName&#125; &#123;time&#125; </span>
-<span class="hljs-comment"># sentinel parallel‐syncs &#123;masterName&#125; &#123;number&#125; </span>
-<span class="hljs-comment"># sentinel failover‐timeout &#123;masterName&#125; &#123;time&#125;</span></code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#端口 </span><br>port 8002<br><span class="hljs-comment"># 配好master即可，sentinel可通过master找到slave </span><br>sentinel monitor redis‐7001 192.168.211.141 7001 1 <br>sentinel monitor redis‐7002 192.168.211.141 7002 1 <br>sentinel monitor redis‐7003 192.168.211.141 7003 1 <br><span class="hljs-comment"># 配置master的访问密码，否则master一直显示sdown </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7001 123456 </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7002 123456 </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7003 123456</span><br><span class="hljs-comment"># 以下默认值即可，不需要配置 </span><br><span class="hljs-comment"># sentinel down‐after‐milliseconds &#123;masterName&#125; &#123;time&#125; </span><br><span class="hljs-comment"># sentinel parallel‐syncs &#123;masterName&#125; &#123;number&#125; </span><br><span class="hljs-comment"># sentinel failover‐timeout &#123;masterName&#125; &#123;time&#125;</span><br></code></pre></td></tr></table></figure>
 
 <p>sentinel3/sentinel.conf</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#端口 </span>
-port 8002
-<span class="hljs-comment"># 配好master即可，sentinel可通过master找到slave </span>
-sentinel monitor redis‐7001 192.168.211.141 7001 1 
-sentinel monitor redis‐7002 192.168.211.141 7002 1 
-sentinel monitor redis‐7003 192.168.211.141 7003 1 
-<span class="hljs-comment"># 配置master的访问密码，否则master一直显示sdown </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7001 123456 </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7002 123456 </span>
-<span class="hljs-comment">#sentinel auth‐pass redis‐7003 123456</span>
-<span class="hljs-comment"># 以下默认值即可，不需要配置 </span>
-<span class="hljs-comment"># sentinel down‐after‐milliseconds &#123;masterName&#125; &#123;time&#125; </span>
-<span class="hljs-comment"># sentinel parallel‐syncs &#123;masterName&#125; &#123;number&#125; </span>
-<span class="hljs-comment"># sentinel failover‐timeout &#123;masterName&#125; &#123;time&#125;</span></code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#端口 </span><br>port 8002<br><span class="hljs-comment"># 配好master即可，sentinel可通过master找到slave </span><br>sentinel monitor redis‐7001 192.168.211.141 7001 1 <br>sentinel monitor redis‐7002 192.168.211.141 7002 1 <br>sentinel monitor redis‐7003 192.168.211.141 7003 1 <br><span class="hljs-comment"># 配置master的访问密码，否则master一直显示sdown </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7001 123456 </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7002 123456 </span><br><span class="hljs-comment">#sentinel auth‐pass redis‐7003 123456</span><br><span class="hljs-comment"># 以下默认值即可，不需要配置 </span><br><span class="hljs-comment"># sentinel down‐after‐milliseconds &#123;masterName&#125; &#123;time&#125; </span><br><span class="hljs-comment"># sentinel parallel‐syncs &#123;masterName&#125; &#123;number&#125; </span><br><span class="hljs-comment"># sentinel failover‐timeout &#123;masterName&#125; &#123;time&#125;</span><br></code></pre></td></tr></table></figure>
 
 <p><strong>Docker</strong>安装： </p>
 <p>sentinel1</p>
-<pre><code class="hljs sh">docker run ‐d ‐p 8001:8001 ‐v <span class="hljs-variable">$PWD</span>/data:/data \
-‐v <span class="hljs-variable">$PWD</span>/conf/sentinel.conf:/etc/redis/sentinel.conf \
-‐‐network redis‐net ‐‐name sentinel1 \
-‐‐privileged=<span class="hljs-literal">true</span> redis:6.0.5 redis‐sentinel /etc/redis/sentinel.conf</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh">docker run ‐d ‐p 8001:8001 ‐v <span class="hljs-variable">$PWD</span>/data:/data \<br>‐v <span class="hljs-variable">$PWD</span>/conf/sentinel.conf:/etc/redis/sentinel.conf \<br>‐‐network redis‐net ‐‐name sentinel1 \<br>‐‐privileged=<span class="hljs-literal">true</span> redis:6.0.5 redis‐sentinel /etc/redis/sentinel.conf<br></code></pre></td></tr></table></figure>
 
 <p>sentinel2</p>
-<pre><code class="hljs sh">docker run ‐d ‐p 8002:8002 ‐v <span class="hljs-variable">$PWD</span>/data:/data \
-‐v <span class="hljs-variable">$PWD</span>/conf/sentinel.conf:/etc/redis/sentinel.conf \
-‐‐network redis‐net ‐‐name sentinel2 \
-‐‐privileged=<span class="hljs-literal">true</span> redis:6.0.5 redis‐sentinel /etc/redis/sentinel.conf</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh">docker run ‐d ‐p 8002:8002 ‐v <span class="hljs-variable">$PWD</span>/data:/data \<br>‐v <span class="hljs-variable">$PWD</span>/conf/sentinel.conf:/etc/redis/sentinel.conf \<br>‐‐network redis‐net ‐‐name sentinel2 \<br>‐‐privileged=<span class="hljs-literal">true</span> redis:6.0.5 redis‐sentinel /etc/redis/sentinel.conf<br></code></pre></td></tr></table></figure>
 
 <p>sentinel3</p>
-<pre><code class="hljs sh">docker run ‐d ‐p 8003:8003 ‐v <span class="hljs-variable">$PWD</span>/data:/data \
-‐v <span class="hljs-variable">$PWD</span>/conf/sentinel.conf:/etc/redis/sentinel.conf \
-‐‐network redis‐net ‐‐name sentinel3 \
-‐‐privileged=<span class="hljs-literal">true</span> redis:6.0.5 redis‐sentinel /etc/redis/sentinel.conf</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh">docker run ‐d ‐p 8003:8003 ‐v <span class="hljs-variable">$PWD</span>/data:/data \<br>‐v <span class="hljs-variable">$PWD</span>/conf/sentinel.conf:/etc/redis/sentinel.conf \<br>‐‐network redis‐net ‐‐name sentinel3 \<br>‐‐privileged=<span class="hljs-literal">true</span> redis:6.0.5 redis‐sentinel /etc/redis/sentinel.conf<br></code></pre></td></tr></table></figure>
 
 <h4 id="Sentinel集群讲解"><a href="#Sentinel集群讲解" class="headerlink" title="Sentinel集群讲解"></a>Sentinel集群讲解</h4><p>Sentinel1启动信息如下： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic41.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic41.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>登录Sentinel1，输入 info 命令，查看集群信息：</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic42.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic42.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>关闭 redis-7001 ，此时会先进行一次+sdown，再进行一次+odown，也就是当前Sentinel先自己判断该Redis宕机了，此时满足宕机反馈数量为1，因此有执行了客观宕机提示+odown，效果如下： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic43.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic43.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>此时再输入 info 可以看到如下信息，7001节点已经宕机,节点访问地址变成了7005。 </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic44.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic44.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>我们链接Redis集群，执行数据添加，看7001所在哈希槽的key能否添加。</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic45.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic45.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>集群状态查看 </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic46.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic46.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>启动 redis-7001 ，再查看集群状态，此时 redis-7001 是 redis-7005 的从节点。 </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic47.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic47.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>此时哨兵这边会出现如下日志，表示7001节点客观上宕机次数-1，并且将该节点添加为7005的从节点： </p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic48.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic48.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>日志解读</p>
-<pre><code class="hljs sql">+<span class="hljs-keyword">reset</span>‐<span class="hljs-keyword">master</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：主服务器已被重置。
-+<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：一个新的从服务器已经被 Sentinel 识别并关联。
-+<span class="hljs-keyword">failover</span>‐state‐reconf‐slaves &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移状态切换到了 reconf‐slaves 状态。 
-+<span class="hljs-keyword">failover</span>‐detected &lt;<span class="hljs-keyword">instance</span> details&gt; ：另一个 Sentinel 开始了一次故障转移操作，或者一个从服务器转换 成了主服务器。 
-+<span class="hljs-keyword">slave</span>‐reconf‐sent &lt;<span class="hljs-keyword">instance</span> details&gt; ：领头（leader）的 Sentinel 向实例发送了 SLAVEOF 命令，为实例 设置新的主服务器。 
-+<span class="hljs-keyword">slave</span>‐reconf‐inprog &lt;<span class="hljs-keyword">instance</span> details&gt; ：实例正在将自己设置为指定主服务器的从服务器，但相应的同步过程 仍未完成。 
-+<span class="hljs-keyword">slave</span>‐reconf‐done &lt;<span class="hljs-keyword">instance</span> details&gt; ：从服务器已经成功完成对新主服务器的同步。 
-‐dup‐sentinel &lt;<span class="hljs-keyword">instance</span> details&gt; ：对给定主服务器进行监视的一个或多个 Sentinel 已经因为重复出现而被移 除 —— 当 Sentinel 实例重启的时候，就会出现这种情况。 
-+sentinel &lt;<span class="hljs-keyword">instance</span> details&gt; ：一个监视给定主服务器的新 Sentinel 已经被识别并添加。 
-+sdown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例现在处于主观下线状态。 
-‐sdown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例已经不再处于主观下线状态。 
-+odown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例现在处于客观下线状态。 
-‐odown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例已经不再处于客观下线状态。 
-+<span class="hljs-keyword">new</span>‐epoch &lt;<span class="hljs-keyword">instance</span> details&gt; ：当前的纪元（epoch）已经被更新。 
-+try‐<span class="hljs-keyword">failover</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：一个新的故障迁移操作正在执行中，等待被大多数 Sentinel 选中 （waiting <span class="hljs-keyword">to</span> be elected <span class="hljs-keyword">by</span> the majority）。 
-+elected‐leader &lt;<span class="hljs-keyword">instance</span> details&gt; ：赢得指定纪元的选举，可以进行故障迁移操作了。 
-+<span class="hljs-keyword">failover</span>‐state‐<span class="hljs-keyword">select</span>‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移操作现在处于 <span class="hljs-keyword">select</span>‐<span class="hljs-keyword">slave</span> 状态 —— Sentinel 正在寻找可以升级为主服务器的从服务器。 
-<span class="hljs-keyword">no</span>‐good‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：Sentinel 操作未能找到适合进行升级的从服务器。Sentinel 会在一段时 间之后再次尝试寻找合适的从服务器来进行升级，又或者直接放弃执行故障转移操作。 
-selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：Sentinel 顺利找到适合进行升级的从服务器。 
-<span class="hljs-keyword">failover</span>‐state‐send‐slaveof‐noone &lt;<span class="hljs-keyword">instance</span> details&gt; ：Sentinel 正在将指定的从服务器升级为主服务 器，等待升级功能完成。 
-<span class="hljs-keyword">failover</span>‐<span class="hljs-keyword">end</span>‐<span class="hljs-keyword">for</span>‐<span class="hljs-keyword">timeout</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移因为超时而中止，不过最终所有从服务器都会开始复 制新的主服务器（slaves will eventually be configured <span class="hljs-keyword">to</span> <span class="hljs-keyword">replicate</span> <span class="hljs-keyword">with</span> the <span class="hljs-keyword">new</span> <span class="hljs-keyword">master</span> anyway）。
-<span class="hljs-keyword">failover</span>‐<span class="hljs-keyword">end</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移操作顺利完成。所有从服务器都开始复制新的主服务器了。 
-+<span class="hljs-keyword">switch</span>‐<span class="hljs-keyword">master</span> &lt;<span class="hljs-keyword">master</span> <span class="hljs-keyword">name</span>&gt; &lt;oldip&gt; &lt;oldport&gt; &lt;newip&gt; &lt;newport&gt; ：配置变更，主服务器的 IP 和地址已 经改变。 这是绝大多数外部用户都关心的信息。 
-+tilt ：进入 tilt 模式。 
-‐tilt ：退出 tilt 模式。</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs sql">+<span class="hljs-keyword">reset</span>‐<span class="hljs-keyword">master</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：主服务器已被重置。<br>+<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：一个新的从服务器已经被 Sentinel 识别并关联。<br>+<span class="hljs-keyword">failover</span>‐state‐reconf‐slaves &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移状态切换到了 reconf‐slaves 状态。 <br>+<span class="hljs-keyword">failover</span>‐detected &lt;<span class="hljs-keyword">instance</span> details&gt; ：另一个 Sentinel 开始了一次故障转移操作，或者一个从服务器转换 成了主服务器。 <br>+<span class="hljs-keyword">slave</span>‐reconf‐sent &lt;<span class="hljs-keyword">instance</span> details&gt; ：领头（leader）的 Sentinel 向实例发送了 SLAVEOF 命令，为实例 设置新的主服务器。 <br>+<span class="hljs-keyword">slave</span>‐reconf‐inprog &lt;<span class="hljs-keyword">instance</span> details&gt; ：实例正在将自己设置为指定主服务器的从服务器，但相应的同步过程 仍未完成。 <br>+<span class="hljs-keyword">slave</span>‐reconf‐done &lt;<span class="hljs-keyword">instance</span> details&gt; ：从服务器已经成功完成对新主服务器的同步。 <br>‐dup‐sentinel &lt;<span class="hljs-keyword">instance</span> details&gt; ：对给定主服务器进行监视的一个或多个 Sentinel 已经因为重复出现而被移 除 —— 当 Sentinel 实例重启的时候，就会出现这种情况。 <br>+sentinel &lt;<span class="hljs-keyword">instance</span> details&gt; ：一个监视给定主服务器的新 Sentinel 已经被识别并添加。 <br>+sdown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例现在处于主观下线状态。 <br>‐sdown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例已经不再处于主观下线状态。 <br>+odown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例现在处于客观下线状态。 <br>‐odown &lt;<span class="hljs-keyword">instance</span> details&gt; ：给定的实例已经不再处于客观下线状态。 <br>+<span class="hljs-keyword">new</span>‐epoch &lt;<span class="hljs-keyword">instance</span> details&gt; ：当前的纪元（epoch）已经被更新。 <br>+try‐<span class="hljs-keyword">failover</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：一个新的故障迁移操作正在执行中，等待被大多数 Sentinel 选中 （waiting <span class="hljs-keyword">to</span> be elected <span class="hljs-keyword">by</span> the majority）。 <br>+elected‐leader &lt;<span class="hljs-keyword">instance</span> details&gt; ：赢得指定纪元的选举，可以进行故障迁移操作了。 <br>+<span class="hljs-keyword">failover</span>‐state‐<span class="hljs-keyword">select</span>‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移操作现在处于 <span class="hljs-keyword">select</span>‐<span class="hljs-keyword">slave</span> 状态 —— Sentinel 正在寻找可以升级为主服务器的从服务器。 <br><span class="hljs-keyword">no</span>‐good‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：Sentinel 操作未能找到适合进行升级的从服务器。Sentinel 会在一段时 间之后再次尝试寻找合适的从服务器来进行升级，又或者直接放弃执行故障转移操作。 <br>selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：Sentinel 顺利找到适合进行升级的从服务器。 <br><span class="hljs-keyword">failover</span>‐state‐send‐slaveof‐noone &lt;<span class="hljs-keyword">instance</span> details&gt; ：Sentinel 正在将指定的从服务器升级为主服务 器，等待升级功能完成。 <br><span class="hljs-keyword">failover</span>‐<span class="hljs-keyword">end</span>‐<span class="hljs-keyword">for</span>‐<span class="hljs-keyword">timeout</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移因为超时而中止，不过最终所有从服务器都会开始复 制新的主服务器（slaves will eventually be configured <span class="hljs-keyword">to</span> <span class="hljs-keyword">replicate</span> <span class="hljs-keyword">with</span> the <span class="hljs-keyword">new</span> <span class="hljs-keyword">master</span> anyway）。<br><span class="hljs-keyword">failover</span>‐<span class="hljs-keyword">end</span> &lt;<span class="hljs-keyword">instance</span> details&gt; ：故障转移操作顺利完成。所有从服务器都开始复制新的主服务器了。 <br>+<span class="hljs-keyword">switch</span>‐<span class="hljs-keyword">master</span> &lt;<span class="hljs-keyword">master</span> <span class="hljs-keyword">name</span>&gt; &lt;oldip&gt; &lt;oldport&gt; &lt;newip&gt; &lt;newport&gt; ：配置变更，主服务器的 IP 和地址已 经改变。 这是绝大多数外部用户都关心的信息。 <br>+tilt ：进入 tilt 模式。 <br>‐tilt ：退出 tilt 模式。<br></code></pre></td></tr></table></figure>
 
 <p>项目中链接Redis集群或者Redis哨兵，只需要配置一下 application.yml即可 ： </p>
-<pre><code class="hljs yaml"><span class="hljs-attr">spring:</span> 
-	<span class="hljs-comment">#Redis </span>
-	<span class="hljs-attr">redis:</span> 
-		<span class="hljs-comment">#timeout: 50000 </span>
-		<span class="hljs-attr">sentinel:</span> 
-			<span class="hljs-attr">nodes:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span><span class="hljs-string">:8001,192.168.211.141:8002,192.168.211.141:8003</span> 
-			<span class="hljs-comment">#cluster:</span>
-      <span class="hljs-comment"># nodes: 192.168.211.141:7001,192.168.211.141:7002,192.168.211.141:7003,192.168.211.141:7004,192.168.211. 141:7005,192.168.211.141:7006</span></code></pre>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">spring:</span> <br>	<span class="hljs-comment">#Redis </span><br>	<span class="hljs-attr">redis:</span> <br>		<span class="hljs-comment">#timeout: 50000 </span><br>		<span class="hljs-attr">sentinel:</span> <br>			<span class="hljs-attr">nodes:</span> <span class="hljs-number">192.168</span><span class="hljs-number">.211</span><span class="hljs-number">.141</span><span class="hljs-string">:8001,192.168.211.141:8002,192.168.211.141:8003</span> <br>			<span class="hljs-comment">#cluster:</span><br>      <span class="hljs-comment"># nodes: 192.168.211.141:7001,192.168.211.141:7002,192.168.211.141:7003,192.168.211.141:7004,192.168.211. 141:7005,192.168.211.141:7006</span><br></code></pre></td></tr></table></figure>
 
 <h3 id="Redis-Cluster"><a href="#Redis-Cluster" class="headerlink" title="Redis Cluster"></a>Redis Cluster</h3><p>RedisCluster是Redis的分布式解决方案，在3.0版本后推出的方案，有效地解决了Redis分布式的需求，当遇到单机内存、并发等瓶颈时，可使用此方案来解决这些问题。</p>
 <h4 id="分布式数据库概念"><a href="#分布式数据库概念" class="headerlink" title="分布式数据库概念"></a>分布式数据库概念</h4><p>分布式数据库把整个数据按分区规则映射到多个节点，即把数据划分到多个节点上，每个节点负责整体数据的一个子集。</p>
 <p>比如我们库有900条用户数据，有3个redis节点，将900条分成3份，分别存入到3个redis节点</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic10.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="分区规则"><a href="#分区规则" class="headerlink" title="分区规则"></a>分区规则</h4><p>常见的分区规则哈希分区和顺序分区，redis集群使用了哈希分区，顺序分区暂用不到，不做具体说明。</p>
 <p>RedisCluster采用了哈希分区的“虚拟槽分区”方式（哈希分区分节点取余、一致性哈希分区和虚拟槽分区）。</p>
 <h4 id="虚拟槽分区"><a href="#虚拟槽分区" class="headerlink" title="虚拟槽分区"></a>虚拟槽分区</h4><p>槽：slot</p>
 <p>RedisCluster采用此分区，所有的键根据哈希函数(CRC16[key]&amp;16383)映射到0－16383槽内，共16384个槽位，每个节点维护部分槽及槽所映射的键值数据</p>
 <p>哈希函数: Hash()=CRC16[key]&amp;16383</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic11.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h4 id="槽、键、数据关系"><a href="#槽、键、数据关系" class="headerlink" title="槽、键、数据关系"></a>槽、键、数据关系</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic12.png" srcset="/blog/img/loading.gif" class>
+<h4 id="槽、键、数据关系"><a href="#槽、键、数据关系" class="headerlink" title="槽、键、数据关系"></a>槽、键、数据关系</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="RedisCluster的缺陷"><a href="#RedisCluster的缺陷" class="headerlink" title="RedisCluster的缺陷"></a>RedisCluster的缺陷</h4><ul>
 <li><p>键的批量操作支持有限，比如mset, mget，如果多个键映射在不同的槽就会出错。</p>
@@ -793,7 +592,7 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
 <li><p>复制结构只支持单层结构，不支持树型结构。</p>
 </li>
 </ul>
-<h4 id="集群节点之间的通信"><a href="#集群节点之间的通信" class="headerlink" title="集群节点之间的通信"></a>集群节点之间的通信</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic13.png" srcset="/blog/img/loading.gif" class>
+<h4 id="集群节点之间的通信"><a href="#集群节点之间的通信" class="headerlink" title="集群节点之间的通信"></a>集群节点之间的通信</h4><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>节点之间采用Gossip协议进行通信，节点彼此之间不断通信交换消息，当主从角色变化或新增节点，彼此通过ping/pong进行通信知道全部节点的最新状态并达到集群同步</p>
 <p>Gossip协议的主要职责就是信息交换，信息交换的载体就是节点之间彼此发送的Gossip消息，常用的Gossip消息有ping消息、pong消息、meet消息、fail消息</p>
@@ -807,23 +606,23 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
 <li><p>fail消息：当节点判定集群内的另一节点下线时，会向集群内广播一个fail消息</p>
 </li>
 </ul>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic14.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>以上的所有消息格式为：消息头、消息体，消息头包含发送节点自身状态数据（比如节点ID、槽映射、节点角色、是否下线等），接收节点根据消息头可以获取到发送节点的相关数据。</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic15.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>Gossip协议信息的交换机制具有天然的分布式特性，但ping pong发送的频率很高。</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic16.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic16.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h5 id="命令重定向"><a href="#命令重定向" class="headerlink" title="命令重定向"></a>命令重定向</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic17.png" srcset="/blog/img/loading.gif" class>
+<h5 id="命令重定向"><a href="#命令重定向" class="headerlink" title="命令重定向"></a>命令重定向</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic17.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h5 id="主观下线流程"><a href="#主观下线流程" class="headerlink" title="主观下线流程"></a>主观下线流程</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic18.png" srcset="/blog/img/loading.gif" class>
+<h5 id="主观下线流程"><a href="#主观下线流程" class="headerlink" title="主观下线流程"></a>主观下线流程</h5><img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic18.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h5 id="客观下线流程"><a href="#客观下线流程" class="headerlink" title="客观下线流程"></a>客观下线流程</h5><p>节点真正的下线，集群内多个节点都认为该节点不可用，达成共识，将它下线，如果下线的节点为主节点，还要对它进行故障转移</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic19.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic19.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h5 id="故障恢复"><a href="#故障恢复" class="headerlink" title="故障恢复"></a>故障恢复</h5><p>故障主节点下线后，如果下线节点的是主节点，则需要在它的从节点中选一个替换它，保证集群的高可用</p>
-<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic20.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/22/%E7%BC%93%E5%AD%98/Redis%E7%9A%84%E9%AB%98%E5%8F%AF%E7%94%A8/pic20.png" srcset="/blog/img/loading.gif" lazyload class>
 
 
             </div>
@@ -854,8 +653,14 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -946,17 +751,15 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -965,7 +768,6 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -973,7 +775,7 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -1000,6 +802,7 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -1017,11 +820,12 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -1041,7 +845,6 @@ selected‐<span class="hljs-keyword">slave</span> &lt;<span class="hljs-keyword
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

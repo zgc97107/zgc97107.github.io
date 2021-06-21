@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Feign源码解读 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -228,461 +229,49 @@
             
             <div class="markdown-body">
               <h2 id="代理对象的生成"><a href="#代理对象的生成" class="headerlink" title="代理对象的生成"></a>代理对象的生成</h2><p>EnableFeignClients注解</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span>
-<span class="hljs-meta">@Target(&#123;ElementType.TYPE&#125;)</span>
-<span class="hljs-meta">@Documented</span>
-<span class="hljs-meta">@Import(&#123;FeignClientsRegistrar.class&#125;)</span>
-<span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableFeignClients &#123;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Target(&#123;ElementType.TYPE&#125;)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Import(&#123;FeignClientsRegistrar.class&#125;)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableFeignClients &#123;<br></code></pre></td></tr></table></figure>
 
 <p>FeignClientsRegistrar中registerFeignClients()会扫描@FeignClient注解的类，然后调用registerFeignClient()进行注册。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerFeignClients</span><span class="hljs-params">(AnnotationMetadata metadata,</span></span>
-<span class="hljs-function"><span class="hljs-params">      BeanDefinitionRegistry registry)</span> </span>&#123;
-   ClassPathScanningCandidateComponentProvider scanner = getScanner();
-   scanner.setResourceLoader(<span class="hljs-keyword">this</span>.resourceLoader);
-
-   Set&lt;String&gt; basePackages;
-
-   Map&lt;String, Object&gt; attrs = metadata
-         .getAnnotationAttributes(EnableFeignClients.class.getName());
-   AnnotationTypeFilter annotationTypeFilter = <span class="hljs-keyword">new</span> AnnotationTypeFilter(
-         FeignClient.class);
-   <span class="hljs-keyword">final</span> Class&lt;?&gt;[] clients = attrs == <span class="hljs-keyword">null</span> ? <span class="hljs-keyword">null</span>
-         : (Class&lt;?&gt;[]) attrs.get(<span class="hljs-string">&quot;clients&quot;</span>);
-   <span class="hljs-keyword">if</span> (clients == <span class="hljs-keyword">null</span> || clients.length == <span class="hljs-number">0</span>) &#123;
-      scanner.addIncludeFilter(annotationTypeFilter);
-      basePackages = getBasePackages(metadata);
-   &#125;
-   <span class="hljs-keyword">else</span> &#123;
-      <span class="hljs-keyword">final</span> Set&lt;String&gt; clientClasses = <span class="hljs-keyword">new</span> HashSet&lt;&gt;();
-      basePackages = <span class="hljs-keyword">new</span> HashSet&lt;&gt;();
-      <span class="hljs-keyword">for</span> (Class&lt;?&gt; clazz : clients) &#123;
-         basePackages.add(ClassUtils.getPackageName(clazz));
-         clientClasses.add(clazz.getCanonicalName());
-      &#125;
-      AbstractClassTestingTypeFilter filter = <span class="hljs-keyword">new</span> AbstractClassTestingTypeFilter() &#123;
-         <span class="hljs-meta">@Override</span>
-         <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">match</span><span class="hljs-params">(ClassMetadata metadata)</span> </span>&#123;
-            String cleaned = metadata.getClassName().replaceAll(<span class="hljs-string">&quot;\\$&quot;</span>, <span class="hljs-string">&quot;.&quot;</span>);
-            <span class="hljs-keyword">return</span> clientClasses.contains(cleaned);
-         &#125;
-      &#125;;
-      scanner.addIncludeFilter(
-            <span class="hljs-keyword">new</span> AllTypeFilter(Arrays.asList(filter, annotationTypeFilter)));
-   &#125;
-
-   <span class="hljs-keyword">for</span> (String basePackage : basePackages) &#123;
-      Set&lt;BeanDefinition&gt; candidateComponents = scanner
-            .findCandidateComponents(basePackage);
-      <span class="hljs-keyword">for</span> (BeanDefinition candidateComponent : candidateComponents) &#123;
-         <span class="hljs-keyword">if</span> (candidateComponent <span class="hljs-keyword">instanceof</span> AnnotatedBeanDefinition) &#123;
-            <span class="hljs-comment">// verify annotated class is an interface</span>
-            AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;
-            AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();
-            Assert.isTrue(annotationMetadata.isInterface(),
-                  <span class="hljs-string">&quot;@FeignClient can only be specified on an interface&quot;</span>);
-
-            Map&lt;String, Object&gt; attributes = annotationMetadata
-                  .getAnnotationAttributes(
-                        FeignClient.class.getCanonicalName());
-
-            String name = getClientName(attributes);
-            registerClientConfiguration(registry, name,
-                  attributes.get(<span class="hljs-string">&quot;configuration&quot;</span>));
-
-            registerFeignClient(registry, annotationMetadata, attributes);
-         &#125;
-      &#125;
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerFeignClients</span><span class="hljs-params">(AnnotationMetadata metadata,</span></span><br><span class="hljs-function"><span class="hljs-params">      BeanDefinitionRegistry registry)</span> </span>&#123;<br>   ClassPathScanningCandidateComponentProvider scanner = getScanner();<br>   scanner.setResourceLoader(<span class="hljs-keyword">this</span>.resourceLoader);<br><br>   Set&lt;String&gt; basePackages;<br><br>   Map&lt;String, Object&gt; attrs = metadata<br>         .getAnnotationAttributes(EnableFeignClients.class.getName());<br>   AnnotationTypeFilter annotationTypeFilter = <span class="hljs-keyword">new</span> AnnotationTypeFilter(<br>         FeignClient.class);<br>   <span class="hljs-keyword">final</span> Class&lt;?&gt;[] clients = attrs == <span class="hljs-keyword">null</span> ? <span class="hljs-keyword">null</span><br>         : (Class&lt;?&gt;[]) attrs.get(<span class="hljs-string">&quot;clients&quot;</span>);<br>   <span class="hljs-keyword">if</span> (clients == <span class="hljs-keyword">null</span> || clients.length == <span class="hljs-number">0</span>) &#123;<br>      scanner.addIncludeFilter(annotationTypeFilter);<br>      basePackages = getBasePackages(metadata);<br>   &#125;<br>   <span class="hljs-keyword">else</span> &#123;<br>      <span class="hljs-keyword">final</span> Set&lt;String&gt; clientClasses = <span class="hljs-keyword">new</span> HashSet&lt;&gt;();<br>      basePackages = <span class="hljs-keyword">new</span> HashSet&lt;&gt;();<br>      <span class="hljs-keyword">for</span> (Class&lt;?&gt; clazz : clients) &#123;<br>         basePackages.add(ClassUtils.getPackageName(clazz));<br>         clientClasses.add(clazz.getCanonicalName());<br>      &#125;<br>      AbstractClassTestingTypeFilter filter = <span class="hljs-keyword">new</span> AbstractClassTestingTypeFilter() &#123;<br>         <span class="hljs-meta">@Override</span><br>         <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">match</span><span class="hljs-params">(ClassMetadata metadata)</span> </span>&#123;<br>            String cleaned = metadata.getClassName().replaceAll(<span class="hljs-string">&quot;\\$&quot;</span>, <span class="hljs-string">&quot;.&quot;</span>);<br>            <span class="hljs-keyword">return</span> clientClasses.contains(cleaned);<br>         &#125;<br>      &#125;;<br>      scanner.addIncludeFilter(<br>            <span class="hljs-keyword">new</span> AllTypeFilter(Arrays.asList(filter, annotationTypeFilter)));<br>   &#125;<br><br>   <span class="hljs-keyword">for</span> (String basePackage : basePackages) &#123;<br>      Set&lt;BeanDefinition&gt; candidateComponents = scanner<br>            .findCandidateComponents(basePackage);<br>      <span class="hljs-keyword">for</span> (BeanDefinition candidateComponent : candidateComponents) &#123;<br>         <span class="hljs-keyword">if</span> (candidateComponent <span class="hljs-keyword">instanceof</span> AnnotatedBeanDefinition) &#123;<br>            <span class="hljs-comment">// verify annotated class is an interface</span><br>            AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;<br>            AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();<br>            Assert.isTrue(annotationMetadata.isInterface(),<br>                  <span class="hljs-string">&quot;@FeignClient can only be specified on an interface&quot;</span>);<br><br>            Map&lt;String, Object&gt; attributes = annotationMetadata<br>                  .getAnnotationAttributes(<br>                        FeignClient.class.getCanonicalName());<br><br>            String name = getClientName(attributes);<br>            registerClientConfiguration(registry, name,<br>                  attributes.get(<span class="hljs-string">&quot;configuration&quot;</span>));<br><br>            registerFeignClient(registry, annotationMetadata, attributes);<br>         &#125;<br>      &#125;<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>registerFeignClient会引入FeignClientFactoryBean类，</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerFeignClient</span><span class="hljs-params">(BeanDefinitionRegistry registry,</span></span>
-<span class="hljs-function"><span class="hljs-params">      AnnotationMetadata annotationMetadata, Map&lt;String, Object&gt; attributes)</span> </span>&#123;
-   String className = annotationMetadata.getClassName();
-   BeanDefinitionBuilder definition = BeanDefinitionBuilder
-         .genericBeanDefinition(FeignClientFactoryBean.class);
-   validate(attributes);
-   definition.addPropertyValue(<span class="hljs-string">&quot;url&quot;</span>, getUrl(attributes));
-   definition.addPropertyValue(<span class="hljs-string">&quot;path&quot;</span>, getPath(attributes));
-   String name = getName(attributes);
-   definition.addPropertyValue(<span class="hljs-string">&quot;name&quot;</span>, name);
-   String contextId = getContextId(attributes);
-   definition.addPropertyValue(<span class="hljs-string">&quot;contextId&quot;</span>, contextId);
-   definition.addPropertyValue(<span class="hljs-string">&quot;type&quot;</span>, className);
-   definition.addPropertyValue(<span class="hljs-string">&quot;decode404&quot;</span>, attributes.get(<span class="hljs-string">&quot;decode404&quot;</span>));
-   definition.addPropertyValue(<span class="hljs-string">&quot;fallback&quot;</span>, attributes.get(<span class="hljs-string">&quot;fallback&quot;</span>));
-   definition.addPropertyValue(<span class="hljs-string">&quot;fallbackFactory&quot;</span>, attributes.get(<span class="hljs-string">&quot;fallbackFactory&quot;</span>));
-   definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
-
-   String alias = contextId + <span class="hljs-string">&quot;FeignClient&quot;</span>;
-   AbstractBeanDefinition beanDefinition = definition.getBeanDefinition();
-
-   <span class="hljs-keyword">boolean</span> primary = (Boolean) attributes.get(<span class="hljs-string">&quot;primary&quot;</span>); <span class="hljs-comment">// has a default, won&#x27;t be</span>
-                                             <span class="hljs-comment">// null</span>
-
-   beanDefinition.setPrimary(primary);
-
-   String qualifier = getQualifier(attributes);
-   <span class="hljs-keyword">if</span> (StringUtils.hasText(qualifier)) &#123;
-      alias = qualifier;
-   &#125;
-
-   BeanDefinitionHolder holder = <span class="hljs-keyword">new</span> BeanDefinitionHolder(beanDefinition, className,
-         <span class="hljs-keyword">new</span> String[] &#123; alias &#125;);
-   BeanDefinitionReaderUtils.registerBeanDefinition(holder, registry);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">registerFeignClient</span><span class="hljs-params">(BeanDefinitionRegistry registry,</span></span><br><span class="hljs-function"><span class="hljs-params">      AnnotationMetadata annotationMetadata, Map&lt;String, Object&gt; attributes)</span> </span>&#123;<br>   String className = annotationMetadata.getClassName();<br>   BeanDefinitionBuilder definition = BeanDefinitionBuilder<br>         .genericBeanDefinition(FeignClientFactoryBean.class);<br>   validate(attributes);<br>   definition.addPropertyValue(<span class="hljs-string">&quot;url&quot;</span>, getUrl(attributes));<br>   definition.addPropertyValue(<span class="hljs-string">&quot;path&quot;</span>, getPath(attributes));<br>   String name = getName(attributes);<br>   definition.addPropertyValue(<span class="hljs-string">&quot;name&quot;</span>, name);<br>   String contextId = getContextId(attributes);<br>   definition.addPropertyValue(<span class="hljs-string">&quot;contextId&quot;</span>, contextId);<br>   definition.addPropertyValue(<span class="hljs-string">&quot;type&quot;</span>, className);<br>   definition.addPropertyValue(<span class="hljs-string">&quot;decode404&quot;</span>, attributes.get(<span class="hljs-string">&quot;decode404&quot;</span>));<br>   definition.addPropertyValue(<span class="hljs-string">&quot;fallback&quot;</span>, attributes.get(<span class="hljs-string">&quot;fallback&quot;</span>));<br>   definition.addPropertyValue(<span class="hljs-string">&quot;fallbackFactory&quot;</span>, attributes.get(<span class="hljs-string">&quot;fallbackFactory&quot;</span>));<br>   definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);<br><br>   String alias = contextId + <span class="hljs-string">&quot;FeignClient&quot;</span>;<br>   AbstractBeanDefinition beanDefinition = definition.getBeanDefinition();<br><br>   <span class="hljs-keyword">boolean</span> primary = (Boolean) attributes.get(<span class="hljs-string">&quot;primary&quot;</span>); <span class="hljs-comment">// has a default, won&#x27;t be</span><br>                                             <span class="hljs-comment">// null</span><br><br>   beanDefinition.setPrimary(primary);<br><br>   String qualifier = getQualifier(attributes);<br>   <span class="hljs-keyword">if</span> (StringUtils.hasText(qualifier)) &#123;<br>      alias = qualifier;<br>   &#125;<br><br>   BeanDefinitionHolder holder = <span class="hljs-keyword">new</span> BeanDefinitionHolder(beanDefinition, className,<br>         <span class="hljs-keyword">new</span> String[] &#123; alias &#125;);<br>   BeanDefinitionReaderUtils.registerBeanDefinition(holder, registry);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>feign的切面实现跟mybatis差不多，在FeignClientFactoryBean对有@FeignClient注解的接口生成接口的代理FeignClientFactoryBean实现了factoryBean接口，里面有getObject方法</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getObject</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
-   <span class="hljs-keyword">return</span> getTarget();
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">getObject</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>   <span class="hljs-keyword">return</span> getTarget();<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>该方法会获取调用地址，bean的名称，类型后调用loadBalance()方法创建实例。</p>
-<pre><code class="hljs java">&lt;T&gt; <span class="hljs-function">T <span class="hljs-title">getTarget</span><span class="hljs-params">()</span> </span>&#123;
-   FeignContext context = <span class="hljs-keyword">this</span>.applicationContext.getBean(FeignContext.class);
-   Feign.Builder builder = feign(context);
-
-   <span class="hljs-keyword">if</span> (!StringUtils.hasText(<span class="hljs-keyword">this</span>.url)) &#123;
-      <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.name.startsWith(<span class="hljs-string">&quot;http&quot;</span>)) &#123;
-         <span class="hljs-keyword">this</span>.url = <span class="hljs-string">&quot;http://&quot;</span> + <span class="hljs-keyword">this</span>.name;
-      &#125;
-      <span class="hljs-keyword">else</span> &#123;
-         <span class="hljs-keyword">this</span>.url = <span class="hljs-keyword">this</span>.name;
-      &#125;
-      <span class="hljs-keyword">this</span>.url += cleanPath();
-      <span class="hljs-keyword">return</span> (T) loadBalance(builder, context,
-            <span class="hljs-keyword">new</span> HardCodedTarget&lt;&gt;(<span class="hljs-keyword">this</span>.type, <span class="hljs-keyword">this</span>.name, <span class="hljs-keyword">this</span>.url));
-   &#125;
-   <span class="hljs-keyword">if</span> (StringUtils.hasText(<span class="hljs-keyword">this</span>.url) &amp;&amp; !<span class="hljs-keyword">this</span>.url.startsWith(<span class="hljs-string">&quot;http&quot;</span>)) &#123;
-      <span class="hljs-keyword">this</span>.url = <span class="hljs-string">&quot;http://&quot;</span> + <span class="hljs-keyword">this</span>.url;
-   &#125;
-   String url = <span class="hljs-keyword">this</span>.url + cleanPath();
-   Client client = getOptional(context, Client.class);
-   <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">if</span> (client <span class="hljs-keyword">instanceof</span> LoadBalancerFeignClient) &#123;
-         <span class="hljs-comment">// not load balancing because we have a url,</span>
-         <span class="hljs-comment">// but ribbon is on the classpath, so unwrap</span>
-         client = ((LoadBalancerFeignClient) client).getDelegate();
-      &#125;
-      <span class="hljs-keyword">if</span> (client <span class="hljs-keyword">instanceof</span> FeignBlockingLoadBalancerClient) &#123;
-         <span class="hljs-comment">// not load balancing because we have a url,</span>
-         <span class="hljs-comment">// but Spring Cloud LoadBalancer is on the classpath, so unwrap</span>
-         client = ((FeignBlockingLoadBalancerClient) client).getDelegate();
-      &#125;
-      builder.client(client);
-   &#125;
-   Targeter targeter = get(context, Targeter.class);
-   <span class="hljs-keyword">return</span> (T) targeter.target(<span class="hljs-keyword">this</span>, builder, context,
-         <span class="hljs-keyword">new</span> HardCodedTarget&lt;&gt;(<span class="hljs-keyword">this</span>.type, <span class="hljs-keyword">this</span>.name, url));
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs java">&lt;T&gt; <span class="hljs-function">T <span class="hljs-title">getTarget</span><span class="hljs-params">()</span> </span>&#123;<br>   FeignContext context = <span class="hljs-keyword">this</span>.applicationContext.getBean(FeignContext.class);<br>   Feign.Builder builder = feign(context);<br><br>   <span class="hljs-keyword">if</span> (!StringUtils.hasText(<span class="hljs-keyword">this</span>.url)) &#123;<br>      <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.name.startsWith(<span class="hljs-string">&quot;http&quot;</span>)) &#123;<br>         <span class="hljs-keyword">this</span>.url = <span class="hljs-string">&quot;http://&quot;</span> + <span class="hljs-keyword">this</span>.name;<br>      &#125;<br>      <span class="hljs-keyword">else</span> &#123;<br>         <span class="hljs-keyword">this</span>.url = <span class="hljs-keyword">this</span>.name;<br>      &#125;<br>      <span class="hljs-keyword">this</span>.url += cleanPath();<br>      <span class="hljs-keyword">return</span> (T) loadBalance(builder, context,<br>            <span class="hljs-keyword">new</span> HardCodedTarget&lt;&gt;(<span class="hljs-keyword">this</span>.type, <span class="hljs-keyword">this</span>.name, <span class="hljs-keyword">this</span>.url));<br>   &#125;<br>   <span class="hljs-keyword">if</span> (StringUtils.hasText(<span class="hljs-keyword">this</span>.url) &amp;&amp; !<span class="hljs-keyword">this</span>.url.startsWith(<span class="hljs-string">&quot;http&quot;</span>)) &#123;<br>      <span class="hljs-keyword">this</span>.url = <span class="hljs-string">&quot;http://&quot;</span> + <span class="hljs-keyword">this</span>.url;<br>   &#125;<br>   String url = <span class="hljs-keyword">this</span>.url + cleanPath();<br>   Client client = getOptional(context, Client.class);<br>   <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">if</span> (client <span class="hljs-keyword">instanceof</span> LoadBalancerFeignClient) &#123;<br>         <span class="hljs-comment">// not load balancing because we have a url,</span><br>         <span class="hljs-comment">// but ribbon is on the classpath, so unwrap</span><br>         client = ((LoadBalancerFeignClient) client).getDelegate();<br>      &#125;<br>      <span class="hljs-keyword">if</span> (client <span class="hljs-keyword">instanceof</span> FeignBlockingLoadBalancerClient) &#123;<br>         <span class="hljs-comment">// not load balancing because we have a url,</span><br>         <span class="hljs-comment">// but Spring Cloud LoadBalancer is on the classpath, so unwrap</span><br>         client = ((FeignBlockingLoadBalancerClient) client).getDelegate();<br>      &#125;<br>      builder.client(client);<br>   &#125;<br>   Targeter targeter = get(context, Targeter.class);<br>   <span class="hljs-keyword">return</span> (T) targeter.target(<span class="hljs-keyword">this</span>, builder, context,<br>         <span class="hljs-keyword">new</span> HardCodedTarget&lt;&gt;(<span class="hljs-keyword">this</span>.type, <span class="hljs-keyword">this</span>.name, url));<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>loadBalance()方法调用到Feign类的target()方法</p>
-<pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">loadBalance</span><span class="hljs-params">(Feign.Builder builder, FeignContext context,</span></span>
-<span class="hljs-function"><span class="hljs-params">      HardCodedTarget&lt;T&gt; target)</span> </span>&#123;
-   Client client = getOptional(context, Client.class);
-   <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;
-      builder.client(client);
-      Targeter targeter = get(context, Targeter.class);
-      <span class="hljs-keyword">return</span> targeter.target(<span class="hljs-keyword">this</span>, builder, context, target);
-   &#125;
-
-   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(
-         <span class="hljs-string">&quot;No Feign Client for loadBalancing defined. Did you forget to include spring-cloud-starter-netflix-ribbon?&quot;</span>);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">loadBalance</span><span class="hljs-params">(Feign.Builder builder, FeignContext context,</span></span><br><span class="hljs-function"><span class="hljs-params">      HardCodedTarget&lt;T&gt; target)</span> </span>&#123;<br>   Client client = getOptional(context, Client.class);<br>   <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;<br>      builder.client(client);<br>      Targeter targeter = get(context, Targeter.class);<br>      <span class="hljs-keyword">return</span> targeter.target(<span class="hljs-keyword">this</span>, builder, context, target);<br>   &#125;<br><br>   <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<br>         <span class="hljs-string">&quot;No Feign Client for loadBalancing defined. Did you forget to include spring-cloud-starter-netflix-ribbon?&quot;</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>target()方法会调用newInstance()方法生成代理对象。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">target</span><span class="hljs-params">(Target&lt;T&gt; target)</span> </span>&#123;
-  <span class="hljs-keyword">return</span> build().newInstance(target);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">target</span><span class="hljs-params">(Target&lt;T&gt; target)</span> </span>&#123;<br>  <span class="hljs-keyword">return</span> build().newInstance(target);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>newInstance()方法会调用create()方法生成JDK的代理对象，最终会生成有@FeignClient注解的接口的代理</p>
-<pre><code class="hljs java"><span class="hljs-keyword">public</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">newInstance</span><span class="hljs-params">(Target&lt;T&gt; target)</span> </span>&#123;
-  Map&lt;String, MethodHandler&gt; nameToHandler = targetToHandlersByName.apply(target);
-  Map&lt;Method, MethodHandler&gt; methodToHandler = <span class="hljs-keyword">new</span> LinkedHashMap&lt;Method, MethodHandler&gt;();
-  List&lt;DefaultMethodHandler&gt; defaultMethodHandlers = <span class="hljs-keyword">new</span> LinkedList&lt;DefaultMethodHandler&gt;();
-
-  <span class="hljs-keyword">for</span> (Method method : target.type().getMethods()) &#123;
-    <span class="hljs-keyword">if</span> (method.getDeclaringClass() == Object.class) &#123;
-      <span class="hljs-keyword">continue</span>;
-    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Util.isDefault(method)) &#123;
-      DefaultMethodHandler handler = <span class="hljs-keyword">new</span> DefaultMethodHandler(method);
-      defaultMethodHandlers.add(handler);
-      methodToHandler.put(method, handler);
-    &#125; <span class="hljs-keyword">else</span> &#123;
-      methodToHandler.put(method, nameToHandler.get(Feign.configKey(target.type(), method)));
-    &#125;
-  &#125;
-  InvocationHandler handler = factory.create(target, methodToHandler);
-  T proxy = (T) Proxy.newProxyInstance(target.type().getClassLoader(),
-      <span class="hljs-keyword">new</span> Class&lt;?&gt;[] &#123;target.type()&#125;, handler);
-
-  <span class="hljs-keyword">for</span> (DefaultMethodHandler defaultMethodHandler : defaultMethodHandlers) &#123;
-    defaultMethodHandler.bindTo(proxy);
-  &#125;
-  <span class="hljs-keyword">return</span> proxy;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> &lt;T&gt; <span class="hljs-function">T <span class="hljs-title">newInstance</span><span class="hljs-params">(Target&lt;T&gt; target)</span> </span>&#123;<br>  Map&lt;String, MethodHandler&gt; nameToHandler = targetToHandlersByName.apply(target);<br>  Map&lt;Method, MethodHandler&gt; methodToHandler = <span class="hljs-keyword">new</span> LinkedHashMap&lt;Method, MethodHandler&gt;();<br>  List&lt;DefaultMethodHandler&gt; defaultMethodHandlers = <span class="hljs-keyword">new</span> LinkedList&lt;DefaultMethodHandler&gt;();<br><br>  <span class="hljs-keyword">for</span> (Method method : target.type().getMethods()) &#123;<br>    <span class="hljs-keyword">if</span> (method.getDeclaringClass() == Object.class) &#123;<br>      <span class="hljs-keyword">continue</span>;<br>    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (Util.isDefault(method)) &#123;<br>      DefaultMethodHandler handler = <span class="hljs-keyword">new</span> DefaultMethodHandler(method);<br>      defaultMethodHandlers.add(handler);<br>      methodToHandler.put(method, handler);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>      methodToHandler.put(method, nameToHandler.get(Feign.configKey(target.type(), method)));<br>    &#125;<br>  &#125;<br>  InvocationHandler handler = factory.create(target, methodToHandler);<br>  T proxy = (T) Proxy.newProxyInstance(target.type().getClassLoader(),<br>      <span class="hljs-keyword">new</span> Class&lt;?&gt;[] &#123;target.type()&#125;, handler);<br><br>  <span class="hljs-keyword">for</span> (DefaultMethodHandler defaultMethodHandler : defaultMethodHandlers) &#123;<br>    defaultMethodHandler.bindTo(proxy);<br>  &#125;<br>  <span class="hljs-keyword">return</span> proxy;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h2 id="代理对象的调用"><a href="#代理对象的调用" class="headerlink" title="代理对象的调用"></a>代理对象的调用</h2><p>Controller中获取到代理实例后，则会调用到HystrixInvocationHandler的invoke()方法，这里跟hystrix基本类似，最后会走到run()方法的钩子方法中</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object proxy, <span class="hljs-keyword">final</span> Method method, <span class="hljs-keyword">final</span> Object[] args)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-    <span class="hljs-keyword">if</span> (!<span class="hljs-string">&quot;equals&quot;</span>.equals(method.getName())) &#123;
-        <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;hashCode&quot;</span>.equals(method.getName())) &#123;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.hashCode();
-        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;toString&quot;</span>.equals(method.getName())) &#123;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.toString();
-        &#125; <span class="hljs-keyword">else</span> &#123;
-            HystrixCommand&lt;Object&gt; hystrixCommand = <span class="hljs-keyword">new</span> HystrixCommand&lt;Object&gt;((Setter)<span class="hljs-keyword">this</span>.setterMethodMap.get(method)) &#123;
-                <span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">run</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;
-                    <span class="hljs-keyword">try</span> &#123;
-                        <span class="hljs-keyword">return</span> ((MethodHandler)HystrixInvocationHandler.<span class="hljs-keyword">this</span>.dispatch.get(method)).invoke(args);
-                    &#125; <span class="hljs-keyword">catch</span> (Exception var2) &#123;
-                        <span class="hljs-keyword">throw</span> var2;
-                    &#125; <span class="hljs-keyword">catch</span> (Throwable var3) &#123;
-                        <span class="hljs-keyword">throw</span> (Error)var3;
-                    &#125;
-                &#125;
-
-                <span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getFallback</span><span class="hljs-params">()</span> </span>&#123;
-                    <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.fallbackFactory == <span class="hljs-keyword">null</span>) &#123;
-                        <span class="hljs-keyword">return</span> <span class="hljs-keyword">super</span>.getFallback();
-                    &#125; <span class="hljs-keyword">else</span> &#123;
-                        <span class="hljs-keyword">try</span> &#123;
-                            Object fallback = HystrixInvocationHandler.<span class="hljs-keyword">this</span>.fallbackFactory.create(<span class="hljs-keyword">this</span>.getExecutionException());
-                            Object result = ((Method)HystrixInvocationHandler.<span class="hljs-keyword">this</span>.fallbackMethodMap.get(method)).invoke(fallback, args);
-                            <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsHystrixCommand(method)) &#123;
-                                <span class="hljs-keyword">return</span> ((HystrixCommand)result).execute();
-                            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsObservable(method)) &#123;
-                                <span class="hljs-keyword">return</span> ((Observable)result).toBlocking().first();
-                            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsSingle(method)) &#123;
-                                <span class="hljs-keyword">return</span> ((Single)result).toObservable().toBlocking().first();
-                            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsCompletable(method)) &#123;
-                                ((Completable)result).await();
-                                <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-                            &#125; <span class="hljs-keyword">else</span> &#123;
-                                <span class="hljs-keyword">return</span> HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsCompletableFuture(method) ? ((Future)result).get() : result;
-                            &#125;
-                        &#125; <span class="hljs-keyword">catch</span> (IllegalAccessException var3) &#123;
-                            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AssertionError(var3);
-                        &#125; <span class="hljs-keyword">catch</span> (ExecutionException | InvocationTargetException var4) &#123;
-                            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AssertionError(var4.getCause());
-                        &#125; <span class="hljs-keyword">catch</span> (InterruptedException var5) &#123;
-                            Thread.currentThread().interrupt();
-                            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AssertionError(var5.getCause());
-                        &#125;
-                    &#125;
-                &#125;
-            &#125;;
-            <span class="hljs-keyword">if</span> (Util.isDefault(method)) &#123;
-                <span class="hljs-keyword">return</span> hystrixCommand.execute();
-            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsHystrixCommand(method)) &#123;
-                <span class="hljs-keyword">return</span> hystrixCommand;
-            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsObservable(method)) &#123;
-                <span class="hljs-keyword">return</span> hystrixCommand.toObservable();
-            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsSingle(method)) &#123;
-                <span class="hljs-keyword">return</span> hystrixCommand.toObservable().toSingle();
-            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsCompletable(method)) &#123;
-                <span class="hljs-keyword">return</span> hystrixCommand.toObservable().toCompletable();
-            &#125; <span class="hljs-keyword">else</span> &#123;
-                <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.isReturnsCompletableFuture(method) ? <span class="hljs-keyword">new</span> ObservableCompletableFuture(hystrixCommand) : hystrixCommand.execute();
-            &#125;
-        &#125;
-    &#125; <span class="hljs-keyword">else</span> &#123;
-        <span class="hljs-keyword">try</span> &#123;
-            Object otherHandler = args.length &gt; <span class="hljs-number">0</span> &amp;&amp; args[<span class="hljs-number">0</span>] != <span class="hljs-keyword">null</span> ? Proxy.getInvocationHandler(args[<span class="hljs-number">0</span>]) : <span class="hljs-keyword">null</span>;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.equals(otherHandler);
-        &#125; <span class="hljs-keyword">catch</span> (IllegalArgumentException var5) &#123;
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object proxy, <span class="hljs-keyword">final</span> Method method, <span class="hljs-keyword">final</span> Object[] args)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>    <span class="hljs-keyword">if</span> (!<span class="hljs-string">&quot;equals&quot;</span>.equals(method.getName())) &#123;<br>        <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;hashCode&quot;</span>.equals(method.getName())) &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.hashCode();<br>        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;toString&quot;</span>.equals(method.getName())) &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.toString();<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            HystrixCommand&lt;Object&gt; hystrixCommand = <span class="hljs-keyword">new</span> HystrixCommand&lt;Object&gt;((Setter)<span class="hljs-keyword">this</span>.setterMethodMap.get(method)) &#123;<br>                <span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">run</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>                    <span class="hljs-keyword">try</span> &#123;<br>                        <span class="hljs-keyword">return</span> ((MethodHandler)HystrixInvocationHandler.<span class="hljs-keyword">this</span>.dispatch.get(method)).invoke(args);<br>                    &#125; <span class="hljs-keyword">catch</span> (Exception var2) &#123;<br>                        <span class="hljs-keyword">throw</span> var2;<br>                    &#125; <span class="hljs-keyword">catch</span> (Throwable var3) &#123;<br>                        <span class="hljs-keyword">throw</span> (Error)var3;<br>                    &#125;<br>                &#125;<br><br>                <span class="hljs-function"><span class="hljs-keyword">protected</span> Object <span class="hljs-title">getFallback</span><span class="hljs-params">()</span> </span>&#123;<br>                    <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.fallbackFactory == <span class="hljs-keyword">null</span>) &#123;<br>                        <span class="hljs-keyword">return</span> <span class="hljs-keyword">super</span>.getFallback();<br>                    &#125; <span class="hljs-keyword">else</span> &#123;<br>                        <span class="hljs-keyword">try</span> &#123;<br>                            Object fallback = HystrixInvocationHandler.<span class="hljs-keyword">this</span>.fallbackFactory.create(<span class="hljs-keyword">this</span>.getExecutionException());<br>                            Object result = ((Method)HystrixInvocationHandler.<span class="hljs-keyword">this</span>.fallbackMethodMap.get(method)).invoke(fallback, args);<br>                            <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsHystrixCommand(method)) &#123;<br>                                <span class="hljs-keyword">return</span> ((HystrixCommand)result).execute();<br>                            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsObservable(method)) &#123;<br>                                <span class="hljs-keyword">return</span> ((Observable)result).toBlocking().first();<br>                            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsSingle(method)) &#123;<br>                                <span class="hljs-keyword">return</span> ((Single)result).toObservable().toBlocking().first();<br>                            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsCompletable(method)) &#123;<br>                                ((Completable)result).await();<br>                                <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>                            &#125; <span class="hljs-keyword">else</span> &#123;<br>                                <span class="hljs-keyword">return</span> HystrixInvocationHandler.<span class="hljs-keyword">this</span>.isReturnsCompletableFuture(method) ? ((Future)result).get() : result;<br>                            &#125;<br>                        &#125; <span class="hljs-keyword">catch</span> (IllegalAccessException var3) &#123;<br>                            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AssertionError(var3);<br>                        &#125; <span class="hljs-keyword">catch</span> (ExecutionException | InvocationTargetException var4) &#123;<br>                            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AssertionError(var4.getCause());<br>                        &#125; <span class="hljs-keyword">catch</span> (InterruptedException var5) &#123;<br>                            Thread.currentThread().interrupt();<br>                            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> AssertionError(var5.getCause());<br>                        &#125;<br>                    &#125;<br>                &#125;<br>            &#125;;<br>            <span class="hljs-keyword">if</span> (Util.isDefault(method)) &#123;<br>                <span class="hljs-keyword">return</span> hystrixCommand.execute();<br>            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsHystrixCommand(method)) &#123;<br>                <span class="hljs-keyword">return</span> hystrixCommand;<br>            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsObservable(method)) &#123;<br>                <span class="hljs-keyword">return</span> hystrixCommand.toObservable();<br>            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsSingle(method)) &#123;<br>                <span class="hljs-keyword">return</span> hystrixCommand.toObservable().toSingle();<br>            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isReturnsCompletable(method)) &#123;<br>                <span class="hljs-keyword">return</span> hystrixCommand.toObservable().toCompletable();<br>            &#125; <span class="hljs-keyword">else</span> &#123;<br>                <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.isReturnsCompletableFuture(method) ? <span class="hljs-keyword">new</span> ObservableCompletableFuture(hystrixCommand) : hystrixCommand.execute();<br>            &#125;<br>        &#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            Object otherHandler = args.length &gt; <span class="hljs-number">0</span> &amp;&amp; args[<span class="hljs-number">0</span>] != <span class="hljs-keyword">null</span> ? Proxy.getInvocationHandler(args[<span class="hljs-number">0</span>]) : <span class="hljs-keyword">null</span>;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.equals(otherHandler);<br>        &#125; <span class="hljs-keyword">catch</span> (IllegalArgumentException var5) &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>SynchronousMethodHandler的invoke()方法</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object[] argv)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-  RequestTemplate template = buildTemplateFromArgs.create(argv);
-  Options options = findOptions(argv);
-  Retryer retryer = <span class="hljs-keyword">this</span>.retryer.clone();
-  <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;
-    <span class="hljs-keyword">try</span> &#123;
-      <span class="hljs-keyword">return</span> executeAndDecode(template, options);
-    &#125; <span class="hljs-keyword">catch</span> (RetryableException e) &#123;
-      <span class="hljs-keyword">try</span> &#123;
-        retryer.continueOrPropagate(e);
-      &#125; <span class="hljs-keyword">catch</span> (RetryableException th) &#123;
-        Throwable cause = th.getCause();
-        <span class="hljs-keyword">if</span> (propagationPolicy == UNWRAP &amp;&amp; cause != <span class="hljs-keyword">null</span>) &#123;
-          <span class="hljs-keyword">throw</span> cause;
-        &#125; <span class="hljs-keyword">else</span> &#123;
-          <span class="hljs-keyword">throw</span> th;
-        &#125;
-      &#125;
-      <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;
-        logger.logRetry(metadata.configKey(), logLevel);
-      &#125;
-      <span class="hljs-keyword">continue</span>;
-    &#125;
-  &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Object <span class="hljs-title">invoke</span><span class="hljs-params">(Object[] argv)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>  RequestTemplate template = buildTemplateFromArgs.create(argv);<br>  Options options = findOptions(argv);<br>  Retryer retryer = <span class="hljs-keyword">this</span>.retryer.clone();<br>  <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;<br>    <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-keyword">return</span> executeAndDecode(template, options);<br>    &#125; <span class="hljs-keyword">catch</span> (RetryableException e) &#123;<br>      <span class="hljs-keyword">try</span> &#123;<br>        retryer.continueOrPropagate(e);<br>      &#125; <span class="hljs-keyword">catch</span> (RetryableException th) &#123;<br>        Throwable cause = th.getCause();<br>        <span class="hljs-keyword">if</span> (propagationPolicy == UNWRAP &amp;&amp; cause != <span class="hljs-keyword">null</span>) &#123;<br>          <span class="hljs-keyword">throw</span> cause;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>          <span class="hljs-keyword">throw</span> th;<br>        &#125;<br>      &#125;<br>      <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;<br>        logger.logRetry(metadata.configKey(), logLevel);<br>      &#125;<br>      <span class="hljs-keyword">continue</span>;<br>    &#125;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>executeAndDecode()方法会执行execute()方法，该方法会调用到ribbon功能。</p>
-<pre><code class="hljs java"><span class="hljs-function">Object <span class="hljs-title">executeAndDecode</span><span class="hljs-params">(RequestTemplate template, Options options)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;
-  Request request = targetRequest(template);
-
-  <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;
-    logger.logRequest(metadata.configKey(), logLevel, request);
-  &#125;
-
-  Response response;
-  <span class="hljs-keyword">long</span> start = System.nanoTime();
-  <span class="hljs-keyword">try</span> &#123;
-    response = client.execute(request, options);
-    <span class="hljs-comment">// ensure the request is set. <span class="hljs-doctag">TODO:</span> remove in Feign 12</span>
-    response = response.toBuilder()
-        .request(request)
-        .requestTemplate(template)
-        .build();
-  &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
-    <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;
-      logger.logIOException(metadata.configKey(), logLevel, e, elapsedTime(start));
-    &#125;
-    <span class="hljs-keyword">throw</span> errorExecuting(request, e);
-  &#125;
-  <span class="hljs-keyword">long</span> elapsedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-
-  <span class="hljs-keyword">boolean</span> shouldClose = <span class="hljs-keyword">true</span>;
-  <span class="hljs-keyword">try</span> &#123;
-    <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;
-      response =
-          logger.logAndRebufferResponse(metadata.configKey(), logLevel, response, elapsedTime);
-    &#125;
-    <span class="hljs-keyword">if</span> (Response.class == metadata.returnType()) &#123;
-      <span class="hljs-keyword">if</span> (response.body() == <span class="hljs-keyword">null</span>) &#123;
-        <span class="hljs-keyword">return</span> response;
-      &#125;
-      <span class="hljs-keyword">if</span> (response.body().length() == <span class="hljs-keyword">null</span> ||
-          response.body().length() &gt; MAX_RESPONSE_BUFFER_SIZE) &#123;
-        shouldClose = <span class="hljs-keyword">false</span>;
-        <span class="hljs-keyword">return</span> response;
-      &#125;
-      <span class="hljs-comment">// Ensure the response body is disconnected</span>
-      <span class="hljs-keyword">byte</span>[] bodyData = Util.toByteArray(response.body().asInputStream());
-      <span class="hljs-keyword">return</span> response.toBuilder().body(bodyData).build();
-    &#125;
-    <span class="hljs-keyword">if</span> (response.status() &gt;= <span class="hljs-number">200</span> &amp;&amp; response.status() &lt; <span class="hljs-number">300</span>) &#123;
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">void</span>.class == metadata.returnType()) &#123;
-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-      &#125; <span class="hljs-keyword">else</span> &#123;
-        Object result = decode(response);
-        shouldClose = closeAfterDecode;
-        <span class="hljs-keyword">return</span> result;
-      &#125;
-    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (decode404 &amp;&amp; response.status() == <span class="hljs-number">404</span> &amp;&amp; <span class="hljs-keyword">void</span>.class != metadata.returnType()) &#123;
-      Object result = decode(response);
-      shouldClose = closeAfterDecode;
-      <span class="hljs-keyword">return</span> result;
-    &#125; <span class="hljs-keyword">else</span> &#123;
-      <span class="hljs-keyword">throw</span> errorDecoder.decode(metadata.configKey(), response);
-    &#125;
-  &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;
-    <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;
-      logger.logIOException(metadata.configKey(), logLevel, e, elapsedTime);
-    &#125;
-    <span class="hljs-keyword">throw</span> errorReading(request, response, e);
-  &#125; <span class="hljs-keyword">finally</span> &#123;
-    <span class="hljs-keyword">if</span> (shouldClose) &#123;
-      ensureClosed(response.body());
-    &#125;
-  &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function">Object <span class="hljs-title">executeAndDecode</span><span class="hljs-params">(RequestTemplate template, Options options)</span> <span class="hljs-keyword">throws</span> Throwable </span>&#123;<br>  Request request = targetRequest(template);<br><br>  <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;<br>    logger.logRequest(metadata.configKey(), logLevel, request);<br>  &#125;<br><br>  Response response;<br>  <span class="hljs-keyword">long</span> start = System.nanoTime();<br>  <span class="hljs-keyword">try</span> &#123;<br>    response = client.execute(request, options);<br>    <span class="hljs-comment">// ensure the request is set. <span class="hljs-doctag">TODO:</span> remove in Feign 12</span><br>    response = response.toBuilder()<br>        .request(request)<br>        .requestTemplate(template)<br>        .build();<br>  &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>    <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;<br>      logger.logIOException(metadata.configKey(), logLevel, e, elapsedTime(start));<br>    &#125;<br>    <span class="hljs-keyword">throw</span> errorExecuting(request, e);<br>  &#125;<br>  <span class="hljs-keyword">long</span> elapsedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);<br><br>  <span class="hljs-keyword">boolean</span> shouldClose = <span class="hljs-keyword">true</span>;<br>  <span class="hljs-keyword">try</span> &#123;<br>    <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;<br>      response =<br>          logger.logAndRebufferResponse(metadata.configKey(), logLevel, response, elapsedTime);<br>    &#125;<br>    <span class="hljs-keyword">if</span> (Response.class == metadata.returnType()) &#123;<br>      <span class="hljs-keyword">if</span> (response.body() == <span class="hljs-keyword">null</span>) &#123;<br>        <span class="hljs-keyword">return</span> response;<br>      &#125;<br>      <span class="hljs-keyword">if</span> (response.body().length() == <span class="hljs-keyword">null</span> ||<br>          response.body().length() &gt; MAX_RESPONSE_BUFFER_SIZE) &#123;<br>        shouldClose = <span class="hljs-keyword">false</span>;<br>        <span class="hljs-keyword">return</span> response;<br>      &#125;<br>      <span class="hljs-comment">// Ensure the response body is disconnected</span><br>      <span class="hljs-keyword">byte</span>[] bodyData = Util.toByteArray(response.body().asInputStream());<br>      <span class="hljs-keyword">return</span> response.toBuilder().body(bodyData).build();<br>    &#125;<br>    <span class="hljs-keyword">if</span> (response.status() &gt;= <span class="hljs-number">200</span> &amp;&amp; response.status() &lt; <span class="hljs-number">300</span>) &#123;<br>      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">void</span>.class == metadata.returnType()) &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>      &#125; <span class="hljs-keyword">else</span> &#123;<br>        Object result = decode(response);<br>        shouldClose = closeAfterDecode;<br>        <span class="hljs-keyword">return</span> result;<br>      &#125;<br>    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (decode404 &amp;&amp; response.status() == <span class="hljs-number">404</span> &amp;&amp; <span class="hljs-keyword">void</span>.class != metadata.returnType()) &#123;<br>      Object result = decode(response);<br>      shouldClose = closeAfterDecode;<br>      <span class="hljs-keyword">return</span> result;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>      <span class="hljs-keyword">throw</span> errorDecoder.decode(metadata.configKey(), response);<br>    &#125;<br>  &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>    <span class="hljs-keyword">if</span> (logLevel != Logger.Level.NONE) &#123;<br>      logger.logIOException(metadata.configKey(), logLevel, e, elapsedTime);<br>    &#125;<br>    <span class="hljs-keyword">throw</span> errorReading(request, response, e);<br>  &#125; <span class="hljs-keyword">finally</span> &#123;<br>    <span class="hljs-keyword">if</span> (shouldClose) &#123;<br>      ensureClosed(response.body());<br>    &#125;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>LoadBalancerFeignClient的execute()方法</p>
-<pre><code class="hljs java"><span class="hljs-meta">@Override</span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> Response <span class="hljs-title">execute</span><span class="hljs-params">(Request request, Request.Options options)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;
-   <span class="hljs-keyword">try</span> &#123;
-      URI asUri = URI.create(request.url());
-      String clientName = asUri.getHost();
-      URI uriWithoutHost = cleanUrl(request.url(), clientName);
-      FeignLoadBalancer.RibbonRequest ribbonRequest = <span class="hljs-keyword">new</span> FeignLoadBalancer.RibbonRequest(
-            <span class="hljs-keyword">this</span>.delegate, request, uriWithoutHost);
-
-      IClientConfig requestConfig = getClientConfig(options, clientName);
-      <span class="hljs-keyword">return</span> lbClient(clientName)
-            .executeWithLoadBalancer(ribbonRequest, requestConfig).toResponse();
-   &#125;
-   <span class="hljs-keyword">catch</span> (ClientException e) &#123;
-      IOException io = findIOException(e);
-      <span class="hljs-keyword">if</span> (io != <span class="hljs-keyword">null</span>) &#123;
-         <span class="hljs-keyword">throw</span> io;
-      &#125;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);
-   &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Response <span class="hljs-title">execute</span><span class="hljs-params">(Request request, Request.Options options)</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br>   <span class="hljs-keyword">try</span> &#123;<br>      URI asUri = URI.create(request.url());<br>      String clientName = asUri.getHost();<br>      URI uriWithoutHost = cleanUrl(request.url(), clientName);<br>      FeignLoadBalancer.RibbonRequest ribbonRequest = <span class="hljs-keyword">new</span> FeignLoadBalancer.RibbonRequest(<br>            <span class="hljs-keyword">this</span>.delegate, request, uriWithoutHost);<br><br>      IClientConfig requestConfig = getClientConfig(options, clientName);<br>      <span class="hljs-keyword">return</span> lbClient(clientName)<br>            .executeWithLoadBalancer(ribbonRequest, requestConfig).toResponse();<br>   &#125;<br>   <span class="hljs-keyword">catch</span> (ClientException e) &#123;<br>      IOException io = findIOException(e);<br>      <span class="hljs-keyword">if</span> (io != <span class="hljs-keyword">null</span>) &#123;<br>         <span class="hljs-keyword">throw</span> io;<br>      &#125;<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(e);<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>lbClient()方法会调用到CachingSpringLoadBalancerFactory的create()方法，在这个方法里面获取服务列表类进行调用。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> FeignLoadBalancer <span class="hljs-title">create</span><span class="hljs-params">(String clientName)</span> </span>&#123;
-   FeignLoadBalancer client = <span class="hljs-keyword">this</span>.cache.get(clientName);
-   <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;
-      <span class="hljs-keyword">return</span> client;
-   &#125;
-   IClientConfig config = <span class="hljs-keyword">this</span>.factory.getClientConfig(clientName);
-   ILoadBalancer lb = <span class="hljs-keyword">this</span>.factory.getLoadBalancer(clientName);
-   ServerIntrospector serverIntrospector = <span class="hljs-keyword">this</span>.factory.getInstance(clientName,
-         ServerIntrospector.class);
-   client = <span class="hljs-keyword">this</span>.loadBalancedRetryFactory != <span class="hljs-keyword">null</span>
-         ? <span class="hljs-keyword">new</span> RetryableFeignLoadBalancer(lb, config, serverIntrospector,
-               <span class="hljs-keyword">this</span>.loadBalancedRetryFactory)
-         : <span class="hljs-keyword">new</span> FeignLoadBalancer(lb, config, serverIntrospector);
-   <span class="hljs-keyword">this</span>.cache.put(clientName, client);
-   <span class="hljs-keyword">return</span> client;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> FeignLoadBalancer <span class="hljs-title">create</span><span class="hljs-params">(String clientName)</span> </span>&#123;<br>   FeignLoadBalancer client = <span class="hljs-keyword">this</span>.cache.get(clientName);<br>   <span class="hljs-keyword">if</span> (client != <span class="hljs-keyword">null</span>) &#123;<br>      <span class="hljs-keyword">return</span> client;<br>   &#125;<br>   IClientConfig config = <span class="hljs-keyword">this</span>.factory.getClientConfig(clientName);<br>   ILoadBalancer lb = <span class="hljs-keyword">this</span>.factory.getLoadBalancer(clientName);<br>   ServerIntrospector serverIntrospector = <span class="hljs-keyword">this</span>.factory.getInstance(clientName,<br>         ServerIntrospector.class);<br>   client = <span class="hljs-keyword">this</span>.loadBalancedRetryFactory != <span class="hljs-keyword">null</span><br>         ? <span class="hljs-keyword">new</span> RetryableFeignLoadBalancer(lb, config, serverIntrospector,<br>               <span class="hljs-keyword">this</span>.loadBalancedRetryFactory)<br>         : <span class="hljs-keyword">new</span> FeignLoadBalancer(lb, config, serverIntrospector);<br>   <span class="hljs-keyword">this</span>.cache.put(clientName, client);<br>   <span class="hljs-keyword">return</span> client;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>executeWithLoadBalancer()方法会调用到FeignLoadBalancer的execute()方法完成服务调用。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">executeWithLoadBalancer</span><span class="hljs-params">(<span class="hljs-keyword">final</span> S request, <span class="hljs-keyword">final</span> IClientConfig requestConfig)</span> <span class="hljs-keyword">throws</span> ClientException </span>&#123;
-    LoadBalancerCommand&lt;T&gt; command = buildLoadBalancerCommand(request, requestConfig);
-
-    <span class="hljs-keyword">try</span> &#123;
-        <span class="hljs-keyword">return</span> command.submit(
-            <span class="hljs-keyword">new</span> ServerOperation&lt;T&gt;() &#123;
-                <span class="hljs-meta">@Override</span>
-                <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;T&gt; <span class="hljs-title">call</span><span class="hljs-params">(Server server)</span> </span>&#123;
-                    URI finalUri = reconstructURIWithServer(server, request.getUri());
-                    S requestForServer = (S) request.replaceUri(finalUri);
-                    <span class="hljs-keyword">try</span> &#123;
-                        <span class="hljs-keyword">return</span> Observable.just(AbstractLoadBalancerAwareClient.<span class="hljs-keyword">this</span>.execute(requestForServer, requestConfig));
-                    &#125; 
-                    <span class="hljs-keyword">catch</span> (Exception e) &#123;
-                        <span class="hljs-keyword">return</span> Observable.error(e);
-                    &#125;
-                &#125;
-            &#125;)
-            .toBlocking()
-            .single();
-    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
-        Throwable t = e.getCause();
-        <span class="hljs-keyword">if</span> (t <span class="hljs-keyword">instanceof</span> ClientException) &#123;
-            <span class="hljs-keyword">throw</span> (ClientException) t;
-        &#125; <span class="hljs-keyword">else</span> &#123;
-            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ClientException(e);
-        &#125;
-    &#125;
-    
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">executeWithLoadBalancer</span><span class="hljs-params">(<span class="hljs-keyword">final</span> S request, <span class="hljs-keyword">final</span> IClientConfig requestConfig)</span> <span class="hljs-keyword">throws</span> ClientException </span>&#123;<br>    LoadBalancerCommand&lt;T&gt; command = buildLoadBalancerCommand(request, requestConfig);<br><br>    <span class="hljs-keyword">try</span> &#123;<br>        <span class="hljs-keyword">return</span> command.submit(<br>            <span class="hljs-keyword">new</span> ServerOperation&lt;T&gt;() &#123;<br>                <span class="hljs-meta">@Override</span><br>                <span class="hljs-function"><span class="hljs-keyword">public</span> Observable&lt;T&gt; <span class="hljs-title">call</span><span class="hljs-params">(Server server)</span> </span>&#123;<br>                    URI finalUri = reconstructURIWithServer(server, request.getUri());<br>                    S requestForServer = (S) request.replaceUri(finalUri);<br>                    <span class="hljs-keyword">try</span> &#123;<br>                        <span class="hljs-keyword">return</span> Observable.just(AbstractLoadBalancerAwareClient.<span class="hljs-keyword">this</span>.execute(requestForServer, requestConfig));<br>                    &#125; <br>                    <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>                        <span class="hljs-keyword">return</span> Observable.error(e);<br>                    &#125;<br>                &#125;<br>            &#125;)<br>            .toBlocking()<br>            .single();<br>    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>        Throwable t = e.getCause();<br>        <span class="hljs-keyword">if</span> (t <span class="hljs-keyword">instanceof</span> ClientException) &#123;<br>            <span class="hljs-keyword">throw</span> (ClientException) t;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ClientException(e);<br>        &#125;<br>    &#125;<br>    <br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>FeignLoadBalancer的execute()方法。</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> RibbonResponse <span class="hljs-title">execute</span><span class="hljs-params">(RibbonRequest request, IClientConfig configOverride)</span></span>
-<span class="hljs-function">      <span class="hljs-keyword">throws</span> IOException </span>&#123;
-   Request.Options options;
-   <span class="hljs-keyword">if</span> (configOverride != <span class="hljs-keyword">null</span>) &#123;
-      RibbonProperties override = RibbonProperties.from(configOverride);
-      options = <span class="hljs-keyword">new</span> Request.Options(override.connectTimeout(<span class="hljs-keyword">this</span>.connectTimeout),
-            override.readTimeout(<span class="hljs-keyword">this</span>.readTimeout));
-   &#125;
-   <span class="hljs-keyword">else</span> &#123;
-      options = <span class="hljs-keyword">new</span> Request.Options(<span class="hljs-keyword">this</span>.connectTimeout, <span class="hljs-keyword">this</span>.readTimeout);
-   &#125;
-   Response response = request.client().execute(request.toRequest(), options);
-   <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RibbonResponse(request.getUri(), response);
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> RibbonResponse <span class="hljs-title">execute</span><span class="hljs-params">(RibbonRequest request, IClientConfig configOverride)</span></span><br><span class="hljs-function">      <span class="hljs-keyword">throws</span> IOException </span>&#123;<br>   Request.Options options;<br>   <span class="hljs-keyword">if</span> (configOverride != <span class="hljs-keyword">null</span>) &#123;<br>      RibbonProperties override = RibbonProperties.from(configOverride);<br>      options = <span class="hljs-keyword">new</span> Request.Options(override.connectTimeout(<span class="hljs-keyword">this</span>.connectTimeout),<br>            override.readTimeout(<span class="hljs-keyword">this</span>.readTimeout));<br>   &#125;<br>   <span class="hljs-keyword">else</span> &#123;<br>      options = <span class="hljs-keyword">new</span> Request.Options(<span class="hljs-keyword">this</span>.connectTimeout, <span class="hljs-keyword">this</span>.readTimeout);<br>   &#125;<br>   Response response = request.client().execute(request.toRequest(), options);<br>   <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> RibbonResponse(request.getUri(), response);<br>&#125;<br></code></pre></td></tr></table></figure>
 
 
             </div>
@@ -701,9 +290,9 @@
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
-                    
                       <a class="hover-with-bg" href="/blog/tags/%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/">源码解读</a>
+                    
+                      <a class="hover-with-bg" href="/blog/tags/springcloud/">springcloud</a>
                     
                       <a class="hover-with-bg" href="/blog/tags/feign/">feign</a>
                     
@@ -711,8 +300,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -803,17 +398,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -822,7 +415,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -830,7 +422,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -857,6 +449,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -874,11 +467,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -898,7 +492,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

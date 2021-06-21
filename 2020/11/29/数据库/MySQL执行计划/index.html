@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>MySQL的执行计划 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -229,25 +230,22 @@
             <div class="markdown-body">
               <h3 id="执行计划简述"><a href="#执行计划简述" class="headerlink" title="执行计划简述"></a>执行计划简述</h3><p>使用EXPLAIN关键字可以模拟优化器执行SQL查询语句，从而知道MySQL是如何处理SQL语句的，分析查询语句或是表结构的性能瓶颈。</p>
 <p>用法：</p>
-<pre><code class="hljs sql"><span class="hljs-keyword">EXPLAIN</span> &lt;<span class="hljs-keyword">SELECT</span>语句&gt;
-<span class="hljs-comment">-- 举例</span>
-<span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_contact <span class="hljs-keyword">WHERE</span> index_code = <span class="hljs-string">&#x27;M&#x27;</span></code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">EXPLAIN</span> &lt;<span class="hljs-keyword">SELECT</span>语句&gt;<br><span class="hljs-comment">-- 举例</span><br><span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_contact <span class="hljs-keyword">WHERE</span> index_code = <span class="hljs-string">&#x27;M&#x27;</span><br></code></pre></td></tr></table></figure>
 
 <p>在查询中的每个表会输出⼀⾏信息，如果有两个表通过 join 连接查询，那么会输出两⾏，表的含义⽐较⼴泛：可以是⼦查询、⼀个 union 结果等。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic8.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>上图所展现出的就是其执⾏计划中的信息，根据这些信息进⾏SQL性能的判断。</p>
 <p>在查询中的每个表会输出⼀⾏信息，如果有两个表通过 join 连接查询，那么会输出两⾏，表的含义⽐较⼴泛：可以是⼦查询、⼀个 union 结果等。</p>
 <p>需要注意的是，在MySQL5.7.3以后的版本，EXPLAIN已经默认添加了EXTENDED参数，在结果中添加了filtered结果字段，filtered是指返回结果的⾏占需要读到的⾏(rows列的值)的百分⽐。紧跟着执⾏SHOW WARNINGS;语句查看优化后的查询语句。</p>
-<pre><code class="hljs sql"><span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_sku <span class="hljs-keyword">WHERE</span> index_code = <span class="hljs-string">&#x27;M&#x27;</span> <span class="hljs-keyword">AND</span> surname = <span class="hljs-string">&#x27;ma&#x27;</span>;
-<span class="hljs-keyword">SHOW</span> <span class="hljs-keyword">WARNINGS</span>;</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_sku <span class="hljs-keyword">WHERE</span> index_code = <span class="hljs-string">&#x27;M&#x27;</span> <span class="hljs-keyword">AND</span> surname = <span class="hljs-string">&#x27;ma&#x27;</span>;<br><span class="hljs-keyword">SHOW</span> <span class="hljs-keyword">WARNINGS</span>;<br></code></pre></td></tr></table></figure>
 
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>⼀般⽽⾔，优化的结果建议并不准确，仅做参考。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic9.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>通过执行计划的结果可以分析出以下内容：</p>
 <ul>
@@ -348,10 +346,7 @@
 <p>如果该列是NULL，则没有相关的索引。在这种情况下，可以通过检查 where ⼦句看是否可以创造⼀个适当的索引来提⾼查询性能，然后⽤ explain 查看效果。</p>
 <h4 id="key"><a href="#key" class="headerlink" title="key"></a>key</h4><p>显示MySQL实际决定使⽤的键(索引)。如果没有选择索引，键是NULL。</p>
 <p>可以强制使⽤索引或者忽略索引：</p>
-<pre><code class="hljs sql"><span class="hljs-comment"># 强制使用索引</span>
-<span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_user <span class="hljs-keyword">IGNORE</span> <span class="hljs-keyword">INDEX</span>(age) <span class="hljs-keyword">WHERE</span> age &lt; <span class="hljs-number">10</span>;
-<span class="hljs-comment"># 强制忽略索引</span>
-<span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_user <span class="hljs-keyword">USE</span> <span class="hljs-keyword">INDEX</span>(age) <span class="hljs-keyword">WHERE</span> agc &lt; <span class="hljs-number">10</span>;</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-comment"># 强制使用索引</span><br><span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_user <span class="hljs-keyword">IGNORE</span> <span class="hljs-keyword">INDEX</span>(age) <span class="hljs-keyword">WHERE</span> age &lt; <span class="hljs-number">10</span>;<br><span class="hljs-comment"># 强制忽略索引</span><br><span class="hljs-keyword">EXPLAIN</span> <span class="hljs-keyword">SELECT</span> * <span class="hljs-keyword">FROM</span> tb_user <span class="hljs-keyword">USE</span> <span class="hljs-keyword">INDEX</span>(age) <span class="hljs-keyword">WHERE</span> agc &lt; <span class="hljs-number">10</span>;<br></code></pre></td></tr></table></figure>
 
 <h4 id="key-len"><a href="#key-len" class="headerlink" title="key_len"></a>key_len</h4><p>表示索引中使用的字节数，通过这个值可以算出具体使用了索引中的哪些列。在不损失精确性的情况下，长度越短越好。如果充分用了索引，key_len会比没有充分用到索引要长。key_len显示的值为索引字段的最大可能长度，并非实际使用长度，即key_len是根据表定义计算而得，不是通过表内检索出的。</p>
 <p>根据这个值，就可以判断索引使用情况，特别是在组合索引的时候，判断所有的索引字段是否都被查询用到。</p>
@@ -417,13 +412,13 @@
 <h3 id="常见的优化方式"><a href="#常见的优化方式" class="headerlink" title="常见的优化方式"></a>常见的优化方式</h3><h4 id="order-by查询"><a href="#order-by查询" class="headerlink" title="order by查询"></a>order by查询</h4><p><strong>排序方式</strong></p>
 <ol>
 <li><p>第一种是通过对返回数据进行排序，也就是通常说的 filesort 排序，所有不是通过索引直接返回排序结果的排序都叫 FileSort 排序。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic12.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>第二种通过有序索引顺序扫描直接返回有序数据，这种情况即为 using index，不需要额外排序，操作效率高。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic13.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>多字段排序</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic14.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
 
 </li>
 </ol>
@@ -433,25 +428,25 @@
 <p>通过创建合适的索引，能够减少 Filesort 的出现，但是在某些情况下，条件限制不能让Filesort消失，那就需要加快Filesort的排序操作。对于Filesort，MySQL 现在采用的是一次扫描算法：一次性取出满足条件的所有字段，然后在排序区 sort buffer 中排序后直接输出结果集。排序时内存开销较大，但是排序效率比两次扫描算法要高。</p>
 <p>MySQL 通过比较系统变量 max_length_for_sort_data 的大小和Query语句取出的字段总大小， 来判定是否那种排序算法，如果max_length_for_sort_data 更大，那么使用第二种优化之后的算法；否则使用第一种。</p>
 <p>可以适当提高 sort_buffer_size 和 max_length_for_sort_data 系统变量，来增大排序区的大小，提高排序的效率。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic15.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="group-by查询"><a href="#group-by查询" class="headerlink" title="group by查询"></a>group by查询</h4><p>由于GROUP BY 实际上也同样会进行排序操作，而且与ORDER BY 相比，GROUP BY 主要只是多了排序之后的分组操作。当然，如果在分组的时候还使用了其他的一些聚合函数，那么还需要一些聚合函数的计算。所以，在GROUP BY 的实现过程中，与 ORDER BY 一样也可以利用到索引。</p>
 <p>如果查询包含 group by 但是用户想要避免排序结果的消耗， 则可以执行order by null 禁止排序。如下：</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic16.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic16.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>优化后</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic17.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic17.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>创建索引</p>
 <p><code>create index idx_emp_age_salary on emp(age,salary);</code></p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic18.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic18.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="limit"><a href="#limit" class="headerlink" title="limit"></a>limit</h4><p>一般分页查询时，通过创建覆盖索引能够比较好地提高性能。一个常见又非常头疼的问题就是 limit 5000000,10 ，此时需要MySQL排序前5000010 记录，仅仅返回5000000 - 5000010 的记录，其他记录丢弃，查询排序的代价非常大 。</p>
 <p>limit分页操作, 越往后, 性能越低</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic19.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic19.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>优化方案：</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic20.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic20.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="count查询"><a href="#count查询" class="headerlink" title="count查询"></a>count查询</h4><p>在很多的业务系统中，都需要考虑进行分页操作，但是当我们执行分页操作时，都需要进行一次count操作，求取总记录数，如果数据库表的数据量大，在InnoDB引擎中，执行count操作的性能是比较低的，需要遍历全表数据，对计数进行累加。</p>
 <p>优化方案：</p>
@@ -460,25 +455,25 @@
 <p>③. 在数据库表中定义一个大数据量的计数表，在执行插入/删除时，需要动态更新。</p>
 <p>大批量插入</p>
 <p>当使用 load 命令导入数据的时候，适当的设置可以提高导入的效率。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic21.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic21.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>对于 InnoDB 类型的表，有以下几种方式可以提高导入的效率：</p>
 <ol>
 <li><p>主键顺序插入</p>
 <p>因为InnoDB类型的表是按照主键的顺序保存的，所以将导入的数据按照主键的顺序排列，可以有效的提高导入数据的效率。如果InnoDB表没有主键，那么系统会自动默认创建一个内部列作为主键，所以如果可以给表创建一个主键，将可以利用这点，来提高导入数据的效率。</p>
 <p>插入ID顺序排列数据：</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic22.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic22.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>插入ID无序排列数据：</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic23.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic23.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>关闭唯一性校验</p>
 <p>在导入数据前执行 SET UNIQUE_CHECKS=0，关闭唯一性校验，在导入结束后执行 SET UNIQUE_CHECKS=1，恢复唯一性校验，可以提高导入的效率。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic24.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic24.png" srcset="/blog/img/loading.gif" lazyload class>
 </li>
 <li><p>手动提交事务</p>
 <p>如果应用使用自动提交的方式，建议在导入前执行 SET AUTOCOMMIT=0，关闭自动提交，导入结束后再执行 SET AUTOCOMMIT=1，打开自动提交，也可以提高导入的效率。</p>
-<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic25.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/pic25.png" srcset="/blog/img/loading.gif" lazyload class>
 
 </li>
 </ol>
@@ -557,7 +552,7 @@
 </li>
 </ul>
 <h4 id="数据的迁移"><a href="#数据的迁移" class="headerlink" title="数据的迁移"></a>数据的迁移</h4><p>使用前需要确认MySQL是否允许允许导入导出。</p>
-<pre><code class="hljs sql"><span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;secure_file_priv&#x27;</span></code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">show</span> <span class="hljs-keyword">VARIABLES</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;secure_file_priv&#x27;</span><br></code></pre></td></tr></table></figure>
 
 <ul>
 <li><p>secure_file_priv为NULL时，表示限制MySQL不允许导入或导出。</p>
@@ -568,8 +563,7 @@
 </li>
 </ul>
 <p>修改方法为将<code>source_file_priv=&#39;&#39;</code>添加到my.cnf文件中。</p>
-<pre><code class="hljs sql"><span class="hljs-keyword">select</span> * <span class="hljs-keyword">into</span> <span class="hljs-keyword">OUTFILE</span> <span class="hljs-string">&#x27;D:\\product.txt&#x27;</span> <span class="hljs-keyword">from</span> product_info    <span class="hljs-comment">-- 将表中的数据迁移到product.txt文件中</span>
-<span class="hljs-keyword">load</span> <span class="hljs-keyword">data</span> <span class="hljs-keyword">INFILE</span> <span class="hljs-string">&#x27;D:\\product.txt&#x27;</span> <span class="hljs-keyword">into</span> <span class="hljs-keyword">table</span> product_info    <span class="hljs-comment">-- 将product.txt文件中的数据导入到表中</span></code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">select</span> * <span class="hljs-keyword">into</span> <span class="hljs-keyword">OUTFILE</span> <span class="hljs-string">&#x27;D:\\product.txt&#x27;</span> <span class="hljs-keyword">from</span> product_info    <span class="hljs-comment">-- 将表中的数据迁移到product.txt文件中</span><br><span class="hljs-keyword">load</span> <span class="hljs-keyword">data</span> <span class="hljs-keyword">INFILE</span> <span class="hljs-string">&#x27;D:\\product.txt&#x27;</span> <span class="hljs-keyword">into</span> <span class="hljs-keyword">table</span> product_info    <span class="hljs-comment">-- 将product.txt文件中的数据导入到表中</span><br></code></pre></td></tr></table></figure>
             </div>
             <hr>
             <div>
@@ -592,8 +586,14 @@
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -684,17 +684,15 @@
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -703,7 +701,6 @@
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -711,7 +708,7 @@
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -738,6 +735,7 @@
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -755,11 +753,12 @@
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -779,7 +778,6 @@
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

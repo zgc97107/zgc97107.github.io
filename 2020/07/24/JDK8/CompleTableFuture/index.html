@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>CompleTableFuture异步编程 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -243,652 +244,151 @@
 </li>
 </ul>
 <h4 id="异步任务创建"><a href="#异步任务创建" class="headerlink" title="异步任务创建"></a>异步任务创建</h4><p>在CompletableFuture中提供了四个静态方法用于创建异步任务</p>
-<pre><code class="hljs java">runAsync(Runnable runnable)
-runAsync(Runnable runnable,Executor executor)
-supplyAsync(Supplier&lt;U&gt; supplier)
-supplyAsync(Supplier&lt;U&gt; supplier,Executor executor)</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">runAsync(Runnable runnable)<br>runAsync(Runnable runnable,Executor executor)<br>supplyAsync(Supplier&lt;U&gt; supplier)<br>supplyAsync(Supplier&lt;U&gt; supplier,Executor executor)<br></code></pre></td></tr></table></figure>
 
-<h5 id="runAsync-源码解析"><a href="#runAsync-源码解析" class="headerlink" title="runAsync()源码解析"></a>runAsync()源码解析</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic1.png" srcset="/blog/img/loading.gif" class>
+<h5 id="runAsync-源码解析"><a href="#runAsync-源码解析" class="headerlink" title="runAsync()源码解析"></a>runAsync()源码解析</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>根据源码可知，runAsync()分为一个参数和两个参数，并且其内部都会调用asyncRunStage()。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>在该方法内部会创建异步任务，并把任务放入线程池中。并且runAsync()是没有返回值的。 </p>
 <p>根据源码可知，当传入Executor会使用指定线程池执行，如果没有传入则使用默认ForkJoinPool.commonPool()执行，值得注意的是，commonPool中都是守护线程，主线程执行完，子线程也就over了。因此建议当任务非常耗时，使用自定义线程池。</p>
-<h5 id="supplyAsync-源码解析"><a href="#supplyAsync-源码解析" class="headerlink" title="supplyAsync()源码解析"></a>supplyAsync()源码解析</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic3.png" srcset="/blog/img/loading.gif" class>
+<h5 id="supplyAsync-源码解析"><a href="#supplyAsync-源码解析" class="headerlink" title="supplyAsync()源码解析"></a>supplyAsync()源码解析</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>根据源码可知，supplyAsync()分为一个参数和两个参数，并且其内部都会调用asyncSupplyStage()。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>现在可知，其实supplyAsync()与runAsync()内部原理类似，但supplyAsync()有返回值。</p>
 <h4 id="异步计算结果触发回调"><a href="#异步计算结果触发回调" class="headerlink" title="异步计算结果触发回调"></a>异步计算结果触发回调</h4><p>当异步任务结束或者抛出异常时，还要根据结果来完成特定的操作，对于这种需求CompletableFuture也提供了方 法进行实现 </p>
-<pre><code class="hljs reasonml">public CompletableFuture&lt;T&gt; <span class="hljs-keyword">when</span><span class="hljs-constructor">Complete(BiConsumer&lt;? <span class="hljs-params">super</span> T,? <span class="hljs-params">super</span> Throwable&gt; <span class="hljs-params">action</span>)</span>
-public CompletableFuture&lt;T&gt; <span class="hljs-keyword">when</span><span class="hljs-constructor">CompleteAsync(BiConsumer&lt;? <span class="hljs-params">super</span> T,? <span class="hljs-params">super</span> Throwable&gt; <span class="hljs-params">action</span>)</span>
-public CompletableFuture&lt;T&gt; <span class="hljs-keyword">when</span><span class="hljs-constructor">CompleteAsync(BiConsumer&lt;? <span class="hljs-params">super</span> T,? <span class="hljs-params">super</span> Throwable&gt; <span class="hljs-params">action</span>, Executor <span class="hljs-params">executor</span>)</span>
-public CompletableFuture&lt;T&gt; exceptionally(Function&lt;Throwable,? extends T&gt; fn)</code></pre>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">public CompletableFuture&lt;T&gt; <span class="hljs-keyword">when</span><span class="hljs-constructor">Complete(BiConsumer&lt;? <span class="hljs-params">super</span> T,? <span class="hljs-params">super</span> Throwable&gt; <span class="hljs-params">action</span>)</span><br>public CompletableFuture&lt;T&gt; <span class="hljs-keyword">when</span><span class="hljs-constructor">CompleteAsync(BiConsumer&lt;? <span class="hljs-params">super</span> T,? <span class="hljs-params">super</span> Throwable&gt; <span class="hljs-params">action</span>)</span><br>public CompletableFuture&lt;T&gt; <span class="hljs-keyword">when</span><span class="hljs-constructor">CompleteAsync(BiConsumer&lt;? <span class="hljs-params">super</span> T,? <span class="hljs-params">super</span> Throwable&gt; <span class="hljs-params">action</span>, Executor <span class="hljs-params">executor</span>)</span><br>public CompletableFuture&lt;T&gt; exceptionally(Function&lt;Throwable,? extends T&gt; fn)<br></code></pre></td></tr></table></figure>
 
-<h5 id="whenComplete-与whenCompleteAsync-使用与源码解析"><a href="#whenComplete-与whenCompleteAsync-使用与源码解析" class="headerlink" title="whenComplete()与whenCompleteAsync()使用与源码解析"></a>whenComplete()与whenCompleteAsync()使用与源码解析</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic5.png" srcset="/blog/img/loading.gif" class>
+<h5 id="whenComplete-与whenCompleteAsync-使用与源码解析"><a href="#whenComplete-与whenCompleteAsync-使用与源码解析" class="headerlink" title="whenComplete()与whenCompleteAsync()使用与源码解析"></a>whenComplete()与whenCompleteAsync()使用与源码解析</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>根据源码可知，上述三个方法都会接收BiConsumer并调用uniWhenCompleteStage，BiConsumer用于定义后续处理业务，处理正常计算结果或异常情况。在uniWhenCompleteStage主要用于判断任务执行状态以及构建任务。</p>
 <p>值得注意的一点是，whenComplete是在当前任务线程中继续执行指定的特定处理，而whenCompleteAsync会将 指定的特定交给线程池另开启一个线程来执行。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
-
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-<span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;
-<span class="hljs-keyword">import</span> java.util.function.BiConsumer;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo1</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        System.out.println(Thread.currentThread().getName());
-        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                System.out.println(<span class="hljs-string">&quot;异步任务线程：&quot;</span> + Thread.currentThread().getName());
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);
-                System.out.println(<span class="hljs-string">&quot;child run&quot;</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">return</span> <span class="hljs-number">123</span>;
-        &#125;, executor);
-        System.out.println(<span class="hljs-string">&quot;main end&quot;</span>);
-        <span class="hljs-keyword">try</span> &#123;
-            future.whenComplete(<span class="hljs-keyword">new</span> BiConsumer&lt;Integer, Throwable&gt;() &#123;
-                <span class="hljs-meta">@Override</span>
-                <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(Integer integer, Throwable throwable)</span> </span>&#123;
-                    System.out.println(<span class="hljs-string">&quot;结果触发任务线程：&quot;</span> + Thread.currentThread().getName());
-                    System.out.println(<span class="hljs-string">&quot;特定任务执行&quot;</span>);
-                &#125;
-            &#125;);
-        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
-            e.printStackTrace();
-        &#125;
-        executor.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;<br><br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;<br><span class="hljs-keyword">import</span> java.util.function.BiConsumer;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo1</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        System.out.println(Thread.currentThread().getName());<br>        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                System.out.println(<span class="hljs-string">&quot;异步任务线程：&quot;</span> + Thread.currentThread().getName());<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);<br>                System.out.println(<span class="hljs-string">&quot;child run&quot;</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">return</span> <span class="hljs-number">123</span>;<br>        &#125;, executor);<br>        System.out.println(<span class="hljs-string">&quot;main end&quot;</span>);<br>        <span class="hljs-keyword">try</span> &#123;<br>            future.whenComplete(<span class="hljs-keyword">new</span> BiConsumer&lt;Integer, Throwable&gt;() &#123;<br>                <span class="hljs-meta">@Override</span><br>                <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(Integer integer, Throwable throwable)</span> </span>&#123;<br>                    System.out.println(<span class="hljs-string">&quot;结果触发任务线程：&quot;</span> + Thread.currentThread().getName());<br>                    System.out.println(<span class="hljs-string">&quot;特定任务执行&quot;</span>);<br>                &#125;<br>            &#125;);<br>        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            e.printStackTrace();<br>        &#125;<br>        executor.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>执行后结果</p>
-<pre><code class="hljs sql">main
-main <span class="hljs-keyword">end</span>
-异步任务线程：pool<span class="hljs-number">-1</span>-<span class="hljs-keyword">thread</span><span class="hljs-number">-1</span>
-<span class="hljs-keyword">child</span> run
-结果触发任务线程：pool<span class="hljs-number">-1</span>-<span class="hljs-keyword">thread</span><span class="hljs-number">-1</span>
-特定任务执行</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs sql">main<br>main <span class="hljs-keyword">end</span><br>异步任务线程：pool<span class="hljs-number">-1</span>-<span class="hljs-keyword">thread</span><span class="hljs-number">-1</span><br><span class="hljs-keyword">child</span> run<br>结果触发任务线程：pool<span class="hljs-number">-1</span>-<span class="hljs-keyword">thread</span><span class="hljs-number">-1</span><br>特定任务执行<br></code></pre></td></tr></table></figure>
 
 <p>根据执行结果可知，异步任务结束后，当使用whenComplete()时，后续的特定处理任务使用的线程与异步任务线程相同。 </p>
 <p>当使用whenCompleteAsync()，并指定线程池后</p>
-<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
-
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-<span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;
-<span class="hljs-keyword">import</span> java.util.function.BiConsumer;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo1</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        System.out.println(Thread.currentThread().getName());
-        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                System.out.println(<span class="hljs-string">&quot;异步任务线程：&quot;</span> + Thread.currentThread().getName());
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">1</span>);
-                System.out.println(<span class="hljs-string">&quot;child run&quot;</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">return</span> <span class="hljs-number">123</span>;
-        &#125;, executor);
-        System.out.println(<span class="hljs-string">&quot;main end&quot;</span>);
-        <span class="hljs-keyword">try</span> &#123;
-            future.whenCompleteAsync(<span class="hljs-keyword">new</span> BiConsumer&lt;Integer, Throwable&gt;() &#123;
-                <span class="hljs-meta">@Override</span>
-                <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(Integer integer, Throwable throwable)</span> </span>&#123;
-                    System.out.println(<span class="hljs-string">&quot;结果触发任务线程：&quot;</span> + Thread.currentThread().getName());
-                    System.out.println(<span class="hljs-string">&quot;特定任务执行&quot;</span>);
-                &#125;
-            &#125;);
-        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;
-            e.printStackTrace();
-        &#125;
-        executor.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;<br><br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;<br><span class="hljs-keyword">import</span> java.util.function.BiConsumer;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo1</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        System.out.println(Thread.currentThread().getName());<br>        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                System.out.println(<span class="hljs-string">&quot;异步任务线程：&quot;</span> + Thread.currentThread().getName());<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">1</span>);<br>                System.out.println(<span class="hljs-string">&quot;child run&quot;</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">return</span> <span class="hljs-number">123</span>;<br>        &#125;, executor);<br>        System.out.println(<span class="hljs-string">&quot;main end&quot;</span>);<br>        <span class="hljs-keyword">try</span> &#123;<br>            future.whenCompleteAsync(<span class="hljs-keyword">new</span> BiConsumer&lt;Integer, Throwable&gt;() &#123;<br>                <span class="hljs-meta">@Override</span><br>                <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(Integer integer, Throwable throwable)</span> </span>&#123;<br>                    System.out.println(<span class="hljs-string">&quot;结果触发任务线程：&quot;</span> + Thread.currentThread().getName());<br>                    System.out.println(<span class="hljs-string">&quot;特定任务执行&quot;</span>);<br>                &#125;<br>            &#125;);<br>        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            e.printStackTrace();<br>        &#125;<br>        executor.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>运行结果</p>
-<pre><code class="hljs reasonml">main
-main <span class="hljs-keyword">end</span>
-异步任务线程：pool-<span class="hljs-number">1</span>-thread-<span class="hljs-number">1</span>
-child run
-结果触发任务线程：<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ForkJoinPool</span>.</span></span>commonPool-worker-<span class="hljs-number">1</span>
-特定任务执行</code></pre>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">main<br>main <span class="hljs-keyword">end</span><br>异步任务线程：pool-<span class="hljs-number">1</span>-thread-<span class="hljs-number">1</span><br>child run<br>结果触发任务线程：<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">ForkJoinPool</span>.</span></span>commonPool-worker-<span class="hljs-number">1</span><br>特定任务执行<br></code></pre></td></tr></table></figure>
 
 <p>根据结果可知，后续的处理任务在线程池中又开启了一个新的线程进行使用。 </p>
 <h5 id="exceptionally-使用与源码解析"><a href="#exceptionally-使用与源码解析" class="headerlink" title="exceptionally()使用与源码解析"></a>exceptionally()使用与源码解析</h5><p>exceptionally()与上述两个方法类似，都是用于当异步任务结束后，执行特定处理，但不同的是，上述两个方法即可以处理正常的返回结果也可以处理异常，而exceptionally()只对异常进行处理，且其使用的是主线程。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>根据源码可知，其内部实现原理与上述两个方法类似，都是判断任务是否执行完，如果执行完构建一个后续任务进行执行。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;
-
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-<span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;
-<span class="hljs-keyword">import</span> java.util.function.Function;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo1</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        System.out.println(Thread.currentThread().getName());
-        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                System.out.println(<span class="hljs-string">&quot;异步任务线程：&quot;</span> + Thread.currentThread().getName());
-                <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);
-                System.out.println(<span class="hljs-string">&quot;child run&quot;</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">return</span> <span class="hljs-number">123</span>;
-        &#125;, executor);
-        System.out.println(<span class="hljs-string">&quot;main end&quot;</span>);
-        future.exceptionally(<span class="hljs-keyword">new</span> Function&lt;Throwable, Integer&gt;() &#123;
-            <span class="hljs-meta">@Override</span>
-            <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">apply</span><span class="hljs-params">(Throwable throwable)</span> </span>&#123;
-                System.out.println(<span class="hljs-string">&quot;异常结果触发任务线程：&quot;</span> + Thread.currentThread().getName());
-                System.out.println(<span class="hljs-string">&quot;异步任务执行失败：&quot;</span> + throwable.getMessage());
-                <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;
-            &#125;
-        &#125;);
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> com.ryhx.drools.test;<br><br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;<br><span class="hljs-keyword">import</span> java.util.function.Function;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Demo1</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        System.out.println(Thread.currentThread().getName());<br>        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                System.out.println(<span class="hljs-string">&quot;异步任务线程：&quot;</span> + Thread.currentThread().getName());<br>                <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);<br>                System.out.println(<span class="hljs-string">&quot;child run&quot;</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">return</span> <span class="hljs-number">123</span>;<br>        &#125;, executor);<br>        System.out.println(<span class="hljs-string">&quot;main end&quot;</span>);<br>        future.exceptionally(<span class="hljs-keyword">new</span> Function&lt;Throwable, Integer&gt;() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">apply</span><span class="hljs-params">(Throwable throwable)</span> </span>&#123;<br>                System.out.println(<span class="hljs-string">&quot;异常结果触发任务线程：&quot;</span> + Thread.currentThread().getName());<br>                System.out.println(<span class="hljs-string">&quot;异步任务执行失败：&quot;</span> + throwable.getMessage());<br>                <span class="hljs-keyword">return</span> <span class="hljs-keyword">null</span>;<br>            &#125;<br>        &#125;);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>返回结果</p>
-<pre><code class="hljs sql">main
-main <span class="hljs-keyword">end</span>
-异步任务线程：pool<span class="hljs-number">-1</span>-<span class="hljs-keyword">thread</span><span class="hljs-number">-1</span>
-异常结果触发任务线程：<span class="hljs-keyword">main</span>
-异步任务执行失败：java.lang.ArithmeticException: / <span class="hljs-keyword">by</span> zero</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs sql">main<br>main <span class="hljs-keyword">end</span><br>异步任务线程：pool<span class="hljs-number">-1</span>-<span class="hljs-keyword">thread</span><span class="hljs-number">-1</span><br>异常结果触发任务线程：<span class="hljs-keyword">main</span><br>异步任务执行失败：java.lang.ArithmeticException: / <span class="hljs-keyword">by</span> zero<br></code></pre></td></tr></table></figure>
 
 <p>根据返回结果可以看到，当异步任务出现异常之后，whenCompleteAsync与exceptionally都被触发了，但exceptionally使用的是当前主线程。 </p>
 <h4 id="多任务依赖执行"><a href="#多任务依赖执行" class="headerlink" title="多任务依赖执行"></a>多任务依赖执行</h4><p>在异步编程中，有时会涉及到异步任务间存在依赖关系，如第二个任务的执行需要依赖与第一个任务的执行结果。 对于这种需求，CompletableFuture中也提供了方法实现</p>
-<h5 id="thenApply-使用"><a href="#thenApply-使用" class="headerlink" title="thenApply()使用"></a>thenApply()使用</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic8.png" srcset="/blog/img/loading.gif" class>
+<h5 id="thenApply-使用"><a href="#thenApply-使用" class="headerlink" title="thenApply()使用"></a>thenApply()使用</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>该方法会接收一个Function，用于声明后续要执行的业务，其中T代表上一个方法的执行结果，fn代表当前任务的结果数据类型，最终其会映射到CompletableFuture中的结果数据类型。 </p>
 <p>thenApply()使用与刚才的方法内部实现原理都是类似的，此处重点关注对于该方法的使用</p>
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutionException;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenApplyDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> value = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(value);
-            <span class="hljs-keyword">return</span> value;
-        &#125;, executor).thenApply(value -&gt; &#123;
-            <span class="hljs-keyword">int</span> result = value * <span class="hljs-number">10</span>;
-            System.out.println(result);
-            <span class="hljs-keyword">return</span> result;
-        &#125;);
-        <span class="hljs-keyword">try</span> &#123;
-            Integer result = future.get();
-            System.out.println(result);
-        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-            e.printStackTrace();
-            future.cancel(<span class="hljs-keyword">true</span>);
-        &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;
-            e.printStackTrace();
-            future.cancel(<span class="hljs-keyword">true</span>);
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            executor.shutdown();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutionException;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenApplyDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> value = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(value);<br>            <span class="hljs-keyword">return</span> value;<br>        &#125;, executor).thenApply(value -&gt; &#123;<br>            <span class="hljs-keyword">int</span> result = value * <span class="hljs-number">10</span>;<br>            System.out.println(result);<br>            <span class="hljs-keyword">return</span> result;<br>        &#125;);<br>        <span class="hljs-keyword">try</span> &#123;<br>            Integer result = future.get();<br>            System.out.println(result);<br>        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>            e.printStackTrace();<br>            future.cancel(<span class="hljs-keyword">true</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;<br>            e.printStackTrace();<br>            future.cancel(<span class="hljs-keyword">true</span>);<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            executor.shutdown();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>根据运行结果可以看到，此处通过thenApply()串接了两个任务，第二个方法会在第一个方法执行完成后触发，且第二个方法的执行依赖于第一个方法的执行结果。 </p>
 <h5 id="handle-使用"><a href="#handle-使用" class="headerlink" title="handle()使用"></a>handle()使用</h5><p>handle()的使用效果与thenApply()类似，但不同的是thenApply()只能处理任务的正常返回结果，一旦出现异常则无法进行后续处理。而handle()即可以处理正常结果，也可以处理异常结果。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic9.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutionException;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-<span class="hljs-keyword">import</span> java.util.function.BiFunction;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenApplyDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;
-        <span class="hljs-keyword">int</span> value = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-        <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;
-        System.out.println(value);
-        <span class="hljs-keyword">return</span> value; &#125;,executor) .handle(<span class="hljs-keyword">new</span> BiFunction&lt;Integer, Throwable, Integer&gt;() &#123;
-            <span class="hljs-meta">@Override</span>
-            <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">apply</span><span class="hljs-params">(Integer integer, Throwable throwable)</span> </span>&#123;
-                <span class="hljs-keyword">int</span> result = <span class="hljs-number">1</span>;
-                <span class="hljs-keyword">if</span> (throwable == <span class="hljs-keyword">null</span>) &#123;
-                    result = integer * <span class="hljs-number">10</span>;
-                    System.out.println(result);
-                &#125; <span class="hljs-keyword">else</span> &#123;
-                    System.out.println(throwable.getMessage());
-                &#125;
-                <span class="hljs-keyword">return</span> result;
-            &#125;
-        &#125;);
-        <span class="hljs-keyword">try</span> &#123;
-            Integer result = future.get();
-            System.out.println(result);
-        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-            e.printStackTrace();
-            future.cancel(<span class="hljs-keyword">true</span>);
-        &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;
-            e.printStackTrace();
-            future.cancel(<span class="hljs-keyword">true</span>);
-        &#125; <span class="hljs-keyword">finally</span> &#123;
-            executor.shutdown();
-        &#125;
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutionException;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><span class="hljs-keyword">import</span> java.util.function.BiFunction;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenApplyDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture&lt;Integer&gt; future = CompletableFuture.supplyAsync(() -&gt; &#123;<br>        <span class="hljs-keyword">int</span> value = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>        <span class="hljs-keyword">int</span> i = <span class="hljs-number">1</span> / <span class="hljs-number">0</span>;<br>        System.out.println(value);<br>        <span class="hljs-keyword">return</span> value; &#125;,executor) .handle(<span class="hljs-keyword">new</span> BiFunction&lt;Integer, Throwable, Integer&gt;() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-function"><span class="hljs-keyword">public</span> Integer <span class="hljs-title">apply</span><span class="hljs-params">(Integer integer, Throwable throwable)</span> </span>&#123;<br>                <span class="hljs-keyword">int</span> result = <span class="hljs-number">1</span>;<br>                <span class="hljs-keyword">if</span> (throwable == <span class="hljs-keyword">null</span>) &#123;<br>                    result = integer * <span class="hljs-number">10</span>;<br>                    System.out.println(result);<br>                &#125; <span class="hljs-keyword">else</span> &#123;<br>                    System.out.println(throwable.getMessage());<br>                &#125;<br>                <span class="hljs-keyword">return</span> result;<br>            &#125;<br>        &#125;);<br>        <span class="hljs-keyword">try</span> &#123;<br>            Integer result = future.get();<br>            System.out.println(result);<br>        &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>            e.printStackTrace();<br>            future.cancel(<span class="hljs-keyword">true</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;<br>            e.printStackTrace();<br>            future.cancel(<span class="hljs-keyword">true</span>);<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            executor.shutdown();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>根据上述代码的运行可以看到，当第一个任务出现异常后，第二个任务会对该异常进行后续的处理，完成串性操作。</p>
-<h5 id="thenAccept-使用"><a href="#thenAccept-使用" class="headerlink" title="thenAccept()使用"></a>thenAccept()使用</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic10.png" srcset="/blog/img/loading.gif" class>
+<h5 id="thenAccept-使用"><a href="#thenAccept-使用" class="headerlink" title="thenAccept()使用"></a>thenAccept()使用</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>当将多个任务连接起来执行时，有时最终是不需要返回结果，CompletableFuture中也提供了方法实现。 </p>
 <p>thenAccept()使用与上述方法类似，接收任务执行结果，并使用，但其没有结果返回。 </p>
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-<span class="hljs-keyword">import</span> java.util.function.Consumer;
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><span class="hljs-keyword">import</span> java.util.function.Consumer;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenAcceptDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> value = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(value);<br>            <span class="hljs-keyword">return</span> value;<br>        &#125;).thenAcceptAsync(<span class="hljs-keyword">new</span> Consumer&lt;Integer&gt;() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(Integer integer)</span> </span>&#123;<br>                System.out.println(<span class="hljs-string">&quot;接收上一个任务结果为：&quot;</span> + integer);<br>            &#125;<br>        &#125;, executor);<br>        executor.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenAcceptDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executor = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> value = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(value);
-            <span class="hljs-keyword">return</span> value;
-        &#125;).thenAcceptAsync(<span class="hljs-keyword">new</span> Consumer&lt;Integer&gt;() &#123;
-            <span class="hljs-meta">@Override</span>
-            <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">accept</span><span class="hljs-params">(Integer integer)</span> </span>&#123;
-                System.out.println(<span class="hljs-string">&quot;接收上一个任务结果为：&quot;</span> + integer);
-            &#125;
-        &#125;, executor);
-        executor.shutdown();
-    &#125;
-&#125;</code></pre>
-
-<h5 id="thenRun-使用"><a href="#thenRun-使用" class="headerlink" title="thenRun()使用"></a>thenRun()使用</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic11.png" srcset="/blog/img/loading.gif" class>
+<h5 id="thenRun-使用"><a href="#thenRun-使用" class="headerlink" title="thenRun()使用"></a>thenRun()使用</h5><img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>thenRun()与thenAccept()使用基本相同，都是不会进行结果返回，但不同的是，thenRun()不关心方法是否有结果，只要它完成，就会触发其执行。</p>
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenRunDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> i = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            <span class="hljs-keyword">return</span> i;
-        &#125;).thenRun(() -&gt; System.out.println(<span class="hljs-string">&quot;run方法执行&quot;</span>));
-        executorService.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenRunDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> i = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            <span class="hljs-keyword">return</span> i;<br>        &#125;).thenRun(() -&gt; System.out.println(<span class="hljs-string">&quot;run方法执行&quot;</span>));<br>        executorService.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="两任务合并执行"><a href="#两任务合并执行" class="headerlink" title="两任务合并执行"></a>两任务合并执行</h4><h5 id="两个任务全部完成触发"><a href="#两个任务全部完成触发" class="headerlink" title="两个任务全部完成触发"></a>两个任务全部完成触发</h5><p>在进行多异步任务执行时，有时不光要让任务之间串联执行，有时还要将多个任务执行结果进行合并处理，CompletableFuture中也提供了一些方法实现。 </p>
 <h6 id="thenCombine-使用"><a href="#thenCombine-使用" class="headerlink" title="thenCombine()使用"></a>thenCombine()使用</h6><p>当两个异步任务都执行完毕后，它可以将两个任务进行合并，获取到两个任务的执行结果，进行合并处理，最后会 有返回值。 </p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic12.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>根据源码其内部都执行了biApplyStage()</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic13.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>内部会判断当前要执行的函数是否为null，或者任务有没有执行完。如果为true，则抛出空指针异常。接着会构建一个新的任务，将任务放入栈中，线程池会为其分配线程让其执行。 </p>
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutionException;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenCombineDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;
-        &#125;, executorService);
-        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;
-        &#125;, executorService);
-        CompletableFuture result = future1.thenCombineAsync(future2, (f1, f2) -&gt; &#123;
-            System.out.println(<span class="hljs-string">&quot;result：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> f1 + <span class="hljs-string">&quot; &quot;</span> + f2;
-        &#125;, executorService);
-        System.out.println(result.get());
-        executorService.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutionException;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenCombineDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;<br>        &#125;, executorService);<br>        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;<br>        &#125;, executorService);<br>        CompletableFuture result = future1.thenCombineAsync(future2, (f1, f2) -&gt; &#123;<br>            System.out.println(<span class="hljs-string">&quot;result：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> f1 + <span class="hljs-string">&quot; &quot;</span> + f2;<br>        &#125;, executorService);<br>        System.out.println(result.get());<br>        executorService.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>返回结果</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">future1</span>：pool‐<span class="hljs-number">1</span>‐thread‐<span class="hljs-number">1</span> 
-<span class="hljs-attribute">future2</span>：pool‐<span class="hljs-number">1</span>‐thread‐<span class="hljs-number">2</span> 
-<span class="hljs-attribute">result</span>：pool‐<span class="hljs-number">1</span>‐thread‐<span class="hljs-number">3</span> 
-<span class="hljs-attribute">hello</span> itheima</code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">future1</span>：pool‐<span class="hljs-number">1</span>‐thread‐<span class="hljs-number">1</span> <br><span class="hljs-attribute">future2</span>：pool‐<span class="hljs-number">1</span>‐thread‐<span class="hljs-number">2</span> <br><span class="hljs-attribute">result</span>：pool‐<span class="hljs-number">1</span>‐thread‐<span class="hljs-number">3</span> <br><span class="hljs-attribute">hello</span> itheima<br></code></pre></td></tr></table></figure>
 
 <p>根据返回结果可以看到，这一系列操作相当于构建了三个异步任务进行执行。</p>
 <h6 id="thenAcceptBoth-使用"><a href="#thenAcceptBoth-使用" class="headerlink" title="thenAcceptBoth()使用"></a>thenAcceptBoth()使用</h6><p>thenAcceptBoth()使用与thenCombine()类似，当两个任务执行完，获取两个任务的结果进行特定处理，但thenAcceptBoth()没有返回值</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic14.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>其内部都调用了biAcceptStage()，其内部实现原理与上述方法类似。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic15.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenAcceptBothDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);
-            <span class="hljs-keyword">return</span> f1;
-        &#125;, executorService);
-        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);
-            <span class="hljs-keyword">return</span> f2;
-        &#125;, executorService);
-        future1.thenAcceptBoth(future2, (f1, f2) -&gt; System.out.println(f1 + f2));
-        executorService.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ThenAcceptBothDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);<br>            <span class="hljs-keyword">return</span> f1;<br>        &#125;, executorService);<br>        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);<br>            <span class="hljs-keyword">return</span> f2;<br>        &#125;, executorService);<br>        future1.thenAcceptBoth(future2, (f1, f2) -&gt; System.out.println(f1 + f2));<br>        executorService.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h6 id="runAfterBoth-使用"><a href="#runAfterBoth-使用" class="headerlink" title="runAfterBoth()使用"></a>runAfterBoth()使用</h6><p>当两个任务执行完毕，触发特定任务处理，但不要两个异步任务结果，且不会进行值返回。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic16.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic16.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;
-<span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;
-<span class="hljs-keyword">import</span> java.util.concurrent.Executors;
-<span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RunAfterBothDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);
-            <span class="hljs-keyword">return</span> f1;
-        &#125;, executorService);
-        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);
-            <span class="hljs-keyword">return</span> f2;
-        &#125;, executorService);
-        future1.runAfterBothAsync(future2, () -&gt; &#123;
-            System.out.println(<span class="hljs-string">&quot;两个任务都已执行完&quot;</span>);
-            executorService.shutdown();
-        &#125;, executorService);
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.CompletableFuture;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><span class="hljs-keyword">import</span> java.util.concurrent.TimeUnit;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RunAfterBothDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);<br>            <span class="hljs-keyword">return</span> f1;<br>        &#125;, executorService);<br>        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);<br>            <span class="hljs-keyword">return</span> f2;<br>        &#125;, executorService);<br>        future1.runAfterBothAsync(future2, () -&gt; &#123;<br>            System.out.println(<span class="hljs-string">&quot;两个任务都已执行完&quot;</span>);<br>            executorService.shutdown();<br>        &#125;, executorService);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h5 id="两个任务任意一个完成触发"><a href="#两个任务任意一个完成触发" class="headerlink" title="两个任务任意一个完成触发"></a>两个任务任意一个完成触发</h5><h6 id="applyToEither-使用"><a href="#applyToEither-使用" class="headerlink" title="applyToEither()使用"></a>applyToEither()使用</h6><p>当两个任务异步任务执行，谁先执行完，就以谁的结果为准，完成后续的业务处理，并且会进行结果值返回。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic17.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic17.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.*;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ApplyToEitherDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;
-        &#125;, executorService);
-        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;
-        &#125;, executorService);
-        CompletableFuture result = future1.applyToEitherAsync(future2, (value) -&gt; &#123;
-            System.out.println(<span class="hljs-string">&quot;result：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> value;
-        &#125;, executorService);
-        System.out.println(result.get());
-        executorService.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.*;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ApplyToEitherDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;<br>        &#125;, executorService);<br>        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;<br>        &#125;, executorService);<br>        CompletableFuture result = future1.applyToEitherAsync(future2, (value) -&gt; &#123;<br>            System.out.println(<span class="hljs-string">&quot;result：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> value;<br>        &#125;, executorService);<br>        System.out.println(result.get());<br>        executorService.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h6 id="acceptEither-使用"><a href="#acceptEither-使用" class="headerlink" title="**acceptEither()**使用"></a>**acceptEither()**使用</h6><p>acceptEither()的使用效果与applyToEither()类似，但acceptEither()没有返回值</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic18.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic18.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>其内部调用了orAcceptStage()</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic19.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic19.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.*;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AcceptEitherDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;
-        &#125;, executorService);
-        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;
-        &#125;, executorService);
-        future1.acceptEitherAsync(future2, (value) -&gt; &#123;
-            System.out.println(<span class="hljs-string">&quot;result：&quot;</span> + Thread.currentThread().getName());
-            System.out.println(value);
-            executorService.shutdown();
-        &#125;, executorService);
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.*;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AcceptEitherDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;<br>        &#125;, executorService);<br>        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;<br>        &#125;, executorService);<br>        future1.acceptEitherAsync(future2, (value) -&gt; &#123;<br>            System.out.println(<span class="hljs-string">&quot;result：&quot;</span> + Thread.currentThread().getName());<br>            System.out.println(value);<br>            executorService.shutdown();<br>        &#125;, executorService);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h6 id="runAfterEither-使用"><a href="#runAfterEither-使用" class="headerlink" title="runAfterEither()使用"></a>runAfterEither()使用</h6><p>当两个任务执行，只要有一个任务执行完，则触发特定处理执行，无需使用异步任务的执行结果，且特定处理不会进行值的返回。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic20.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic20.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.*;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RunAfterEitherDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;
-        &#125;, executorService);
-        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());
-            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;
-        &#125;, executorService);
-        future1.runAfterEitherAsync(future2, () -&gt; System.out.println(<span class="hljs-string">&quot;其中一个任务处理完成 了&quot;</span>), executorService);
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.concurrent.*;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RunAfterEitherDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> ExecutionException, InterruptedException </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            System.out.println(<span class="hljs-string">&quot;future1：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;hello&quot;</span>;<br>        &#125;, executorService);<br>        CompletableFuture&lt;String&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">3</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            System.out.println(<span class="hljs-string">&quot;future2：&quot;</span> + Thread.currentThread().getName());<br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;itheima&quot;</span>;<br>        &#125;, executorService);<br>        future1.runAfterEitherAsync(future2, () -&gt; System.out.println(<span class="hljs-string">&quot;其中一个任务处理完成 了&quot;</span>), executorService);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h4 id="多任务组合执行"><a href="#多任务组合执行" class="headerlink" title="多任务组合执行"></a>多任务组合执行</h4><p>刚才的操作异步任务的数量，只能局限在两个，现在如果需要有任意多个异步任务进行组合操作的话，CompletableFuture中也提供了对应方法进行实现</p>
-<pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> CompletableFuture&lt;Void&gt; <span class="hljs-title">allOf</span><span class="hljs-params">(CompletableFuture&lt;?&gt;... cfs)</span> </span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> CompletableFuture&lt;Object&gt; <span class="hljs-title">anyOf</span><span class="hljs-params">(CompletableFuture&lt;?&gt;... cfs)</span></span></code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> CompletableFuture&lt;Void&gt; <span class="hljs-title">allOf</span><span class="hljs-params">(CompletableFuture&lt;?&gt;... cfs)</span> </span><br><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> CompletableFuture&lt;Object&gt; <span class="hljs-title">anyOf</span><span class="hljs-params">(CompletableFuture&lt;?&gt;... cfs)</span></span><br></code></pre></td></tr></table></figure>
 
 <h5 id="allOf-使用与源码分析"><a href="#allOf-使用与源码分析" class="headerlink" title="**allOf()**使用与源码分析"></a>**allOf()**使用与源码分析</h5><p>当一个特定业务处理任务的执行需要一组异步任务完成后才能执行的话，就可以通过allOf()实现。适用场景：假设现在有一个Z任务，它的执行需要[A,B,C,D,E,F]这一组异步任务全部执行完才能触发。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic21.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic21.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>其内部调用了andTree()，传递任意多个异步任务。其内部会基于二分查找法，将一个数组构建成一个二叉树，并且同时将两个任务添加到栈中执行。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic22.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic22.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>判断任务何时添加到栈中，其内部又会调用biRelay()传递两个任务，如果a,b都结束了才继续往下。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic23.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic23.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>使用示例如下：</p>
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.ArrayList;
-<span class="hljs-keyword">import</span> java.util.List;
-<span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.*;
-<span class="hljs-keyword">import</span> java.util.concurrent.atomic.AtomicReference;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AllOfDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);
-            <span class="hljs-keyword">return</span> f1;
-        &#125;, executorService);
-        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);
-            <span class="hljs-keyword">return</span> f2;
-        &#125;, executorService);
-        CompletableFuture&lt;Integer&gt; future3 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">int</span> f3 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f3 value：&quot;</span> + f3);
-            <span class="hljs-keyword">return</span> f3;
-        &#125;, executorService);
-        List&lt;CompletableFuture&lt;Integer&gt;&gt; list = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-        list.add(future1);
-        list.add(future2);
-        list.add(future3);
-        CompletableFuture&lt;Void&gt; all = CompletableFuture.allOf(list.toArray(<span class="hljs-keyword">new</span> CompletableFuture[]&#123;&#125;));
-        all.thenRunAsync(() -&gt; &#123;
-            AtomicReference&lt;Integer&gt; result = <span class="hljs-keyword">new</span> AtomicReference&lt;&gt;(<span class="hljs-number">0</span>);
-            list.parallelStream().forEach(future -&gt; &#123;
-                <span class="hljs-keyword">try</span> &#123;
-                    Integer value = future.get();
-                    result.updateAndGet(v -&gt; v + value);
-                    System.out.println(result);
-                &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                    e.printStackTrace();
-                &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;
-                    e.printStackTrace();
-                &#125;
-            &#125;);
-        &#125;);
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.ArrayList;<br><span class="hljs-keyword">import</span> java.util.List;<br><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.*;<br><span class="hljs-keyword">import</span> java.util.concurrent.atomic.AtomicReference;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AllOfDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);<br>            <span class="hljs-keyword">return</span> f1;<br>        &#125;, executorService);<br>        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);<br>            <span class="hljs-keyword">return</span> f2;<br>        &#125;, executorService);<br>        CompletableFuture&lt;Integer&gt; future3 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">int</span> f3 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f3 value：&quot;</span> + f3);<br>            <span class="hljs-keyword">return</span> f3;<br>        &#125;, executorService);<br>        List&lt;CompletableFuture&lt;Integer&gt;&gt; list = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>        list.add(future1);<br>        list.add(future2);<br>        list.add(future3);<br>        CompletableFuture&lt;Void&gt; all = CompletableFuture.allOf(list.toArray(<span class="hljs-keyword">new</span> CompletableFuture[]&#123;&#125;));<br>        all.thenRunAsync(() -&gt; &#123;<br>            AtomicReference&lt;Integer&gt; result = <span class="hljs-keyword">new</span> AtomicReference&lt;&gt;(<span class="hljs-number">0</span>);<br>            list.parallelStream().forEach(future -&gt; &#123;<br>                <span class="hljs-keyword">try</span> &#123;<br>                    Integer value = future.get();<br>                    result.updateAndGet(v -&gt; v + value);<br>                    System.out.println(result);<br>                &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                    e.printStackTrace();<br>                &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;<br>                    e.printStackTrace();<br>                &#125;<br>            &#125;);<br>        &#125;);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h5 id="anyOf-使用与源码分析"><a href="#anyOf-使用与源码分析" class="headerlink" title="anyOf()使用与源码分析"></a>anyOf()使用与源码分析</h5><p>anyOf()与allOf()类似，但不同的是，使用anyOf()时，当一组异步任务中，只要有一个执行完毕，则会被触发，利用该特性可以用来获取最快的那个线程结果。 </p>
 <p>其内部实现原理与allOf()都是一样的，内部也会基于二分查找构建一个二叉树。</p>
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic24.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic24.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic25.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/07/24/JDK8/CompleTableFuture/pic25.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>使用示例如下：</p>
-<pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.ArrayList;
-<span class="hljs-keyword">import</span> java.util.List;
-<span class="hljs-keyword">import</span> java.util.Random;
-<span class="hljs-keyword">import</span> java.util.concurrent.*;
-
-<span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnyOfDemo</span> </span>&#123;
-    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;
-        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);
-        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);
-            <span class="hljs-keyword">return</span> f1;
-        &#125;, executorService);
-        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);
-            <span class="hljs-keyword">return</span> f2;
-        &#125;, executorService);
-        CompletableFuture&lt;Integer&gt; future3 = CompletableFuture.supplyAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125;
-            <span class="hljs-keyword">int</span> f3 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);
-            System.out.println(<span class="hljs-string">&quot;f3 value：&quot;</span> + f3);
-            <span class="hljs-keyword">return</span> f3;
-        &#125;, executorService);
-        List&lt;CompletableFuture&lt;Integer&gt;&gt; list = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();
-        list.add(future1);
-        list.add(future2);
-        list.add(future3);
-        CompletableFuture&lt;Object&gt; future = CompletableFuture.anyOf(list.toArray(<span class="hljs-keyword">new</span> CompletableFuture[]&#123;&#125;));
-        future.thenRunAsync(() -&gt; &#123;
-            <span class="hljs-keyword">try</span> &#123;
-                System.out.println(<span class="hljs-string">&quot;有一个任务执行完了，其值为:&quot;</span> + future.get());
-            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;
-                e.printStackTrace();
-            &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;
-                e.printStackTrace();
-            &#125;
-        &#125;);
-        executorService.shutdown();
-    &#125;
-&#125;</code></pre>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">import</span> java.util.ArrayList;<br><span class="hljs-keyword">import</span> java.util.List;<br><span class="hljs-keyword">import</span> java.util.Random;<br><span class="hljs-keyword">import</span> java.util.concurrent.*;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AnyOfDemo</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> </span>&#123;<br>        ExecutorService executorService = Executors.newFixedThreadPool(<span class="hljs-number">100</span>);<br>        CompletableFuture&lt;Integer&gt; future1 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">int</span> f1 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f1 value：&quot;</span> + f1);<br>            <span class="hljs-keyword">return</span> f1;<br>        &#125;, executorService);<br>        CompletableFuture&lt;Integer&gt; future2 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">int</span> f2 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f2 value：&quot;</span> + f2);<br>            <span class="hljs-keyword">return</span> f2;<br>        &#125;, executorService);<br>        CompletableFuture&lt;Integer&gt; future3 = CompletableFuture.supplyAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                TimeUnit.SECONDS.sleep(<span class="hljs-number">5</span>);<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>            <span class="hljs-keyword">int</span> f3 = <span class="hljs-keyword">new</span> Random().nextInt(<span class="hljs-number">100</span>);<br>            System.out.println(<span class="hljs-string">&quot;f3 value：&quot;</span> + f3);<br>            <span class="hljs-keyword">return</span> f3;<br>        &#125;, executorService);<br>        List&lt;CompletableFuture&lt;Integer&gt;&gt; list = <span class="hljs-keyword">new</span> ArrayList&lt;&gt;();<br>        list.add(future1);<br>        list.add(future2);<br>        list.add(future3);<br>        CompletableFuture&lt;Object&gt; future = CompletableFuture.anyOf(list.toArray(<span class="hljs-keyword">new</span> CompletableFuture[]&#123;&#125;));<br>        future.thenRunAsync(() -&gt; &#123;<br>            <span class="hljs-keyword">try</span> &#123;<br>                System.out.println(<span class="hljs-string">&quot;有一个任务执行完了，其值为:&quot;</span> + future.get());<br>            &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                e.printStackTrace();<br>            &#125; <span class="hljs-keyword">catch</span> (ExecutionException e) &#123;<br>                e.printStackTrace();<br>            &#125;<br>        &#125;);<br>        executorService.shutdown();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>运行结果</p>
-<pre><code class="hljs css"><span class="hljs-selector-tag">f1</span> <span class="hljs-selector-tag">value</span>：84
-有一个任务执行完了，其值为<span class="hljs-selector-pseudo">:84</span>
-<span class="hljs-selector-tag">f2</span> <span class="hljs-selector-tag">value</span>：87
-<span class="hljs-selector-tag">f3</span> <span class="hljs-selector-tag">value</span>：88</code></pre>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs css"><span class="hljs-selector-tag">f1</span> <span class="hljs-selector-tag">value</span>：84<br>有一个任务执行完了，其值为<span class="hljs-selector-pseudo">:84</span><br><span class="hljs-selector-tag">f2</span> <span class="hljs-selector-tag">value</span>：87<br><span class="hljs-selector-tag">f3</span> <span class="hljs-selector-tag">value</span>：88<br></code></pre></td></tr></table></figure>
 
-<h4 id="获得结果的方法"><a href="#获得结果的方法" class="headerlink" title="获得结果的方法"></a>获得结果的方法</h4><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">get</span><span class="hljs-params">()</span></span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">get</span><span class="hljs-params">(<span class="hljs-keyword">long</span> timeout, TimeUnit unit)</span></span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">getNow</span><span class="hljs-params">(T valueIfAbsent)</span></span>
-<span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">join</span><span class="hljs-params">()</span></span></code></pre>
+<h4 id="获得结果的方法"><a href="#获得结果的方法" class="headerlink" title="获得结果的方法"></a>获得结果的方法</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">get</span><span class="hljs-params">()</span></span><br><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">get</span><span class="hljs-params">(<span class="hljs-keyword">long</span> timeout, TimeUnit unit)</span></span><br><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">getNow</span><span class="hljs-params">(T valueIfAbsent)</span></span><br><span class="hljs-function"><span class="hljs-keyword">public</span> T <span class="hljs-title">join</span><span class="hljs-params">()</span></span><br></code></pre></td></tr></table></figure>
 
 <p>getNow有点特殊，如果结果已经计算完则返回结果或者抛出异常，否则返回给定的valueIfAbsent值。</p>
 <p>join返回计算的结果或者抛出一个unchecked异常(CompletionException)，它和get对抛出的异常的处理有些细微的区别。</p>
@@ -927,8 +427,14 @@ main <span class="hljs-keyword">end</span>
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -1019,17 +525,15 @@ main <span class="hljs-keyword">end</span>
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -1038,7 +542,6 @@ main <span class="hljs-keyword">end</span>
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -1046,7 +549,7 @@ main <span class="hljs-keyword">end</span>
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -1073,6 +576,7 @@ main <span class="hljs-keyword">end</span>
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -1090,11 +594,12 @@ main <span class="hljs-keyword">end</span>
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -1114,7 +619,6 @@ main <span class="hljs-keyword">end</span>
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

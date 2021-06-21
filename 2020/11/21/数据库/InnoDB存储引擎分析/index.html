@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>InnoDB存储引擎解析 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,18 +217,18 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
             <h1 style="display: none">InnoDB存储引擎解析</h1>
             
             <div class="markdown-body">
-              <h3 id="MySQL体系架构介绍"><a href="#MySQL体系架构介绍" class="headerlink" title="MySQL体系架构介绍"></a>MySQL体系架构介绍</h3><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" class>
+              <h3 id="MySQL体系架构介绍"><a href="#MySQL体系架构介绍" class="headerlink" title="MySQL体系架构介绍"></a>MySQL体系架构介绍</h3><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>整个MySQL Server由以下组成</p>
 <ul>
@@ -258,7 +259,7 @@
 <p>数据存储层， 主要是将数据存储在文件系统之上，并完成与存储引擎的交互。和其他数据库相比，MySQL有点与众不同，它的架构可以在多种不同场景中应用并发挥良好作用。主要体现在存储引擎上，插件式的存储引擎架构，将查询处理和其他的系统任务以及数据的存储提取分离。这种架构可以根据业务的需求和实际需要选择合适的存储引擎。</p>
 <h3 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h3><p>和大多数的数据库不同，MySQL中有一个存储引擎的概念，可以针对不同的存储需求选择最优的存储引擎。存储引擎就是存储数据、建立索引、更新数据、查询数据等等技术的实现方式 。MySQL的存储引擎是基于表的，而不是基于库的，所以存储引擎也可被称为表类型。</p>
 <p>MySQL中支持的存储引擎比较多, 可以通过<code>show engines</code>查看当前数据库支持的存储引擎 :</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p><strong>存储引擎的特点</strong></p>
 <p>MySQL中支持的存储引擎比较多，这里只分析InnoDB 与 MyISAM 。</p>
@@ -341,7 +342,7 @@
 <td>-</td>
 </tr>
 </tbody></table>
-<h3 id="InnoDB结构分析"><a href="#InnoDB结构分析" class="headerlink" title="InnoDB结构分析"></a>InnoDB结构分析</h3><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" class>
+<h3 id="InnoDB结构分析"><a href="#InnoDB结构分析" class="headerlink" title="InnoDB结构分析"></a>InnoDB结构分析</h3><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="缓冲池（Buffer-Pool）"><a href="#缓冲池（Buffer-Pool）" class="headerlink" title="缓冲池（Buffer Pool）"></a>缓冲池（Buffer Pool）</h4><p>InnoDB存储引擎基于磁盘文件存储，由于物理硬盘和内存的访问速度相差很大，为了尽可能弥补这两者之间的I/O效率的差值，就需要把经常使用的数据加载到缓冲池中，避免每次访问都进行磁盘I/O。 </p>
 <p>在InnoDB的缓冲池中不仅缓存了索引页和数据页，还包含了undo页、插入缓存、自适应哈希索引以及InnoDB的锁信息等等。</p>
@@ -351,18 +352,14 @@
 <p>对于数据库中页的修改操作，首先会修改在缓冲池中的页，然后再以一定的频率刷新到磁盘上，从而保证缓冲池中的数据与磁盘中的数据一致。注意，出于性能的考虑，MySQL并不是每次页发生更新时，都会进行页的刷新操作，而是通过checkpoint机制触发。</p>
 <p><strong>参数配置</strong></p>
 <p>查看缓冲池大小</p>
-<pre><code class="hljs sql"><span class="hljs-comment">#查看 单位为字节</span>
-<span class="hljs-keyword">show</span> <span class="hljs-keyword">variables</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;innodb_buffer_pool_size&#x27;</span>;</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-comment">#查看 单位为字节</span><br><span class="hljs-keyword">show</span> <span class="hljs-keyword">variables</span> <span class="hljs-keyword">like</span> <span class="hljs-string">&#x27;innodb_buffer_pool_size&#x27;</span>;<br></code></pre></td></tr></table></figure>
 
 <p>设置方式</p>
-<pre><code class="hljs sql">vi /etc/my.conf
-<span class="hljs-comment">#设置</span>
-innodb_buffer_pool_size=268435456</code></pre>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs sql">vi /etc/my.conf<br><span class="hljs-comment">#设置</span><br>innodb_buffer_pool_size=268435456<br></code></pre></td></tr></table></figure>
 
 <p>在专用的数据库服务器上，可以将80％的物理内存分配给缓冲池以提高效率。</p>
 <p>InnoDB引擎中允许有多个缓冲池实例，根据页的哈希值分配到不同的缓冲池实例中，从而减少数据库内部的资源竞争， 提升并发处理能力。</p>
-<pre><code class="hljs mysql">#缓冲池数量查看
-show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs mysql">#缓冲池数量查看<br>show variables like &#39;innodb_buffer_pool_instance&#39;;<br></code></pre></td></tr></table></figure>
 
 <h4 id="后台线程"><a href="#后台线程" class="headerlink" title="后台线程"></a>后台线程</h4><p><strong>Master Thread</strong></p>
 <p>主要负责将缓冲池中的数据异步刷新到磁盘中, 保持数据的一致性， 还包括脏页（缓冲池中与磁盘文件不一致的数据）的刷新、合并插入缓存、undo页的回收 。</p>
@@ -385,7 +382,7 @@ show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
 <p>二进制日志，其中记录表结构中的数据变更，包含DDL与DML。</p>
 <p>其他</p>
 <p>错误日志、查询日志、慢查询日志等。</p>
-<h3 id="InnoDB逻辑存储结构"><a href="#InnoDB逻辑存储结构" class="headerlink" title="InnoDB逻辑存储结构"></a>InnoDB逻辑存储结构</h3><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" class>
+<h3 id="InnoDB逻辑存储结构"><a href="#InnoDB逻辑存储结构" class="headerlink" title="InnoDB逻辑存储结构"></a>InnoDB逻辑存储结构</h3><img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p><strong>表空间</strong></p>
 <p>表空间是InnoDB存储引擎逻辑结构的最高层， 大部分数据都存在于共享表空间ibdata1中。如果用户启用了参数 innodb_file_per_table ，则每张表都会有一个表空间（xxx.ibd）,里面存放表中的数据、索引和插入缓存Bitmap页。其他的数据如undo log、插入缓存索引页、系统事务信息、二次写缓存都是在共享表空间中。</p>
@@ -407,7 +404,7 @@ show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
 <p>当缓冲池不够用时，根据LRU算法溢出最近最少使用的页，如果此页是脏页，则强制执行Checkpoint，刷新脏页到磁盘。</p>
 <p>C. 重做日志不可用时，刷新脏页到磁盘；</p>
 <p>redo log大小是固定的，当前的InnoDB引擎中， 重做日志的设计都是循环使用的，并不是无限增大的。重做日志可以被重用的部分是已经不再需要的， 数据库发生宕机也不需要这部分的重做日志，因此可以被覆盖使用， 如果此时重做日志还需要使用，那么必须强制执行Checkpoint，将缓冲池中的页至少刷新磁盘，checkpoint移动到当前重做日志的位置。</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>write pos表示日志当前记录的位置，当ib_logfile_1写满后，会从ib_logfile_0从头开始记录；check point表示将日志记录的修改写进磁盘，完成数据落盘，数据落盘后checkpoint会将日志上的相关记录擦除掉，即write position  至 checkpoint 之间的部分是redo log空着的部分，用于记录新的记录，checkpoint 至 write position 之间是redo log待落盘的数据修改记录。当write postion追上checkpoint时，得先停下记录，先推动checkpoint向前移动，空出位置记录新的日志。</p>
 <p><strong>分类</strong></p>
@@ -419,7 +416,7 @@ show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
 <p>主键是行唯一的标识符，在应用程序中行记录的插入顺序一般是按照主键递增的顺序进行插入的。因此，插入聚集索引一般是顺序的，不需要磁盘的随机读取。因此，在这样的情况下，插入操作一般很快就能完成。</p>
 <p>但是，不可能每张表上只有一个聚集索引，在更多的情况下，一张表上有多个非聚集的辅助索引（secondary index）。比如，我们还需要按照name这个字段进行查找，并且name这个字段不是唯一的, 这样的情况下产生了一个非聚集的并且不是唯一的索引。在进行插入操作时，数据页的存放还是按主键id的执行顺序存放，但是对于非聚集索引，叶子节点的插入不再是顺序的了。这时就需要离散地访问非聚集索引页，插入性能在这里变低了。然而这并不是这个name字段上索引的错误，因为B+树的特性决定了非聚集索引插入的离散性。</p>
 <p>InnoDB存储引擎开创性地设计了插入缓冲，对于非聚集索引的插入或更新操作，不是每一次直接插入索引页中，而是先判断插入的非聚集索引页是否在缓冲池中。如果在，则直接插入；如果不在，则先放入一个插入缓冲区中，好似欺骗数据库这个非聚集的索引已经插到叶子节点了，然后再以一定的频率执行插入缓冲和非聚集索引叶子节点的合并操作，这时通常能将多个插入合并到一个操作中（因为在一个索引页中），这就大大提高了对非聚集索引执行插入和修改操作的性能。</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="两次写"><a href="#两次写" class="headerlink" title="两次写"></a>两次写</h4><p>当数据库写物理页时，如果宕机了，那么可能会导致物理页的一致性被破坏。</p>
 <p>可能有人会说，重做日志不是可以恢复物理页吗？实际上是的，但是要求是在物理页一致的情况下。也就是说，如果物理页完全是未写之前的状态，则可以用重做日志恢复。如果物理页已经完全写完了，那么也可以用重做日志恢复。但是如果物理页前面2K写了新的数据，但是后面2K还是旧的数据，则种情况下就无法使用重做日志恢复了。</p>
@@ -429,14 +426,14 @@ show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
 <p>B. 如果写物理页时宕机了，则可以使用临时页来恢复物理页</p>
 <p>InnoDB中共享表空间中划了2M的空间，叫做double write，专门存放临时页。</p>
 <p>InnoDB还从内存中划出了2M的缓存空间，叫做double write buffer，专门缓存临时页。每次写物理页时，先写到double write buffer中，然后从double write buffer写到double write上去。最后再从double write buffer写到物理页上去。</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="自适应hash索引"><a href="#自适应hash索引" class="headerlink" title="自适应hash索引"></a>自适应hash索引</h4><p>在InnoDB中默认支持的索引结构为 B+ 树，B+ 树索引可以使用到范围查找，同时是按照顺序的方式对数据进行存储，因此很容易对数据进行排序操作，在联合索引中也可以利用部分索引键进行查询 。而对于Hash索引则只能满足 =，&lt;&gt;,in查询，不能使用范围查询， 而且数据的存储是没有顺序的。</p>
 <p>MySQL 默认使用 B+ 树作为索引，因为 B+ 树有着 Hash 索引没有的优点，那么为什么还需要自适应 Hash 索引呢？</p>
 <p>这是因为B+树的查找次数，取决于B+树的高度，在生产环境中，B+树的高度一般为3-4层，故需要3-4次查询。而 Hash 索引在进行数据检索的时候效率非常高，通常只需要 O(1) 的复杂度，也就是一次就可以完成数据的检索。虽然 Hash 索引的使用场景有很多限制，但是优点也很明显。InnoDB存储引擎会监控对表上各索引页的查询，如果观察到hash索引可以提升速度，则建立hash索引，称之为自适应hash索引（Adaptive Hash Index，AHI）。</p>
 <p>注意，这里的自适应指的是不需要人工来指定，系统会根据情况自动完成。</p>
 <p>什么情况下才会使用自适应 Hash 索引呢？如果某个数据经常被访问，当满足一定条件的时候，就会将这个数据页的地址存放到 Hash 表中。这样下次查询的时候，就可以直接找到这个页面的所在位置。值得注意的是，hash索引只能用于= ，in的查询，对于其他的查询类型，如范围匹配等是不能使用hash索引的。而且自适应 Hash 索引只保存热数据（经常被使用到的数据），并非全表数据。因此数据量并不会很大，因此自适应 Hash 也是存放到缓冲池中，这样也进一步提升了查找效率。</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="异步IO"><a href="#异步IO" class="headerlink" title="异步IO"></a>异步IO</h4><p>为了提高磁盘的操作性能，在InnoDB存储引擎中使用异步非阻塞AIO的方式来操作磁盘。</p>
 <p>与AIO对应的是Sync IO，如果是同步IO操作，则每进行一次IO操作，需要等待此次操作结束后才可以进行接下来的操作。但是如果用户发出的是一条索引扫描的查询，那么这条SQL查询语句可能需要扫描多个索引页，也就是需要进行多次的IO操作。每扫描一个页并等待其完成之后，再进行下一次扫描，这是没有必要的。</p>
@@ -445,25 +442,19 @@ show variables like &#39;innodb_buffer_pool_instance&#39;;</code></pre>
 <h3 id="InnoDB事务"><a href="#InnoDB事务" class="headerlink" title="InnoDB事务"></a>InnoDB事务</h3><h4 id="实现分析"><a href="#实现分析" class="headerlink" title="实现分析"></a>实现分析</h4><p><strong>redo log</strong></p>
 <p>redo log叫做重做日志，是用来实现事务的持久性。该日志文件由两部分组成：重做日志缓冲（redo log buffer）以及重做日志文件（redo log），前者是在内存中，后者在磁盘中。当事务提交之后会把所有修改信息都会存到该日志中，用于刷新脏页到磁盘发生错误时，进行数据恢复。</p>
 <p>例：原始数据内容：</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<pre><code class="hljs mysql">start transaction;
-select balance from bank where name&#x3D;&quot;Tom&quot;;
--- 生成 重做日志 balance&#x3D;8000 
-update bank set balance &#x3D; balance - 2000;
--- 生成 重做日志 account&#x3D;2000
-update finance set account &#x3D; account + 2000;
-commit;</code></pre>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs mysql">start transaction;<br>select balance from bank where name&#x3D;&quot;Tom&quot;;<br>-- 生成 重做日志 balance&#x3D;8000 <br>update bank set balance &#x3D; balance - 2000;<br>-- 生成 重做日志 account&#x3D;2000<br>update finance set account &#x3D; account + 2000;<br>commit;<br></code></pre></td></tr></table></figure>
 
 <p>流程：</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic10.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>mysql 为了提升性能不会把每次的修改都实时同步到磁盘，而是会先存到Buffer Pool(缓冲池)里头，把这个当作缓存来用。然后使用后台线程将缓存池刷新到磁盘。</p>
 <p>当在执行刷新时，宕机或者断电，可能会丢失部分数据。所以引入了redo log来记录已成功提交事务的修改信息，并且在事务提交时会把redo log持久化到磁盘，系统重启之后在读取redo log恢复最新数据。</p>
 <p>简单来说，redo log是用来恢复数据的，用于保障，已提交事务的持久化特性 ;</p>
 <p><strong>undo log</strong></p>
 <p>undo log 叫做回滚日志，用于记录数据被修改前的信息。他正好跟前面所说的重做日志所记录的相反，重做日志记录数据被修改后的信息。undo log主要记录的是数据的逻辑变化，为了在发生错误时回滚之前的操作，需要将之前的操作都记录下来，然后在发生错误时才可以回滚。</p>
-<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>undo log 记录事务修改之前版本的数据信息，因此假如由于系统错误或者rollback操作而回滚的话可以根据undo log的信息来进行回滚到没被修改前的状态。</p>
 <h3 id="存储引擎应用场景"><a href="#存储引擎应用场景" class="headerlink" title="存储引擎应用场景"></a>存储引擎应用场景</h3><p>在选择存储引擎时，应该根据应用系统的特点选择合适的存储引擎。对于复杂的应用系统，还可以根据实际情况选择多种存储引擎进行组合。以下是几种常用的存储引擎的使用环境 。</p>
@@ -496,8 +487,14 @@ commit;</code></pre>
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -588,17 +585,15 @@ commit;</code></pre>
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -607,7 +602,6 @@ commit;</code></pre>
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -615,7 +609,7 @@ commit;</code></pre>
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -642,6 +636,7 @@ commit;</code></pre>
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -659,11 +654,12 @@ commit;</code></pre>
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -683,7 +679,6 @@ commit;</code></pre>
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>

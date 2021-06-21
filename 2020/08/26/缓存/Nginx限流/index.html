@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/favicon.png">
-  <link rel="icon" type="image/png" href="/blog/img/favicon.png">
+  <link rel="icon" href="/blog/img/favicon.png">
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -17,6 +17,7 @@
   <meta name="description" content="">
   <meta name="author" content="">
   <meta name="keywords" content="">
+  
   <title>Nginx限流 - 萤火的博客</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -55,7 +56,7 @@
 
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.5","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"copy_btn":true,"image_zoom":{"enable":true},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":200}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
   </script>
   <script  src="/blog/js/utils.js" ></script>
   <script  src="/blog/js/color-schema.js" ></script>
@@ -141,13 +142,13 @@
         
         
           <li class="nav-item" id="search-btn">
-            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
                 class="iconfont icon-search"></i>&nbsp;</a>
           </li>
         
         
           <li class="nav-item" id="color-toggle-btn">
-            <a class="nav-link" href="javascript:">&nbsp;<i
+            <a class="nav-link" target="_self">&nbsp;<i
                 class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
           </li>
         
@@ -156,7 +157,7 @@
   </div>
 </nav>
 
-    <div class="banner intro-2" id="background" parallax=true
+    <div class="banner" id="banner" parallax=true
          style="background: url('/blog/img/default.png') no-repeat center center;
            background-size: cover;">
       <div class="full-bg-img">
@@ -216,11 +217,11 @@
     
       
 
-<div class="container-fluid">
-  <div class="row">
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
     <div class="d-none d-lg-block col-lg-2"></div>
-    <div class="col-lg-8 nopadding-md">
-      <div class="container nopadding-md" id="board-ctn">
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
@@ -238,76 +239,61 @@
 <h4 id="速率限流"><a href="#速率限流" class="headerlink" title="速率限流"></a>速率限流</h4><p>控制速率的方式之一就是采用漏桶算法。</p>
 <p>(1)漏桶算法实现控制速率限流</p>
 <p>漏桶(Leaky Bucket)算法思路很简单,水(请求)先进入到漏桶里,漏桶以一定的速度出水(接口有响应速率),当水流入速度过大会直接溢出(访问频率超过接口响应速率),然后就拒绝请求,可以看出漏桶算法能强行限制数据的传输速率.示意图如下：</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic1.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>(2)nginx的配置</p>
 <p>配置示如下：</p>
 <p>创建限流缓存空间：</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#限流设置</span>
-limit_req_zone <span class="hljs-variable">$binary_remote_addr</span> zone=contentRateLimit:10m rate=2r/s;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#限流设置</span><br>limit_req_zone <span class="hljs-variable">$binary_remote_addr</span> zone=contentRateLimit:10m rate=2r/s;<br></code></pre></td></tr></table></figure>
 
 <p>配置限流：</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#使用限流配置</span>
-limit_req zone=contentRateLimit;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#使用限流配置</span><br>limit_req zone=contentRateLimit;<br></code></pre></td></tr></table></figure>
 
 <p>参数说明：</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">binary_remote_addr</span> 是一种key，表示基于 remote_addr(客户端IP) 来做限流，binary_ 的目的是压缩内存占用 量。
-<span class="hljs-attribute">zone</span>：定义共享内存区来存储访问信息，contentRateLimit:<span class="hljs-number">10</span>m 表示一个大小为<span class="hljs-number">10</span>M，名字为 contentRateLimit 的 内存区域。<span class="hljs-number">1</span>M能存储<span class="hljs-number">16000</span>IP地址的访问信息，<span class="hljs-number">10</span>M可以存储<span class="hljs-number">16</span>WIP地址访问信息。
-<span class="hljs-attribute">rate</span> 用于设置最大访问速率，rate=<span class="hljs-number">10</span>r/s 表示每秒最多处理<span class="hljs-number">10</span>个请求。Nginx 实际上以毫秒为粒度来跟踪请求信息，因 此 <span class="hljs-number">10</span>r/s 实际上是限制：每<span class="hljs-number">100</span>毫秒处理一个请求。这意味着，自上一个请求处理完后，若后续<span class="hljs-number">100</span>毫秒内又有请求到达，将拒绝处理该请求。这里设置成<span class="hljs-number">2</span>方便测试。</code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">binary_remote_addr</span> 是一种key，表示基于 remote_addr(客户端IP) 来做限流，binary_ 的目的是压缩内存占用 量。<br><span class="hljs-attribute">zone</span>：定义共享内存区来存储访问信息，contentRateLimit:<span class="hljs-number">10</span>m 表示一个大小为<span class="hljs-number">10</span>M，名字为 contentRateLimit 的 内存区域。<span class="hljs-number">1</span>M能存储<span class="hljs-number">16000</span>IP地址的访问信息，<span class="hljs-number">10</span>M可以存储<span class="hljs-number">16</span>WIP地址访问信息。<br><span class="hljs-attribute">rate</span> 用于设置最大访问速率，rate=<span class="hljs-number">10</span>r/s 表示每秒最多处理<span class="hljs-number">10</span>个请求。Nginx 实际上以毫秒为粒度来跟踪请求信息，因 此 <span class="hljs-number">10</span>r/s 实际上是限制：每<span class="hljs-number">100</span>毫秒处理一个请求。这意味着，自上一个请求处理完后，若后续<span class="hljs-number">100</span>毫秒内又有请求到达，将拒绝处理该请求。这里设置成<span class="hljs-number">2</span>方便测试。<br></code></pre></td></tr></table></figure>
 
 <p>如果恶意一直刷新会出现如下现象：</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic2.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>(3)处理突发流量</p>
 <p>上面例子限制 2r/s，如果有时正常流量突然增大，超出的请求将被拒绝，无法处理突发流量，可以结合 <strong>burst</strong> 参数使用来解决该问题。</p>
 <p>例如，如下配置表示：</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#burst配置</span>
-limit_req zone=contentRateLimit burst=4;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#burst配置</span><br>limit_req zone=contentRateLimit burst=4;<br></code></pre></td></tr></table></figure>
 
 <p>burst 译为突发、爆发，表示在超过设定的处理速率后能额外处理的请求数,当 rate=10r/s 时，将1s拆成10份，即每100ms可处理1个请求。</p>
 <p>此处，<strong>burst=4</strong> ，若同时有4个请求到达，Nginx 会处理第一个请求，剩余3个请求将放入队列，然后每隔500ms从队列中获取一个请求进行处理。若请求数大于4，将拒绝处理多余的请求，直接返回503。</p>
 <p>不过，单独使用 burst 参数并不实用。假设 burst=50 ，rate依然为10r/s，排队中的50个请求虽然每100ms会处理一个，但第50个请求却需要等待 50 * 100ms即 5s，这么长的处理时间自然难以接受。</p>
 <p>因此，burst 往往结合 nodelay 一起使用。</p>
 <p>例如：如下配置：</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#nodelay配置</span>
-limit_req zone=contentRateLimit burst=4 nodelay;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#nodelay配置</span><br>limit_req zone=contentRateLimit burst=4 nodelay;<br></code></pre></td></tr></table></figure>
 
 <p>如上表示：</p>
 <p>平均每秒允许不超过2个请求，突发不超过4个请求，并且处理突发4个请求的时候，没有延迟，等到完成之后，按照正常的速率处理。</p>
 <p>完整配置如下：</p>
-<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic3.png" srcset="/blog/img/loading.gif" class>
+<img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <h4 id="控制并发量（连接数）"><a href="#控制并发量（连接数）" class="headerlink" title="控制并发量（连接数）"></a>控制并发量（连接数）</h4><p>ngx_http_limit_conn_module 提供了限制连接数的能力。主要是利用limit_conn_zone和limit_conn两个指令。利用连接数限制 某一个用户的ip连接的数量来控制流量。</p>
 <p>注意：并非所有连接都被计算在内 只有当服务器正在处理请求并且已经读取了整个请求头时，才会计算有效连接。</p>
 <p>此处忽略测试。</p>
 <p>配置语法：</p>
-<pre><code class="hljs pgsql">Syntax: limit_conn <span class="hljs-type">zone</span> number;
-<span class="hljs-keyword">Default</span>: —;
-Context: http, <span class="hljs-keyword">server</span>, <span class="hljs-keyword">location</span>;</code></pre>
+<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">Syntax: limit_conn <span class="hljs-type">zone</span> number;<br><span class="hljs-keyword">Default</span>: —;<br>Context: http, <span class="hljs-keyword">server</span>, <span class="hljs-keyword">location</span>;<br></code></pre></td></tr></table></figure>
 
 <p>(1)配置限制固定连接数</p>
 <p>如下，配置如下：</p>
 <p>配置限流缓存空间：</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#根据IP地址来限制，存储内存大小10M</span>
-limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=addr:1m;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#根据IP地址来限制，存储内存大小10M</span><br>limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=addr:1m;<br></code></pre></td></tr></table></figure>
 
-<pre><code class="hljs sh"><span class="hljs-comment">#location配置</span>
-limit_conn addr 2;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#location配置</span><br>limit_conn addr 2;<br></code></pre></td></tr></table></figure>
 
 <p>参数说明：</p>
-<pre><code class="hljs apache"><span class="hljs-attribute">limit_conn_zone</span> $binary_remote_addr zone=addr:<span class="hljs-number">10</span>m; 表示限制根据用户的IP地址来显示，设置存储地址为的 内存大小<span class="hljs-number">10</span>M 
-<span class="hljs-attribute">limit_conn</span> addr <span class="hljs-number">2</span>; 表示 同一个地址只允许连接<span class="hljs-number">2</span>次。</code></pre>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">limit_conn_zone</span> $binary_remote_addr zone=addr:<span class="hljs-number">10</span>m; 表示限制根据用户的IP地址来显示，设置存储地址为的 内存大小<span class="hljs-number">10</span>M <br><span class="hljs-attribute">limit_conn</span> addr <span class="hljs-number">2</span>; 表示 同一个地址只允许连接<span class="hljs-number">2</span>次。<br></code></pre></td></tr></table></figure>
 
 <p>(2)限制每个客户端IP与服务器的连接数，同时限制与虚拟服务器的连接总数。</p>
 <p>限流缓存空间配置：</p>
-<pre><code class="hljs sh"><span class="hljs-comment">#IP限流</span>
-limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=perip:10m;
-<span class="hljs-comment">#根据server的名字限流</span>
-limit_conn_zone <span class="hljs-variable">$server_name</span> zone=perserver:10m;</code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#IP限流</span><br>limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=perip:10m;<br><span class="hljs-comment">#根据server的名字限流</span><br>limit_conn_zone <span class="hljs-variable">$server_name</span> zone=perserver:10m;<br></code></pre></td></tr></table></figure>
 
 <p>location配置</p>
-<pre><code class="hljs sh">limit_conn perip 10; <span class="hljs-comment">#单个客户端ip与服务器的连接数。</span>
-limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总连接数。</span></code></pre>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh">limit_conn perip 10; <span class="hljs-comment">#单个客户端ip与服务器的连接数。</span><br>limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总连接数。</span><br></code></pre></td></tr></table></figure>
             </div>
             <hr>
             <div>
@@ -332,8 +318,14 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
                 
               </div>
               
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
               
-                <div class="post-prevnext row">
+              
+                <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
                     
@@ -424,17 +416,15 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
   
 </footer>
 
-<!-- SCRIPTS -->
 
+  <!-- SCRIPTS -->
+  
   <script  src="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.js" ></script>
   <link  rel="stylesheet" href="https://cdn.staticfile.org/nprogress/0.2.0/nprogress.min.css" />
 
   <script>
     NProgress.configure({"showSpinner":false,"trickleSpeed":200})
     NProgress.start()
-    document.addEventListener('DOMContentLoaded', function() {
-      window.NProgress && window.NProgress.inc();
-    })
     window.addEventListener('load', function() {
       NProgress.done();
     })
@@ -443,7 +433,6 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
 
 <script  src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js" ></script>
 <script  src="https://cdn.staticfile.org/twitter-bootstrap/4.5.3/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/debouncer.js" ></script>
 <script  src="/blog/js/events.js" ></script>
 <script  src="/blog/js/plugins.js" ></script>
 
@@ -451,7 +440,7 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
 
 
   
-    <script  src="/blog/js/lazyload.js" ></script>
+    <script  src="/blog/js/img-lazyload.js" ></script>
   
 
 
@@ -478,6 +467,7 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
 
 
 
+
   <script  src="https://cdn.staticfile.org/typed.js/2.0.11/typed.min.js" ></script>
   <script>
     (function (window, document) {
@@ -495,11 +485,12 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
   <script>
     (function () {
       var path = "/blog/local-search.xml";
-      var inputArea = document.querySelector("#local-search-input");
-      inputArea.onclick = function () {
+      jQuery('#local-search-input').on('click', function() {
         searchFunc(path, 'local-search-input', 'local-search-result');
-        this.onclick = null
-      }
+      });
+      jQuery('#modalSearch').on('shown.bs.modal', function() {
+        jQuery('#local-search-input').focus();
+      });
     })()
   </script>
 
@@ -519,7 +510,6 @@ limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总�
 
 <!-- 主题的启动项 保持在最底部 -->
 <script  src="/blog/js/boot.js" ></script>
-
 
 
 </body>
