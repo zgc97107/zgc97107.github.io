@@ -185,7 +185,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      5.7k 字
+      7.7k 字
     </span>
   
 
@@ -195,7 +195,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      61
+      82
        分钟
     </span>
   
@@ -439,8 +439,7 @@
 <p>与AIO对应的是Sync IO，如果是同步IO操作，则每进行一次IO操作，需要等待此次操作结束后才可以进行接下来的操作。但是如果用户发出的是一条索引扫描的查询，那么这条SQL查询语句可能需要扫描多个索引页，也就是需要进行多次的IO操作。每扫描一个页并等待其完成之后，再进行下一次扫描，这是没有必要的。</p>
 <p>用户可以在发出一个IO请求后立即再发出另一个IO请求，当全部的IO请求发送完毕后，等待所有的IO操作完成，这就是AIO。</p>
 <h4 id="刷新临接页"><a href="#刷新临接页" class="headerlink" title="刷新临接页"></a>刷新临接页</h4><p>InnoDB提供刷新临近页功能：当刷新一脏页时，同时检测所在区(extent)的所有页，如果有脏页则一并刷新，好处则是通过AIO特性合并写IO请求，缺点则是有些页不怎么脏也会被刷新，而且频繁的更改那些不怎么脏的页又很快变成脏页，造成频繁刷新。对于固态磁盘则考虑关闭此功能（将innodb_flush_neighbors设置为0）。</p>
-<h3 id="InnoDB事务"><a href="#InnoDB事务" class="headerlink" title="InnoDB事务"></a>InnoDB事务</h3><h4 id="实现分析"><a href="#实现分析" class="headerlink" title="实现分析"></a>实现分析</h4><p><strong>redo log</strong></p>
-<p>redo log叫做重做日志，是用来实现事务的持久性。该日志文件由两部分组成：重做日志缓冲（redo log buffer）以及重做日志文件（redo log），前者是在内存中，后者在磁盘中。当事务提交之后会把所有修改信息都会存到该日志中，用于刷新脏页到磁盘发生错误时，进行数据恢复。</p>
+<h3 id="InnoDB事务"><a href="#InnoDB事务" class="headerlink" title="InnoDB事务"></a>InnoDB事务</h3><h4 id="redo-log"><a href="#redo-log" class="headerlink" title="redo log"></a>redo log</h4><p>redo log叫做重做日志，是用来实现事务的持久性。该日志文件由两部分组成：重做日志缓冲（redo log buffer）以及重做日志文件（redo log），前者是在内存中，后者在磁盘中。当事务提交之后会把所有修改信息都会存到该日志中，用于刷新脏页到磁盘发生错误时，进行数据恢复。</p>
 <p>例：原始数据内容：</p>
 <img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
 
@@ -452,11 +451,57 @@
 <p>mysql 为了提升性能不会把每次的修改都实时同步到磁盘，而是会先存到Buffer Pool(缓冲池)里头，把这个当作缓存来用。然后使用后台线程将缓存池刷新到磁盘。</p>
 <p>当在执行刷新时，宕机或者断电，可能会丢失部分数据。所以引入了redo log来记录已成功提交事务的修改信息，并且在事务提交时会把redo log持久化到磁盘，系统重启之后在读取redo log恢复最新数据。</p>
 <p>简单来说，redo log是用来恢复数据的，用于保障，已提交事务的持久化特性 ;</p>
-<p><strong>undo log</strong></p>
-<p>undo log 叫做回滚日志，用于记录数据被修改前的信息。他正好跟前面所说的重做日志所记录的相反，重做日志记录数据被修改后的信息。undo log主要记录的是数据的逻辑变化，为了在发生错误时回滚之前的操作，需要将之前的操作都记录下来，然后在发生错误时才可以回滚。</p>
+<h4 id="undo-log"><a href="#undo-log" class="headerlink" title="undo log"></a>undo log</h4><p>undo log 叫做回滚日志，用于记录数据被修改前的信息。他正好跟前面所说的重做日志所记录的相反，重做日志记录数据被修改后的信息。undo log主要记录的是数据的逻辑变化，为了在发生错误时回滚之前的操作，需要将之前的操作都记录下来，然后在发生错误时才可以回滚。</p>
 <img src="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>undo log 记录事务修改之前版本的数据信息，因此假如由于系统错误或者rollback操作而回滚的话可以根据undo log的信息来进行回滚到没被修改前的状态。</p>
+<h4 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h4><p>MVCC，全称Multi-Version Concurrency Control，即多版本并发控制，指的是 “维持一个数据的多个版本，使得读写操作没有冲突” 这么一个概念。MVCC是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问，在编程语言中实现事务内存。</p>
+<p>InnoDB中的读分为当前读和快照读：</p>
+<ul>
+<li><p>当前读：像select lock in share mode(共享锁), select for update ; update, insert ,delete(排他锁)这些操作都是一种当前读，读取的是记录的最新版本，读取时还要保证其他并发事务不能修改当前记录，会对读取的记录进行加锁。</p>
+</li>
+<li><p>快照读：像不加锁的select操作就是快照读，即不加锁的非阻塞读；快照读的前提是隔离级别不是串行级别，串行级别下的快照读会退化成当前读；之所以出现快照读的情况，是基于提高并发性能的考虑，快照读的实现是基于多版本并发控制，即MVCC,可以认为MVCC是行锁的一个变种，但它在很多情况下，避免了加锁操作，降低了开销；既然是基于多版本，即快照读可能读到的并不一定是数据的最新版本，而有可能是之前的历史版本。</p>
+</li>
+</ul>
+<p>MVCC的目的就是多版本并发控制，在数据库中的实现，就是为了解决读写冲突，它的实现原理主要是依赖记录中的 3个隐式字段，undo日志 ，Read View 来实现的。</p>
+<h5 id="隐式字段"><a href="#隐式字段" class="headerlink" title="隐式字段"></a>隐式字段</h5><p>每行记录除了我们自定义的字段外，还有数据库隐式定义的DB_TRX_ID,DB_ROLL_PTR,DB_ROW_ID等字段</p>
+<ul>
+<li>DB_TRX_ID<br>6byte，最近修改(修改/插入)事务ID：记录创建这条记录/最后一次修改该记录的事务ID</li>
+<li>DB_ROLL_PTR<br>7byte，回滚指针，指向这条记录的上一个版本（存储于rollback segment里）</li>
+<li>DB_ROW_ID<br>6byte，隐含的自增ID（隐藏主键），如果数据表没有主键，InnoDB会自动以DB_ROW_ID产生一个聚簇索引</li>
+<li>实际还有一个删除flag隐藏字段, 既记录被更新或删除并不代表真的删除，而是删除flag变了</li>
+</ul>
+<h5 id="undo日志"><a href="#undo日志" class="headerlink" title="undo日志"></a>undo日志</h5><p>undo log主要分为两种：</p>
+<ul>
+<li>insert undo log<br>代表事务在insert新记录时产生的undo log, 只在事务回滚时需要，并且在事务提交后可以被立即丢弃</li>
+<li>update undo log<br>事务在进行update或delete时产生的undo log; 不仅在事务回滚时需要，在快照读时也需要；所以不能随便删除，只有在快速读或事务回滚不涉及该日志时，对应的日志才会被purge线程统一清除</li>
+</ul>
+<p>purge</p>
+<ul>
+<li>从前面的分析可以看出，为了实现InnoDB的MVCC机制，更新或者删除操作都只是设置一下老记录的deleted_bit，并不真正将过时的记录删除。</li>
+<li>为了节省磁盘空间，InnoDB有专门的purge线程来清理deleted_bit为true的记录。为了不影响MVCC的正常工作，purge线程自己也维护了一个read view（这个read view相当于系统中最老活跃事务的read view）;如果某个记录的deleted_bit为true，并且DB_TRX_ID相对于purge线程的read view可见，那么这条记录一定是可以被安全清除的。</li>
+</ul>
+<p>对MVCC有帮助的实质是update undo log ，undo log实际上就是存在rollback segment中旧记录链。</p>
+<p>不同事务或者相同事务的对同一记录的修改，会导致该记录的undo log成为一条记录版本线性表，既链表，undo log的链首就是最新的旧记录，链尾就是最早的旧记录。</p>
+<h5 id="Read-View-读视图"><a href="#Read-View-读视图" class="headerlink" title="Read View(读视图)"></a>Read View(读视图)</h5><p>Read View就是事务进行快照读操作的时候生产的读视图(Read View)，在该事务执行的快照读的那一刻，会生成数据库系统当前的一个快照，记录并维护系统当前活跃事务的ID(当每个事务开启时，都会被分配一个ID, 这个ID是递增的，所以最新的事务，ID值越大)</p>
+<p>所以我们知道 Read View主要是用来做可见性判断的, 即当我们某个事务执行快照读的时候，对该记录创建一个Read View读视图，把它比作条件用来判断当前事务能够看到哪个版本的数据，既可能是当前最新的数据，也有可能是该行记录的undo log里面的某个版本的数据。</p>
+<p>Read View遵循一个可见性算法，主要是将要被修改的数据的最新记录中的DB_TRX_ID（即当前事务ID）取出来，与系统当前其他活跃事务的ID去对比（由Read View维护），如果DB_TRX_ID跟Read View的属性做了某些比较，不符合可见性，那就通过DB_ROLL_PTR回滚指针去取出Undo Log中的DB_TRX_ID再比较，即遍历链表的DB_TRX_ID（从链首到链尾，即从最近的一次修改查起），直到找到满足特定条件的DB_TRX_ID, 那么这个DB_TRX_ID所在的旧记录就是当前事务能看见的最新老版本</p>
+<p>在展示之前，我先简化一下Read View，我们可以把Read View简单的理解成有三个全局属性</p>
+<blockquote>
+<p>trx_list（名字我随便取的）<br>一个数值列表，用来维护Read View生成时刻系统正活跃的事务ID<br>up_limit_id<br>记录trx_list列表中事务ID最小的ID<br>low_limit_id<br>ReadView生成时刻系统尚未分配的下一个事务ID，也就是目前已出现过的事务ID的最大值+1</p>
+</blockquote>
+<ul>
+<li>首先比较DB_TRX_ID &lt; up_limit_id, 如果小于，则当前事务能看到DB_TRX_ID 所在的记录，如果大于等于进入下一个判断</li>
+<li>接下来判断 DB_TRX_ID 大于等于 low_limit_id , 如果大于等于则代表DB_TRX_ID 所在的记录在Read View生成后才出现的，那对当前事务肯定不可见，如果小于则进入下一个判断</li>
+<li>判断DB_TRX_ID 是否在活跃事务之中，trx_list.contains(DB_TRX_ID)，如果在，则代表我Read View生成时刻，你这个事务还在活跃，还没有Commit，你修改的数据，我当前事务也是看不见的；如果不在，则说明，你这个事务在Read View生成之前就已经Commit了，你修改的结果，我当前事务是能看见的</li>
+</ul>
+<h5 id="RC-读已提交-RR-可重复读-级别下的InnoDB快照读的不同"><a href="#RC-读已提交-RR-可重复读-级别下的InnoDB快照读的不同" class="headerlink" title="RC(读已提交),RR(可重复读)级别下的InnoDB快照读的不同"></a>RC(读已提交),RR(可重复读)级别下的InnoDB快照读的不同</h5><p>正是Read View生成时机的不同，从而造成RC,RR级别下快照读的结果的不同</p>
+<ul>
+<li>在RR级别下的某个事务的对某条记录的第一次快照读会创建一个快照及Read View, 将当前系统活跃的其他事务记录起来，此后在调用快照读的时候，还是使用的是同一个Read View，所以只要当前事务在其他事务提交更新之前使用过快照读，那么之后的快照读使用的都是同一个Read View，所以对之后的修改不可见；</li>
+<li>即RR级别下，快照读生成Read View时，Read View会记录此时所有其他活动事务的快照，这些事务的修改对于当前事务都是不可见的。而早于Read View创建的事务所做的修改均是可见</li>
+<li>而在RC级别下的，事务中，每次快照读都会新生成一个快照和Read View, 这就是我们在RC级别下的事务中可以看到别的事务提交的更新的原因</li>
+</ul>
+<p>总之在RC隔离级别下，是每个快照读都会生成并获取最新的Read View；而在RR隔离级别下，则是同一个事务中的第一个快照读才会创建Read View, 之后的快照读获取的都是同一个Read View。</p>
 <h3 id="存储引擎应用场景"><a href="#存储引擎应用场景" class="headerlink" title="存储引擎应用场景"></a>存储引擎应用场景</h3><p>在选择存储引擎时，应该根据应用系统的特点选择合适的存储引擎。对于复杂的应用系统，还可以根据实际情况选择多种存储引擎进行组合。以下是几种常用的存储引擎的使用环境 。</p>
 <ul>
 <li><p>InnoDB : 是Mysql的默认存储引擎，用于事务处理应用程序，支持外键，行锁。如果应用对事务的完整性有比较高的要求，在并发条件下要求数据的一致性，数据操作除了插入和查询以外，还包含很多的更新、删除操作，那么InnoDB存储引擎是比较合适的选择。InnoDB存储引擎除了有效的降低由于删除和更新导致的锁定， 还可以确保事务的完整提交和回滚，对于电商系统中的商品（SPU、SKU、分类、品牌）、订单、用户等信息的存储，InnoDB是最合适的选择。</p>

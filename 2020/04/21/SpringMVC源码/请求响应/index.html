@@ -185,7 +185,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      3.5k 字
+      3.7k 字
     </span>
   
 
@@ -195,7 +195,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      55
+      57
        分钟
     </span>
   
@@ -238,7 +238,44 @@
 <p>doService()方法，该方法在DispatcherServlet中实现，在进行一些属性的设置后回到用到核心方法doDispatch()。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">doService</span><span class="hljs-params">(HttpServletRequest request, HttpServletResponse response)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>   logRequest(request);<br><br>   <span class="hljs-comment">// Keep a snapshot of the request attributes in case of an include,</span><br>   <span class="hljs-comment">// to be able to restore the original attributes after the include.</span><br>   Map&lt;String, Object&gt; attributesSnapshot = <span class="hljs-keyword">null</span>;<br>   <span class="hljs-keyword">if</span> (WebUtils.isIncludeRequest(request)) &#123;<br>      attributesSnapshot = <span class="hljs-keyword">new</span> HashMap&lt;&gt;();<br>      Enumeration&lt;?&gt; attrNames = request.getAttributeNames();<br>      <span class="hljs-keyword">while</span> (attrNames.hasMoreElements()) &#123;<br>         String attrName = (String) attrNames.nextElement();<br>         <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.cleanupAfterInclude || attrName.startsWith(DEFAULT_STRATEGIES_PREFIX)) &#123;<br>            attributesSnapshot.put(attrName, request.getAttribute(attrName));<br>         &#125;<br>      &#125;<br>   &#125;<br><br>   <span class="hljs-comment">// Make framework objects available to handlers and view objects.</span><br>   request.setAttribute(WEB_APPLICATION_CONTEXT_ATTRIBUTE, getWebApplicationContext());<br>   request.setAttribute(LOCALE_RESOLVER_ATTRIBUTE, <span class="hljs-keyword">this</span>.localeResolver);<br>   request.setAttribute(THEME_RESOLVER_ATTRIBUTE, <span class="hljs-keyword">this</span>.themeResolver);<br>   request.setAttribute(THEME_SOURCE_ATTRIBUTE, getThemeSource());<br><br>   <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.flashMapManager != <span class="hljs-keyword">null</span>) &#123;<br>      FlashMap inputFlashMap = <span class="hljs-keyword">this</span>.flashMapManager.retrieveAndUpdate(request, response);<br>      <span class="hljs-keyword">if</span> (inputFlashMap != <span class="hljs-keyword">null</span>) &#123;<br>         request.setAttribute(INPUT_FLASH_MAP_ATTRIBUTE, Collections.unmodifiableMap(inputFlashMap));<br>      &#125;<br>      request.setAttribute(OUTPUT_FLASH_MAP_ATTRIBUTE, <span class="hljs-keyword">new</span> FlashMap());<br>      request.setAttribute(FLASH_MAP_MANAGER_ATTRIBUTE, <span class="hljs-keyword">this</span>.flashMapManager);<br>   &#125;<br><br>   <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-comment">//调用到核心流程</span><br>      doDispatch(request, response);<br>   &#125;<br>   <span class="hljs-keyword">finally</span> &#123;<br>      <span class="hljs-keyword">if</span> (!WebAsyncUtils.getAsyncManager(request).isConcurrentHandlingStarted()) &#123;<br>         <span class="hljs-comment">// Restore the original attribute snapshot, in case of an include.</span><br>         <span class="hljs-keyword">if</span> (attributesSnapshot != <span class="hljs-keyword">null</span>) &#123;<br>            restoreAttributesAfterInclude(request, attributesSnapshot);<br>         &#125;<br>      &#125;<br>   &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<h2 id="核心方法-doDispatch"><a href="#核心方法-doDispatch" class="headerlink" title="核心方法-doDispatch()"></a>核心方法-doDispatch()</h2><p>springmvc的调用共分七个步骤</p>
+<h2 id="MVC工作原理和继承关系"><a href="#MVC工作原理和继承关系" class="headerlink" title="MVC工作原理和继承关系"></a>MVC工作原理和继承关系</h2><h3 id="底层工作原理"><a href="#底层工作原理" class="headerlink" title="底层工作原理"></a>底层工作原理</h3><p><img src="/blog/2020/04/21/SpringMVC%E6%BA%90%E7%A0%81/%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94/image-20210730142509288.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210730142509288"></p>
+<ol>
+<li><p>DispatcherServlet(前端控制器) 是SpringMVC 中的前端控制器，负责接收Request 并将Request 转发给对应的处理组件。</p>
+</li>
+<li><p>HanlerMapping （处理器映射器）是SpringMVC 中完成url 到Controller 映射的组件。DispatcherServlet 从HandlerMapping 查找处理Request 的Controller， </p>
+</li>
+<li><p>HanlerMapping 返回一个执行器链（url 到Controller 映射的组件）给DispatcherServlet</p>
+</li>
+<li><p>DispatcherServlet请求处理器适配器HandlerAdapter</p>
+</li>
+<li><p>处理器适配器HandlerAdapter去访问我们的handler（controller） </p>
+</li>
+<li><p>handler（controller）返回ModelAndView给处理器适配器HandlerAdapter</p>
+</li>
+<li><p>处理器适配器HandlerAdapter返回ModelAndView给DispatcherServlet</p>
+</li>
+<li><p>DispatcherServlet请求ViewResolver视图解析器</p>
+</li>
+<li><p>ViewResolver视图解析器返回view给DispatcherServlet</p>
+</li>
+<li><p>DispatcherServlet请求view做页面解析和渲染</p>
+</li>
+<li><p>view将渲染好的数据给client</p>
+</li>
+</ol>
+<h3 id="MVC核心类继承关系"><a href="#MVC核心类继承关系" class="headerlink" title="MVC核心类继承关系"></a>MVC核心类继承关系</h3><p><img src="/blog/2020/04/21/SpringMVC%E6%BA%90%E7%A0%81/%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94/image-20210730142837752.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210730142837752"></p>
+<ul>
+<li><p>DispatcherServlet 前端总控制器(webmvc源码)</p>
+</li>
+<li><p>FrameworkServlet (webmvc源码)</p>
+</li>
+<li><p>HttpServletBean 是的一个简单扩展类（(webmvc源码）</p>
+</li>
+<li><p>HttpServlet（servlet API）</p>
+</li>
+</ul>
+<h3 id="MVC调用流程关系图"><a href="#MVC调用流程关系图" class="headerlink" title="MVC调用流程关系图"></a>MVC调用流程关系图</h3><p><img src="/blog/2020/04/21/SpringMVC%E6%BA%90%E7%A0%81/%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94/image-20210730142951371.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210730142951371"></p>
+<h2 id="核心方法-doDispatch"><a href="#核心方法-doDispatch" class="headerlink" title="核心方法-doDispatch()"></a>核心方法-doDispatch()</h2><p>doDispatch()方法共分七个步骤</p>
 <ol>
 <li>通过getHandler()方法获取到HandlerExecutionChain对象。</li>
 <li>调用getHanlderAdapter()方法根据HandlerExecutionChain对象获取到HandlerAdapter对象。</li>

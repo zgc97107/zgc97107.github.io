@@ -185,7 +185,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      875 字
+      890 字
     </span>
   
 
@@ -242,11 +242,12 @@
 </ul>
 <h3 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h3><img src="/blog/2020/07/27/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/ThreadLocal/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<p>ThreadLocal中有一个ThreadLocalMap对象，ThreadLocalMap是ThreadLocal的静态内部类，存储的对象为Entry类型的数组，Entry类型的key为ThreadLocal对象，value为ThreadLocal对象的值，ThreadLocal的get方法会获取当前Thread，然后调用getMap()获取当前Thread的ThreadLocalMap，再从ThreadLocalMap中通过ThreadLocal找到对应的值。</p>
+<p>Thread中有一个ThreadLocalMap对象，ThreadLocalMap是ThreadLocal的静态内部类，存储的对象为Entry类型的数组，Entry类型的key为ThreadLocal对象，value为ThreadLocal对象的值，ThreadLocal的get方法会获取当前Thread，然后调用getMap()获取当前Thread的ThreadLocalMap，再从ThreadLocalMap中通过ThreadLocal找到对应的值。</p>
 <h4 id="内存泄露分析"><a href="#内存泄露分析" class="headerlink" title="内存泄露分析"></a>内存泄露分析</h4><p>线程中维护的ThreadLocalMap中的Entry对key的引用是弱引用，如果外部对ThreadLocal实例的强引用失效，Entry中的key以及ThreadLocal实例会被gc回收，但value会依然存在，因为线程中依然存有ThreadLocalMap的强引用，Entry会继续存在，所以value也会存在，这就有可能造成内存泄漏。只有当前线程结束以后，ThreadLocalMap强引用断开才会被GC回收。</p>
 <p>jdk对此提供了相应的补偿机制，ThreadLocal的get()，set()有可能会去调用expungeStaleEntry()，replaceStaleEntry()方法去清除key为null（ThreadLocal为null）的value值。但最好还是在使用完threadLocal变量后，手动调用它的remove()方法清除数据。</p>
 <p>如果对key的引用为强引用的话，set()，get()方法中对Model的释放就一定不会触发，必然会造成内存泄漏。</p>
-<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>当多个线程的ThreadLocalMap的value保存的是同一个对象实例的引用时，通过这个引用进行对象实例的修改后，同样会影响到其他线程中的对象实例，就会造成线程不安全，所以应尽量保证每个线程中ThreadLocal的值都是一个新的对象。</p>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>在线程池中使用ThreadLocal需要显式的清除。</p>
+<p>当多个线程的ThreadLocalMap的value保存的是同一个对象实例的引用时，通过这个引用进行对象实例的修改后，同样会影响到其他线程中的对象实例，就会造成线程不安全，所以应尽量保证每个线程中ThreadLocal的值都是一个新的对象。</p>
 
             </div>
             <hr>
