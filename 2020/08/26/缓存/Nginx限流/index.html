@@ -242,16 +242,19 @@
 <img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
 
 <p>(2)nginx的配置</p>
-<p>配置示如下：</p>
 <p>创建限流缓存空间：</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#限流设置</span><br>limit_req_zone <span class="hljs-variable">$binary_remote_addr</span> zone=contentRateLimit:10m rate=2r/s;<br></code></pre></td></tr></table></figure>
 
 <p>配置限流：</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#使用限流配置</span><br>limit_req zone=contentRateLimit;<br></code></pre></td></tr></table></figure>
 
-<p>参数说明：</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">binary_remote_addr</span> 是一种key，表示基于 remote_addr(客户端IP) 来做限流，binary_ 的目的是压缩内存占用 量。<br><span class="hljs-attribute">zone</span>：定义共享内存区来存储访问信息，contentRateLimit:<span class="hljs-number">10</span>m 表示一个大小为<span class="hljs-number">10</span>M，名字为 contentRateLimit 的 内存区域。<span class="hljs-number">1</span>M能存储<span class="hljs-number">16000</span>IP地址的访问信息，<span class="hljs-number">10</span>M可以存储<span class="hljs-number">16</span>WIP地址访问信息。<br><span class="hljs-attribute">rate</span> 用于设置最大访问速率，rate=<span class="hljs-number">10</span>r/s 表示每秒最多处理<span class="hljs-number">10</span>个请求。Nginx 实际上以毫秒为粒度来跟踪请求信息，因 此 <span class="hljs-number">10</span>r/s 实际上是限制：每<span class="hljs-number">100</span>毫秒处理一个请求。这意味着，自上一个请求处理完后，若后续<span class="hljs-number">100</span>毫秒内又有请求到达，将拒绝处理该请求。这里设置成<span class="hljs-number">2</span>方便测试。<br></code></pre></td></tr></table></figure>
-
+<p>语法说明：</p>
+<p>limit_req_zone key zone rate</p>
+<ul>
+<li>key: binary_remote_addr 是一种key，表示基于remote_addr(客户端IP) 来做限流，binary_ 的目的是压缩内存占用量。</li>
+<li>zone：定义共享内存区来存储访问信息，contentRateLimit:10m 表示一个大小为10M，名字为contentRateLimit的内存区域。1M能存储16000IP地址的访问信息，10M可以存储16WIP地址访问信息。</li>
+<li>rate：用于设置最大访问速率，rate=10r/s表示每秒最多处理10个请求。Nginx 实际上以毫秒为粒度来跟踪请求信息，因此10r/s实际上是限制：每100毫秒处理一个请求。这意味着，自上一个请求处理完后，若后续100毫秒内又有请求到达，将拒绝处理该请求。</li>
+</ul>
 <p>如果恶意一直刷新会出现如下现象：</p>
 <img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
 
@@ -272,28 +275,26 @@
 <p>完整配置如下：</p>
 <img src="/blog/2020/08/26/%E7%BC%93%E5%AD%98/Nginx%E9%99%90%E6%B5%81/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
 
-<h4 id="控制并发量（连接数）"><a href="#控制并发量（连接数）" class="headerlink" title="控制并发量（连接数）"></a>控制并发量（连接数）</h4><p>ngx_http_limit_conn_module 提供了限制连接数的能力。主要是利用limit_conn_zone和limit_conn两个指令。利用连接数限制 某一个用户的ip连接的数量来控制流量。</p>
-<p>注意：并非所有连接都被计算在内 只有当服务器正在处理请求并且已经读取了整个请求头时，才会计算有效连接。</p>
-<p>此处忽略测试。</p>
-<p>配置语法：</p>
-<figure class="highlight pgsql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs pgsql">Syntax: limit_conn <span class="hljs-type">zone</span> number;<br><span class="hljs-keyword">Default</span>: —;<br>Context: http, <span class="hljs-keyword">server</span>, <span class="hljs-keyword">location</span>;<br></code></pre></td></tr></table></figure>
-
-<p>(1)配置限制固定连接数</p>
-<p>如下，配置如下：</p>
+<h4 id="控制并发量（连接数）"><a href="#控制并发量（连接数）" class="headerlink" title="控制并发量（连接数）"></a>控制并发量（连接数）</h4><p>ngx_http_limit_conn_module 提供了限制连接数的能力。主要是利用limit_conn_zone和limit_conn两个指令。利用连接数限制某一个用户的ip连接的数量来控制流量。</p>
+<p>注意：并非所有连接都被计算在内只有当服务器正在处理请求并且已经读取了整个请求头时，才会计算有效连接。</p>
+<p>(1)配置限制固定连接数：</p>
 <p>配置限流缓存空间：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#根据IP地址来限制，存储内存大小10M</span><br>limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=addr:1m;<br></code></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#根据IP地址来限制，设置存储地址内存大小为10M</span><br>limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=addr:1m;<br></code></pre></td></tr></table></figure>
 
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#location配置</span><br>limit_conn addr 2;<br></code></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#location配置，表示同一个地址只允许连接2次。</span><br>limit_conn addr 2;<br></code></pre></td></tr></table></figure>
 
-<p>参数说明：</p>
-<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">limit_conn_zone</span> $binary_remote_addr zone=addr:<span class="hljs-number">10</span>m; 表示限制根据用户的IP地址来显示，设置存储地址为的 内存大小<span class="hljs-number">10</span>M <br><span class="hljs-attribute">limit_conn</span> addr <span class="hljs-number">2</span>; 表示 同一个地址只允许连接<span class="hljs-number">2</span>次。<br></code></pre></td></tr></table></figure>
-
+<p>语法说明：</p>
+<p>limit_conn_zone key zone</p>
+<ul>
+<li>key：定义限流对象，binary_remote_addr 是一种 key，表示基于 remote_addr(客户端 IP) 来做限流，binary_ 的目的是压缩内存占用量。</li>
+<li>zone：定义共享内存区来存储访问信息， myRateLimit:10m 表示一个大小为 10M，名字为 myRateLimit 的内存区域。1M 能存储 16000 IP 地址的访问信息，10M 可以存储 16W IP 地址访问信息。</li>
+</ul>
 <p>(2)限制每个客户端IP与服务器的连接数，同时限制与虚拟服务器的连接总数。</p>
 <p>限流缓存空间配置：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#IP限流</span><br>limit_conn_zone <span class="hljs-variable">$binary_remote_addr</span> zone=perip:10m;<br><span class="hljs-comment">#根据server的名字限流</span><br>limit_conn_zone <span class="hljs-variable">$server_name</span> zone=perserver:10m;<br></code></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#根据server的名字限流</span><br>limit_conn_zone <span class="hljs-variable">$server_name</span> zone=perserver:10m;<br></code></pre></td></tr></table></figure>
 
 <p>location配置</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh">limit_conn perip 10; <span class="hljs-comment">#单个客户端ip与服务器的连接数。</span><br>limit_conn perserver 100; <span class="hljs-comment">#限制与服务器的总连接数。</span><br></code></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#location配置，限制与服务器的总连接数。</span><br>limit_conn perserver 100;<br></code></pre></td></tr></table></figure>
             </div>
             <hr>
             <div>
