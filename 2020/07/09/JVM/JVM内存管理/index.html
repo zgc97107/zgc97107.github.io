@@ -228,14 +228,15 @@
             <h1 style="display: none">JVM内存管理</h1>
             
             <div class="markdown-body">
-              <h3 id="JVM整体结构"><a href="#JVM整体结构" class="headerlink" title="JVM整体结构"></a>JVM整体结构</h3><p><img src="/blog/2020/07/09/JVM/JVM%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/pic1.png" srcset="/blog/img/loading.gif" lazyload></p>
+              <h3 id="JVM整体结构"><a href="#JVM整体结构" class="headerlink" title="JVM整体结构"></a>JVM整体结构</h3><p>JVM首先需要存放已经加载的类对象，在代码运行时，方法执行以及方法的变量都需要加载到内存中，所以JVM需要划分出不同的运行区域，在代码运行过程中根据需要来使用。</p>
+<p><img src="/blog/2020/07/09/JVM/JVM%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/pic1.png" srcset="/blog/img/loading.gif" lazyload></p>
 <p>JVM虚拟机中主要是由三部分构成，分别是类加载子系统、运行时数据区、执行引擎。</p>
 <ul>
 <li><p><strong>类加载子系统</strong></p>
-<p>Java虚拟机把描述类的数据从Class文件加载到内存（运行时数据区），并对数据进行校验、转换解析和初始化，最终形成可以被虚拟机直接使用的Java类型。</p>
+<p>Java虚拟机把描述类的数据从Class文件加载到JVM内存（运行时数据区），并对数据进行校验、转换解析和初始化，最终形成可以被虚拟机直接使用的Java类型。</p>
 </li>
 <li><p><strong>运行时数据区</strong></p>
-<p>Java虚拟机在执行Java程序的过程中会把它所管理的内存划分为若干个不同的数据区域。这些区域有各自的用途，以及创建和销毁的时间，有的区域随着虚拟机进程的启动而一直存在，有些区域则是依赖用户线程的启动和结束而建立和销毁。</p>
+<p>JVM在执行Java程序的过程中会把它所管理的内存划分为若干个不同的数据区域。这些区域有各自的用途，以及创建和销毁的时间，有的区域随着虚拟机进程的启动而一直存在，有些区域则是依赖用户线程的启动和结束而建立和销毁。</p>
 <p>垃圾回收器就是自动管理运行数据区的内存，将无用的内存占用进行清除，释放内存资源。</p>
 </li>
 <li><p><strong>执行引擎</strong></p>
@@ -247,6 +248,9 @@
 </ul>
 <h3 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a>运行时数据区</h3><p><img src="/blog/2020/07/09/JVM/JVM%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/pic1.png" srcset="/blog/img/loading.gif" lazyload></p>
 <p>根据《Java虚拟机规范》中的规定，在运行时数据区将内存分为方法区（Method Area）、Java堆区（Java Heap）、Java虚拟机栈（Java Virtual Machine Stack）、程序计数器（Program Counter Register）、本地方法栈（Native Method Stacks）。</p>
+<h4 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h4><p>方法区（Method Area）与Java堆一样，是各个线程共享的内存区域，它用于存储已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码缓存等数据。</p>
+<p>《Java虚拟机规范》中把方法区描述为堆的一个逻辑部分，它却有一个别名叫作“非堆”（Non Heap），目的是与Java堆区分开来。</p>
+<p>JDK8之前将HotSpot虚拟机把收集器的分代设计扩展至方法区，所以可以将永久代看做是方法区，JDK8之后废弃永久代，用元空间来代替。</p>
 <h4 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h4><p>程序计数器（Program Counter Register）是一块较小的内存空间，它可以看作是当前线程所执行的字节码的行号指示器。</p>
 <p>字节码解释器工作时就是通过改变这个计数器的值来选取下一条需要执行的字节码指令，它是程序控制流的指示器，分支、循环、跳转、异常处理、线程恢复等基础功能都需要依赖这个计数器来完成。</p>
 <p>由于Java虚拟机的多线程是通过线程轮流切换、分配处理器执行时间的方式来实现的，在任何一个确定的时刻，一个处理器（对于多核处理器来说是一个内核）都只会执行一条线程中的指令。因此，为了线程切换后能恢复到正确的执行位置，每条线程都需要有一个独立的程序计数器，各条线程之间计数器互不影响，独立存储，我们称这类内存区域为“线程私有”的内存。</p>
@@ -318,9 +322,6 @@
 <blockquote>
 <p>关于元空间需要注意的是，元空间会自动扩容，默认情况下不受限制，在实际中，经常忽略掉直接内存，使得各个内存区域总和大于物理内存限制，从而导致动态扩展时出现OutOfMemoryError异常。</p>
 </blockquote>
-<h4 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h4><p>方法区（Method Area）与Java堆一样，是各个线程共享的内存区域，它用于存储已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码缓存等数据。</p>
-<p>《Java虚拟机规范》中把方法区描述为堆的一个逻辑部分，它却有一个别名叫作“非堆”（Non Heap），目的是与Java堆区分开来。</p>
-<p>JDK8之前将HotSpot虚拟机把收集器的分代设计扩展至方法区，所以可以将永久代看做是方法区，JDK8之后废弃永久代，用元空间来代替。</p>
 <h3 id="对象的访问"><a href="#对象的访问" class="headerlink" title="对象的访问"></a>对象的访问</h3><p>Java程序会通过栈上的reference数据来操作堆上的具体对象。主流的访问方式主要有使用句柄和直接指针两种：</p>
 <ul>
 <li>使用句柄访问：Java堆中将可能会划分出一块内存来作为句柄池，reference中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自具体的地址信息</li>
@@ -363,9 +364,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/07/09/JVM/JVM%E6%80%A7%E8%83%BD%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7/">
+                      <a href="/blog/2020/07/09/JVM/JVM%E8%B0%83%E4%BC%98/">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">JVM性能相关工具</span>
+                        <span class="hidden-mobile">JVM调优</span>
                         <span class="visible-mobile">上一篇</span>
                       </a>
                     
