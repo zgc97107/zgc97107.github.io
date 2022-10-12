@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,32 +19,32 @@
     <meta name="description" content="数据库架构体系剖析背景概述随着互联网普及率的不断提高，中国电商稳步发展，市场零售额不断增长。根据数据显示，2019年，全国网上零售额106324亿元，比上年增长16.5%。与此同时，得益于社交电商的流量效应，电商用户持续增加。数据显示，截至2019年底，中国移动电商用户规模预计将突破7亿人。 而对于电商系统来说, 具有以下几个特点: 高并发、分布式、高可用、负载均衡、业务复杂、系统安全、海量数据">
 <meta property="og:type" content="article">
 <meta property="og:title" content="数据库架构体系及平滑扩容简述">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="数据库架构体系剖析背景概述随着互联网普及率的不断提高，中国电商稳步发展，市场零售额不断增长。根据数据显示，2019年，全国网上零售额106324亿元，比上年增长16.5%。与此同时，得益于社交电商的流量效应，电商用户持续增加。数据显示，截至2019年底，中国移动电商用户规模预计将突破7亿人。 而对于电商系统来说, 具有以下几个特点: 高并发、分布式、高可用、负载均衡、业务复杂、系统安全、海量数据">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic4.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic5.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic6.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic7.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic8.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic9.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic10.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic11.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic12.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic13.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic14.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic15.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic16.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic17.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic1.jpg">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic4.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic5.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic6.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic7.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic8.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic9.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic10.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic11.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic12.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic13.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic14.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic15.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic16.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic17.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic1.jpg">
 <meta property="article:published_time" content="2020-11-22T06:57:45.000Z">
 <meta property="article:modified_time" content="2020-11-22T06:57:45.000Z">
 <meta property="article:tag" content="数据库架构">
 <meta property="article:tag" content="数据库平滑扩容">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png">
   
   
   
@@ -72,12 +72,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -86,15 +86,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -111,7 +111,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -130,7 +130,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -142,7 +142,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -154,7 +154,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -166,7 +166,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -178,7 +178,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -207,7 +207,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -311,7 +311,7 @@
     
       
       
-        <a href="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析"
+        <a href="/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">InnoDB存储引擎解析</span>
@@ -320,7 +320,7 @@
     
       
       
-        <a href="/blog/2020/03/31/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E5%92%8C%E4%BA%8B%E5%8A%A1/" title="MySQL中的锁和事务"
+        <a href="/2020/03/31/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E5%92%8C%E4%BA%8B%E5%8A%A1/" title="MySQL中的锁和事务"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL中的锁和事务</span>
@@ -329,7 +329,7 @@
     
       
       
-        <a href="/blog/2020/03/25/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E5%9F%BA%E7%A1%80/" title="MySQL基础"
+        <a href="/2020/03/25/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E5%9F%BA%E7%A1%80/" title="MySQL基础"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL基础</span>
@@ -338,7 +338,7 @@
     
       
       
-        <a href="/blog/2020/03/30/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/" title="MySQL架构与存储引擎"
+        <a href="/2020/03/30/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/" title="MySQL架构与存储引擎"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL架构与存储引擎</span>
@@ -347,7 +347,7 @@
     
       
       
-        <a href="/blog/2020/04/02/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%85%A2%E6%9F%A5%E8%AF%A2/" title="MySQL的慢查询"
+        <a href="/2020/04/02/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%85%A2%E6%9F%A5%E8%AF%A2/" title="MySQL的慢查询"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL的慢查询</span>
@@ -356,7 +356,7 @@
     
       
       
-        <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/" title="MySQL的执行计划"
+        <a href="/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/" title="MySQL的执行计划"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL的执行计划</span>
@@ -365,7 +365,7 @@
     
       
       
-        <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/" title="MySQL索引的实现"
+        <a href="/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/" title="MySQL索引的实现"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL索引的实现</span>
@@ -374,7 +374,7 @@
     
       
       
-        <a href="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/" title="分库分表的深入剖析"
+        <a href="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/" title="分库分表的深入剖析"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">分库分表的深入剖析</span>
@@ -383,7 +383,7 @@
     
       
       
-        <a href="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/" title="数据库架构体系及平滑扩容简述"
+        <a href="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/" title="数据库架构体系及平滑扩容简述"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">数据库架构体系及平滑扩容简述</span>
@@ -392,7 +392,7 @@
     
       
       
-        <a href="/blog/2020/04/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83/" title="数据库设计规范"
+        <a href="/2020/04/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83/" title="数据库设计规范"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">数据库设计规范</span>
@@ -439,25 +439,25 @@
 <h4 id="架构设计"><a href="#架构设计" class="headerlink" title="架构设计"></a>架构设计</h4><p>在一个系统中,我们设计数据库架构,需要考虑以下几个原则:可用性、 读性能、 一致性、 拓展性。</p>
 <h5 id="可用性设计"><a href="#可用性设计" class="headerlink" title="可用性设计"></a>可用性设计</h5><ol>
 <li><p>单点</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic3.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在最原始的架构中，是单一数据库，一旦数据库宕机之后，整个服务都不可用，不存在高可用。</p>
 </li>
 <li><p>主从复制</p>
 <p>解决高可用的思路，就是冗余、复制；</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic4.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在这种主从的架构中，即使Master节点挂掉，还有Slave节点，整个数据库的数据依赖存在，但是在这种架构中，无法保证读、写的高可用，而且会存在一致性问题。</p>
 </li>
 <li><p>“读”高可用</p>
 <p>为保证读的高可用，可以对读（从）库进行冗余，但是冗余读库，也会存在副作用：读写有延时，可能存在不一致。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic5.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在上图中确实是保证了”读”高可用，但是写节点依然是单点，不能保证写高可用。</p>
 </li>
 <li><p>“写”高可用</p>
 <p>保证”写”高可用，就可以在上述架构的基础上,再冗余写库，采用双主双从模式。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic6.png" srcset="/img/loading.gif" lazyload class>
 
 <p>而在这种架构下，两个主库，都会执行写请求，而且互相同步。</p>
 <p>那么可能会存在以下问题： 双主同步，主键如果是自增的，会存在冲突，解决方案：</p>
@@ -476,18 +476,18 @@
 </ul>
 <ol>
 <li><p>不同库建立不同的索引</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic7.png" srcset="/img/loading.gif" lazyload class>
 
 <p>主库只提供写操作， 不建立索引；</p>
 <p>从库提供读操作，在从库上建立适当的索引 ；</p>
 </li>
 <li><p>增加从库，负载均衡</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic8.png" srcset="/img/loading.gif" lazyload class>
 
 <p>这种做法上面已经提到，会存在主从不一致的问题，从库数量越多，主从延时越长，不一致问题越严重。</p>
 </li>
 <li><p>缓存</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic9.png" srcset="/img/loading.gif" lazyload class>
 
 <ol>
 <li>发生写请求时，先淘汰缓存，再写数据库</li>
@@ -497,17 +497,17 @@
 </ol>
 <h5 id="一致性设计"><a href="#一致性设计" class="headerlink" title="一致性设计"></a>一致性设计</h5><ol>
 <li><p>引入中间件</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic10.png" srcset="/img/loading.gif" lazyload class>
 
 <p>通过中间件将key写操作路由到主， 在一定时间范围内，该key上的读也路由到主，当主从同步完成后再将读操作路由到从。</p>
 </li>
 <li><p>读写都到主</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic11.png" srcset="/img/loading.gif" lazyload class>
 
 <p>读写都到主，不做读写分离，也就不存在主从不一致的情况。</p>
 </li>
 <li><p>缓存两次淘汰</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic12.png" srcset="/img/loading.gif" lazyload class>
 
 <p>异常的读写时序，或导致旧数据入缓存，一次淘汰不够，要进行二次淘汰</p>
 <ol>
@@ -520,22 +520,22 @@
 <ol>
 <li><p>垂直拆分</p>
 <p>根据业务划分，将不同的数据库表切分到不同的数据库上，以实现扩容的目的；</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic13.png" srcset="/img/loading.gif" lazyload class>
 </li>
 <li><p>水平拆分</p>
 <p>将同一块业务的数据库表，进行拆分，将一张表的数据根据一定的规则（取模，hash等）切分到不同的数据库上。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic14.png" srcset="/img/loading.gif" lazyload class>
 
 <p>而上述的架构中是没有考虑高可用的，当其中的任何一个节点挂掉之后，数据就不完整了，考虑高可用的架构如下：</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic15.png" srcset="/img/loading.gif" lazyload class>
 </li>
 <li><p>平滑、高效扩容</p>
 <p>随着业务系统的扩张，数据库中的数据量会不断增加，如果实现扩容，最为直接了当的办法就是直接增加服务器，从而实现更多数据的存储；</p>
 <p>如果按照以下的思路扩容，会存在大量的数据迁移。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic16.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic16.png" srcset="/img/loading.gif" lazyload class>
 
 <p>如何来完成高效、平滑的扩容呢， 可以按照以下架构进行。</p>
-<img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic17.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic17.png" srcset="/img/loading.gif" lazyload class>
 
 </li>
 </ol>
@@ -589,7 +589,7 @@
 <li><p>停写方案实施步骤：支持读写分离-&gt;升级公告-&gt;中断写操作，隔离写数据源（或拦截返回统一提示）-&gt;数据同步处理-&gt;数据校验-&gt;更改配置-&gt;恢复写操作-&gt;数据清理-&gt;回滚预案</p>
 </li>
 </ul>
-<h4 id="平滑扩容之双写方案（中小型数据）"><a href="#平滑扩容之双写方案（中小型数据）" class="headerlink" title="平滑扩容之双写方案（中小型数据）"></a>平滑扩容之双写方案（中小型数据）</h4><img src="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic1.jpg" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="平滑扩容之双写方案（中小型数据）"><a href="#平滑扩容之双写方案（中小型数据）" class="headerlink" title="平滑扩容之双写方案（中小型数据）"></a>平滑扩容之双写方案（中小型数据）</h4><img src="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/pic1.jpg" srcset="/img/loading.gif" lazyload class>
 
 <p>双写方案可通过canal或mq做实现。</p>
 <ol>
@@ -625,7 +625,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" class="category-chain-item">数据库</a>
+  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" class="category-chain-item">数据库</a>
   
   
 
@@ -640,9 +640,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9E%B6%E6%9E%84/">#数据库架构</a>
+        <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9E%B6%E6%9E%84/">#数据库架构</a>
       
-        <a href="/blog/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9/">#数据库平滑扩容</a>
+        <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9/">#数据库平滑扩容</a>
       
     </div>
   
@@ -655,7 +655,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>数据库架构体系及平滑扩容简述</div>
-      <div>http://zhaoguocheng.gitee.io/2020/11/22/数据库/架构体系及平滑扩容方案/</div>
+      <div>https://zgc97107.github.io/2020/11/22/数据库/架构体系及平滑扩容方案/</div>
     </div>
     <div class="license-meta">
       
@@ -694,7 +694,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/" title="MySQL的执行计划">
+                      <a href="/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/" title="MySQL的执行计划">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">MySQL的执行计划</span>
                         <span class="visible-mobile">上一篇</span>
@@ -704,7 +704,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析">
+                      <a href="/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析">
                         <span class="hidden-mobile">InnoDB存储引擎解析</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -831,8 +831,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -854,7 +854,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -953,7 +953,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -961,7 +961,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   

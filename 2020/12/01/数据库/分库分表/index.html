@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,27 +19,27 @@
     <meta name="description" content="数据库架构体系演进数据库架构随着数据量的增长，一般db的架构，经历如下演进：   单库主从：业务请求并发量大到一定量级后，分离读写操作，设置主从结构，主库负责写操作，从库负责读操作。缺点在于需要开发框架支持多数据源，而且主从之间数据存在延迟。   单库双主多从架构：基于单库主从，增加主从节点数量，多为灾备而生。  分区表：在数据库层面做数据分区策略，开发层不需要改动。 优点：  比较适合订单场景，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="分库分表的深入剖析">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="数据库架构体系演进数据库架构随着数据量的增长，一般db的架构，经历如下演进：   单库主从：业务请求并发量大到一定量级后，分离读写操作，设置主从结构，主库负责写操作，从库负责读操作。缺点在于需要开发框架支持多数据源，而且主从之间数据存在延迟。   单库双主多从架构：基于单库主从，增加主从节点数量，多为灾备而生。  分区表：在数据库层面做数据分区策略，开发层不需要改动。 优点：  比较适合订单场景，">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png">
 <meta property="article:published_time" content="2020-12-01T06:48:59.000Z">
 <meta property="article:modified_time" content="2020-12-01T06:48:59.000Z">
 <meta property="article:tag" content="数据库架构">
 <meta property="article:tag" content="分库分表策略">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png">
   
   
   
@@ -67,12 +67,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -81,15 +81,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -106,7 +106,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -125,7 +125,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -137,7 +137,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -149,7 +149,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -161,7 +161,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -173,7 +173,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -202,7 +202,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -306,7 +306,7 @@
     
       
       
-        <a href="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析"
+        <a href="/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">InnoDB存储引擎解析</span>
@@ -315,7 +315,7 @@
     
       
       
-        <a href="/blog/2020/03/31/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E5%92%8C%E4%BA%8B%E5%8A%A1/" title="MySQL中的锁和事务"
+        <a href="/2020/03/31/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E4%B8%AD%E7%9A%84%E9%94%81%E5%92%8C%E4%BA%8B%E5%8A%A1/" title="MySQL中的锁和事务"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL中的锁和事务</span>
@@ -324,7 +324,7 @@
     
       
       
-        <a href="/blog/2020/03/25/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E5%9F%BA%E7%A1%80/" title="MySQL基础"
+        <a href="/2020/03/25/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E5%9F%BA%E7%A1%80/" title="MySQL基础"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL基础</span>
@@ -333,7 +333,7 @@
     
       
       
-        <a href="/blog/2020/03/30/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/" title="MySQL架构与存储引擎"
+        <a href="/2020/03/30/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/" title="MySQL架构与存储引擎"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL架构与存储引擎</span>
@@ -342,7 +342,7 @@
     
       
       
-        <a href="/blog/2020/04/02/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%85%A2%E6%9F%A5%E8%AF%A2/" title="MySQL的慢查询"
+        <a href="/2020/04/02/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%85%A2%E6%9F%A5%E8%AF%A2/" title="MySQL的慢查询"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL的慢查询</span>
@@ -351,7 +351,7 @@
     
       
       
-        <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/" title="MySQL的执行计划"
+        <a href="/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/" title="MySQL的执行计划"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL的执行计划</span>
@@ -360,7 +360,7 @@
     
       
       
-        <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/" title="MySQL索引的实现"
+        <a href="/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/" title="MySQL索引的实现"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">MySQL索引的实现</span>
@@ -369,7 +369,7 @@
     
       
       
-        <a href="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/" title="分库分表的深入剖析"
+        <a href="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/" title="分库分表的深入剖析"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">分库分表的深入剖析</span>
@@ -378,7 +378,7 @@
     
       
       
-        <a href="/blog/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/" title="数据库架构体系及平滑扩容简述"
+        <a href="/2020/11/22/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB%E5%8F%8A%E5%B9%B3%E6%BB%91%E6%89%A9%E5%AE%B9%E6%96%B9%E6%A1%88/" title="数据库架构体系及平滑扩容简述"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">数据库架构体系及平滑扩容简述</span>
@@ -387,7 +387,7 @@
     
       
       
-        <a href="/blog/2020/04/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83/" title="数据库设计规范"
+        <a href="/2020/04/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83/" title="数据库设计规范"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">数据库设计规范</span>
@@ -546,10 +546,10 @@
 </ol>
 <h3 id="分库分表的概念"><a href="#分库分表的概念" class="headerlink" title="分库分表的概念"></a>分库分表的概念</h3><p>MySQL单表数据量如果达到千万级别，甚至过亿，这时候再对数据库进行操作就比较吃力，select个半天都出不来数据，这时候业务已经难以维系。不得已，分库分表提上日程，分库分表的目的很简单就是减小数据库的压力，缩短表的操作时间。</p>
 <h4 id="分表"><a href="#分表" class="headerlink" title="分表"></a>分表</h4><p>分表是指在一个或者多个数据库实例内，将一张表拆分为多张表存储。一般来说，分表是因为该表需要存储很庞大的记录数，如果将其堆积到一起，就会导致数据量过于庞大（一般 MySQL 的表是 5000 万条记录左右）引发性能瓶颈。一般分表会按照某种算法进行拆分，如交易记录，可能按年份拆分:</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic1.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="分库"><a href="#分库" class="headerlink" title="分库"></a>分库</h4><p>分库是指将一套数据库的设计结构，部署到多个数据库实例的节点中去，在应用的时候，按照一定的方法通过多个数据库实例节点访问数据。请注意，这里的数据库实例节点是一个逻辑概念，不是一个物理概念，什么意思呢？简单地说，一个机器节点可以部署多个数据库实例节点，也可以一个机器节点只部署一个数据库实例节点，所以机器节点不一定等于数据库节点。而机器节点是物理概念，是看得到的真实的机器；数据库节点是逻辑概念，是看不到的东西。为了更好地说明分库的概念，如下图</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic2.png" srcset="/img/loading.gif" lazyload class>
 
 <h3 id="海量数据存储解决方案"><a href="#海量数据存储解决方案" class="headerlink" title="海量数据存储解决方案"></a>海量数据存储解决方案</h3><p>移动互联网时代，海量的用户每天产生海量的数量，比如：用户表、订单表、交易流水表。</p>
 <p>以支付宝用户为例，8亿；微信用户更是多大10亿。订单表更夸张，比如美团外卖，每天都是几千万的订单。淘宝的历史订单总量应该是百亿，甚至是千亿级别，这些海量数据远不是一张表能Hold住的。事实上MySQL单表可以存储10亿级数据，只是这时候性能比较差，业界公认MySQL单表容量在1000W以下是最佳状态，因为这是它的BTREE索引树高在3~5之间。既然一张表无法搞定，那么就想办法将数据放到多个地方，目前比较普遍的方案有3个：分区、分库分表、NoSQL/NewSQL</p>
@@ -558,7 +558,7 @@
 <p>NoSQL比较具有代表性的是MongoDB，es。NewSQL比较具有代表性的是TiDB。 </p>
 </blockquote>
 <h4 id="分区"><a href="#分区" class="headerlink" title="分区"></a>分区</h4><p>分区技术与分表技术很类似，只是分区技术属于数据库内部的技术，对于开发者来说，它逻辑上仍旧是一张表，开发时不需要改变 SQL 表名。</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic3.png" srcset="/img/loading.gif" lazyload class>
 
 <p>它的缺点很明显：很多的资源都受到单机的限制，例如连接数，网络吞吐等。虽然每个分区可以独立存储，但是分区表的总入口还是一个MySQL示例。从而导致它的并发能力非常一般，远远达不到互联网高并发的要求。</p>
 <p>使用分区，业务必须具备两个特点：</p>
@@ -582,10 +582,10 @@
 </li>
 </ul>
 <h4 id="CLIENT模式"><a href="#CLIENT模式" class="headerlink" title="CLIENT模式"></a>CLIENT模式</h4><p>代表有阿里的TDDL，开源社区的sharding-jdbc（sharding-jdbc的3.x版本即sharding-sphere已经支持了proxy模式）。架构如下：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic4.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="PROXY模式"><a href="#PROXY模式" class="headerlink" title="PROXY模式"></a>PROXY模式</h4><p>代表有阿里的cobar，民间组织的MyCAT。架构如下：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic5.png" srcset="/img/loading.gif" lazyload class>
 
 <p>从以上两种模式可以看出sharding-jdbc作为一个组件集成在应用内，而mycat则作为一个独立的应用需要单独部署。</p>
 <table>
@@ -698,7 +698,7 @@
 </ol>
 <h3 id="分库分表架构方案"><a href="#分库分表架构方案" class="headerlink" title="分库分表架构方案"></a>分库分表架构方案</h3><h4 id="垂直切分"><a href="#垂直切分" class="headerlink" title="垂直切分"></a>垂直切分</h4><p>垂直切分常见有垂直分库和垂直分表两种。</p>
 <h5 id="垂直分库"><a href="#垂直分库" class="headerlink" title="垂直分库"></a>垂直分库</h5><p>是根据数据库里面的数据库表的相关性进行拆分，比如：一个数据库里面既存在用户数据，又存在订单数据，那么垂直拆分可以吧用户数据放在用户库，把订单数据放到订单库。另外在微服务盛行的今天已经非常普及，按照业务模块来划分不同的数据库，也是一种垂直拆分，而不是像早期一样将所有的数据表都放在同一个数据库中。如下图：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic6.png" srcset="/img/loading.gif" lazyload class>
 
 <p>以表为依据，按照业务归属不同，将不同的表拆分到不同的库中</p>
 <p>注意事项：</p>
@@ -712,7 +712,7 @@
 </ol>
 <p><strong>使用垂直分库的场景：</strong>当系统绝对并发量上来了，并且可以抽象出单独的业务模块的情况下使用垂直分库方案。</p>
 <h5 id="垂直分表"><a href="#垂直分表" class="headerlink" title="垂直分表"></a>垂直分表</h5><p>在日常开发和设计中比较常见，通俗的说法叫做“大表拆小表”。拆分是基于关系型数据库中的“列”（字段）进行的。通常情况，某个表中的字段比较多，可以新建立一张”扩展表”，将不经常使用或者长度较大的字段拆分出去放到“扩展表”中，如下图所示：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic7.png" srcset="/img/loading.gif" lazyload class>
 
 <p>以字段为依据，按照字段的活跃性，将表中字段拆到不同的表中（主表和扩展表）。</p>
 <p>说明：拆分字段的操作建议在数据库设计阶段就做好。如果是在发展过程中拆分，则需要改写以前的查询语句，会额外带来一定的成本和风险，建议谨慎。</p>
@@ -754,7 +754,7 @@
 </ul>
 <h4 id="水平切分"><a href="#水平切分" class="headerlink" title="水平切分"></a>水平切分</h4><p>水平切分是通过某种策略将数据片来存储，分为水平分表和水平分库两部分，每片数据会分散到不同的MySQL表或者库中，达到分布式的效果，能够支持非常大的数据量。</p>
 <h5 id="水平分库"><a href="#水平分库" class="headerlink" title="水平分库"></a>水平分库</h5><p>以字段为依据，按照一定策略(hash、range等)，将一个库中的数据拆分到多个库中。</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic8.png" srcset="/img/loading.gif" lazyload class>
 
 <p>注意事项：</p>
 <ol>
@@ -768,7 +768,7 @@
 <p><strong>使用水平分库的场景：</strong></p>
 <p>当系统绝对并发量上来了，分表难以从根本上解决问题，并且还没有明显的业务归属进行抽取业务的情况下使用水平分库方案。</p>
 <h5 id="水平分表"><a href="#水平分表" class="headerlink" title="水平分表"></a>水平分表</h5><p>以字段为依据，按照一定策略(hash,range等)，将一个表中的数据拆分到多个表中。</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic9.png" srcset="/img/loading.gif" lazyload class>
 
 <p>注意事项: </p>
 <ol>
@@ -841,7 +841,7 @@
 <p>分页需要按照指定字段进行排序，当排序字段就是分片字段时，通过分片规则就比较容易定位到指定的分片；当排序字段非分片字段时，就变得比较复杂。</p>
 <p>需要先在不同的分片节点中将数据进行排序并返回，然后将不同分片返回的结果集进行汇总和再次排序。</p>
 <p>最终返回给用户如下图：</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic10.png" srcset="/img/loading.gif" lazyload class>
 
 <p>上图只是取第一页的数据，对性能影响还不是很大。但是如果取得页数很大，情况就变得复杂的多。</p>
 <p>因为各分片节点中的数据可能是随机的，为了排序的准确性，需要将所有节点的前N页数据都排序好做合并，最后再进行整体排序，这样的操作很耗费 CPU 和内存资源，所以页数越大，系统性能就会越差。</p>
@@ -891,7 +891,7 @@
 
 <p>uuid的长度较大，会影响建立索引和基于索引查询时的效率，而且需要占用大量的存储空间。</p>
 <h4 id="雪花算法"><a href="#雪花算法" class="headerlink" title="雪花算法"></a>雪花算法</h4><p>雪花算法由Twitter发明，是一种约定，它把时间戳、工作组 ID、工作机器 ID、自增序列号组合在一起，生成一个 64bits 的整数ID，能够使用 (2^41)/(1000<em>60</em>60<em>24</em>365) = 69.7 年，每台机器每毫秒理论最多生成 2^12 个 ID</p>
-<img src="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/pic11.png" srcset="/img/loading.gif" lazyload class>
 
 <p>雪花算法的优点在于不需要依赖Redis等第三方介质，占用空间及查询效率都要优于uuid，但只能保证在工作组中的机器生成的 ID 唯一，不同组下可能会重复。而且时间回拨后，生成的 ID 就会重复，所以需要保持时间是网络同步的。</p>
 <h5 id="java代码实现"><a href="#java代码实现" class="headerlink" title="java代码实现"></a>java代码实现</h5><p>工具类</p>
@@ -931,7 +931,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" class="category-chain-item">数据库</a>
+  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" class="category-chain-item">数据库</a>
   
   
 
@@ -946,9 +946,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9E%B6%E6%9E%84/">#数据库架构</a>
+        <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%9E%B6%E6%9E%84/">#数据库架构</a>
       
-        <a href="/blog/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8%E7%AD%96%E7%95%A5/">#分库分表策略</a>
+        <a href="/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8%E7%AD%96%E7%95%A5/">#分库分表策略</a>
       
     </div>
   
@@ -961,7 +961,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>分库分表的深入剖析</div>
-      <div>http://zhaoguocheng.gitee.io/2020/12/01/数据库/分库分表/</div>
+      <div>https://zgc97107.github.io/2020/12/01/数据库/分库分表/</div>
     </div>
     <div class="license-meta">
       
@@ -1000,7 +1000,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/" title="分布式事务实现">
+                      <a href="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/" title="分布式事务实现">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">分布式事务实现</span>
                         <span class="visible-mobile">上一篇</span>
@@ -1010,7 +1010,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/" title="MySQL索引的实现">
+                      <a href="/2020/11/29/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL%E7%B4%A2%E5%BC%95%E7%9A%84%E5%AE%9E%E7%8E%B0/" title="MySQL索引的实现">
                         <span class="hidden-mobile">MySQL索引的实现</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -1137,8 +1137,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -1160,7 +1160,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -1259,7 +1259,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -1267,7 +1267,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   

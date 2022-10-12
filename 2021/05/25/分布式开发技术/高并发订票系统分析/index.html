@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,35 +19,35 @@
     <meta name="description" content="系统架构介绍数据同步架构 系统管理员通过后台管理系统基于一些基础数据（座位数据，列车车次数据，乘车计划数据）生成指定日期的乘车计划数据。然后我们通过 logstash将生成的数据同步到 ES 和 Redis 中。 Logstash 常见的数据获取方式拉、推。上述架构展示的是拉的模式，但是这种方式我们当前这个系统环境中不太适合，原因是因为我们使用了 MyCat 进行分库分表的处理，而 Logstas">
 <meta property="og:type" content="article">
 <meta property="og:title" content="高并发订票系统分析">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="系统架构介绍数据同步架构 系统管理员通过后台管理系统基于一些基础数据（座位数据，列车车次数据，乘车计划数据）生成指定日期的乘车计划数据。然后我们通过 logstash将生成的数据同步到 ES 和 Redis 中。 Logstash 常见的数据获取方式拉、推。上述架构展示的是拉的模式，但是这种方式我们当前这个系统环境中不太适合，原因是因为我们使用了 MyCat 进行分库分表的处理，而 Logstas">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224233147.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224131878.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224401590.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224512481.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224622003.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225225545.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225605410.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525231959599.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232026506.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232136645.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232209388.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213156336.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213441412.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526223432342.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526224203176.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526230535379.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231253644.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231329826.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231617348.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210511133.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210627427.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527212004808.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214407992.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214551842.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214654390.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224233147.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224131878.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224401590.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224512481.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224622003.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225225545.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225605410.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525231959599.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232026506.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232136645.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232209388.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213156336.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213441412.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526223432342.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526224203176.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526230535379.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231253644.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231329826.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231617348.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210511133.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210627427.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527212004808.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214407992.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214551842.png">
+<meta property="og:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214654390.png">
 <meta property="article:published_time" content="2021-05-25T14:29:58.000Z">
 <meta property="article:modified_time" content="2021-05-25T14:29:58.000Z">
 <meta property="article:tag" content="redis">
@@ -55,7 +55,7 @@
 <meta property="article:tag" content="mysql主从复制">
 <meta property="article:tag" content="rabbitmq">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224233147.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224233147.png">
   
   
   
@@ -83,12 +83,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -97,15 +97,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -122,7 +122,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -141,7 +141,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -153,7 +153,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -165,7 +165,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -177,7 +177,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -189,7 +189,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -218,7 +218,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -322,7 +322,7 @@
     
       
       
-        <a href="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/" title="幂等性技术架构体系"
+        <a href="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/" title="幂等性技术架构体系"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">幂等性技术架构体系</span>
@@ -331,7 +331,7 @@
     
       
       
-        <a href="/blog/2020/10/15/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/" title="配置中心设计"
+        <a href="/2020/10/15/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/" title="配置中心设计"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">配置中心设计</span>
@@ -340,7 +340,7 @@
     
       
       
-        <a href="/blog/2020/10/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/" title="零热数据收集和隔离"
+        <a href="/2020/10/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/" title="零热数据收集和隔离"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">零热数据收集和隔离</span>
@@ -349,7 +349,7 @@
     
       
       
-        <a href="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/" title="高并发订票系统分析"
+        <a href="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/" title="高并发订票系统分析"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">高并发订票系统分析</span>
@@ -380,16 +380,16 @@
             
               <div class="markdown-body">
                 
-                <h3 id="系统架构介绍"><a href="#系统架构介绍" class="headerlink" title="系统架构介绍"></a>系统架构介绍</h3><h4 id="数据同步架构"><a href="#数据同步架构" class="headerlink" title="数据同步架构"></a>数据同步架构</h4><p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224233147.png" srcset="/blog/img/loading.gif" lazyload></p>
+                <h3 id="系统架构介绍"><a href="#系统架构介绍" class="headerlink" title="系统架构介绍"></a>系统架构介绍</h3><h4 id="数据同步架构"><a href="#数据同步架构" class="headerlink" title="数据同步架构"></a>数据同步架构</h4><p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224233147.png" srcset="/img/loading.gif" lazyload></p>
 <p>系统管理员通过后台管理系统基于一些基础数据（座位数据，列车车次数据，乘车计划数据）生成指定日期的乘车计划数据。然后我们通过 logstash将生成的数据同步到 ES 和 Redis 中。</p>
 <p>Logstash 常见的数据获取方式拉、推。上述架构展示的是拉的模式，但是这种方式我们当前这个系统环境中不太适合，原因是因为我们使用了 MyCat 进行分库分表的处理，而 Logstash 在进行拉取数据的时候如果数据量较大我们就需要进行分页拉取，那么此时 Logstash 就会生成类似这样的一条 sql 语句：select count(*) as <code>count</code> from ….来查询满足条件总条数，但是这个 count 别名使用了反引号，而这个反引号在 MyCat 中无法使用，因此就会产生异常。</p>
 <p>因此本次我们在进行数据同步的时候使用的是 Logstash 的推模式进行数据同步，如下所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224131878.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224131878.png" srcset="/img/loading.gif" lazyload></p>
 <h4 id="数据搜索架构"><a href="#数据搜索架构" class="headerlink" title="数据搜索架构"></a>数据搜索架构</h4><p>数据同步完毕以后，用户就可以搜索相关的乘车计划数据了。具体的搜索架构如下所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224401590.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224401590.png" srcset="/img/loading.gif" lazyload></p>
 <h4 id="用户下单架构"><a href="#用户下单架构" class="headerlink" title="用户下单架构"></a>用户下单架构</h4><p>通常订票系统要处理<strong>生成订单、减扣库存、用户支付</strong>这三个基本的阶段，我们系统要做的事情是要保证火车票订单不超卖、不少卖，每张售卖的车票都必须支付才有效，还要保证系统承受极高的并发。</p>
 <p>方案一</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224512481.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224512481.png" srcset="/img/loading.gif" lazyload></p>
 <p>当用户并发请求到达服务端时，首先创建订单，然后扣除库存，等待用户支付。这种顺序是我们一般人首先会想到的解决方案，这种情况下也能保证订单不会超卖，因为创建订单之后就会减库存，这是一个原子操作。</p>
 <p><strong>存在的问题</strong>： </p>
 <ol>
@@ -399,15 +399,15 @@
 </li>
 </ol>
 <p>方案二</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224622003.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525224622003.png" srcset="/img/loading.gif" lazyload></p>
 <p>如果等待用户支付了订单在减库存，第一感觉就是不会少卖。但是这是并发架构的大忌，因为在极限并发情况下，用户可能会创建很多订单，当库存减为零的时候很多用户发现抢到的订单支付不了了，这也就是所谓的”<strong>超卖</strong>“, 并且这种方案也不能避免并发操作数据库磁盘 IO。</p>
 <p>方案三</p>
 <p>上述两种方案只要创建订单，就要频繁操作数据库 IO。可以通过预扣库存的方式，先扣除库存，保证不超卖，然后异步生成用户订单，这样响应给用户的速度就会快很多；</p>
 <p>不超卖的问题解决了，然后就是不少卖的问题，可以通过设置一个订单有效期，如果用户拿到了单，在有效期内没有支付，订单就会失效，同时加入新的库存。</p>
 <p>订单的生成是异步的,一般都会放到 MQ（消费队列）中处理，订单量比较少的情况下，生成订单非常快，用户几乎不用排队。如下图所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225225545.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210525225225545"></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225225545.png" srcset="/img/loading.gif" lazyload alt="image-20210525225225545"></p>
 <h3 id="下单过程"><a href="#下单过程" class="headerlink" title="下单过程"></a>下单过程</h3><h4 id="下单流程"><a href="#下单流程" class="headerlink" title="下单流程"></a>下单流程</h4><p>用户下单排队的具体流程如下所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225605410.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525225605410.png" srcset="/img/loading.gif" lazyload></p>
 <h4 id="下单页面"><a href="#下单页面" class="headerlink" title="下单页面"></a>下单页面</h4><p>注意：下单之前需要初始化一些用户数据到 Redis 中(train_manager:userInfo)，默认用户已经登录</p>
 <p>下单页面：12306\otn\confirmPassenger\initDc.html</p>
 <h4 id="订单服务实现"><a href="#订单服务实现" class="headerlink" title="订单服务实现"></a>订单服务实现</h4><h5 id="下单接口定义"><a href="#下单接口定义" class="headerlink" title="下单接口定义"></a>下单接口定义</h5><p>实体类创建</p>
@@ -434,16 +434,16 @@
 <p>常见的限流算法：计数器、漏桶算法、令牌桶算法</p>
 <p><strong>计数器限流算法</strong></p>
 <p>计数器法是限流算法里最简单也是最容易实现的一种算法。比如我们规定，对于 A 接口来说，我们 1 分钟的访问次数不能超过 100 个。那么我们可以设置一个计数器 counter，其有效时间为 1 分钟（即每分钟计数器会被重置为 0），每当一个请求过来的时候，counter 就加 1，如果 counter的值大于 100，就说明请求数过多；如下图所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525231959599.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525231959599.png" srcset="/img/loading.gif" lazyload></p>
 <p>这个算法虽然简单，但是有一个十分致命的问题，那就是临界问题。</p>
 <p>如下图所示，在 1:00 前一刻到达 100 个请求，1:00 计数器被重置，1:00 后一刻又到达 100 个请求，显然计数器不会超过 100，所有请求都不会被拦截；然而这一时间段内请求数已经达到 200，远超 100。</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232026506.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232026506.png" srcset="/img/loading.gif" lazyload></p>
 <p><strong>漏桶算法</strong></p>
 <p>漏桶算法其实很简单，可以粗略的认为就是注水漏水过程，往桶中以一定速率流出水，以任意速率流入水，当水超过桶流量则丢弃，因为桶容量是不变的，保证了整体的速率。如下图所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232136645.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210525232136645"></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232136645.png" srcset="/img/loading.gif" lazyload alt="image-20210525232136645"></p>
 <p><strong>令牌桶算法</strong></p>
 <p>令牌桶是一个存放固定容量令牌的桶，按照固定速率 r 往桶里添加令牌；桶中最多存放 b 个令牌，当桶满时，新添加的令牌被丢弃；当一个请求达到时，会尝试从桶中获取令牌；如果有，则继续处理请求；如果没有则排队等待或者直接丢弃；可以发现，漏桶算法的流出速率恒定，而令牌桶算法的流出速率却有可能大于 r；</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232209388.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210525232209388.png" srcset="/img/loading.gif" lazyload></p>
 <p>从作用上来说，漏桶和令牌桶算法最明显的区别就是是否允许突发流量(burst)的处理，漏桶算法能够强行限制数据的实时传输（处理）速率，对突发流量不做额外处理；而令牌桶算法能够在限制数据的平均传输速率的同时允许某种程度的突发传输。</p>
 <p><strong>Nginx 的限流策略</strong></p>
 <p>Nginx 的限流主要是两种方式：<strong>限制访问频率</strong>和<strong>限制并发连接数</strong>。</p>
@@ -581,7 +581,7 @@
 </li>
 </ol>
 <p>基于以上几点的设计思路，我们所设计出来的订单数据库的架构如下所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213156336.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213156336.png" srcset="/img/loading.gif" lazyload></p>
 <p>MySql 主从复制</p>
 <p>主从复制简介</p>
 <p>就是有两个数据库服务器，一个是主（master）数据库服务器，另一个是从（slave）数据库服务器。当主（master）数据库有数据写入，包括插入、删除、修改，都会在从（slave）数据库上操作一次。这样的操作下，主从（slave）数据库的数据都是一样的，就相当于时刻在做数据备份，就算主（master）数据库的数据全部丢失了，还有从（slave）数据库的数据，我们就可以把从（slave）数据库的数据导出来进行数据恢复。</p>
@@ -595,7 +595,7 @@
 <li><p>最后从（slave）数据库其他 SQL 线程，把中继日志（Relay log）文件中的事件再执行一遍，更新从（slave）数据库的数据，保持主从数据一致。</p>
 </li>
 </ol>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213441412.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210526213441412"></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526213441412.png" srcset="/img/loading.gif" lazyload alt="image-20210526213441412"></p>
 <p>一主一从介绍</p>
 <p>在 Mycat 中，读写分离可以说有两种：一种是一主一从，另一种是多主多从。接下来我们就来首先给大家介绍一下一主一从的部署。</p>
 <p>分为两步进行实现：</p>
@@ -715,7 +715,7 @@
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> tb_user(<span class="hljs-keyword">id</span>, <span class="hljs-keyword">name</span>, city) <span class="hljs-keyword">values</span>(<span class="hljs-number">7</span>, <span class="hljs-string">&quot;test7&quot;</span>, <span class="hljs-string">&#x27;beijing&#x27;</span>);<br></code></pre></td></tr></table></figure>
 
 <p>3、关闭 train_mysql_03 节点，然后在尝试插入数据，观察数据是否可以被正常插入</p>
-<h6 id="订单数据库部署"><a href="#订单数据库部署" class="headerlink" title="订单数据库部署"></a>订单数据库部署</h6><p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526223432342.png" srcset="/blog/img/loading.gif" lazyload></p>
+<h6 id="订单数据库部署"><a href="#订单数据库部署" class="headerlink" title="订单数据库部署"></a>订单数据库部署</h6><p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526223432342.png" srcset="/img/loading.gif" lazyload></p>
 <p>按照上述架构我们需要部署两套双主双从的 mysql，双主双从的 mysql 我们已经讲解过了。因此第二套双主双从的步骤我们不在课程中讲解了。</p>
 <p>我们主要讲解的是 mycat 的配置，具体配置如下所示：</p>
 <p>1、修改 schema.xml 文件</p>
@@ -730,7 +730,7 @@
 <h6 id="保存订单数据"><a href="#保存订单数据" class="headerlink" title="保存订单数据"></a>保存订单数据</h6><p>通过创建mapper及server类进行操作，此处省略</p>
 <h6 id="删除排队信息"><a href="#删除排队信息" class="headerlink" title="删除排队信息"></a>删除排队信息</h6><p>订单处理服务</p>
 <p>当订单保存成功以后，我们就需要将用户的排队信息从 Redis 中进行删除。删除的具体流程如下所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526224203176.png" srcset="/blog/img/loading.gif" lazyload alt="image-20210526224203176"></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526224203176.png" srcset="/img/loading.gif" lazyload alt="image-20210526224203176"></p>
 <p>订单处理服务发送消息，具体的实现步骤如下所示：</p>
 <p>1、添加队列配置信息</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">// 从Redis中删除排队信息的的队列</span><br><span class="hljs-meta">@Bean(name = &quot;delete_sorted_from_redis&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Queue <span class="hljs-title">deleteSortedFromRedisQueue</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-keyword">return</span> QueueBuilder.durable(<span class="hljs-string">&quot;delete_sorted_from_redis&quot;</span>).build() ;<br>&#125;<br></code></pre></td></tr></table></figure>
@@ -771,7 +771,7 @@
 <p>从上面可以看出其实这两种方式，都是在不断地建立 HTTP 连接，然后等待服务端处理，可以体现 HTTP 协议的另外一个特点，被动性。何为被动性呢，其实就是，服务端不能主动联系客户端，只能有客户端发起。</p>
 <p>从上面很容易看出来，不管怎么样，上面这两种都是非常消耗资源的。</p>
 <p>websocket 通信</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526230535379.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526230535379.png" srcset="/img/loading.gif" lazyload></p>
 <p><strong>发送连接请求</strong></p>
 <p>客户端通过一个格式为：ws://host:port/的请求地址发起 WebSocket 连接请求，并由 JavaScript 实现 WebSocket API 与服务器建立 WebSocket 连接，其中 host 为服务器主机 IP 地址或域名，port 为端口。</p>
 <p>握手</p>
@@ -798,10 +798,10 @@
 <h6 id="查询订单接口"><a href="#查询订单接口" class="headerlink" title="查询订单接口"></a>查询订单接口</h6><p>查询订单架构介绍</p>
 <p>通过分析前端页面，我们可以看到在进行订单询的时候调用的其实是 itheima-train-manager-order 项目中的接口。而我们真正的订单信息是存储在数据库中的，而和数据库打交道的是 itheima-train-manager-order-handler 工程，因此我们需要在 itheima-train-manager-order-handler 工程中提供一个查询接口，供我们的 itheima-train-manager-order 来进行调用。</p>
 <p>最初的调用架构：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231253644.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231253644.png" srcset="/img/loading.gif" lazyload></p>
 <p>弊端：订单处理服务进行扩容或者缩容的时候，我们都需要对订单服务做相应的更改</p>
 <p>优化以后的调用架构：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231329826.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231329826.png" srcset="/img/loading.gif" lazyload></p>
 <p>本次我们还是选用 nacos 作为我们的服务注册中心。</p>
 <p>服务提供方</p>
 <p>集成 Nacos</p>
@@ -815,7 +815,7 @@
 <p>3、 在启动类上添加如下注解开启服务注册于发现功能</p>
 <p>@EnableDiscoveryClient</p>
 <p>4、 启动服务，就可以在 nacos 管理后台查看到对应的服务信息</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231617348.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210526231617348.png" srcset="/img/loading.gif" lazyload></p>
 <p><strong>定义查询接口</strong></p>
 <p>具体步骤如下所示：</p>
 <p>1、 定义 OrderHandlerController</p>
@@ -890,7 +890,7 @@
 
 <h5 id="回退库存"><a href="#回退库存" class="headerlink" title="回退库存"></a>回退库存</h5><p>延迟队列</p>
 <p>延迟队列存储的对象是对应的延迟消息，所谓”延迟消息”是指当消息被发送以后，并不想让消费者立刻拿到消息，而是等待特定时间后，消费者才能拿到这个消息进行消费。而我们的在完成订单未支付超时这个需求的时候就可以去使用延迟队列。那么我们首先来给大家介绍一下具体的实现流程，如下图所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210511133.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210511133.png" srcset="/img/loading.gif" lazyload></p>
 <p>死信队列</p>
 <p>在 Rabbitmq 中没有延迟队列的功能，但是我们可以使用 DLX 结合 TTL 来实现延迟队列的功能。</p>
 <p>DLX：可以被称之为死信交换机（Dead-Letter-Exchange）,也有人将其称之为死信邮箱。当消息在一个队列中变成死信之后，这个消息能被重新发送到另外一个交换机，这个交换机就是 DLX，与之绑定的队列就是死信队列。</p>
@@ -903,7 +903,7 @@
 <li><p>队列达到最大长度</p>
 </li>
 </ol>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210627427.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527210627427.png" srcset="/img/loading.gif" lazyload></p>
 <p>发送延迟消息</p>
 <p>订单服务处理服务</p>
 <p>1、在（itheima-train-manager-order-handler）RabbitmqConfiguration 中添加死信队列的与死信交换机的配置</p>
@@ -940,7 +940,7 @@
 
 <p>2、在 RabbitmqConfiguration 添加回退库存队列信息</p>
 <p>回退库存的队列信息如下图所示：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527212004808.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527212004808.png" srcset="/img/loading.gif" lazyload></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">// 声明队列</span><br><span class="hljs-meta">@Bean(name = &quot;back_stock_redis_queue&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Queue <span class="hljs-title">backStockRedisQueue</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-keyword">return</span> QueueBuilder.durable(<span class="hljs-string">&quot;back_stock_redis_queue&quot;</span>).build() ;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">// 声明队列</span><br><span class="hljs-meta">@Bean(name = &quot;back_stock_es_queue&quot;)</span><br><span class="hljs-function"><span class="hljs-keyword">public</span> Queue <span class="hljs-title">backStockESQueue</span><span class="hljs-params">()</span> </span>&#123;<br>    <span class="hljs-keyword">return</span> QueueBuilder.durable(<span class="hljs-string">&quot;back_stock_es_queue&quot;</span>).build() ;<br>&#125;<br></code></pre></td></tr></table></figure>
@@ -976,7 +976,7 @@
 <p>在我们进行单机应用开发，涉及并发同步的时候，我们往往采用 synchronized 或者 Lock 的方式来解决多线程间的代码同步问题，这时多线程的运行都是在同一个 JVM 之下。但当我们的应用是分布式集群工作的情况下，属于多 JVM 下的工作环境，JVM 之间已经无法通过多线程的锁解决同步问题。那么就需要一种更加高级的锁机制，来处理种跨机器的进程之间的数据同步问题——这就是分布式锁。</p>
 <p>分布式锁实现方式</p>
 <p>分布式锁的实现方式比较多：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214407992.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214407992.png" srcset="/img/loading.gif" lazyload></p>
 <p>本次我们重点介绍的就是使用 zookeeper 结合它的客户端 API（Curator）实现分布式锁。</p>
 <p>Zookeeper 实现分布式锁原理</p>
 <p><strong>核心思想</strong>：当客户端要获取锁，则创建节点，使用完锁，则删除该节点。</p>
@@ -990,7 +990,7 @@
 <li><p>如果发现比自己小的那个节点被删除，则客户端的 Watcher 会收到相应通知，此时再次判断自己创建的节点是否是 lock 子节点中序号最小的，如果是则获取到了锁，如果不是则重复以上步骤继续获取到比自己小的一个节点并注册监听。</p>
 </li>
 </ol>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214551842.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214551842.png" srcset="/img/loading.gif" lazyload></p>
 <p>分布式锁实现</p>
 <p>Curator 简介</p>
 <p>针对 zookeeper 实现分布式锁，我们没有必须在自己编写代码进行实现了。zookeeper 的 Java 客户端 Curator 已经提供了分布式锁的实现。</p>
@@ -998,7 +998,7 @@
 <p>Curator 是 Netflix 开源的一套 ZooKeeper 客户端框架，用它来操作 zookeeper 更加简单方便。</p>
 <p>Curator 框架提供了一套高级的 API， 简化了 ZooKeeper 的操作。它增加了很多使用 ZooKeeper 开发的特性，可以处理 ZooKeeper 集群复杂的连接管理和重试机制。目前已经成为 Apache 的顶级项目。另外还提供了一套易用性和可读性更强的 Fluent 风格的客户端 API 框架。</p>
 <p>下面是官网 <a target="_blank" rel="noopener" href="http://curator.apache.org/%E5%AF%B9">http://curator.apache.org/对</a> Curator 的描述：</p>
-<p><img src="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214654390.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/image-20210527214654390.png" srcset="/img/loading.gif" lazyload></p>
 <p>在 Curator 中有五种锁方案，主要包含：</p>
 <ul>
 <li><p>InterProcessMutex：分布式可重入排它锁</p>
@@ -1045,7 +1045,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/%E4%B8%9A%E5%8A%A1%E8%AE%BE%E8%AE%A1/" class="category-chain-item">业务设计</a>
+  <a href="/categories/%E4%B8%9A%E5%8A%A1%E8%AE%BE%E8%AE%A1/" class="category-chain-item">业务设计</a>
   
   
 
@@ -1060,13 +1060,13 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/redis/">#redis</a>
+        <a href="/tags/redis/">#redis</a>
       
-        <a href="/blog/tags/websocket/">#websocket</a>
+        <a href="/tags/websocket/">#websocket</a>
       
-        <a href="/blog/tags/mysql%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/">#mysql主从复制</a>
+        <a href="/tags/mysql%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6/">#mysql主从复制</a>
       
-        <a href="/blog/tags/rabbitmq/">#rabbitmq</a>
+        <a href="/tags/rabbitmq/">#rabbitmq</a>
       
     </div>
   
@@ -1079,7 +1079,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>高并发订票系统分析</div>
-      <div>http://zhaoguocheng.gitee.io/2021/05/25/分布式开发技术/高并发订票系统分析/</div>
+      <div>https://zgc97107.github.io/2021/05/25/分布式开发技术/高并发订票系统分析/</div>
     </div>
     <div class="license-meta">
       
@@ -1118,7 +1118,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2022/03/29/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/" title="分布式锁实现分析">
+                      <a href="/2022/03/29/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/" title="分布式锁实现分析">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">分布式锁实现分析</span>
                         <span class="visible-mobile">上一篇</span>
@@ -1128,7 +1128,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2021/05/21/Mybatis/mybatis%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" title="mybatis源码剖析">
+                      <a href="/2021/05/21/Mybatis/mybatis%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" title="mybatis源码剖析">
                         <span class="hidden-mobile">mybatis源码剖析</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -1255,8 +1255,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -1278,7 +1278,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -1377,7 +1377,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -1385,7 +1385,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   

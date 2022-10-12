@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,31 +19,31 @@
     <meta name="description" content="二阶段提交方案（Atomikos）概述atomikos一套开源的，JTA规范的实现。它是基于二阶段提交思想实现分布式事务的控制。是分布式刚性事务的一种解决方案。在当下互联网开发中选择此种解决方案的场景也不是很多了。  使用场景通常情况下使用2pc提交方案的场景都是单服务多数据源（多数据库）的情况。在前面我们讲解分布式事务开篇时已经介绍了项目架构的演进过程，在分布式架构或微服务架构中，它面临着多个服">
 <meta property="og:type" content="article">
 <meta property="og:title" content="分布式事务实现">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="二阶段提交方案（Atomikos）概述atomikos一套开源的，JTA规范的实现。它是基于二阶段提交思想实现分布式事务的控制。是分布式刚性事务的一种解决方案。在当下互联网开发中选择此种解决方案的场景也不是很多了。  使用场景通常情况下使用2pc提交方案的场景都是单服务多数据源（多数据库）的情况。在前面我们讲解分布式事务开篇时已经介绍了项目架构的演进过程，在分布式架构或微服务架构中，它面临着多个服">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic1.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic2.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic3.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic4.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic5.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic7.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic6.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic8.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic10.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic9.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic11.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic12.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic13.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic14.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic15.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic16.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic1.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic2.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic3.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic4.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic5.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic7.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic6.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic8.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic10.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic9.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic11.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic12.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic13.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic14.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic15.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic16.png">
 <meta property="article:published_time" content="2020-12-10T03:14:15.000Z">
 <meta property="article:modified_time" content="2020-12-10T03:14:15.000Z">
 <meta property="article:tag" content="分布式事务">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic1.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic1.png">
   
   
   
@@ -71,12 +71,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -85,15 +85,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -110,7 +110,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -129,7 +129,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -141,7 +141,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -153,7 +153,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -165,7 +165,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -177,7 +177,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -206,7 +206,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -310,7 +310,7 @@
     
       
       
-        <a href="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/" title="分布式事务实现"
+        <a href="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/" title="分布式事务实现"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">分布式事务实现</span>
@@ -319,7 +319,7 @@
     
       
       
-        <a href="/blog/2020/09/20/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E7%AE%80%E8%BF%B0/" title="分布式事务简述"
+        <a href="/2020/09/20/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E7%AE%80%E8%BF%B0/" title="分布式事务简述"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">分布式事务简述</span>
@@ -353,10 +353,10 @@
                 <h3 id="二阶段提交方案（Atomikos）"><a href="#二阶段提交方案（Atomikos）" class="headerlink" title="二阶段提交方案（Atomikos）"></a>二阶段提交方案（Atomikos）</h3><h4 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h4><p>atomikos一套开源的，JTA规范的实现。它是基于二阶段提交思想实现分布式事务的控制。是分布式刚性事务的一种解决方案。在当下互联网开发中选择此种解决方案的场景也不是很多了。 </p>
 <h4 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h4><p>通常情况下使用2pc提交方案的场景都是单服务多数据源（多数据库）的情况。在前面我们讲解分布式事务开篇时已经介绍了项目架构的演进过程，在分布式架构或微服务架构中，它面临着多个服务间的调用，这时就可能会出现其中一个服务处于ok状态，而另一个服务执行出现状况，因为二阶段提交方案中参与者不能提交事务，要等待其他参与者都ok了，才能一起提交，那么此时就会一直等待第二个服务执行返回结果，造成事务一直锁住的状态，性能不高。所以一般是单体架构配多个数据库的项目居多。 </p>
 <h4 id="案例简介"><a href="#案例简介" class="headerlink" title="案例简介"></a>案例简介</h4><p>系统要对针对库存记录访问日志。并且，库存系统数据库和日志数据库不是同一个数据库。 </p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic1.png" srcset="/img/loading.gif" lazyload class>
 
 <p>数据库表结构</p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic2.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h4><p>数据库文件</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">DATABASE</span> <span class="hljs-string">`stockdb`</span>;<br><span class="hljs-keyword">DROP</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-keyword">IF</span> <span class="hljs-keyword">EXISTS</span> <span class="hljs-string">`t_stock`</span>;<br><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`t_stock`</span> (<br>  <span class="hljs-string">`id`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,<br>  <span class="hljs-string">`product_id`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>  <span class="hljs-string">`product_name`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">200</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>  <span class="hljs-string">`stock_id`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>  <span class="hljs-string">`quantity`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)<br>) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8;<br></code></pre></td></tr></table></figure>
@@ -376,7 +376,7 @@
 <p>根据所面向对象的不同，我们可以将 JTA 的事务管理器和资源管理器理解为两个方面：面向开发人员的使用接口（事务管理器）和面向服务提供商的实现接口（资源管理器）。其中开发接口的主要部分即为上述示例中引用的UserTransaction 对象，开发人员通过此接口在信息系统中实现分布式事务；而实现接口则用来规范提供商（如数据库连接提供商）所提供的事务服务，它约定了事务的资源管理功能，使得 JTA 可以在异构事务资源之间执行协同沟通。 </p>
 <p>以数据库为例，IBM 公司提供了实现分布式事务的数据库驱动程序，Oracle 也提供了实现分布式事务的数据库驱动程序， 在同时使用 DB2 和 Oracle 两种数据库连接时， JTA 即可以根据约定的接口协调者两种事务资源从而实现分布式事务。 </p>
 <p>正是基于统一规范的不同实现使得 JTA 可以协调与控制不同数据库或者 JMS 厂商的事务资源，其架构如下图所示：</p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic3.png" srcset="/img/loading.gif" lazyload class>
 
 <p>开发人员使用开发人员接口，实现应用程序对全局事务的支持；各提供商（数据库，JMS 等）依据提供商接口的规范提供事务资源管理功能；事务管理器（ TransactionManager ）将应用对分布式事务的使用映射到实际的事务资源并在事务资源间进行协调与控制。 下面，本文将对包括 UserTransaction、Transaction 和TransactionManager 在内的三个主要接口以及其定义的方法进行介绍。 </p>
 <p><strong>面向开发人员的 UserTransaction</strong></p>
@@ -433,7 +433,7 @@
 </li>
 </ul>
 <p>在系统开发过程中会遇到需要将事务资源暂时排除的操作，此时就需要调用 suspend() 方法将当前的事务挂起：在此方法后面所做的任何操作将不会被包括在事务中，在非事务性操作完成后调用 resume()以继续事务（注： 要进行此操作需要获得 TransactionManager 对象， 其获得方式在不同的 J2EE 应用服务器上是不一样的）下面将通过具体的代码向读者介绍 JTA 实现原理。下图列出了示例实现中涉及到的 Java 类，其中 UserTransactionImpl 实现了 UserTransaction 接口， TransactionManagerImpl 实现了 TransactionManager 接口，TransactionImpl 实现了 Transaction 接口: </p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic4.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="二阶段提交总结"><a href="#二阶段提交总结" class="headerlink" title="二阶段提交总结"></a>二阶段提交总结</h4><p>二阶段提交作为早期分布式事务的解决方案，逐渐的淡出了主流方案的圈子。这里面其最重要的原因就是它是刚性事务，即需要满足强一致性。它的优点就是可以在多数据库间实现事务控制，而摆脱单一数据库使用事务的宿命。但是阻塞式这个缺点确是致命的，因为参与全局事务的数据库被动听从事务管理器的命令，执行或放弃事务，如果运行事务管理器的机器宕机，那整个系统就不能用了。当然，在极端情况下还可能同时影响其他系统，如果事务管理器挂了，但是这个数据库的表锁还没释放，因为数据库还在等待事务管理器的命令，因此，使用这个数据库的其他应用也会收到影响。 </p>
 <h3 id="事务消息（RocketMQ）"><a href="#事务消息（RocketMQ）" class="headerlink" title="事务消息（RocketMQ）"></a>事务消息（RocketMQ）</h3><p>RokectMQ简介RocketMQ是阿里巴巴开发的一款原生分布式消息队列，并且其内部声称不遵循任何规范（主要是JMS），目前已经被apache软件基金会收录。它是目前实现市场上为数不多的支持事务消息的消息中间件。</p>
@@ -442,10 +442,10 @@
 <p>RocketMQ事务消息（Transactional Message）是指应用本地事务和发送消息操作可以被定义到全局事务中，要么同时成功，要么同时失败。RocketMQ的事务消息提供类似 X/Open XA 的分布事务功能，通过事务消息能达到分布式事务的最终一致。 </p>
 <p>此处需要明确一件事，分布式事务和事务消息两者并没有关系，事务消息仅仅保证本地事务和MQ消息发送形成整体的原子性，而投递到MQ服务器后，消费者是否能一定消费成功是无法保证的。 </p>
 <p>事务消息的执行流程图</p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic5.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="案例简介-1"><a href="#案例简介-1" class="headerlink" title="案例简介"></a>案例简介</h4><p>本次场景为订单和支付。在付款成功之后，修改订单状态，如果超过一定时限之后就自动关闭。下图描述了场景的业务流程：</p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic7.png" srcset="/img/loading.gif" lazyload class>
 
 <p>数据库结构</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs sql"><span class="hljs-keyword">DROP</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-keyword">IF</span> <span class="hljs-keyword">EXISTS</span> <span class="hljs-string">`pay`</span>;<br><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> <span class="hljs-string">`pay`</span> (<br>  <span class="hljs-string">`id`</span> <span class="hljs-built_in">varchar</span>(<span class="hljs-number">100</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span>,<br>  <span class="hljs-string">`ispay`</span> <span class="hljs-built_in">int</span>(<span class="hljs-number">11</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-literal">NULL</span>,<br>  PRIMARY <span class="hljs-keyword">KEY</span> (<span class="hljs-string">`id`</span>)<br>) <span class="hljs-keyword">ENGINE</span>=<span class="hljs-keyword">InnoDB</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-keyword">CHARSET</span>=utf8;<br><br><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> <span class="hljs-string">`pay`</span> <span class="hljs-keyword">VALUES</span> (<span class="hljs-string">&#x27;1234&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);<br></code></pre></td></tr></table></figure>
@@ -468,11 +468,11 @@
 <p>订单服务的启动类</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> com.itheima.order;<br><br><span class="hljs-keyword">import</span> org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;<br><span class="hljs-keyword">import</span> org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;<br><span class="hljs-keyword">import</span> org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;<br><span class="hljs-keyword">import</span> org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;<br><span class="hljs-keyword">import</span> org.apache.rocketmq.common.consumer.ConsumeFromWhere;<br><span class="hljs-keyword">import</span> org.apache.rocketmq.common.message.MessageExt;<br><span class="hljs-keyword">import</span> org.springframework.boot.SpringApplication;<br><span class="hljs-keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;<br><br><span class="hljs-keyword">import</span> java.util.List;<br><br><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author</span> 黑马程序员</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@Company</span> http://www.itheima.com</span><br><span class="hljs-comment"> */</span><br><span class="hljs-meta">@SpringBootApplication</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">OrderApplication</span> </span>&#123;<br><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>        <span class="hljs-comment">//启动方法</span><br>        SpringApplication.run(OrderApplication.class);<br><br>        <span class="hljs-comment">//1.创建事务消息的消费者</span><br>        DefaultMQPushConsumer consumer = <span class="hljs-keyword">new</span> DefaultMQPushConsumer(<span class="hljs-string">&quot;txmessage_trans-client-group&quot;</span>);<br>        <span class="hljs-comment">//2.设置nameserver的地址</span><br>        consumer.setNamesrvAddr(<span class="hljs-string">&quot;127.0.0.1:9876&quot;</span>);<br>        <span class="hljs-comment">//3.设置单次消费的消息数量</span><br>        consumer.setConsumeMessageBatchMaxSize(<span class="hljs-number">5</span>);<br>        <span class="hljs-comment">//4.设置消息消费顺序</span><br>        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);<br>        <span class="hljs-comment">//5.设置监听消息的信息topic和tags</span><br>        consumer.subscribe(<span class="hljs-string">&quot;txmessage_topic&quot;</span>, <span class="hljs-string">&quot;txmessage_tags&quot;</span>);<br>        <span class="hljs-comment">//6.编写监听消息的监听器</span><br>        consumer.registerMessageListener(<span class="hljs-keyword">new</span> MessageListenerConcurrently() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-function"><span class="hljs-keyword">public</span> ConsumeConcurrentlyStatus <span class="hljs-title">consumeMessage</span><span class="hljs-params">(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context)</span> </span>&#123;<br>                <span class="hljs-keyword">try</span> &#123;<br>                    <span class="hljs-keyword">for</span> (MessageExt messageExt : msgs) &#123;<br>                        <span class="hljs-comment">//取出消息内容</span><br>                        String topic = messageExt.getTopic();<br>                        String tags = messageExt.getTags();<br>                        String keys = messageExt.getKeys();<br>                        String msg = <span class="hljs-keyword">new</span> String(messageExt.getBody(), <span class="hljs-string">&quot;UTF-8&quot;</span>);<br>                        String transactionId = messageExt.getTransactionId();<br>                        System.out.println(<span class="hljs-string">&quot;获取到的消息：topic=&quot;</span> + topic + <span class="hljs-string">&quot;,tags=&quot;</span> + tags + <span class="hljs-string">&quot;,keys=&quot;</span> + keys + <span class="hljs-string">&quot;,transactionId=&quot;</span> + transactionId + <span class="hljs-string">&quot;,message=&quot;</span> + msg);<br>                    &#125;<br>                &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>                    e.printStackTrace();<br>                &#125;<br>                <span class="hljs-keyword">return</span> ConsumeConcurrentlyStatus.CONSUME_SUCCESS;<br>            &#125;<br>        &#125;);<br>        <span class="hljs-comment">//启动消费者</span><br>        System.out.println(<span class="hljs-string">&quot;启动消费者&quot;</span>);<br>        consumer.start();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<h4 id="执行过程分析"><a href="#执行过程分析" class="headerlink" title="执行过程分析"></a>执行过程分析</h4><img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="执行过程分析"><a href="#执行过程分析" class="headerlink" title="执行过程分析"></a>执行过程分析</h4><img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic6.png" srcset="/img/loading.gif" lazyload class>
 
 <h3 id="Seata的AT模式"><a href="#Seata的AT模式" class="headerlink" title="Seata的AT模式"></a>Seata的AT模式</h3><h4 id="Seata简介"><a href="#Seata简介" class="headerlink" title="Seata简介"></a>Seata简介</h4><p>FESCAR是阿里巴巴开源的分布式事务中间件，以高效并且对业务0侵入的方式，解决微服务场景下面临的分布式事务问题。它全称是Fast &amp; EaSy Commit And Rollback，是阿里内部的TXC（Taobao Transaction onstructor）和阿里云上的GTS（Global Transaction Service）的精炼出的产物，作为开源的分布式事务解决方案，被很多项目团队青睐。</p>
 <p>Seata是fescar的升级版本，从2019年4月起，更名为seata。seata是由一组单词组成：Simple Extensible Autonomous Transaction Architecture。<a target="_blank" rel="noopener" href="https://github.com/seata/seata">Git网址</a>提供了对他的详细介绍，包括<a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/user/quickstart.html">Quick Start</a>。 </p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic8.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h4><p>在seata的github网站中提供了一套用例介绍，用户购买商品的业务逻辑。整个业务逻辑由3个微服务提供支持：</p>
 <ul>
@@ -480,10 +480,10 @@
 <li>订单服务：根据采购需求创建订单。</li>
 <li>帐户服务：从用户帐户中扣除余额。</li>
 </ul>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic10.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在此时，引入了seata，它提供了一个“完美”的解决方案。如下图所示：</p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic9.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在图中的三个和seata相关的组件，前面在介绍fescar的时候已经介绍了，它也是seata的基本组件，他们分别是： </p>
 <ul>
@@ -509,12 +509,12 @@
 <p><a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/ops/deploy-guide-beginner.html">官网提供的的部署指南</a></p>
 <p>此处使用docker启动，命令为：<code>docker run --name seata-server -p 8091:8091 seataio/seata-server:latest</code>，其他参数可以参考：<a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/ops/deploy-by-docker.html">http://seata.io/zh-cn/docs/ops/deploy-by-docker.html</a></p>
 <p>修改file.conf中的数据库连接信息</p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic11.png" srcset="/img/loading.gif" lazyload class>
 
 <p>修改register.conf文件，根据实际情况修改里面的配置，里面提供了注册中心和配置中心的可选项，本次使用file的方式，如下图： </p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic12.png" srcset="/img/loading.gif" lazyload class>
 
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic13.png" srcset="/img/loading.gif" lazyload class>
 
 <p>修改完成后需要重启容器</p>
 <h4 id="案例实现"><a href="#案例实现" class="headerlink" title="案例实现"></a>案例实现</h4><p>导入seata坐标</p>
@@ -558,7 +558,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">ItemTest</span> </span>&#123;<br><br><br>    <span class="hljs-comment">/***</span><br><span class="hljs-comment">     * 启动服务</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-meta">@Test</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">testAccount</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> IOException </span>&#123;<br>        ApplicationContext act = <span class="hljs-keyword">new</span> ClassPathXmlApplicationContext(<span class="hljs-string">&quot;spring/spring-dubbo.xml&quot;</span>);<br><br>        <span class="hljs-comment">//阻塞线程</span><br>        System.in.read();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <h3 id="Seata的TCC模式"><a href="#Seata的TCC模式" class="headerlink" title="Seata的TCC模式"></a>Seata的TCC模式</h3><p>TCC模式又称为补偿型分布式事务解决方案，它是通过开发者自己编写补偿代码来实现事务各个组成部分的最终一致性的。其原理图大致如下： </p>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic14.png" srcset="/img/loading.gif" lazyload class>
 
 <p><strong>以下描述来自于 seata 文档</strong></p>
 <p>一个分布式的全局事务，整体是 <strong>两阶段提交</strong> 的模型。全局事务是由若干分支事务组成的，分支事务要满足 <strong>两阶段提交</strong> 的模型要求，即需要每个分支事务都具备自己的：</p>
@@ -566,7 +566,7 @@
 <li>一阶段 prepare 行为</li>
 <li>二阶段 commit 或 rollback 行为</li>
 </ul>
-<img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic15.png" srcset="/img/loading.gif" lazyload class>
 
 <p>根据两阶段行为模式的不同，我们将分支事务划分为 <strong>Automatic (Branch) Transaction Mode</strong> 和 <strong>TCC (Branch) Transaction Mode</strong>.</p>
 <p>AT 模式（<a target="_blank" rel="noopener" href="http://seata.io/zh-cn/docs/dev/mode/tcc-mode.html">参考链接 TBD</a>）基于 <strong>支持本地 ACID 事务</strong> 的 <strong>关系型数据库</strong>：</p>
@@ -582,7 +582,7 @@
 <li>二阶段 rollback 行为：调用 <strong>自定义</strong> 的 rollback 逻辑。</li>
 </ul>
 <p>所谓 TCC 模式，是指支持把 <strong>自定义</strong> 的分支事务纳入到全局事务的管理中。</p>
-<h4 id="场景说明"><a href="#场景说明" class="headerlink" title="场景说明"></a>场景说明</h4><img src="/blog/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic16.png" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="场景说明"><a href="#场景说明" class="headerlink" title="场景说明"></a>场景说明</h4><img src="/2020/12/10/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E5%AE%9E%E7%8E%B0/pic16.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="具体实现-1"><a href="#具体实现-1" class="headerlink" title="具体实现"></a>具体实现</h4><p>配置@TwoPhaseBusinessAction注解</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@LocalTCC</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">OrderService</span> </span>&#123;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 创建订单并且进行扣除账户余额支付，并进行库存扣减操作</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span> string string</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-meta">@TwoPhaseBusinessAction(name = &quot;orderPayTccTryPhase&quot;, commitMethod = &quot;commit&quot;, rollbackMethod = &quot;rollback&quot;)</span><br>    <span class="hljs-function"><span class="hljs-keyword">boolean</span> <span class="hljs-title">prepareUpdateState</span><span class="hljs-params">(BusinessActionContext businessActionContext, <span class="hljs-meta">@BusinessActionContextParameter(paramName = &quot;orderId&quot;)</span> String orderId)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 修改订单状态为支付完成</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">commit</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 修改订单状态为支付失败</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> businessActionContext</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">rollback</span><span class="hljs-params">(BusinessActionContext businessActionContext)</span></span>;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 根据id查询订单</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> id</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span></span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-function">Order <span class="hljs-title">findById</span><span class="hljs-params">(String id)</span></span>;<br>&#125;<br></code></pre></td></tr></table></figure>
@@ -630,7 +630,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" class="category-chain-item">分布式事务</a>
+  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/" class="category-chain-item">分布式事务</a>
   
   
 
@@ -645,7 +645,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/">#分布式事务</a>
+        <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/">#分布式事务</a>
       
     </div>
   
@@ -658,7 +658,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>分布式事务实现</div>
-      <div>http://zhaoguocheng.gitee.io/2020/12/10/分布式开发技术/分布式事务实现/</div>
+      <div>https://zgc97107.github.io/2020/12/10/分布式开发技术/分布式事务实现/</div>
     </div>
     <div class="license-meta">
       
@@ -697,7 +697,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/" title="Docker引擎与核心组件">
+                      <a href="/2020/12/31/Docker%E5%AE%B9%E5%99%A8/docker%E5%BC%95%E6%93%8E%E4%B8%8E%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6/" title="Docker引擎与核心组件">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">Docker引擎与核心组件</span>
                         <span class="visible-mobile">上一篇</span>
@@ -707,7 +707,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/" title="分库分表的深入剖析">
+                      <a href="/2020/12/01/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/" title="分库分表的深入剖析">
                         <span class="hidden-mobile">分库分表的深入剖析</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -834,8 +834,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -857,7 +857,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -956,7 +956,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -964,7 +964,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   

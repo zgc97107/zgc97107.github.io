@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,26 +19,26 @@
     <meta name="description" content="对象的存活引用计数法给对象添加一个引用计数器，任何一个对象对该对象引用时计数器加1，引用失效时计数器减1。引用计数为0的对象可被回收（Python在用，但主流虚拟机没有使用）。 优点：  实时性高，运行时根据对象计数器为0就可以直接回收，无需等待内存不够时才回收。  得益于其实时性，在垃圾回收过程中，不需要停顿。且如果内存不足，则立刻报outofmember 错误。  区域性，更新对象计数器时，只">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JVM的垃圾收集">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="对象的存活引用计数法给对象添加一个引用计数器，任何一个对象对该对象引用时计数器加1，引用失效时计数器减1。引用计数为0的对象可被回收（Python在用，但主流虚拟机没有使用）。 优点：  实时性高，运行时根据对象计数器为0就可以直接回收，无需等待内存不够时才回收。  得益于其实时性，在垃圾回收过程中，不需要停顿。且如果内存不足，则立刻报outofmember 错误。  区域性，更新对象计数器时，只">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic1.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic2.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic6.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic3.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic4.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic7.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic8.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic9.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic10.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic11.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic12.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic1.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic2.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic6.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic3.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic4.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic7.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic8.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic9.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic10.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic11.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic12.png">
 <meta property="article:published_time" content="2020-07-13T10:44:21.000Z">
 <meta property="article:modified_time" content="2020-07-13T10:44:21.000Z">
 <meta property="article:tag" content="垃圾收集器">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic1.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic1.png">
   
   
   
@@ -66,12 +66,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -80,15 +80,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -105,7 +105,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -124,7 +124,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -136,7 +136,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -148,7 +148,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -160,7 +160,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -172,7 +172,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -201,7 +201,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -305,7 +305,7 @@
     
       
       
-        <a href="/blog/2020/07/09/JVM/JVM%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="JVM内存管理"
+        <a href="/2020/07/09/JVM/JVM%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" title="JVM内存管理"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">JVM内存管理</span>
@@ -314,7 +314,7 @@
     
       
       
-        <a href="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="JVM的垃圾收集"
+        <a href="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" title="JVM的垃圾收集"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">JVM的垃圾收集</span>
@@ -323,7 +323,7 @@
     
       
       
-        <a href="/blog/2020/07/09/JVM/JVM%E8%B0%83%E4%BC%98/" title="JVM调优"
+        <a href="/2020/07/09/JVM/JVM%E8%B0%83%E4%BC%98/" title="JVM调优"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">JVM调优</span>
@@ -332,7 +332,7 @@
     
       
       
-        <a href="/blog/2020/03/24/JVM/Java%E4%BB%A3%E7%A0%81%E7%BC%96%E5%86%99%E6%8A%80%E5%B7%A7/" title="Java代码编写技巧"
+        <a href="/2020/03/24/JVM/Java%E4%BB%A3%E7%A0%81%E7%BC%96%E5%86%99%E6%8A%80%E5%B7%A7/" title="Java代码编写技巧"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">Java代码编写技巧</span>
@@ -341,7 +341,7 @@
     
       
       
-        <a href="/blog/2020/07/09/JVM/Java%E6%8A%80%E6%9C%AF%E4%BD%93%E7%B3%BB%E7%AE%80%E4%BB%8B/" title="Java技术体系简介"
+        <a href="/2020/07/09/JVM/Java%E6%8A%80%E6%9C%AF%E4%BD%93%E7%B3%BB%E7%AE%80%E4%BB%8B/" title="Java技术体系简介"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">Java技术体系简介</span>
@@ -350,7 +350,7 @@
     
       
       
-        <a href="/blog/2020/07/23/JVM/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3java%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" title="深入理解java内存模型"
+        <a href="/2020/07/23/JVM/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3java%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" title="深入理解java内存模型"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">深入理解java内存模型</span>
@@ -359,7 +359,7 @@
     
       
       
-        <a href="/blog/2020/07/14/JVM/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/" title="类加载机制"
+        <a href="/2020/07/14/JVM/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/" title="类加载机制"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">类加载机制</span>
@@ -368,7 +368,7 @@
     
       
       
-        <a href="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/" title="类文件结构"
+        <a href="/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/" title="类文件结构"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">类文件结构</span>
@@ -377,7 +377,7 @@
     
       
       
-        <a href="/blog/2020/07/14/JVM/%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/" title="编译优化"
+        <a href="/2020/07/14/JVM/%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/" title="编译优化"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">编译优化</span>
@@ -477,7 +477,7 @@
 </ul>
 <p>在jvm中，年轻代使用复制算法，老年代使用标记整理算法。老年代的回收速度至少要比新生代的回收速度慢10倍。</p>
 <p>同时JVM对复制算法进行了一些优化，复制算法使用原本需要损失一半内存，如果分配1G内存，实际只有512MB是可用的，内存使用效率太低。其实在实际使用中绝大多数创建出来的对象都是存活周期非常短的对象，可能创建出来1毫秒之后就是垃圾对象了。在新生代垃圾回收之后99%的对象都被回收，所以JVM把新生代内存区域划分为三块，<strong>1个Eden区，2个Survivor区</strong>，其中Eden区占80%内存空间，每一块Survivor区各占10%内存空间。</p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic1.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic1.png" srcset="/img/loading.gif" lazyload></p>
 <ol>
 <li>在GC开始的时候，对象只会存在于Eden区和Survivor From区，Survivor To是空的。</li>
 <li>紧接着进行GC，Eden区中所有存活的对象都会被复制到Survivor To，Survivor From区， 存活的对象会根据年龄值来决定去向。年龄达到15（年龄阈值，可以通过-XX:MaxTenuringThreshold来设置）的对象会被移动到老年代中，没有达到阈值的对象会被复制到Survivor To区域。</li>
@@ -494,7 +494,7 @@
 <p>注意：在执行Minor GC之前，JVM会先检查老年代的可用空间，是否大于新生代所有对象的总大小，如果小于会检查-XX:-HandlePromotionFailure参数是否设置，如果设置，会检查Minor GC之后进入老年代对象的平均大小，如果平均大小大于老年代空闲空间或者参数并没有设置，会先进行一次Full GC。如果实际剩余存活对象大小，大于Survivor区域的大小，也大于老年代大小就会触发Full GC。</p>
 <h3 id="STW"><a href="#STW" class="headerlink" title="STW"></a>STW</h3><p>JVM在垃圾回收过程中，如果Java系统还在不停的运行，在内存中创建对象，会使垃圾回收变得十分困难，所以在垃圾回收过程中，必须要暂停系统的运行，让垃圾回收线程进行垃圾回收工作。如果Minor GC要运行100ms，系统就会停顿100ms，不能处理任何请求，如果Full GC需要进行几秒甚至几十秒、几分钟这时会严重影响系统运行，让用户体验极差，所以在JVM的使用过程中要尽量避免Full GC的出现。</p>
 <h3 id="垃圾收集器"><a href="#垃圾收集器" class="headerlink" title="垃圾收集器"></a>垃圾收集器</h3><p>HotSpot虚拟机中，常见的集中垃圾收集器组合方式：</p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic2.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic2.png" srcset="/img/loading.gif" lazyload></p>
 <h4 id="Serial-Serial-Old收集器"><a href="#Serial-Serial-Old收集器" class="headerlink" title="Serial/Serial Old收集器"></a>Serial/Serial Old收集器</h4><p>最古老、成熟的单线程（独占式）收集器，垃圾回收的时候会停止掉其他工作线程，系统直接卡死不动，然后进行垃圾回收，现在一般不用了。</p>
 <p>Serial采用复制算法回收区域为新生代，Serial Old使用标记整理算法回收区域为老年代。</p>
 <p>在jvm参数中加入-XX:+PrintGCDetails</p>
@@ -512,7 +512,7 @@
 
 <p>由以上信息可以看出，ParNew: 使用的是ParNew收集器。其他信息和串行收集器一致。</p>
 <p>也可以通过jmap命令可以查看正在使用的收集器：</p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic6.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic6.png" srcset="/img/loading.gif" lazyload></p>
 <p>Mark Sweep Compact GC 是指串行GC（Serial Old GC）。</p>
 <blockquote>
 <p>其它老年代收集器：</p>
@@ -524,7 +524,7 @@
 </ul>
 </blockquote>
 <p>CMS全称 Concurrent Mark Sweep，是一款并发的、使用标记-清除算法的垃圾回收器，该回收器是针对老年代垃圾回收的，通过参数-XX:+UseConcMarkSweepGC进行设置，默认启动的垃圾回收线程的数量是(CPU核数 + 3) / 4。</p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic3.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic3.png" srcset="/img/loading.gif" lazyload></p>
 <p>CMS垃圾回收过程：</p>
 <ol>
 <li>初始化标记(CMS-initial-mark) ：标记处所有GC Roots直接引用的对象，会导致STW；</li>
@@ -587,7 +587,7 @@
 <p>G1中提供了三种模式垃圾回收模式，Young GC、Mixed GC 和 Full GC，在不同的条件下被触发。</p>
 <h5 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h5><p>G1垃圾收集器相对比其他收集器而言，最大的区别在于它取消了年轻代、老年代的物理划分，取而代之的是将堆划分为若干个区域（Region），这些区域中包含了有逻辑上的年轻代、老年代区域。</p>
 <p>这样做的好处就是，我们再也不用单独的空间对每个代进行设置了，不用担心每个代内存是否足够。</p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic4.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic4.png" srcset="/img/loading.gif" lazyload></p>
 <p>在G1划分的区域中，年轻代的垃圾收集依然采用暂停所有应用线程的方式，将存活对象拷贝到老年代或者Survivor空间，G1收集器通过将对象从一个区域复制到另外一个区域，完成了清理工作。</p>
 <p>这就意味着，在正常的处理过程中，G1完成了堆的压缩（至少是部分堆的压缩），这样也就不会有cms内存碎片问题的存在了。</p>
 <p>在G1中，有一种特殊的区域，叫Humongous区域。</p>
@@ -610,11 +610,11 @@
 <li><p>最终Eden空间的数据为空，GC停止工作，应用线程继续执行。</p>
 </li>
 </ul>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic7.png" srcset="/blog/img/loading.gif" lazyload></p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic8.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic7.png" srcset="/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic8.png" srcset="/img/loading.gif" lazyload></p>
 <h5 id="Remobered-Set（已记忆集合）"><a href="#Remobered-Set（已记忆集合）" class="headerlink" title="Remobered Set（已记忆集合）"></a>Remobered Set（已记忆集合）</h5><p>在对年轻代的对象进行GC时，年轻代中对象的根对象是在年轻代中，也可以在老年代中，如果全量扫描老年代，那么这样扫描下来会耗费大量的时间。</p>
 <p>于是，G1引进了RSet的概念。它的全称是Remembered Set，其作用是跟踪指向某个堆内的对象引用。</p>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic9.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic9.png" srcset="/img/loading.gif" lazyload></p>
 <p>每个Region初始化时，会初始化一个RSet，该集合用来记录并跟踪其它Region指向该Region中对象的引用，每个Region默认按照512Kb划分成多个Card，所以RSet需要记录的东西应该是 xx Region的 xx Card。 </p>
 <h5 id="Mixed-GC"><a href="#Mixed-GC" class="headerlink" title="Mixed GC"></a>Mixed GC</h5><p>当越来越多的对象晋升到老年代old region时，为了避免堆内存被耗尽，虚拟机会触发一个混合的垃圾收集器，即Mixed GC，该算法并不是一个Old GC，除了回收整个Young Region，还会回收一部分的Old Region，这里需要注意：是一部分老年代，而不是全部老年代，可以选择哪些old region进行收集，从而可以对垃圾回收的耗时时</p>
 <p>间进行控制。也要注意的是Mixed GC 并不是 Full GC。</p>
@@ -702,11 +702,11 @@
 </ul>
 </li>
 </ul>
-<p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic10.png" srcset="/blog/img/loading.gif" lazyload></p>
+<p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic10.png" srcset="/img/loading.gif" lazyload></p>
 <h5 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h5><p>在jdk11下，只能在linux 64位的平台上使用ZGC，如果想要在Windows下使用ZGC就需要升级jdk到14了。</p>
 <figure class="highlight ldif"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs ldif"><span class="hljs-comment">#相关参数</span><br><span class="hljs-literal">-XX:+UnlockExperimentalVMOptions -XX:+UseZGC -Xmx256m - Xlog:gc*=info  </span><br><span class="hljs-comment">#参数说明 </span><br><span class="hljs-literal">-XX:+UnlockExperimentalVMOptions 解锁实验参数 </span><br><span class="hljs-literal">-XX:+UseZGC 启用ZGC垃圾收集器 </span><br><span class="hljs-literal">-Xmx256m 设置最大内存 </span><br><span class="hljs-literal">-Xlog:gc*=info 设置打印gc日志信息 </span><br><span class="hljs-comment">#设置并行的线程数，一般默认即可 </span><br><span class="hljs-literal">-XX:ConcGCThreads</span><br></code></pre></td></tr></table></figure>
 
-<h5 id="染色指针"><a href="#染色指针" class="headerlink" title="染色指针"></a>染色指针</h5><p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic11.png" srcset="/blog/img/loading.gif" lazyload></p>
+<h5 id="染色指针"><a href="#染色指针" class="headerlink" title="染色指针"></a>染色指针</h5><p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic11.png" srcset="/img/loading.gif" lazyload></p>
 <p>染色指针是一种直接将少量额外的信息存储在指针上的技术，在64位系统中，理论可以访问的内存高达16EB（2的64次幂）字节。实际上，64位的Linux则分别支持47位（128TB）的进程虚拟地址空间和46位（64TB）的物理地址空间，64位的 Windows系统甚至只支持44位（16TB）的物理地址空间。</p>
 <p>Linux下64位指针的高18位不能用来寻址，但剩余的46位指针所能支持的64TB内存在今天仍然能够充分满足大型服务器的需要。</p>
 <p>ZGC的染色指针技术使用上了这剩下的46位指针宽度，将其高4位提取出来存储四个标志信息。</p>
@@ -723,7 +723,7 @@
 <li><p>染色指针可以作为一种可扩展的存储结构用来记录更多与对象标记、重定位过程相关的数据，以便日后进一步提高性能。</p>
 </li>
 </ul>
-<h5 id="工作过程"><a href="#工作过程" class="headerlink" title="工作过程"></a>工作过程</h5><p><img src="/blog/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic12.png" srcset="/blog/img/loading.gif" lazyload></p>
+<h5 id="工作过程"><a href="#工作过程" class="headerlink" title="工作过程"></a>工作过程</h5><p><img src="/2020/07/13/JVM/JVM%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/pic12.png" srcset="/img/loading.gif" lazyload></p>
 <p>ZGC的运作过程大致可划分为四个大的阶段，这四个阶段都是可以并发执行的。仅在Mark Start、Initial Mark 阶段中会存在短暂的STW。</p>
 <ul>
 <li><p>并发标记（Concurrent Mark） </p>
@@ -770,7 +770,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/JVM%E8%99%9A%E6%8B%9F%E6%9C%BA/" class="category-chain-item">JVM虚拟机</a>
+  <a href="/categories/JVM%E8%99%9A%E6%8B%9F%E6%9C%BA/" class="category-chain-item">JVM虚拟机</a>
   
   
 
@@ -785,7 +785,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">#垃圾收集器</a>
+        <a href="/tags/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8/">#垃圾收集器</a>
       
     </div>
   
@@ -798,7 +798,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>JVM的垃圾收集</div>
-      <div>http://zhaoguocheng.gitee.io/2020/07/13/JVM/JVM垃圾收集/</div>
+      <div>https://zgc97107.github.io/2020/07/13/JVM/JVM垃圾收集/</div>
     </div>
     <div class="license-meta">
       
@@ -837,7 +837,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/" title="类文件结构">
+                      <a href="/2020/07/14/JVM/%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/" title="类文件结构">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">类文件结构</span>
                         <span class="visible-mobile">上一篇</span>
@@ -847,7 +847,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/07/09/JVM/JVM%E8%B0%83%E4%BC%98/" title="JVM调优">
+                      <a href="/2020/07/09/JVM/JVM%E8%B0%83%E4%BC%98/" title="JVM调优">
                         <span class="hidden-mobile">JVM调优</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -974,8 +974,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -997,7 +997,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -1096,7 +1096,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -1104,7 +1104,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   

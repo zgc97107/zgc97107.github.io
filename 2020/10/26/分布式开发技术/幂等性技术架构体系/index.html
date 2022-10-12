@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,21 +19,21 @@
     <meta name="description" content="幂等性介绍在微服务系统中，由于服务间的相互通信调用存在延迟或失败的问题，服务端会进行重试等操作，客户端也有可能会进行多次点击提交，这样就会产生重复请求，重复请求会对一些业务的最终结果产生影响，比如支付。此时就需要通过保证业务幂等性方案来保证结果的正确性。 幂等性的定义为：无论对某一个资源操作了多少次，其影响都应是相同的，简单来说就是在接口重复调用的情况下，对系统产生的影响是一样的，但是返回值允许不">
 <meta property="og:type" content="article">
 <meta property="og:title" content="幂等性技术架构体系">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="幂等性介绍在微服务系统中，由于服务间的相互通信调用存在延迟或失败的问题，服务端会进行重试等操作，客户端也有可能会进行多次点击提交，这样就会产生重复请求，重复请求会对一些业务的最终结果产生影响，比如支付。此时就需要通过保证业务幂等性方案来保证结果的正确性。 幂等性的定义为：无论对某一个资源操作了多少次，其影响都应是相同的，简单来说就是在接口重复调用的情况下，对系统产生的影响是一样的，但是返回值允许不">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic3.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic4.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic5.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic6.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic7.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic3.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic4.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic5.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic6.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic7.png">
 <meta property="article:published_time" content="2020-10-26T08:12:18.000Z">
 <meta property="article:modified_time" content="2020-10-26T08:12:18.000Z">
 <meta property="article:tag" content="幂等性">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png">
   
   
   
@@ -61,12 +61,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -75,15 +75,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -100,7 +100,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -119,7 +119,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -131,7 +131,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -143,7 +143,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -155,7 +155,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -167,7 +167,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -196,7 +196,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -300,7 +300,7 @@
     
       
       
-        <a href="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/" title="幂等性技术架构体系"
+        <a href="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/" title="幂等性技术架构体系"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">幂等性技术架构体系</span>
@@ -309,7 +309,7 @@
     
       
       
-        <a href="/blog/2020/10/15/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/" title="配置中心设计"
+        <a href="/2020/10/15/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83%E8%AE%BE%E8%AE%A1/" title="配置中心设计"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">配置中心设计</span>
@@ -318,7 +318,7 @@
     
       
       
-        <a href="/blog/2020/10/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/" title="零热数据收集和隔离"
+        <a href="/2020/10/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/" title="零热数据收集和隔离"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">零热数据收集和隔离</span>
@@ -327,7 +327,7 @@
     
       
       
-        <a href="/blog/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/" title="高并发订票系统分析"
+        <a href="/2021/05/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%AB%98%E5%B9%B6%E5%8F%91%E8%AE%A2%E7%A5%A8%E7%B3%BB%E7%BB%9F%E5%88%86%E6%9E%90/" title="高并发订票系统分析"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">高并发订票系统分析</span>
@@ -388,7 +388,7 @@
 <h3 id="前端幂等"><a href="#前端幂等" class="headerlink" title="前端幂等"></a>前端幂等</h3><h4 id="前端防重"><a href="#前端防重" class="headerlink" title="前端防重"></a>前端防重</h4><p>通过前端防重保证幂等是最简单的实现方式，前端相关属性和JS代码即可完成设置。可靠性并不好，有经验的人员可以通过工具跳过页面仍能重复提交。主要适用于表单重复提交或按钮重复点击。</p>
 <h4 id="PRG模式"><a href="#PRG模式" class="headerlink" title="PRG模式"></a>PRG模式</h4><p>PRG模式即POST-REDIRECT-GET。当用户进行表单提交时，会重定向到另外一个提交成功页面，而不是停留在原先的表单页面。这样就避免了用户刷新导致重复提交。同时防止了通过浏览器按钮前进/后退导致表单重复提交。是一种比较常见的前端防重策略。 </p>
 <h4 id="token机制"><a href="#token机制" class="headerlink" title="token机制"></a>token机制</h4><p>通过token机制来保证幂等是一种非常常见的解决方案，同时也适合绝大部分场景。该方案需要前后端进行一定程度的交互来完成。</p>
-<img src="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic1.png" srcset="/img/loading.gif" lazyload class>
 
 <p>交互流程：</p>
 <ol>
@@ -407,17 +407,17 @@
 <p>这种方案无需进行额外处理，一个token只能代表一次请求。一旦业务执行出现异常，则让客户端重新获取令牌，重新发起一次访问即可。推荐使用先删除token方案。</p>
 <p>但是无论先删token还是后删token，都会有一个相同的问题。每次业务请求都回产生一个额外的请求去获取token。但是，业务失败或超时，在生产环境下，一万个里最多也就十个左右会失败，那为了这十来个请求，让其他九千九百多个请求都产生额外请求，就有一些得不偿失了。虽然redis性能好，但是这也是一种资源的浪费。</p>
 <h3 id="服务端幂等"><a href="#服务端幂等" class="headerlink" title="服务端幂等"></a>服务端幂等</h3><h4 id="防重表"><a href="#防重表" class="headerlink" title="防重表"></a>防重表</h4><p>防重表的实现思路就是创建一张表作为防重表，同时在该表中建立一个或多个字段的唯一索引作为防重字段，用于保证并发情况下，数据只有一条。在向业务表中插入数据之前先向防重表插入，如果插入失败则表示是重复数据。</p>
-<img src="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic3.png" srcset="/img/loading.gif" lazyload class>
 
 <p>对于防重表的解决方案，可能有人会说为什么不使用悲观锁。悲观锁在使用的过程中也是会发生死锁的。悲观锁是通过锁表的方式实现的。 假设现在一个用户A访问表A（锁住了表A），然后试图访问表B； 另一个用户B访问表B（锁住了表B），然后试图访问表A。 这时对于用户A来说，由于表B已经被用户B锁住了，所以用户A必须等到用户B释放表B才能访问。 同时对于用户B来说，由于表A已经被用户A锁住了，所以用户B必须等到用户A释放表A才能访问。此时死锁就已经产生了。 </p>
 <h4 id="select-insert"><a href="#select-insert" class="headerlink" title="select+insert"></a>select+insert</h4><p>select+insert适用于并发量并不高的情况，在业务执行前，先判断是否已经操作过，如果没有则执行，否则判断为重复操作。</p>
-<img src="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic4.png" srcset="/img/loading.gif" lazyload class>
 
 <p>注意：此时需要将id设置为唯一索引，否则在并发情况下可能会重复插入，产生脏数据同时该方案无法用于分库分表情况。</p>
 <p>只适用于单表情况。 </p>
 <h4 id="MySQL乐观锁"><a href="#MySQL乐观锁" class="headerlink" title="MySQL乐观锁"></a>MySQL乐观锁</h4><p>MySQL乐观锁是利用MySQL行锁完成分布式锁的一种实现，实现的方式有两种：基于版本号、基于条件。</p>
 <p>MySQL乐观锁更适用于一些需要计数的表上，而且在竞争不激烈，出现并发冲突几率较小时，推荐使用乐观锁。虽然通过MySQL乐观锁可以完成并发控制，但锁的操作是直接作用于数据库上，这样就会在一定程度上对数据库性能产生影响。并且mysql的连接数量是有限的，如果出现大量锁操作占用连接时，也会造成MySQL的性能瓶颈。 </p>
-<h5 id="基于版本号实现"><a href="#基于版本号实现" class="headerlink" title="基于版本号实现"></a>基于版本号实现</h5><img src="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
+<h5 id="基于版本号实现"><a href="#基于版本号实现" class="headerlink" title="基于版本号实现"></a>基于版本号实现</h5><img src="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic5.png" srcset="/img/loading.gif" lazyload class>
 
 <p>修改数据库表，增加version字段，默认为0</p>
 <p>修改update语句，如<code>update tb_stock set amount=amount‐#&#123;num&#125;,version=version+1 where goods_id=#&#123;goodsId&#125; and version=#&#123;version&#125;</code></p>
@@ -437,7 +437,7 @@
 </ul>
 <p>watch监听机制主要用于监听节点状态变更，用于后续事件触发，假设当B节点监听A节点时，一旦A节点发生修改、删除、子节点列表发生变更等事件，B节点则会收到A节点改变的通知，接着完成其他额外事情。 </p>
 <p>当某个线程要对方法加锁时，首先会在zookeeper中创建一个与当前方法对应的父节点，接着每个要获取当前方法的锁的线程，都会在父节点下创建一个临时有序节点，因为节点序号是递增的，所以后续要获取锁的线程在zookeeper中的序号也是逐次递增的。根据这个特性，当前序号最小的节点一定是首先要获取锁的线程，因此可以规定序号最小的节点获得锁。所以，每个线程再要获取锁时，可以判断自己的节点序号是否是最小的，如果是则获取到锁。当释放锁时，只需将自己的临时有序节点删除即可。</p>
-<img src="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic6.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在并发下，每个线程都会在对应方法节点下创建属于自己的临时节点，且每个节点都是临时且有序的。 每当添加一个新的临时节点时，监听着它本身的前一个节点等待前一个节点的通知。</p>
 <h4 id="redis分布式锁"><a href="#redis分布式锁" class="headerlink" title="redis分布式锁"></a>redis分布式锁</h4><p>分布式锁的一个很重要的特性就是互斥性，同一时间内多个调用方加锁竞争，只能有一个调用方加锁成功。而redis是基于单线程模型的，可以利用这个特性让调用方的请求排队，对于并发请求，只会有一个请求能获取到锁。</p>
@@ -571,7 +571,7 @@
 <p>在RabbitMQ中，消息重试机制是默认开启的，但只会在consumer出现异常时，才会重复推送。比如消费方接收到消息后又去调用第三方接口，由于网络抖动而产生异常，但这个异常是暂时的。所以当消费者出现异常，可以让其重试几次，如果重试几次后，仍然有异常，则需要进行数据补偿。 </p>
 <p>数据补偿方案：当重试多次后仍然出现异常，则让此条消息进入死信队列，最终进入到数据库中，接着设置定时job查询这些数据，进行手动补偿。 </p>
 <h4 id="消息幂等解决"><a href="#消息幂等解决" class="headerlink" title="消息幂等解决"></a>消息幂等解决</h4><p>消息幂等与服务端幂等解决思路基本一致，其实就是保证多次操作造成的影响是相同的。最常见的解决方案就是用防重表跟redis。</p>
-<img src="/blog/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/10/26/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E5%B9%82%E7%AD%89%E6%80%A7%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB/pic7.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="消息缓冲区"><a href="#消息缓冲区" class="headerlink" title="消息缓冲区"></a>消息缓冲区</h4><p>对于RabbitMQ的使用，默认情况下，每条消息都会进行分别的ack通知，消费完一条后，再来消费下一条。但是这样就会造成大量消息的阻塞情况。所以为了提升消费者对于消息的消费速度，可以增加consumer数据或者对消息进行批量消费。MQ接收到producer发送的消息后，不会直接推送给consumer。而是积攒到一定数量后，再进行消息的发送。 这种方式的实现，可以理解为是一种缓冲区的实现，提升了消息的消费速度，但是会在一定程度上舍弃结果返回的实时性。 </p>
 <p>对于批量消费来说，也是需要考虑幂等的</p>
@@ -593,7 +593,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/%E4%B8%9A%E5%8A%A1%E8%AE%BE%E8%AE%A1/" class="category-chain-item">业务设计</a>
+  <a href="/categories/%E4%B8%9A%E5%8A%A1%E8%AE%BE%E8%AE%A1/" class="category-chain-item">业务设计</a>
   
   
 
@@ -608,7 +608,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/%E5%B9%82%E7%AD%89%E6%80%A7/">#幂等性</a>
+        <a href="/tags/%E5%B9%82%E7%AD%89%E6%80%A7/">#幂等性</a>
       
     </div>
   
@@ -621,7 +621,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>幂等性技术架构体系</div>
-      <div>http://zhaoguocheng.gitee.io/2020/10/26/分布式开发技术/幂等性技术架构体系/</div>
+      <div>https://zgc97107.github.io/2020/10/26/分布式开发技术/幂等性技术架构体系/</div>
     </div>
     <div class="license-meta">
       
@@ -660,7 +660,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析">
+                      <a href="/2020/11/21/%E6%95%B0%E6%8D%AE%E5%BA%93/InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E%E5%88%86%E6%9E%90/" title="InnoDB存储引擎解析">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">InnoDB存储引擎解析</span>
                         <span class="visible-mobile">上一篇</span>
@@ -670,7 +670,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/10/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/" title="零热数据收集和隔离">
+                      <a href="/2020/10/25/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%80%E5%8F%91%E6%8A%80%E6%9C%AF/%E9%9B%B6%E7%83%AD%E6%95%B0%E6%8D%AE%E6%94%B6%E9%9B%86%E5%92%8C%E9%9A%94%E7%A6%BB/" title="零热数据收集和隔离">
                         <span class="hidden-mobile">零热数据收集和隔离</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -797,8 +797,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -820,7 +820,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -919,7 +919,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -927,7 +927,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   

@@ -7,8 +7,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
-  <link rel="icon" href="/blog/img/fluid.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   
@@ -19,30 +19,30 @@
     <meta name="description" content="Java中的IO模型在JDK1.4之前，基于Java所有的socket通信都采⽤了同步阻塞模型（BIO），这种模型性能低下，当时⼤型的服务均采⽤C或C++开发，因为它们可以直接使⽤操作系统提供的异步IO或者AIO，使得性能得到⼤幅提升。 2002年，JDK1.4发布，新增了java.nio包，提供了许多异步IO开发的API和类库。新增的NIO，极⼤的促进了基于Java的异步⾮阻塞的发展和应⽤。 2">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Netty结构解析">
-<meta property="og:url" content="http://zhaoguocheng.gitee.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:url" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/index.html">
 <meta property="og:site_name" content="萤火的博客">
 <meta property="og:description" content="Java中的IO模型在JDK1.4之前，基于Java所有的socket通信都采⽤了同步阻塞模型（BIO），这种模型性能低下，当时⼤型的服务均采⽤C或C++开发，因为它们可以直接使⽤操作系统提供的异步IO或者AIO，使得性能得到⼤幅提升。 2002年，JDK1.4发布，新增了java.nio包，提供了许多异步IO开发的API和类库。新增的NIO，极⼤的促进了基于Java的异步⾮阻塞的发展和应⽤。 2">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic2.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic3.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic4.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic5.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic6.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic7.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic8.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic9.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic10.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic11.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic12.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic13.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic14.png">
-<meta property="og:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic15.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic2.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic3.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic4.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic5.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic6.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic7.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic8.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic9.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic10.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic11.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic12.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic13.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic14.png">
+<meta property="og:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic15.png">
 <meta property="article:published_time" content="2020-08-07T09:04:52.000Z">
 <meta property="article:modified_time" content="2020-08-07T09:04:52.000Z">
 <meta property="article:tag" content="Netty">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://zhaoguocheng.gitee.io/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png">
+<meta name="twitter:image" content="https://zgc97107.github.io/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png">
   
   
   
@@ -70,12 +70,12 @@
 <link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
 
 
-<link  rel="stylesheet" href="/blog/css/main.css" />
+<link  rel="stylesheet" href="/css/main.css" />
 
 
-  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
   
-    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
   
 
 
@@ -84,15 +84,15 @@
   <script id="fluid-configs">
     var Fluid = window.Fluid || {};
     Fluid.ctx = Object.assign({}, Fluid.ctx)
-    var CONFIG = {"hostname":"zhaoguocheng.gitee.io","root":"/blog/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml"};
+    var CONFIG = {"hostname":"zgc97107.github.io","root":"/","version":"1.9.3","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
 
     if (CONFIG.web_analytics.follow_dnt) {
       var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
       Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
     }
   </script>
-  <script  src="/blog/js/utils.js" ></script>
-  <script  src="/blog/js/color-schema.js" ></script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
   
 
 
@@ -109,7 +109,7 @@
 <div class="header-inner" style="height: 70vh;">
   <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
-    <a class="navbar-brand" href="/blog/">
+    <a class="navbar-brand" href="/">
       <strong>萤火的博客</strong>
     </a>
 
@@ -128,7 +128,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/">
+              <a class="nav-link" href="/">
                 <i class="iconfont icon-home-fill"></i>
                 主页
               </a>
@@ -140,7 +140,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/archives/">
+              <a class="nav-link" href="/archives/">
                 <i class="iconfont icon-archive-fill"></i>
                 归档
               </a>
@@ -152,7 +152,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/categories/">
+              <a class="nav-link" href="/categories/">
                 <i class="iconfont icon-category-fill"></i>
                 分类
               </a>
@@ -164,7 +164,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/tags/">
+              <a class="nav-link" href="/tags/">
                 <i class="iconfont icon-tags-fill"></i>
                 标签
               </a>
@@ -176,7 +176,7 @@
           
           
             <li class="nav-item">
-              <a class="nav-link" href="/blog/about/">
+              <a class="nav-link" href="/about/">
                 <i class="iconfont icon-user-fill"></i>
                 关于
               </a>
@@ -205,7 +205,7 @@
   
 
 <div id="banner" class="banner" parallax=true
-     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
   <div class="full-bg-img">
     <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
       <div class="banner-text text-center fade-in-up">
@@ -309,7 +309,7 @@
     
       
       
-        <a href="/blog/2020/08/07/Netty/Netty%E5%85%A5%E9%97%A8/" title="Netty入门"
+        <a href="/2020/08/07/Netty/Netty%E5%85%A5%E9%97%A8/" title="Netty入门"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">Netty入门</span>
@@ -318,7 +318,7 @@
     
       
       
-        <a href="/blog/2020/08/08/Netty/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" title="Netty源码剖析"
+        <a href="/2020/08/08/Netty/Netty%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E5%89%96%E6%9E%90/" title="Netty源码剖析"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">Netty源码剖析</span>
@@ -327,7 +327,7 @@
     
       
       
-        <a href="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/" title="Netty结构解析"
+        <a href="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/" title="Netty结构解析"
            class="list-group-item list-group-item-action
            active">
           <span class="category-post">Netty结构解析</span>
@@ -336,7 +336,7 @@
     
       
       
-        <a href="/blog/2020/08/08/Netty/Netty%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8/" title="Netty编解码器"
+        <a href="/2020/08/08/Netty/Netty%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8/" title="Netty编解码器"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">Netty编解码器</span>
@@ -345,7 +345,7 @@
     
       
       
-        <a href="/blog/2020/08/08/Netty/TCP%E6%8B%86%E5%8C%85%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98/" title="TCP拆包粘包问题"
+        <a href="/2020/08/08/Netty/TCP%E6%8B%86%E5%8C%85%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98/" title="TCP拆包粘包问题"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">TCP拆包粘包问题</span>
@@ -354,7 +354,7 @@
     
       
       
-        <a href="/blog/2020/08/14/Netty/%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" title="网络安全"
+        <a href="/2020/08/14/Netty/%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" title="网络安全"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">网络安全</span>
@@ -363,7 +363,7 @@
     
       
       
-        <a href="/blog/2020/08/09/Netty/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" title="网络编程"
+        <a href="/2020/08/09/Netty/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" title="网络编程"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">网络编程</span>
@@ -372,7 +372,7 @@
     
       
       
-        <a href="/blog/2020/08/08/Netty/%E8%87%AA%E5%AE%9A%E4%B9%89RPC%E6%A1%86%E6%9E%B6/" title="自定义RPC框架"
+        <a href="/2020/08/08/Netty/%E8%87%AA%E5%AE%9A%E4%B9%89RPC%E6%A1%86%E6%9E%B6/" title="自定义RPC框架"
            class="list-group-item list-group-item-action
            ">
           <span class="category-post">自定义RPC框架</span>
@@ -407,7 +407,7 @@
 <p>2002年，JDK1.4发布，新增了java.nio包，提供了许多异步IO开发的API和类库。新增的NIO，极⼤的促进了基于Java的异步⾮阻塞的发展和应⽤。</p>
 <p>2011年，JDK7发布，将原有的NIO进⾏了升级，称为NIO2.0，其中也对AIO进⾏了⽀持。</p>
 <h4 id="BIO模型"><a href="#BIO模型" class="headerlink" title="BIO模型"></a>BIO模型</h4><p>java中的BIO是blocking I/O的简称，它是同步阻塞型IO，其相关的类和接⼝在java.io下。BIO模型简单来讲，就是服务端为每⼀个请求都分配⼀个线程进⾏处理，如下：</p>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic1.png" srcset="/img/loading.gif" lazyload class>
 
 <p>示例</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> org.example.bio;<br><br><span class="hljs-keyword">import</span> java.io.InputStream;<br><span class="hljs-keyword">import</span> java.net.ServerSocket;<br><span class="hljs-keyword">import</span> java.net.Socket;<br><span class="hljs-keyword">import</span> java.nio.charset.StandardCharsets;<br><span class="hljs-keyword">import</span> java.util.concurrent.ExecutorService;<br><span class="hljs-keyword">import</span> java.util.concurrent.Executors;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BIOServer</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>        ServerSocket serverSocket = <span class="hljs-keyword">new</span> ServerSocket(<span class="hljs-number">6666</span>);<br>        ExecutorService executorService = Executors.newCachedThreadPool();<br>        <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;<br>            System.out.println(<span class="hljs-string">&quot;等待客户端连接。。。。&quot;</span>);<br>            Socket socket = serverSocket.accept(); <span class="hljs-comment">//阻塞</span><br>            executorService.execute(() -&gt; &#123;<br>                <span class="hljs-keyword">try</span> &#123;<br>                    InputStream inputStream = socket.getInputStream(); <span class="hljs-comment">//阻塞</span><br>                    <span class="hljs-keyword">byte</span>[] bytes = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[<span class="hljs-number">1024</span>];<br>                    <span class="hljs-keyword">while</span> (<span class="hljs-keyword">true</span>) &#123;<br>                        <span class="hljs-keyword">int</span> length = inputStream.read(bytes);<br>                        <span class="hljs-keyword">if</span> (length == -<span class="hljs-number">1</span>) &#123;<br>                            <span class="hljs-keyword">break</span>;<br>                        &#125;<br>                        System.out.println(<span class="hljs-keyword">new</span> String(bytes, <span class="hljs-number">0</span>, length, StandardCharsets.UTF_8));<br>                    &#125;<br>                &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>                    e.printStackTrace();<br>                &#125;<br>            &#125;);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
@@ -430,7 +430,7 @@
 <p>Selector是多路复⽤器，它会不断的轮询注册在其上的Channel，如果某个Channel上发⽣读或写事件，这个Channel就处于就绪状态，会被Selector轮询出来，然后通过SelectionKey获取就绪Channel的集合，进⾏IO的读写操作。</p>
 </li>
 </ul>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic2.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic2.png" srcset="/img/loading.gif" lazyload class>
 
 <p>可以看出，NIO模型要优于BIO模型，主要是：</p>
 <ul>
@@ -451,7 +451,7 @@
 <p>kernel的数据复制</p>
 <p>将数据从内核缓冲区拷⻉到⽤户程序空间的缓冲区。</p>
 </blockquote>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic3.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic3.png" srcset="/img/loading.gif" lazyload class>
 
 <p>⽬前AIO模型存在的不⾜：</p>
 <ul>
@@ -481,7 +481,7 @@
 <li><p>主从Reactor多线程模型</p>
 </li>
 </ul>
-<h4 id="单Reactor单线程模型"><a href="#单Reactor单线程模型" class="headerlink" title="单Reactor单线程模型"></a>单Reactor单线程模型</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic4.png" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="单Reactor单线程模型"><a href="#单Reactor单线程模型" class="headerlink" title="单Reactor单线程模型"></a>单Reactor单线程模型</h4><img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic4.png" srcset="/img/loading.gif" lazyload class>
 
 <ul>
 <li><p>Reactor充当多路复⽤器⻆⾊，监听多路连接的请求，由单线程完成</p>
@@ -507,7 +507,7 @@
 </ul>
 </li>
 </ul>
-<h4 id="单Reactor多线程模型"><a href="#单Reactor多线程模型" class="headerlink" title="单Reactor多线程模型"></a>单Reactor多线程模型</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic5.png" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="单Reactor多线程模型"><a href="#单Reactor多线程模型" class="headerlink" title="单Reactor多线程模型"></a>单Reactor多线程模型</h4><img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic5.png" srcset="/img/loading.gif" lazyload class>
 
 <p>说明：</p>
 <ul>
@@ -524,7 +524,7 @@
 </li>
 </ul>
 <p>为了解决性能问题，产⽣了第三种主从Reactor多线程模型。</p>
-<h4 id="主从Reactor多线程模型"><a href="#主从Reactor多线程模型" class="headerlink" title="主从Reactor多线程模型"></a>主从Reactor多线程模型</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic6.png" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="主从Reactor多线程模型"><a href="#主从Reactor多线程模型" class="headerlink" title="主从Reactor多线程模型"></a>主从Reactor多线程模型</h4><img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic6.png" srcset="/img/loading.gif" lazyload class>
 
 <p>在主从模型中，将Reactor分成2部分：</p>
 <ul>
@@ -543,7 +543,7 @@
 </li>
 </ul>
 <h4 id="Netty模型"><a href="#Netty模型" class="headerlink" title="Netty模型"></a>Netty模型</h4><p>Netty模型是基于Reactor模型实现的，对于以上三种模型都有⾮常好的⽀持，也⾮常的灵活，⼀般情况，在服务端会采⽤主从架构模型，基本示意图如下：</p>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic7.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic7.png" srcset="/img/loading.gif" lazyload class>
 
 <p>说明：</p>
 <ul>
@@ -573,7 +573,7 @@
 <p>例如：连接已激活；数据读取；⽤户事件；异常事件；打开链接；关闭链接等等。</p>
 <p>有了事件，就需要⼀个机制去监控和协调事件，这个机制（组件）就是EventLoop。 </p>
 <p>在 Netty 中每个 Channel 都会被分配到⼀个 EventLoop。⼀个 EventLoop 可以服务于多个 Channel。每个 EventLoop 会占⽤⼀个 Thread，同时这个 Thread 会处理 EventLoop 上⾯发⽣的所有 IO 操作和事件。</p>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic8.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic8.png" srcset="/img/loading.gif" lazyload class>
 
 <p>EventLoopGroup 是⽤来⽣成 EventLoop 的，在前⾯的例⼦中，第⼀⾏代码就是 new NioEventLoopGroup();</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">// 主线程，不处理任何业务逻辑，只是接收客户的连接请求</span><br>EventLoopGroup boss = <span class="hljs-keyword">new</span> NioEventLoopGroup(<span class="hljs-number">1</span>);<br><span class="hljs-comment">// ⼯作线程，线程数默认是：cpu*2</span><br>EventLoopGroup worker = <span class="hljs-keyword">new</span> NioEventLoopGroup();<br></code></pre></td></tr></table></figure>
@@ -604,7 +604,7 @@
 </li>
 </ul>
 <p>接⼝继承关系如下：</p>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic9.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic9.png" srcset="/img/loading.gif" lazyload class>
 
 <p>ChannelHandlerAdapter提供了⼀些⽅法的默认实现，可减少⽤户对于ChannelHandler的编写。</p>
 <blockquote>
@@ -618,13 +618,13 @@
 </li>
 </ul>
 </blockquote>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic10.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic10.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="ChannelPipeline"><a href="#ChannelPipeline" class="headerlink" title="ChannelPipeline"></a>ChannelPipeline</h4><p>在Channel的数据传递过程中，对应着有很多的业务逻辑需要处理，⽐如：编码解码处理、读写操作等，那么对于每种业务逻辑实现都需要有个ChannelHandler完成，也就意味着，⼀个Channel对应着多个ChannelHandler，多个ChannelHandler如何去管理它们，它们的执⾏顺序⼜该是怎么样的，这就需要ChannelPipeline进⾏管理了。</p>
 <p>⼀个Channel包含了⼀个ChannelPipeline，⽽ChannelPipeline中维护了⼀个ChannelHandler的列表。</p>
 <p>ChannelHandler与Channel和ChannelPipeline之间的映射关系，由ChannelHandlerContext进⾏维护。</p>
 <p>它们关系如下：</p>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic11.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic11.png" srcset="/img/loading.gif" lazyload class>
 
 <p>ChannelHandler按照加⼊的顺序会组成⼀个双向链表，⼊站事件从链表的head往后传递到最后⼀个ChannelHandler，出站事件从链表的tail向前传递，直到最后⼀个ChannelHandler，两种类型的ChannelHandler相互不会影响。</p>
 <h4 id="Bootstrap"><a href="#Bootstrap" class="headerlink" title="Bootstrap"></a>Bootstrap</h4><p>Bootstrap是引导的意思，它的作⽤是配置整个Netty程序，将各个组件都串起来，最后绑定端⼝、启动Netty服务。</p>
@@ -639,7 +639,7 @@
 </ul>
 </li>
 </ul>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic12.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic12.png" srcset="/img/loading.gif" lazyload class>
 
 <p>与ServerChannel相关联的EventLoopGroup 将分配⼀个负责为传⼊连接请求创建 Channel 的 EventLoop。⼀旦连接被接受，第⼆个 EventLoopGroup 就会给它的 Channel 分配⼀个 EventLoop。</p>
 <h4 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h4><p>Future提供了⼀种在操作完成时通知应⽤程序的⽅式。这个对象可以看作是⼀个异步操作的结果的占位符，它将在未来的某个时刻完成，并提供对其结果的访问。</p>
@@ -652,10 +652,10 @@
 <li><p>每个 Netty 的出站 I/O 操作都将返回⼀个 ChannelFuture，也就是说，它们都不会阻塞。 所以说，Netty完全是异步和事件驱动的。</p>
 </li>
 </ul>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic13.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic13.png" srcset="/img/loading.gif" lazyload class>
 
 <p>上图是 serverBootstrap.bind(port) ⽅法底层的逻辑实现。</p>
-<h4 id="关系图"><a href="#关系图" class="headerlink" title="关系图"></a>关系图</h4><img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic14.png" srcset="/blog/img/loading.gif" lazyload class>
+<h4 id="关系图"><a href="#关系图" class="headerlink" title="关系图"></a>关系图</h4><img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic14.png" srcset="/img/loading.gif" lazyload class>
 
 <h3 id="详解ByteBuf"><a href="#详解ByteBuf" class="headerlink" title="详解ByteBuf"></a>详解ByteBuf</h3><h4 id="⼯作原理"><a href="#⼯作原理" class="headerlink" title="⼯作原理"></a>⼯作原理</h4><p>Java NIO 提供了ByteBuffer 作为它的字节容器，但是这个类使⽤起来过于复杂，⽽且也有些繁琐。Netty 的 ByteBuffer 替代品是 ByteBuf，⼀个强⼤的实现，既解决了JDK API 的局限性， ⼜为⽹络应⽤程序的开发者提供了更好的API。</p>
 <p>从结构上来说，ByteBuf 由⼀串字节数组构成。数组中每个字节⽤来存放信息。</p>
@@ -730,7 +730,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">package</span> cn.itcast.myrpc.client.handler;<br><br><span class="hljs-keyword">import</span> io.netty.buffer.ByteBuf;<br><span class="hljs-keyword">import</span> io.netty.buffer.Unpooled;<br><span class="hljs-keyword">import</span> io.netty.channel.ChannelHandlerContext;<br><span class="hljs-keyword">import</span> io.netty.channel.SimpleChannelInboundHandler;<br><span class="hljs-keyword">import</span> io.netty.util.CharsetUtil;<br><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyClientHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">SimpleChannelInboundHandler</span>&lt;<span class="hljs-title">ByteBuf</span>&gt; </span>&#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf msg)</span> <span class="hljs-keyword">throws</span></span><br><span class="hljs-function">            Exception </span>&#123;<br>        System.out.println(<span class="hljs-string">&quot;接收到服务端的消息：&quot;</span> +<br>                msg.toString(CharsetUtil.UTF_8));<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>        <span class="hljs-comment">// 向服务端发送数据</span><br>        String msg = <span class="hljs-string">&quot;hello&quot;</span>;<br>        ctx.writeAndFlush(Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8));<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext ctx, Throwable cause)</span></span><br><span class="hljs-function">            <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>        cause.printStackTrace();<br>        ctx.close();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>执⾏⽅法调⽤链：</p>
-<img src="/blog/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic15.png" srcset="/blog/img/loading.gif" lazyload class>
+<img src="/2020/08/07/Netty/Netty%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90/pic15.png" srcset="/img/loading.gif" lazyload class>
 
 <h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ul>
 <li><p>⼊站处理流程中，如果对原消息不做处理，调⽤ ctx.fireChannelRead(msg) 把原消息往下传，由流⽔线最后⼀棒 TailHandler 完成⾃动释放。</p>
@@ -762,7 +762,7 @@
     
       <span class="category-chain">
         
-  <a href="/blog/categories/Netty/" class="category-chain-item">Netty</a>
+  <a href="/categories/Netty/" class="category-chain-item">Netty</a>
   
   
 
@@ -777,7 +777,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/blog/tags/Netty/">#Netty</a>
+        <a href="/tags/Netty/">#Netty</a>
       
     </div>
   
@@ -790,7 +790,7 @@
   <div class="license-box my-3">
     <div class="license-title">
       <div>Netty结构解析</div>
-      <div>http://zhaoguocheng.gitee.io/2020/08/07/Netty/Netty结构解析/</div>
+      <div>https://zgc97107.github.io/2020/08/07/Netty/Netty结构解析/</div>
     </div>
     <div class="license-meta">
       
@@ -829,7 +829,7 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/blog/2020/08/08/Netty/Netty%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8/" title="Netty编解码器">
+                      <a href="/2020/08/08/Netty/Netty%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8/" title="Netty编解码器">
                         <i class="iconfont icon-arrowleft"></i>
                         <span class="hidden-mobile">Netty编解码器</span>
                         <span class="visible-mobile">上一篇</span>
@@ -839,7 +839,7 @@
                   <article class="post-next col-6">
                     
                     
-                      <a href="/blog/2020/08/07/Netty/Netty%E5%85%A5%E9%97%A8/" title="Netty入门">
+                      <a href="/2020/08/07/Netty/Netty%E5%85%A5%E9%97%A8/" title="Netty入门">
                         <span class="hidden-mobile">Netty入门</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
@@ -966,8 +966,8 @@
 
 <script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
 <script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
-<script  src="/blog/js/events.js" ></script>
-<script  src="/blog/js/plugins.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
 
 
   <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
@@ -989,7 +989,7 @@
 
 
   
-    <script  src="/blog/js/img-lazyload.js" ></script>
+    <script  src="/js/img-lazyload.js" ></script>
   
 
 
@@ -1088,7 +1088,7 @@
 
   <script>Fluid.plugins.imageCaption();</script>
 
-  <script  src="/blog/js/local-search.js" ></script>
+  <script  src="/js/local-search.js" ></script>
 
 
 
@@ -1096,7 +1096,7 @@
 
 <!-- 主题的启动项，将它保持在最底部 -->
 <!-- the boot of the theme, keep it at the bottom -->
-<script  src="/blog/js/boot.js" ></script>
+<script  src="/js/boot.js" ></script>
 
 
   
